@@ -17,11 +17,10 @@ Then run the project:
 
     $ mvn tomcat7:run
 	
-When the command reaches the following output the web service is accessbile:
+The web service is accessbile at http://localhost:8080/activationFlow
+when the command reaches the following output
 
     INFORMATION: Starting ProtocolHandler ["http-bio-8080"]
-
-It is accessible at http://localhost:8080/activationFlow
 
 ## If you don't have Java 10 ##
 
