@@ -59,7 +59,7 @@ contract AttestationFramework
         attestation.valid = false;
     }
     
-    function validateMerkle(Attestation attestation) public pure returns(bool) 
+    function validateMerkle(Attestation attestation) public view returns(bool) 
     {
         bytes32 keyValHashed = keccak256(abi.encodePacked(
             attestation.key, 
@@ -67,6 +67,7 @@ contract AttestationFramework
             attestation.salt)
         );
         require(keyValHashed == attestation.attestationSaltedMerkleTree[0]);
+        require(msg.sender == attestation.recipient);
         address signer = ecrecover(keyValHashed, attestation.v, attestation.r, attestation.s);
         require(signer == attestation.attestor);
         for(uint i = 0; i < attestation.attestationSaltedMerkleTree.length - 2; i++) 
@@ -82,6 +83,5 @@ contract AttestationFramework
         }
         return true;
     }
-    
-        
+          
 }
