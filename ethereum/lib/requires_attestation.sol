@@ -25,7 +25,8 @@ contract AttestationFramework
     {
         authorities = initialAuthorities;
     }
-    
+
+    /* shouldn't be here - will be fanned out to other folders */
     function addAuthority(address newAuthority) public
     {
         bool isAuthorised = AttestationFramework.isAuthorised(msg.sender);
