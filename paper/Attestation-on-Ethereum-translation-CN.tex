@@ -1,0 +1,179 @@
+%!TEX program = xelatex
+\documentclass[UTF8]{ctexart}
+
+\usepackage{sbc-template}
+
+\usepackage{graphicx,url}
+\usepackage{mathtools}
+
+\usepackage[brazil]{babel}
+%\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
+% UTF-8 encoding is recommended by ShareLaTex
+\usepackage{verbatim}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{ upgreek }
+
+\def\lc{\left\lceil}
+\def\rc{\right\rceil}
+
+\definecolor{verde}{rgb}{0,0.5,0}
+
+\newtheorem*{generation}{生成}
+\newtheorem*{derive}{衍生}
+\newtheorem*{sign}{签名}
+\newtheorem*{verify}{验证}
+
+%para customizar o código (ver https://en.wikibooks.org/wiki/LaTeX/Source_Code_Listings)
+\lstset{language=C, %defina a linguagem usada no trabalho
+              belowcaptionskip=1\baselineskip,
+                breaklines=true,
+                frame=false,
+                xleftmargin=\parindent,
+                showstringspaces=false,
+                basicstyle=\footnotesize\ttfamily,
+                keywordstyle=\bfseries\color{green!40!black},
+                commentstyle=\itshape\color{purple!40!black},
+                identifierstyle=\color{blue},
+                stringstyle=\color{orange},
+                numbers=left,
+            }
+
+\sloppy
+
+\title{以太坊上的合法性认证}
+
+\author{WeiWu Zhang\inst{1}, Tore K Frederiksen\inst{2}著, cr025\inst{3}译}
+
+\address{AlphaWallet, Singapore
+\nextinstitute Alexandra Institute, Denmark
+\nextinstitute EthFans
+  \email{weiwu.zhang@awallet.io, tore.frederiksen@alexandra.dk}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+我们在此展示一个在不侵犯用户隐私的前提下解决智能合约的认证问题的介于以太坊的方案。 我们特别着重于解决当用户只需要从众多被权威认证的特征中向智能合约证明其中特定的一个特征的情况，尤其是当用户并不希望其他区块链上的监视者能从这些认证中追寻到其参与的其他智能合约的端倪。
+\end{abstract}
+
+\section{引言}
+试想存在一个权威机构(authority)，它希望通过用户的某些特征认证这些用户。比如在政府和公民的关系里，政府可以认证公民在某个年份之前出生，或者公民的某个出生地，亦或这个公民有无犯罪记录。需要指出的是，在这些特征里有的是不变的，但有些是可变的，比如公民的犯罪记录。用户则希望向智能合约证明他满足某些特征，比如他是2000年以前出生所以年龄大于18岁。但是与此同时他还希望向另一个智能合约证明他没有犯罪记录。然后他也许又要向已经执行了的第一个智能合约的证明自己在悉尼出生。这些证明将会是触发智能合约执行的前提。因此，我们不能仅仅让用户提供一个临时的公有地址(public address)以存储智能合约所需的报酬，然后以带外传输(out-of-band)的方式校验合法性并等待权威向区块链证实其合法性。这其中的症结是它意味着用户的资产将会处在初始提交与服务被认可之间的不稳定状态。
+
+相反的，我们也可以想象存在一个帮助权威认证的服务。这项服务与用户使用带外传输为渠道沟通，以此验证用户的合法性，并向用户传回一份签名过的信息(signed message)作为凭证。用户向区块链提供此凭证以及它的相关资金用以执行一个不能分割的最小智能合约(atomic smart contract)。这个方法的问题在于它对于服务需要一直在线的需求，然而在某种情况下这种需求并不是一直能被满足，特别是服务方是一个秘密的个人。更进一步讲，在这个服务失效的情况下，它所服务的智能合约却需要一直维持在线，例如简易博彩游戏的合约，此游戏中资金是被运行合约的用户所分享。
+
+对于一个只是想发布所有已经被证实合法性的特征的用户而言，这个问题并不是很难处理。但是在这里我们所需要的是通过这些不同的特征无法追溯回用户本身。相比于在不同合约里对于不同特征而言，我们进一步要求当用户与同一个合约在不同时间交流时也无法被追溯。当然大前提是对于每一个不想被追溯的用户，他们都会用不同的公有地址传输资金。我们进一步需要注意完全可以存在不同的几个权威机构认证同一个用户的不同特征。
+
+最后，需要注意的是如果带外传输的方式是可以接受的，在区块链领域之外，Kerberos作为一种稳定的传输系统现今已经被广泛使用。这个系统将权威对于用户的验证信息上传于服务器。然而由于用户需要随时通过权威机构认证某种服务，验证机构就必然要一直在线已满足用户的沟通需求。
+
+\subsection{欠妥的解决方案}
+在密码学理论社区中有一个理论上的情景，叫做属性签名方案(attribute-based signature scheme)。这个方案运作如下：一个权威机构拥有公钥(public key)并且它能根据此公钥对不同的用户生成不同的私钥(private key)。此外，对于一对密钥中的私钥，这个权威机构可以在其上关联一组属性，使得密钥的持有者在生成信息的数字签名时可以根据密钥的属性加入对应的判断式(predicates)。公钥则可以被用来鉴别数字签名和判断式的真伪。在这里我们只把判断式的真伪交出，并没有揭示任何属性的值。此外，仅从不同数字签名上看我们并不能确定它们是否构造自一个私钥。
+
+在这样的方案下，权威机构仅仅需要根据密钥的属性发放一系列私钥给一个特定用户。这些功能即是用户的合法性。现在，如果一个用户想要证明它所拥有的属性上的一些判断式，他仅仅需要生成一个它想用的公有地址(public address)的数字签名并将其输入到智能合约中，智能合约便会帮助用户根据机构的公钥鉴别这个数字签名。
+
+然而不幸的是这个属性签名方案仍是一个很新的方案，还没有任何落地于生产的执行方式。此外，这个方案所需的大量的数学运算现今还不能被以太坊的原生智能合约支持。
+
+\section{前文} \label{sec:firstpage}
+
+为了构建我们的理论，在这里定义不同的几个先决条件(primitives)。首先我们假设我们有这样一个哈希函数：接受任意长度的输入值，经由函数运算产生一个$\kappa$-位($\kappa$-bit)的输出值。即$H: {0, 1}^* \to \kappa$。我们用$||$来表示两个字符串的合并(string concatenation)。我们用括号中用逗号分隔字母的方式来表示一系列没有明确定义的二进制编码，比如$(a, b, c)$就是元素a, b, c的一个确定性的位元串编码(bitstring encoding)
+
+\subsection{默克尔树(Merkle Tree)}
+对于一列元素， $l_1, l_2 \dots, l_n$，默克尔树是一个从这一列元素中构建的平衡二叉树(balanced binary tree)，第$i$个元素对应树最底层从左向右的第$i$个叶子(leaf)。因此第$i$个叶子就会有一个和$l_i$的值一样的标签。因此默克尔树的高度是$h = \lc log_2(n)\rc$并且所有的树叶（$l_1, \dots, l_n$的值）在第$h$层。树的每个中间节点(node)的值可以被定义为此节点的两个孩子节点哈希值合并后的哈希值。即在层次遍历(level-order traversal)节点时，如果假定根节点是1，那么第$i$个节点的值就是$H((n_{2i}, n_{2i + 1}))$，$n_i$表示第$i$个节点的值。
+
+\subsection{布隆过滤器(Bloom Filter)}
+布隆过滤器是一种有效测试会员资格的算法结构。这种算法结构可以有效的测试和插入，但是却不支持删除。此外，鉴于对假正(false positive)概率需要低于某个界限的要求，这种过滤器只能包含那些低于某个上界(upper bound)的元素。
+
+我们在此定义一个由$\lambda$个点阵列和$\mu$个哈希方程组成的布隆过滤器。每一个哈希方程都是把一个随机长度的输入值映射到一个从$1$到$\lambda$的值。我们根据方法$Bloom(\lambda, \mu) \to b$来生成过滤器，此处$b$是一个$\lambda$位点阵列，起始值皆为$0$。如果要把$x$加入到过滤器，$x$需要被每一个$\mu$哈希方程取哈希值，并把这些哈希值作为指标放入$b$，把$b$的指标位设为$1$。我们把这个输入$b$的过程称作$b.insert(x)$。
+
+现在我们可以根据一个和插入过程相似的过程来判定会员资格。为了检验$x$是不是在过滤器中，我们先取$x$的哈希值，并用返回的整数作为$b$里面的指标，检查这些指标所对应的位是不是都是$1$。如果是的话，那么$x$就大致在过滤器里。我们定义这样的查询方法为$b.query(x)$，并且说如果$x$大概率在过滤器里面这个方法就返回$\top$，如果确定$x$一定不在过滤器里就返回$\bot$。
+
+\subsection{衍生签名方案(Derived Signature Scheme)}
+我们要求有一个衍生签名方案。这个方案被正式的定义为一个有多个算法的元组$(Gen, Der, Sign, Ver)$。这里$Gen$是一个参数生成算法，生成主要公钥和私钥，分别用$mpk$和$msk$来表示。Der是一个生成新钥的算法，把主要公钥或者主要私钥以及一个补偿值$\delta$作为输入值。这个算法也需要一个枚举数值(enum value)作为输入值，来描述它是否是用来衍生一个新的公钥或私钥，并描述提供的主要密钥是公钥还是私钥。根据$\delta$这个算法会衍生一个确定的新的密钥。如下的细节进一步描述了这个算法：
+
+\begin{generation}
+算法$Gen(1^k) \to (mpk, msk)$把一个一元(unary)表示的安全参数作为输入值，返回一对数值，$mpk$和$msk$。在此$mpk$表示一个主要的公钥$msk$表示一个主要的私钥。
+\end{generation}
+
+\begin{derive}
+算法$Der(direction, \delta, key) \to \delta-key$中的direction可以是公钥对公钥(public-to-public)或者私钥对私钥(private-to-private)。$\delta \in \{0, 1\}^*$是一个补偿值，根据主要密钥独一无二的定义了衍生的密钥。$key$是生成衍生密钥$\delta-key$的主要密钥。
+\end{derive}
+
+\begin{sign}
+算法$Sign(x, sk) \to t$把消息$x \in \{0, 1\}^*$和一个私密的密钥$sk$作为输入值，并生成一个标签$t \in \{0, 1\}^*$。
+\end{sign}
+
+\begin{verify}
+算法$Ver(x, t, pk) \to b$把消息$x \in \{0, 1\}^*$，标签$t \in \{0, 1\}^*$和一个公钥$pk$作为输入值并返回一个位$b \in \{\top, \bot\}$表示标签$t$是否是由消息$x$用私密密钥和公钥$pk$生成的。尤其是，$Ver(x, Sign(x', sk), pk) \to \top$当且仅当$x = x'$并且$Der(\cdot, \delta, mpk) \to pk$以及$Der(\cdot, \delta, msk) \to sk$，这里$Gen(1^k) \to (mpk, msk)$对于任何$\delta \in \mathbb{N}$除去一小部分的可以被忽略的$k$。与此我们关联一个算法$Addr(\delta-pk) \to a$把生成的公钥作为输入值并生成一个有效的以太坊公有地址，$a$。
+\end{verify}
+
+\section{协议设计}
+我们设想一个设定，在此设定下存在一个权威机构永远在扩张。我们用$Aut_i$来代表第$i$个权威机构，它有一对公钥$pk_{aut_i}, sk_{aut_i}$。每一个权威机构都能认证特定的属性。我们用$\{att_{i, j}\}_{j=1,\ldots,\beta}$来表示与权威机构$Aut_i$相关联的属性。我们同时假设存在一组独立却也在永远扩张的用户群。我们用$Usr_l$来表示第$l$个用户。最后，我们设想一组第三方独立的却也在永远扩张的智能合约。我们用$Con_m$来表示第$m$个智能合约。协议的细节如下：
+
+\noindent \textit{设置} \hspace{0.1cm} 用户$Usr_l$对权威机构$Aut_i$用带外传输的方式证明了一些属性的值。然后$Aut_i$对于用户的值生成了$\alpha$个一次性的认证。每一个这样的认证都是由一个从用户主要公钥衍生而来的公钥生成的以太坊地址组成的。一个认证是由一个默克尔树组成的。这个默克尔树的每一个叶子都关联到一个这个权威机构可以认证的属性。认证的值，有效日期以及其他一些元数据(metadata)被输入一个有随机种子的哈希方程并生成一个哈希值，这些哈希值组成了默克尔树的叶子 (随机的种子仅仅是在省城每一个认证的时候是随机的，他们都是从一个主要的种子衍生来的)。最后，这个默克尔树的根会和一个新的以太坊地址合并，权威机构以它的摘要生成签名。权威机构再把签名和主要的种子发给用户。此外，权威机构内部会存储用户的主要公钥，主要种子以及每个属性的值，以备后来可能的撤销之需。用户存储\emph{所有的}签名，但不是一整个默克尔树。
+
+\noindent \textit{撤销} \hspace{0.1cm} 每一个在$Aut_i$上运作的智能合约$Con_m$内部的可更新部分都存储着一个布朗过滤器。这个过滤器将会记录所有没有过期并没有被撤销的认证。这个过滤器起始是空的，但是一旦$Aut_i$开始去废除程序，过滤器里面就会被放进$Aut_i$签名过的信息(默克尔树的根)。$Aut_i$将会更新智能合约的布隆过滤器的部分。权威机构会在内部记录所有布隆过滤器内现有的认证以确保每次更新的时候不会插入已经过期的认证。
+
+\noindent \textit{证明} \hspace{0.1cm} 用户$Usr_t$拥有一个他用过的一次性认证的指南。当用户想要对权威机构$Aut_i$证明他对于属性$att_{i, j}$有数值$val_{i, j, l}$时，他会在一列一次性认证中选取下一个没有用过的指数。根据这个指数，主要的盐值(master salt)，以及用户$Usr_i$要认证的值，他会为这个指数重新计算默克尔树。用户会根据$att_{i,j}$重新建立一个承载从树的叶子到根的列。他接着把这一列以及为了这个一次性认证而衍生出来的公钥都输入进智能合约。智能合约因此可以证实被认证的值是不是符合预期并从叶子到根重新计算数值以此检查签名。根据根的值以及现有的衍生公钥，合约可以衍生出实际上是被$Aut_i$签署过的认证，并依此证实用户$Usr_t$提供的签名是有效的。
+
+在下面的部分我们更正式的定义这些步骤。
+\subsection{设置}
+一个用户$Usr_t$想收到一份从权威机构$Aut_i$发来的认证，依此认证$\beta$个属性的值，$\{att_{i, j}\}_{j = 1, \ldots, \beta}$。在此我们用$val_{i, j , t}$来表示与用户$Usr_t$相关的属性$att_{i, j}$的值。假设用户拥有一个由算法$Gen$生成的主要的公钥$mpk_l$以及一个主要的秘密钥$msk_l$，最后，假设用户和权威机构都支持一个上限$\alpha$最为用户可以接受的证明量。
+用户运行一个必要的带外证明并以此说服权威机构每个属性上应有的数值。假设用户$Usr_l$和$Aut_i$有一个加密并认证过的沟通渠道，双方如下推进：
+\begin{enumerate}
+\item $Usr_l$把$mpk_l$发送给$Aut_i$。
+\item $Aut_i$从随机从一个平均分布的盐值$s_{i, l} \in \{0,1\}^\kappa$中选取一个并对于每一个$\iota = 1, 2, \ldots, \alpha$计算与$att_{i, j}$关联的标签$label_{i,j, l, \iota} = \big(val_{i,j,l}, expireDate, H_{(s_{i, l}, i, j, l, \iota)}\big)$。
+\item 对于每个$\iota$根据$j$来遍历标签，比如一列标签$label_{i,1,l,\iota}, label_{i,2,l,\iota}, \ldots$。权威机构根据这些标签构建一个默克尔树，例如树的叶子是标签。我们用$n_{i, l, \iota, \eta}$来表示每个节点（比如摘要计算出来的），在此$\eta$表示节点的索引。因此叶子的索引可以由$2^{\lc\log_2(\beta)\rc},\ldots,2^{\lc\log_2(\beta)\rc} + \beta - 1$ 计算根则是$1$。
+\item 权威机构计算$Der(public-to-public, n_{i, l, \iota, 1},mpk_l) \to pk_{i, l, \iota}$。
+\item 权威机构计算签名$Sign\big(H\big(Addr(pk_{i, l,\iota}, sk_{aut_i}),sk_{aut_i}\big)\big) \to t_{i, l, \iota}$。
+\item 权威机构把$(\{t_{i, l,\iota}\}_{\iota = 1, \ldots, \alpha}, s_{i, l})$发送给用户$Usr_l$。
+\item 用户$Usr_l$本地存储数值$(\{t_{i, l,\iota}\}_{\iota = 1, \ldots, \alpha}, s_{i, l})$。
+\end{enumerate}
+我们需要注意的是，与已发送给用户$Usr_l$的认证相关的$\{val_{i, j, l}\}_{j = 1, \ldots, \beta}, s_{i, l}, mpk_l$值以及过期日期会被服务器储存以备撤销之需。
+
+\subsection{撤销}
+一个权威机构$Aut_i$希望对于用户$Usr_l$撤销认证，因为认证已改变或者认证有误。对于这样的情况我们需要确保智能合约中有可以“升级”的部分用来存储起始的空布隆过滤器$b_m$。布隆过滤器的参数设置需要确保假正(false positive)的概率很低。对于这个过滤器$Aut_i$关联了一列已经被撤销的认证。为了撤销用户$Usr_l$用主要公钥$mpk_l$的认证，权威机构$Aut_i$需要经过如下步骤：
+\begin{enumerate}
+\item 新建一个布隆过滤器，用$b^{'}_m$表示。
+\item 用$b_m$来表示智能合约$Con_m$上现有的布隆过滤器。$Aut_i$在内部查询与$Con_m$和$b_m$相关的一系列值。用$a_{m, 1}, \ldots, a_{m, \rho}$来表示。
+\item 对于每个$q = 1, \ldots, \rho$，若截止日期$a_{m, 1}$没有过期，$Aut_i$计算$b^{'}_m.insert(a_{m, q})$并在内部把$a_{m, q}$与$b^{'}_m$关联。
+\item 对于$\iota = 1, 2, \ldots, \alpha$ $Aut_i$根据$\{val_{i,j,l}\}_{j = 1, \ldots, \beta}$和$mpk_l$重新计算它签署过的所有默克尔树（就像它在设置里做的那样）。然后它计算$a^{'}_{m, \iota} = Addr(Der(public-to-public, n_{i, l, \iota, 1}, mpk_l))$，$b^{'}_m.insert(a^{'}_{m, \iota})$并在内部把$a^{'}_{m, \iota}$与$b^{'}_m$关联。
+\item $Aut_i$更新$Con_m$中的布隆过滤器$b_m := b^{'}_m$。
+\end{enumerate}
+需要注意的是，在撤销执行前进行中未执行的合约将不会被执行。这可以被视作一个特征。并且需要注意的是对于那些认证被撤销的用户他们的隐私是没有保证的。这样就使得在新的布隆过滤器上做统计分析称为可能，因为所有用户的公有地址都会被同时撤销。这对于那些因为行为不正而被撤销认真的用户来说不是个问题因为他们本来就不需要隐私。
+我们还需要注意不是每次的撤销都需要建立一个新的布隆过滤器。我们可以简单的更新现有的过滤器让他承载被撤销的认证。然而过滤器还是需要不定期的更新否则它可能会过分饱和并导致更多的伪正。我们记录下每个认证的过期日期，这样我们就能在更新过滤器的时候移除掉那些已经过期的条目，从而防止它无限期的增长。
+
+\subsection{证明}
+用户$Usr_l$想要向智能合约$Con_m$证明权威机构$Aut_i$已经认证了属性$att_{i, j}$的值是$val_{i, j, l}$。为了达成这样的证明需要经过如下的步骤：
+\begin{enumerate}
+\item $Usr_l$选取下一个没有用过的$\iota$并检查$n_{i, l, \iota, 1}$是不是在布隆过滤器里面。如果它已经在了那就丢弃现有的换下一个没有用过的$\iota$，直到找到一个$\iota$其对应的$n_{i, l \iota, 1}$不在布隆过滤器里。
+\item $Usr_l$选取下一个没有用过的$\iota$并且对于每一个和$val_{i, j, l}$相关联的$att_{i, j}$，计算标签$label_{i, j, l, \iota} = (val_{i, j, l}, H(s_{i, l}, i, j, l, \iota))$。
+\item $Usr_l$根据$j$枚举这些标签，比如一列标签$label_{i, 1, l, \iota}, label_{i, 2, l, \iota}, \ldots$。然后它根据这些标签建立一个默克尔树。我们把默克尔树的根值表示为$n_{i, l, \iota}$。
+\item 用户根据他想认证的属性从默克尔树的叶子复原到根。也就是说如果他想证明属性$att_{i, j}$的值是$val_{i, j, l}$, 那么他就要让$\uptau = 2^{\lc\log_2(\beta)\rc} + j - 1$，并存储列表$\gamma = (label_{i, j, l, \iota}, \{n_{i, l, \iota, \eta}\}_{\eta = \lfloor\uptau/2^0\rfloor, Sib( \lfloor\uptau/2^0\rfloor),  \lfloor\uptau/2^1\rfloor, Sib(\lfloor\uptau/2^1\rfloor), \lfloor\uptau/2^2\rfloor, Sib(\lfloor\uptau/2^2\rfloor), \ldots, 1})$
+\item $Usr_l$计算$Der(public-to-public, n_{i, l, \iota, 1}, mpk_l) \to pk_{i, l, \iota}$。
+\item $Usr_l$复原从$Aut_i$拿到的签名$t_{i, l, \iota}$并把$(\gamma, Addr(pk, i, l, \iota), t_{i, l , \iota})$输入智能合约$Con_m$。
+\item 把$\iota$标记为已用。
+\end{enumerate}
+我们需要注意智能合约$Con_m$一定要在运行之前验证用户的属性值都是符合预期的并且权威机构的签名是合法的。这点需要写入智能合约。即如果$\uptau = 2^{\lc\log_2(\beta)\rc} + j - 1$， 那么：
+\begin{align*}
+n_{i, j, \iota, \uptau} = H(label_{i, j, l, \iota})  \hspace{1cm} \wedge \\
+n_{i, j, \iota, \uptau} = H((n_{i, l, \iota, 2\eta}, n_{i, l, \iota, 2\eta + 1})) for \eta = \lfloor\uptau/2^1\rfloor, \lfloor\uptau/2^2\rfloor, \ldots, 1 \hspace{0.5cm} \wedge \\
+\top = Ver(H(Addr(pk_{i, l, \iota}), n_{i, l, \iota, 1}), t_{i, l, \iota}, pk_{Aut_i}) \hspace{1cm} \wedge \\
+expireDate \ge Current function call time \hspace{1cm} \wedge \\
+\bot = b_{m}.query(n_{i, l, \iota, 1})
+\end{align*}
+
+\section{安全性}
+这个方案是建立在底层签名方案的安全性上，尤其是在我们重复地在主要的公私钥对上生成新的密钥的时候。然而这和以太坊所需要的安全性并无大异。唯一在密码学上加入的建设仅仅是哈希方程。我们要求哈希方程是抗第二原像攻击的，从而保护系统免受一个恶意的用户伪造未被认证的值的损害。我们还要求原像不那么容易被找到从而保护我们的系统不被那些可以纵观区块链的用户从用户的属性值里窥探用户的信息，比如可以从树的叶子的摘要反推。
+这个方案假设权威机构没有被破坏，但是它会防止一个恶意用户伪造认证或是改变从权威机构获得的认证。这个方案进一步保护了一个信用用户的隐私。尤其是因为一个认证的用处是无法和其他认证的用处相连接的。唯一的特例是当一个认证要被撤销的时候， 用户的隐私可能会被透露给那些分析布隆过滤器在撤销前后的变化的人。我们最后需要注意的是，用户永远不会离开他们的私钥，所以即使是权威机构被侵犯，或者用户的认证被撤销，他们的私钥都还是会被保护的。
+\subsection{属性值}
+当我们在存储属性值的时候我们需要深思熟虑。尤其是不想被透露的个人信息比如名字或者生日。我们需要尽可能的让属性的确定范围变大，比如与其说用生日不如用岁数的范围更合适，比如用一个布尔值来表示一个人是不是满十八周岁。
+
+\subsection*{参考}
+暂略
+
+\end{document}
