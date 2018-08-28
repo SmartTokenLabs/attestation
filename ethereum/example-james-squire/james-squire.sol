@@ -11,8 +11,40 @@
 import "../lib/AttestationFramework";
 import "../lib/AuthorisedAttestors";
 
-contract james-squire is AttestationFramework {
+contract james-squire is AttestationFramework, AuthorisedAttestors
+{
 
-    
+    AttestationFramework attestationFramework;
+    AuthorisedAttestors authorisedAttestors;
+    string[] ageExemptCountries;
 
+    constructor(
+      address attestationFrameworkAddress,
+      address authorisedAttestorsAddress,
+      string[] ageExemptAndAcceptedCountries
+    )
+    {
+        attestationFramework = new AttestationFramework(attestationFrameworkAddress);
+        authorisedAttestors = new AuthorisedAttestors(authorisedAttestorsAddress);
+        ageExemptCountries = ageExemptAndAcceptedCountries;
+    }
+
+    function canPurchaseAlcohol(Attestation ageAttestation) public returns (bool)
+    {
+        require(attestationFramework.validateMerkle(ageAttestation));
+        bool isExempt = isAgeExemptAndAcceptedCountry(ageAttestation.value);
+        if(isExempt) return true;
+        //TODO probably need multiple branches?
+        //if(ageAttestation.age >= 18) return true;
+        return false;
+    }
+
+    function isAgeExemptAndAcceptedCountry(string country) public returns (bool)
+    {
+        for(uint i = 0; i < ageExemptAndAcceptedCountries.length; i++)
+        {
+            if(country == ageExemptAndAcceptedCountries[i]) return true;
+        }
+        return false;
+    }
 }
