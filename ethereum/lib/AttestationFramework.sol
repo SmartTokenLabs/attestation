@@ -1,12 +1,14 @@
 pragma solidity ^0.4.17;
 pragma experimental ABIEncoderV2;
+import "./AuthorisedAttestors";
+import "../merkle";
 contract AttestationFramework
 
-/* Test data */
+/* Test data
 
     Attestation memory country;
-    country.key = "c";    /* \63 Country */
-    country.value = "SG"; /* \53\47 Singapore */
+    country.key = "c";     \63 Country
+    country.value = "SG"; /* \53\47 Singapore
     salt = 0xc257274276a4e539741ca11b590b9447b26a8051;
     merklePath  = {
         0x5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03,
@@ -33,10 +35,10 @@ e07c2eae216a596ad2d4b7dbff488899d651f367abea039ecb13e98c212e1a2c
 */
 
 {
-    
-    address[] authorities;
-    
-    struct Attestation 
+    AuthorisedAttestors authorisedAttestors;
+    mapping(address => Attestation[]) records;
+
+    struct Attestation
     {
         bytes32[] merklePath;
         bool valid;
@@ -49,71 +51,49 @@ e07c2eae216a596ad2d4b7dbff488899d651f367abea039ecb13e98c212e1a2c
         bytes32 key;
         bytes32 val;
     }
-    
-    mapping(address => Attestation[]) records;
-    
-    constructor(address[] initialAuthorities) public
+
+    constructor(address authorisedAttestorsContractAddress) public
     {
-        authorities = initialAuthorities;
+        authorisedAttestors = new authorisedAttestors(authorisedAttestorsContractAddress);
     }
 
-    /* shouldn't be here - will be fanned out to other folders */
-    function addAuthority(address newAuthority) public
-    {
-        bool isAuthorised = AttestationFramework.isAuthorised(msg.sender);
-        require(isAuthorised);
-        authorities.push(newAuthority);
-    }
-    
-    function isAuthorised(address attestor) internal view returns(bool) 
-    {
-        for(uint i = 0; i < authorities.length; i++) 
-        {
-            if(attestor == authorities[i]) 
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    function setAttestation(Attestation attestation) public 
+    function setAttestation(Attestation attestation) public
     {
         require(AttestationFramework.isAuthorised(msg.sender));
         require(attestation.attestor == msg.sender);
         require(validateMerkle(attestation));
         records[attestation.recipient].push(attestation);
     }
-    
+
     function revokeAttestation(Attestation attestation) public view
     {
         require(msg.sender == attestation.attestor);
         attestation.valid = false;
     }
-    
-    function validateMerkle(Attestation attestation) public view returns(bool) 
+
+    function validateMerkle(Attestation attestation) public view returns(bool)
     {
-        bytes32 keyValHashed = keccak256(abi.encodePacked(
-            attestation.key, 
-            attestation.val, 
+        bytes32 keyValHashed = sha256(abi.encodePacked(
+            attestation.key,
+            attestation.val,
             attestation.salt)
         );
         require(keyValHashed == attestation.merklePath[0]);
         require(msg.sender == attestation.recipient);
         address signer = ecrecover(keyValHashed, attestation.v, attestation.r, attestation.s);
         require(signer == attestation.attestor);
-        for(uint i = 0; i < attestation.merklePath.length - 2; i++) 
+        for(uint i = 0; i < attestation.merklePath.length - 2; i++)
         {
-            require( attestation.merklePath[i + 2] == 
-            keccak256(
+            require( attestation.merklePath[i + 2] ==
+            sha256(
                 abi.encodePacked(
-                    attestation.merklePath[i], 
+                    attestation.merklePath[i],
                     attestation.merklePath[i + 1])
                 )
             );
-            
+
         }
         return true;
     }
-          
+
 }
