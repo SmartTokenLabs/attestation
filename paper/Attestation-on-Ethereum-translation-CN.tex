@@ -1,14 +1,13 @@
 %!TEX program = xelatex
 \documentclass[UTF8]{ctexart}
 
-\usepackage{sbc-template}
+\usepackage{authblk}
 
 \usepackage{graphicx,url}
 \usepackage{mathtools}
 
-\usepackage[brazil]{babel}
-%\usepackage[latin1]{inputenc}
 \usepackage[utf8]{inputenc}
+
 % UTF-8 encoding is recommended by ShareLaTex
 \usepackage{verbatim}
 \usepackage{listings}
@@ -27,8 +26,8 @@
 \newtheorem*{sign}{签名}
 \newtheorem*{verify}{验证}
 
-%para customizar o código (ver https://en.wikibooks.org/wiki/LaTeX/Source_Code_Listings)
-\lstset{language=C, %defina a linguagem usada no trabalho
+
+\lstset{language=C,
               belowcaptionskip=1\baselineskip,
                 breaklines=true,
                 frame=false,
@@ -46,13 +45,13 @@
 
 \title{以太坊上的合法性认证}
 
-\author{WeiWu Zhang\inst{1}, Tore K Frederiksen\inst{2}著, cr025\inst{3}译}
-
-\address{AlphaWallet, Singapore
-\nextinstitute Alexandra Institute, Denmark
-\nextinstitute EthFans
-  \email{weiwu.zhang@awallet.io, tore.frederiksen@alexandra.dk}
-}
+%\author{WeiWu Zhang\inst{1}, Tore K Frederiksen\inst{2}著, cr025\inst{3}译}
+\author{WeiWu Zhang, AlphaWallet Singapore, weiwu.zhang@awallet.io 著 \and Tore K Frederiksen, Alexandra Institute Denmark tore.frederiksen@alexandra.dk 著 \and cr025, EthFans China, rchuqiao@gmail.com译}
+%\address{AlphaWallet, Singapore
+%\nextinstitute Alexandra Institute, Denmark
+%\nextinstitute EthFans
+  %\email{weiwu.zhang@awallet.io, tore.frederiksen@alexandra.dk}
+%}
 
 \begin{document}
 
