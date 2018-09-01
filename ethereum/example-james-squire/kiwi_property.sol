@@ -1,5 +1,5 @@
-import "../lib/AttestationFramework";
-import "../lib/AuthorisedAttestors";
+import "../lib/MerkleTreeAttestation";
+import "../lib/AttestationUsing";
 
 /* propoerty purchase in New Zealand requires buyer having permanent
  * residency of New Zealand or Australia or .....  to simplify the
@@ -7,25 +7,25 @@ import "../lib/AuthorisedAttestors";
  * property buyers and property deed is not issued on the blockchain
  * in this example.
 */
-contract kiwi_property is AttestationFramework, AuthorisedAttestors
-{
+contract kiwi_property is AttestationUsing {
 
     AttestationFramework attestationFramework;
     string[] ageExemptCountries;
-    ManagedList list;
+    ManagedList managedList;
+    address list_id; /* trusted list */
     string capacity = "Residency";
 
     constructor(
       address attestationFrameworkAddress,
-      address authorisedAttestorsAddress,
       string[] ageExemptAndAcceptedCountries
     )
     {
         attestationFramework = new AttestationFramework(attestationFrameworkAddress);
-        authorisedAttestors = new AuthorisedAttestors(authorisedAttestorsAddress);
         predicate = '(|(c=NZ)(c=AU))';
-	issuerList = 0xdecafbad00..00; /* Permant residency and citizenship attester list */
-        list =  ManagedList(issuerList);        
+        /* Permant residency and citizenship attester list */
+	list_id = 0xdecafbad00..00;
+        /* supposedly the deployed address of the ManagedList contract */
+        managedList = ManagedList("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae");
     }
 
     function canPurchaseProperty(Attestation attestation) public returns (bool)
@@ -36,19 +36,26 @@ contract kiwi_property is AttestationFramework, AuthorisedAttestors
        * list manager's key; b) list's delication mechanism; c) *
        * list's description (the verb) */
 
-      address issuerContract = list.getIssuerByKey(issuerKeyID, capacity);
+      address issuerContract = managedList.getIssuerByKey(list_id, issuerKeyID, capacity);
       Issuer issuer = Issuer(issuerContract);
       require(issuer.validateAttestation(attestation));
       
-	/* the following line delicates the call to the authorit's own
-	 * contract, which is issuer/example_issuer.sol's verify(). It
-	 * refuses to act if the attestation is not signed by a member
-	 * of the issuerList */
-        AttestationFramework.evaluate(predicate, attestation.key, attestation.value);
+      /* the following line delicates the call to the issuer's own
+       * contract, which is issuer/example_issuer.sol's verify(). It
+       * refuses to act if the attestation is not signed by a member
+       * of the issuerList */
+      AttestationFramework.evaluate(predicate, attestation.key, attestation.value);
     }
 
     function ExpressOfInterest(attestation, property_id, priceRangeLow, priceRangeHigh) {
-	require(canPurchaseProperty(attestation));
-	... /* your business logic goes here */
+      require(canPurchaseProperty(attestation));
+      ... /* your business logic goes here, e.g. how many ethers are needed to express interest */
+    }
+
+    /* required by AttestationUsing */
+    function getAttestationPredicate(byte4 functionSignature) {
+      /* We ignore function signature here because we only have 1
+	 function which requires attestation*/
+      return predicate;
     }
 }
