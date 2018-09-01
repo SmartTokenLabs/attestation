@@ -12,6 +12,8 @@ contract kiwi_property is AttestationFramework, AuthorisedAttestors
 
     AttestationFramework attestationFramework;
     string[] ageExemptCountries;
+    ManagedList list;
+    string capacity = "Residency";
 
     constructor(
       address attestationFrameworkAddress,
@@ -21,21 +23,27 @@ contract kiwi_property is AttestationFramework, AuthorisedAttestors
     {
         attestationFramework = new AttestationFramework(attestationFrameworkAddress);
         authorisedAttestors = new AuthorisedAttestors(authorisedAttestorsAddress);
-        predicate = '(|(c=NZ)(c=AU))'
+        predicate = '(|(c=NZ)(c=AU))';
 	issuerList = 0xdecafbad00..00; /* Permant residency and citizenship attester list */
+        list =  ManagedList(issuerList);        
     }
 
     function canPurchaseProperty(Attestation attestation) public returns (bool)
     {
-	/* issuerListContract is a predefined central registery of
-	 * a) list manager's key; b) list's delication mechanism; c)
-	 * list's description (the verb) */
+      address issuerKeyID = ecrecover(attestation.hash, attestation.r, attestation.s, attestation.v);
 
+      /* issuerListContract is a predefined central registery of a)
+       * list manager's key; b) list's delication mechanism; c) *
+       * list's description (the verb) */
+
+      address issuerContract = list.getIssuerByKey(issuerKeyID, capacity);
+      Issuer issuer = Issuer(issuerContract);
+      require(issuer.validateAttestation(attestation));
+      
 	/* the following line delicates the call to the authorit's own
 	 * contract, which is issuer/example_issuer.sol's verify(). It
 	 * refuses to act if the attestation is not signed by a member
 	 * of the issuerList */
-	issuerListContract.verify(issuerList, attestation);
         AttestationFramework.evaluate(predicate, attestation.key, attestation.value);
     }
 

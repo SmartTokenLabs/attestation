@@ -1,5 +1,17 @@
 
-contract list_management {
+contract ManagedList {
+
+  /* Interface code */
+  
+  /* should be @adminOnly */
+  function addIssuer(address contract);
+
+  /* loop through all issuer's contract and execute validateKey() on
+   * every one of them in the hope of getting a hit, return the
+   * contract address of the first hit. Note that there is an attack
+   * method for one authority to claim to own the key of another which
+   * is mitigated by later design. */
+  function getIssuerByKey(address key_id, bytes capacity) return (address contract);
 
 	function new_list(name, description, key_policy) {
 		/* for simplicity, we assume the list is identified by the hash of its name */
