@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 import "../merkle";
 contract MerkleTreeAttestation
 
-/* Test data
+/* Test data TODO: redo it with hmac
 
     Attestation memory country;
     country.key = "c";     \63 Country
@@ -32,6 +32,8 @@ $ (echo 00: 5da0fe7145fda91d4516cb3619b3463fd9318c3475d5f578fd3d1fc189084bbe;   
 e07c2eae216a596ad2d4b7dbff488899d651f367abea039ecb13e98c212e1a2c
 
 */
+
+    /* TODO: 1) make a cheap hmac (with XOR) and use it here in place of the sha256 */
 
 contract MerkleTreeAttestation {
     mapping(address => Attestation[]) records;
