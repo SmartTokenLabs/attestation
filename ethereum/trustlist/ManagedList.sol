@@ -1,15 +1,20 @@
 
 contract ManagedList {
   List lists;
+
   
-  /* called by list managers */
+  /* called by list managers: add an issuer to the list identified by
+     the sender's address */
   function addIssuer(address contract);
   {
     /* find which list the sender is managing, then add an issuer to
        it */
   }
+  
   function removeIssuer(address contract)
   {
+    /* throw if the list identified by the sender doesn't have this
+       issuer in the list */
   }
 
   /* called by services, e.g. Kiwi Properties or James Squire */

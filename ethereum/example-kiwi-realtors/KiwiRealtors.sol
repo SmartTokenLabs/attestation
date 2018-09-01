@@ -7,13 +7,13 @@ import "../lib/AttestationUsing";
  * property buyers and property deed is not issued on the blockchain
  * in this example.
 */
-contract kiwi_property is AttestationUsing {
+contract KiwiRealtors is AttestationUsing {
 
     AttestationFramework attestationFramework;
     string[] ageExemptCountries;
     ManagedList managedList;
     address list_id; /* trusted list */
-    string capacity = "Residency";
+    string capacity = "Notarised";
 
     constructor(
       address attestationFrameworkAddress,
@@ -37,25 +37,32 @@ contract kiwi_property is AttestationUsing {
        * list's description (the verb) */
 
       address issuerContract = managedList.getIssuerByKey(list_id, issuerKeyID, capacity);
+      require(issuerContract != address(0));
       Issuer issuer = Issuer(issuerContract);
-      require(issuer.validateAttestation(attestation));
+      require(issuer.validateAttestation(attestation)); /* FIXME: return false otherwise */
       
       /* the following line delicates the call to the issuer's own
        * contract, which is issuer/example_issuer.sol's verify(). It
        * refuses to act if the attestation is not signed by a member
        * of the issuerList */
-      AttestationFramework.evaluate(predicate, attestation.key, attestation.value);
+      return AttestationFramework.evaluate(predicate, attestation.key, attestation.value);
     }
 
     function ExpressOfInterest(attestation, property_id, priceRangeLow, priceRangeHigh) {
       require(canPurchaseProperty(attestation));
-      ... /* your business logic goes here, e.g. how many ethers are needed to express interest */
+      
+      /* your business logic goes here, e.g. how many ethers are
+	 needed to express interest */
     }
 
     /* required by AttestationUsing */
-    function getAttestationPredicate(byte4 functionSignature) {
+    function getAttestationPredicate(byte4 functionSignature) returns (string){
       /* We ignore function signature here because we only have 1
 	 function which requires attestation*/
       return predicate;
+    }
+
+    function getIssuerList(byte4 functionSingature) returns (address) {
+      return list_add;
     }
 }
