@@ -1,4 +1,6 @@
-
+pragma solidity ^0.4.17;
+import "../lib/Issuer";
+import "../lib/AttestationFramework"; // to get BloomFilter
 
 contract issuerA is Issuer {
 
@@ -17,15 +19,22 @@ contract issuerA is Issuer {
 	// all issued by a corrupt communism official
     }
 
-    function revoke(bloomfilter b) {
-	// all bloom filters are stored in the contract variable space
+    function addKey(address key_id, string capacity, uint expiry) {
+	// keep it in the states
     }
 
-    function addKeys(address key, uint expiration, string capacity) {
-	// keep it in the states
+    function addKey(address key_id, string capacity, uint expiry, address replaced_key_id) {
     }
     
-    function removeKeys(address key) {
-	// keep it in the states
+    function removeKey(address key_id) {
     }
+
+    function revoke(Bloomfilter b) {
+	//all bloom filters are stored in the contract variable space
+        /* attestations are revoked in bulk by Bloomfilters. Notice
+	 * that this function is not required by the Issuer interface
+	 * - it is up to the issuer to decide if they use Bloomfilter
+	 * for revocation */
+    }
+
 }

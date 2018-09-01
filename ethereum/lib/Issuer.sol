@@ -1,7 +1,7 @@
 pragma solidity ^0.4.17;
-import "./AttestationFramework";
+import "./AttestationFramework"; // to get Attestation struct
 
-/* each attestation issuer should maintain their way to validate the
+/* each attestation issuer should provid their own verify() for the
  * attestations they issued. There are two reasons for that. First, we
  * need to leave room for new attestation methods other than the
  * Merkle Tree format we recommending. Second, the validity of the
@@ -10,17 +10,18 @@ import "./AttestationFramework";
  * successful redemption of American Express credit */
 contract Issuer {
 
+  function verify(Attestation attestation);
+
   /* the sender's key is not relevant here */
-  function addKey(address key_id, bytes capacity, uint expiry);
+  function addKey(address key_id, string capacity, uint expiry);
   
   /* this should call the revoke first */
-  function addKey(address key_id, bytes capacity, uint expiry, address replaced_key_id);
+  function addKey(address key_id, string capacity, uint expiry, address replaced_key_id);
 
   /* this revokes a single key */
-  function revokeKey(address key_id);
+  function removeKey(address key_id);
 
   /* if the key exists with such capacity and isn't revoked or expired */
-  function validateKey(address key_id, bytes capacity) return (boolean);
+  function validateKey(address key_id, string capacity) return (boolean);
 
-  function validateAttestation(attestation);
 }
