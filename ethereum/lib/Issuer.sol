@@ -14,7 +14,7 @@ contract Issuer {
 
   /* the sender's key is not relevant here */
   function addKey(address key_id, string capacity, uint expiry);
-  
+
   /* this should call the revoke first */
   function addKey(address key_id, string capacity, uint expiry, address replaced_key_id);
 
@@ -22,6 +22,6 @@ contract Issuer {
   function removeKey(address key_id);
 
   /* if the key exists with such capacity and isn't revoked or expired */
-  function validateKey(address key_id, string capacity) return (boolean);
+  function validateKey(address key_id, string capacity) returns (bool);
 
 }

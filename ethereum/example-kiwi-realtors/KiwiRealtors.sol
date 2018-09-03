@@ -28,7 +28,7 @@ contract KiwiRealtors is AttestationUsing {
         managedList = ManagedList("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae");
     }
 
-    function canPurchaseProperty(Attestation attestation) public returns (bool)
+    function canPurchaseProperty(AttestationUsing.Attestation attestation) public returns (bool)
     {
       address issuerKeyID = ecrecover(attestation.hash, attestation.r, attestation.s, attestation.v);
 
@@ -40,7 +40,7 @@ contract KiwiRealtors is AttestationUsing {
       require(issuerContract != address(0));
       Issuer issuer = Issuer(issuerContract);
       require(issuer.validateAttestation(attestation)); /* FIXME: return false otherwise */
-      
+
       /* the following line delicates the call to the issuer's own
        * contract, which is issuer/example_issuer.sol's verify(). It
        * refuses to act if the attestation is not signed by a member
@@ -48,21 +48,24 @@ contract KiwiRealtors is AttestationUsing {
       return AttestationFramework.evaluate(predicate, attestation.key, attestation.value);
     }
 
-    function ExpressOfInterest(attestation, property_id, priceRangeLow, priceRangeHigh) {
+    function ExpressOfInterest(AttestationUsing.Attestation attestation,
+      uint property_id,
+      uint priceRangeLow,
+      uint priceRangeHigh) {
       require(canPurchaseProperty(attestation));
-      
+
       /* your business logic goes here, e.g. how many ethers are
 	 needed to express interest */
     }
 
     /* required by AttestationUsing */
-    function getAttestationPredicate(byte4 functionSignature) returns (string){
+    function getAttestationPredicate(bytes4 functionSignature) returns (string){
       /* We ignore function signature here because we only have 1
 	 function which requires attestation*/
       return predicate;
     }
 
-    function getIssuerList(byte4 functionSingature) returns (address) {
+    function getIssuerList(bytes4 functionSingature) returns (address) {
       return list_add;
     }
 }
