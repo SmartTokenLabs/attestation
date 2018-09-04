@@ -1,7 +1,8 @@
 pragma solidity ^0.4.17;
-import "./AttestationFramework"; // to get Attestation struct
+import "./MerkleTreeAttestation"; // to get Attestation struct
+import "../trustlist/ManagedList"; // to manage the list run by the issuers
 
-/* each attestation issuer should provid their own verify() for the
+/* each attestation issuer should provide their own verify() for the
  * attestations they issued. There are two reasons for that. First, we
  * need to leave room for new attestation methods other than the
  * Merkle Tree format we recommending. Second, the validity of the

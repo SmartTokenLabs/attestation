@@ -9,6 +9,7 @@ contract ManagedListERC
     string description;
     string capacity;
     address[] issuers;
+    uint expiry;
   }
 
    // find which list the sender is managing, then add an issuer to it

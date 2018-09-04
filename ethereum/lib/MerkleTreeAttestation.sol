@@ -1,7 +1,6 @@
 pragma solidity ^0.4.17;
 pragma experimental ABIEncoderV2;
 import "../merkle";
-contract MerkleTreeAttestation
 
 /* Test data TODO: redo it with hmac
 
