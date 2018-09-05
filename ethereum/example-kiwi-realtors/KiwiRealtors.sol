@@ -1,12 +1,14 @@
 import "../lib/MerkleTreeAttestation";
 import "../lib/AttestationUsing";
+import "../trustlist/ManagedList";
 
-/* propoerty purchase in New Zealand requires buyer having permanent
- * residency of New Zealand or Australia or .....  to simplify the
- * case, kiwi property is an agent. The customers are potential
- * property buyers and property deed is not issued on the blockchain
- * in this example.
+/*
+  Buying property in New Zealand requires the buyer
+  to be a PR/Citizen of ether New Zealand or Australia
+  This example contract acts as an agent and allows potential customers
+  to validate their ability to purchase property
 */
+
 contract KiwiRealtors is AttestationUsing {
 
     AttestationFramework attestationFramework;
@@ -14,18 +16,22 @@ contract KiwiRealtors is AttestationUsing {
     ManagedList managedList;
     address list_id; /* trusted list */
     string capacity = "Notarised";
+    ManagedList managedList;
+    string predicate;
+    uint list_id;
 
     constructor(
       address attestationFrameworkAddress,
-      string[] ageExemptAndAcceptedCountries
+      string[] ageExemptAndAcceptedCountries,
+      address managedListAddress
     )
     {
         attestationFramework = new AttestationFramework(attestationFrameworkAddress);
         predicate = '(|(c=NZ)(c=AU))';
-        /* Permant residency and citizenship attester list */
-	list_id = 0xdecafbad00..00;
+        /* permanent residency and citizenship attester list example*/
+        list_id = 0xdecafbad0000;
         /* supposedly the deployed address of the ManagedList contract */
-        managedList = ManagedList("0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae");
+        managedList = ManagedList(managedListAddress);
     }
 
     function canPurchaseProperty(AttestationUsing.Attestation attestation) public returns (bool)
@@ -65,7 +71,8 @@ contract KiwiRealtors is AttestationUsing {
       return predicate;
     }
 
-    function getIssuerList(bytes4 functionSingature) returns (address) {
-      return list_add;
+    function getIssuerList() public returns (List)
+    {
+        return managedList.getListById(list_id);
     }
 }

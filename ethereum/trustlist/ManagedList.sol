@@ -1,5 +1,7 @@
 pragma solidity ^0.4.1;
 pragma experimental ABIEncoderV2;
+//The purpose of this contract is to manage the list of valid issuer contracts
+// and their capacity to fulfil requirements
 contract ManagedListERC
 {
   //manager is the contract steward, only he/she/it can change/remove/add lists
@@ -14,7 +16,7 @@ contract ManagedListERC
     //e.g. school id card vs passport
     //one has the capacity to buy alcohol, the other does not.
     address[] issuerContracts; //all these addresses are contracts, no signing capacity
-    uint expiry; //TODO is this needed?
+    uint expiry;
   }
 
    // find which list the sender is managing, then add an issuer to it

@@ -71,7 +71,6 @@ contract MerkleTreeAttestation {
                     attestation.merklePath[i + 1])
                 )
             );
-
         }
         return true;
     }
