@@ -1,6 +1,7 @@
 pragma solidity ^0.4.17;
 pragma experimental ABIEncoderV2;
 import "../merkle";
+import "https://raw.githubusercontent.com/alpha-wallet/hmacsha1/sha256-hmac/contracts/hmacsha256.sol" as HMAC;
 
 /* Test data TODO: redo it with hmac
 
@@ -36,6 +37,7 @@ e07c2eae216a596ad2d4b7dbff488899d651f367abea039ecb13e98c212e1a2c
 
 contract MerkleTreeAttestation {
     mapping(address => Attestation[]) records;
+    HMAC hmac = new HMAC();
 
     struct Attestation
     {
@@ -53,10 +55,12 @@ contract MerkleTreeAttestation {
 
     function validate(Attestation attestation) public view returns(bool)
     {
-        bytes32 keyValHashed = sha256(abi.encodePacked(
+      //function hmac(bytes key, bytes message, address hashCode) constant returns (bytes32)
+        bytes32 keyValHashed = hmac.hmac(
             attestation.key,
             attestation.val,
-            attestation.salt)
+            attestation.salt
+          )
         );
         require(keyValHashed == attestation.merklePath[0]);
         require(msg.sender == attestation.recipient);
