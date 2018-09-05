@@ -1,8 +1,16 @@
 pragma solidity ^0.4.17;
 import "../lib/Issuer";
 import "../lib/AttestationFramework"; // to get BloomFilter
+import "../trustlist/ManagedList";
 
 contract issuerA is Issuer {
+
+    ManagedList managedList;
+
+    constructor(address managedListAddress)
+    {
+        managedList = ManagedList(managedListAddress);
+    }
 
     function verify(attestation a) {
         /* THIS FUNCTION IS SUPPOSED TO BE CALLED FROM ANOTHER SMART CONTRACT, MOSTLY */
@@ -18,18 +26,20 @@ contract issuerA is Issuer {
 	// any attestation issued before 2018-12-01 because they are
 	// all issued by a corrupt communist official
     }
-
-    //TODO managed list for key management?
-    function addKey(address key_id, string capacity, uint expiry) {
+    //TODO authorised to do this?
+    function addKey(uint key_id, List newList) {
 	     // keep it in the states
+       managedList.addList(key_id, newList);
     }
 
+    //TODO fix naming and make more clear as to what this actual is
     function addKey(address key_id, string capacity, uint expiry, address replaced_key_id) {
     }
 
+    //TODO delete listing?
     function removeKey(address key_id) {
     }
-
+    //TODO handle bloom filters in solidity and prevent spaming it for false positives
     function revoke(Bloomfilter b) {
   	//all bloom filters are stored in the contract variable space
     /* attestations are revoked in bulk by Bloomfilters. Notice

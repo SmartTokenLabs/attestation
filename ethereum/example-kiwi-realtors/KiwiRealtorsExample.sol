@@ -9,7 +9,7 @@ import "../trustlist/ManagedList";
   to validate their ability to purchase property
 */
 
-contract KiwiRealtors is AttestationUsing {
+contract KiwiRealtorsExample is AttestationUsing {
 
     AttestationFramework attestationFramework;
     string[] ageExemptCountries;
@@ -26,7 +26,7 @@ contract KiwiRealtors is AttestationUsing {
       address managedListAddress
     )
     {
-        attestationFramework = new AttestationFramework(attestationFrameworkAddress);
+        attestationFramework = AttestationFramework(attestationFrameworkAddress);
         predicate = '(|(c=NZ)(c=AU))';
         /* permanent residency and citizenship attester list example*/
         list_id = 0xdecafbad0000;

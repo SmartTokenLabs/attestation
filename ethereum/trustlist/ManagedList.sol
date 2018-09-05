@@ -43,7 +43,8 @@ contract ManagedListERC
      * then the list is still identified by the first sender's
      * address.
   */
-  function addList(List list) public;
+  //TODO find a solid way to generate listId's
+  function addList(List list, uint listId) public;
 
   /* replace list manager's key with the new key */
   function replaceListIndex(List list, address manager) public returns(bool);

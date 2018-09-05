@@ -2,7 +2,7 @@
 
 ### Introduction
 
-With the advent of blockchains like Ethereum, we are able to validate identifiers which attest to a users identity or credentials. This ERC outlines a way we can validate a users identifiers in an efficient and privacy enabled way which can be used both on chain and off chain.
+With the advent of blockchains like Ethereum, we are able to validate identifiers which attest to a users identity or credentials inside and outside a smart contract. This ERC outlines a way we can validate a users identifiers in an efficient and privacy enabled way which can be used both on chain and off chain.
 
 ### Purpose
 
