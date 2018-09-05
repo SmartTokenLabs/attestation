@@ -18,7 +18,7 @@ contract KiwiRealtorsExample is AttestationUsing {
     string capacity = "Notarised";
     ManagedList managedList;
     string predicate;
-    uint list_id;
+    bytes32 list_id;
 
     constructor(
       address attestationFrameworkAddress,
@@ -64,11 +64,20 @@ contract KiwiRealtorsExample is AttestationUsing {
 	 needed to express interest */
     }
 
+    //TODO Properly implement
     /* required by AttestationUsing */
-    function getAttestationPredicate(bytes4 functionSignature) returns (string){
+    //help the user agent/wallet know
+    //what to give when needing a function that requires a custom predicate
+    //this is only supposed to be a call not a tx
+    function getAttestationPredicate(bytes4 functionSignature) returns (string)
+    {
       /* We ignore function signature here because we only have 1
 	 function which requires attestation*/
-      return predicate;
+      if(functionSingature == bytes4(keccak256("ExpressOfInterest(AttestionUsing,uint,uint,uint)")))
+      {
+          return predicate;
+      }
+      else throw();
     }
 
     function getIssuerList() public returns (List)

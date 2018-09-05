@@ -29,7 +29,7 @@ contract james-squire is AttestationFramework, AuthorisedAttestors
         ageExemptCountries = ageExemptAndAcceptedCountries;
     }
 
-    //TODO handle the capacity and predicate checking
+    //TODO range proof
     function canPurchaseAlcohol(Attestation ageAttestation) public returns (bool)
     {
         require(attestationFramework.validateMerkle(ageAttestation));

@@ -32,7 +32,7 @@ contract ManagedListERC
    * method for one issuer to claim to own the key of another which
    * is mitigated by later design. */
    //loop through the issuers array, calling validate on the signingKeyOfAttestation
-  function getIssuerCorrespondingToAttestationKey(uint list_id, address signingKeyOfAttestation) public returns (address);
+  function getIssuerCorrespondingToAttestationKey(bytes32 list_id, address signingKeyOfAttestation) public returns (address);
 
    /* for simplicity we use sender's address as the list ID,
      * accepting these consequences: a) if one user wish to maintain
@@ -43,8 +43,8 @@ contract ManagedListERC
      * then the list is still identified by the first sender's
      * address.
   */
-  //TODO find a solid way to generate listId's
-  function addList(List list, uint listId) public;
+
+  function createList(List list) public;
 
   /* replace list manager's key with the new key */
   function replaceListIndex(List list, address manager) public returns(bool);
@@ -61,7 +61,7 @@ contract ValidationContractInstantiation
 contract IssuerListManager is ManagedListERC
 {
   //list id is a uint
-  mapping(uint => List[]) lists;
+  mapping(bytes32 => List[]) lists;
   address manager; //manager can remove/change/add lists
 
   constructor(address managerOfContract) public
@@ -69,13 +69,13 @@ contract IssuerListManager is ManagedListERC
       manager = managerOfContract;
   }
 
-  function addIssuer(address issuerContractAddress, uint list_id, uint indexOfList) public
+  function addIssuer(address issuerContractAddress, bytes32 list_id, uint indexOfList) public
   {
       require(msg.sender == manager);
       lists[list_id][indexOfList].issuerContracts.push(issuerContractAddress);
   }
 
-  function removeIssuer(address issuerContractAddress, uint list_id) public returns(bool)
+  function removeIssuer(address issuerContractAddress, bytes32 list_id) public returns(bool)
   {
        require(msg.sender == manager);
        for(uint i = 0; i < lists[list_id].length; i++)
@@ -92,7 +92,7 @@ contract IssuerListManager is ManagedListERC
        return false;
   }
 
-  function getIssuerCorrespondingToAttestationKey(uint list_id, address signingKeyOfAttestation) public returns (address)
+  function getIssuerCorrespondingToAttestationKey(bytes32 list_id, address signingKeyOfAttestation) public returns (address)
   {
       List[] storage listsToQuery = lists[list_id];
       for(uint i = 0; i < listsToQuery.length; i++)
@@ -106,11 +106,12 @@ contract IssuerListManager is ManagedListERC
       }
       return address(0);
   }
-
-  function addList(List list, uint index) public
+  //hash address plus block.timestamp + name
+  function createList(List list) public
   {
       require(msg.sender == manager);
-      lists[index].push(list);
+      bytes32 list_id = keccak256(msg.sender + block.timestamp + list.name)
+      lists[list_id].push(list);
   }
 
 }

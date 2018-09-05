@@ -10,19 +10,22 @@ import "../trustlist/ManagedList"; // to manage the list run by the issuers
  * knows. For example, a ticket as an attestation issued on a
  * successful redemption of American Express credit */
 contract Issuer {
-
+  /* Verify the authenticity of an attestation */
   function verify(Attestation attestation);
 
   /* the sender's key is not relevant here */
-  function addKey(address key_id, string capacity, uint expiry);
+  function addAttestorKey(address newAttestor, string capacity, uint expiry);
 
   /* this should call the revoke first */
-  function addKey(address key_id, string capacity, uint expiry, address replaced_key_id);
+  function replaceKey(address attestorToReplace, string capacity, uint expiry, address newAttestor);
 
   /* this revokes a single key */
-  function removeKey(address key_id);
+  function removeKey(address attestor);
 
   /* if the key exists with such capacity and isn't revoked or expired */
-  function validateKey(address key_id, string capacity) returns (bool);
+  function validateKey(address attestor, string capacity) returns (bool);
+
+  /* revoke an attestation by replace the bloom filter, this helps preserve privacy */
+  function revokeAttestations(Bloomfilter b);
 
 }
