@@ -1,17 +1,38 @@
 ## ERC - Merkle Tree Attestations
 
-### Introduction
+### Introduction & Purpose
 
-With the advent of blockchains like Ethereum, we are able to validate identifiers which attest to a users identity or credentials inside and outside a smart contract. This ERC outlines a way we can validate a users identifiers in an efficient and privacy enabled way which can be used both on chain and off chain.
+With blockchains like Ethereum, we are able to validate identifiers which attest
+to a users identity or credentials. In this ERC, we outline a way to do so using
+a Merkle tree structure which allows anyone to efficiently validate themselves
+in a privacy enabled fashion.
 
-### Purpose
+Please note that these attestations are issued off chain and when used on chain
+they only require the relevant leaf nodes to be revealed.
 
-The purpose of this ERC is to show how a simple merkle tree attestation can be pulled off inside a smart contract and used for services like the ones outlined here (TODO add link)
-
-With a merkle tree attestation, we can validate only the needed information for a user while keeping the rest off chain.
-
-For example, if Alice wants to buy property in New Zealand, she should only have to show that she is a Citizen of New Zealand and above the age of 18. It is not necessary for her to reveal her exact birth date or even her full name.
+For example, if Alice wanted to buy beer tokens which can be redeemable for beer
+at the liquor store, she can provide the leaf of the merkle tree which states
+she is above 21.
 
 ### Draft implementation
+`contract MerkleTreeAttestationInterface {
+    struct Attestation
+    {
+        bytes32[] merklePath;
+        bool valid;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        address attestor;
+        address recipient;
+        bytes32 salt;
+        bytes32 key;
+        bytes32 val;
+    }
 
-TODO make links
+    function validate(Attestation attestation) public returns(bool);
+}`
+
+### relevant implementation examples
+[Here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/lib/MerkleTreeAttestation.sol) is an example implementation of the MerkleTreeAttestationInterface
+[Here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/example-james-squire/james-squire.sol) is an example service which would use such a merkle tree attestation

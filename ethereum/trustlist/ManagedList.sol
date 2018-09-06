@@ -1,12 +1,14 @@
 pragma solidity ^0.4.1;
 pragma experimental ABIEncoderV2;
+import "../lib/Issuer"; //we import the issuer for validating an attestors key
 //The purpose of this contract is to manage the list of valid issuer contracts
 // and their capacity to fulfil requirements
 contract ManagedListERC
 {
   //manager is the contract steward, only he/she/it can change/remove/add lists
   //issuer is the contract that handles verification and revocation of an attestation
-  //attestation key is the key that signs attestations, note: This is not the issuer address
+  //attestation key is the key that signs attestations, note: This is not the issuer address and since issuers
+  //are contracts, there is no way for an issuer to sign anything.
 
   struct List
   {
@@ -51,17 +53,11 @@ contract ManagedListERC
 
 }
 
-contract ValidationContractInstantiation
-{
-    //note: this is implemented inside the issuers contract but the method signature is consistent
-    //We need to instantiate an empty function to use the compiler to call the function in another contract
-    function validate(address attester) public returns(bool) {}
-}
-
 contract IssuerListManager is ManagedListERC
 {
   //list id is a uint
   mapping(bytes32 => List[]) lists;
+  Issuer issuer;
   address manager; //manager can remove/change/add lists
 
   constructor(address managerOfContract) public
@@ -92,7 +88,10 @@ contract IssuerListManager is ManagedListERC
        return false;
   }
 
-  function getIssuerCorrespondingToAttestationKey(bytes32 list_id, address signingKeyOfAttestation) public returns (address)
+  function getIssuerCorrespondingToAttestationKey(
+    bytes32 list_id,
+    address signingKeyOfAttestation
+  ) public returns (address)
   {
       List[] storage listsToQuery = lists[list_id];
       for(uint i = 0; i < listsToQuery.length; i++)
@@ -100,7 +99,9 @@ contract IssuerListManager is ManagedListERC
           for(uint j = 0; j < listsToQuery[i].issuerContracts.length; j++)
           {
                address issuerContract = listsToQuery[i].issuerContracts[j];
-               bool isValid = ValidationContractInstantiation(issuerContract).validate(signingKeyOfAttestation);
+               /* if the key exists with such capacity and isn't revoked or expired, from Issuer.sol */
+               //function validateKey(address attestor, string capacity) returns (bool);
+               bool isValid = Issuer(issuerContract).validateKey(signingKeyOfAttestation, listsToQuery[i].capacity);
                if(isValid) return issuerContract;
           }
       }
@@ -110,7 +111,7 @@ contract IssuerListManager is ManagedListERC
   function createList(List list) public
   {
       require(msg.sender == manager);
-      bytes32 list_id = keccak256(msg.sender + block.timestamp + list.name)
+      bytes32 list_id = keccak256(abi.encodePacked(msg.sender, block.timestamp, list.name));
       lists[list_id].push(list);
   }
 

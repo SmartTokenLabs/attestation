@@ -1,7 +1,5 @@
 pragma solidity ^0.4.17;
 pragma experimental ABIEncoderV2;
-import "../merkle";
-
 /*
   Leaf node hash:
 
@@ -18,9 +16,7 @@ import "../merkle";
 
 */
 
-contract MerkleTreeAttestation {
-    mapping(address => Attestation[]) records;
-
+contract MerkleTreeAttestationInterface {
     struct Attestation
     {
         bytes32[] merklePath;
@@ -35,7 +31,14 @@ contract MerkleTreeAttestation {
         bytes32 val;
     }
 
-    function validate(Attestation attestation) public view returns(bool)
+    function validate(Attestation attestation) public returns(bool);
+}
+
+contract MerkleTreeAttestation is MerkleTreeAttestationInterface
+{
+    mapping(address => Attestation[]) records;
+
+    function validate(Attestation attestation) public returns(bool)
     {
         bytes32 keyValHashed = keccak256(
           abi.encodePacked(
