@@ -1,5 +1,5 @@
 pragma solidity ^0.4.17;
-import "./MerkleTreeAttestation"; // to get Attestation struct
+import "../lib/MerkleTreeAttestation"; // to get Attestation struct
 import "../trustlist/ManagedList"; // to manage the list run by the issuers
 
 /* each attestation issuer should provide their own verify() for the
@@ -12,17 +12,17 @@ import "../trustlist/ManagedList"; // to manage the list run by the issuers
 contract Issuer {
   /* Verify the authenticity of an attestation */
   function verify(Attestation attestation);
-  //note: adding, changing and revoking attestations and attestor keys requires a contract manager
-  function addAttestorKey(address newAttestor, string capacity, uint expiry);
+  //note: adding, changing and revoking attestations and attester keys requires a contract manager
+  function addattesterKey(address newattester, string capacity, uint expiry);
 
   /* this should call the revoke first */
-  function replaceKey(address attestorToReplace, string capacity, uint expiry, address newAttestor);
+  function replaceKey(address attesterToReplace, string capacity, uint expiry, address newattester);
 
   /* this revokes a single key */
-  function removeKey(address attestor);
+  function removeKey(address attester);
 
   /* if the key exists with such capacity and isn't revoked or expired */
-  function validateKey(address attestor, string capacity) returns (bool);
+  function validateKey(address attester, string capacity) returns (bool);
 
   /* revoke an attestation by replace the bloom filter, this helps preserve privacy */
   function revokeAttestations(Bloomfilter b);

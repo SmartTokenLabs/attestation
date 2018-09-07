@@ -1,13 +1,15 @@
 ## Draft ERC - Managing lists for trusted smart contract identifiers  
 
-### Introduction & Purpose
+### Introduction
 
-As blockchain services continue to expand, we need a way to manage identifiers
-which attest to a users ability to perform certain smart contract function calls
-like buying alcohol or being eligible to purchase property from a certain country.
+In smart contracts, we will need methods to handle cryptographic attestations to a users identifier or abilities. Let's say we have a real estate agent, KiwiRealtors, that provides an "expression of interest" function though a smart contract and requires the users to provide an attestation that they are resident of New Zealand or Australia, as a legal requirement. This has actually happened in the New Zealand property market and it is the perfect example of a need to handle such attestations.
 
-This ERC proposes a way to manage lists of issuer contracts and their
-corresponding attestation capacity.
+However, it is not practical for a smart contract to explicitly trust an attestation issuer. There are multiple issuers who can provide an attestation on a person's residency - a local Justice of the Peace, the land title office, local police, passport authority etc. We envision a model where the effort to manage the list of qualified issuers is practically outsourced to a list.
+
+Anyone can publish a list of issuers. Only the most trusted and carefully maintained lists gets popular use.
+
+### Purpose
+This ERC provides a smart contract interface for anyone to manage a list of attestation issuers. A smart contract would explicitly trust a list, and therefore all attestations issued by the issuers on the list.
 
 ### Draft implementation
 `contract ManagedListERC

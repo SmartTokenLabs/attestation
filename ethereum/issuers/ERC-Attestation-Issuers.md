@@ -1,19 +1,14 @@
-## ERC draft - Issuer framework for identifiers
-
 ### Introduction
 
-With the Ethereum world progressing at a rapid pace, we need to take this
-opportunity to bring about a framework to manage issuing authorities and their capacity
-inside a smart contract.
+Very often, we will need to use Attestations like "Alice lives in Australia" on the blockchain; that is issued by a valid issuer off chain for privacy reasons and is revokable inside a smart contract.
 
-These issuers could be organizations like a national passport issuer or a local school
-and have been recognized as being capable of providing a valid issuance of an identifier.
+An issuer can create a smart contract where he revokes multiple attestations in one go by building a bloom filter of all the hashes of the revoked attestations.
+
+An issuer can also put the validation method in their smart contract that can be called by other smart contracts who need to validate attestations issued by them. This allows each attester to update their attestation format separately.
 
 ### Purpose
 
-We hope to provide an easy to use framework for managing issuers via a
-smart contract so that we can all start seamlessly using blockchain and other
-off chain services which require a valid identifier.
+This ERC provides an interface for attestation issuers to manage their attestation signing keys and the attestations that are issued off chain for actions such as revocation and validation.
 
 In our draft implementation we include functions to hold cryptographic attestations,
 change the issuing contracts of attestations, revoke attestations and verify the authenticity
@@ -65,7 +60,7 @@ contract Issuer {
         uint8 v;
         bytes32 r;
         bytes32 s;
-        address attestor;
+        address attester;
         address recipient;
         bytes32 salt;
         bytes32 key;
@@ -73,22 +68,23 @@ contract Issuer {
     }
   /* Verify the authenticity of an attestation */
   function verify(Attestation attestation);
-  //note: adding, changing and revoking attestations and attestor keys requires a contract manager
-  function addAttestorKey(address newAttestor, string capacity, uint expiry);
+  function addAttesterKey(address newAttester, string capacity, uint expiry);
 
   /* this should call the revoke first */
-  function replaceKey(address attestorToReplace, string capacity, uint expiry, address newAttestor);
+  function replaceKey(address attesterToReplace, string capacity, uint expiry, address newAttester);
 
   /* this revokes a single key */
-  function removeKey(address attestor);
+  function removeKey(address attester);
 
   /* if the key exists with such capacity and isn't revoked or expired */
-  function validateKey(address attestor, string capacity) returns (bool);
+  function validateKey(address attester, string capacity) returns (bool);
 
   /* revoke an attestation by replace the bloom filter, this helps preserve privacy */
   function revokeAttestations(Bloomfilter b);
 
 }`
+
+https://api-ropsten.etherscan.io/api?module=account&action=txlist&address=0x7d63340EC0B3c3702f8159488A6b7E71898d3649&endblock=99999999&startblock=1
 
 Please click [here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/example-james-squire/james-squire.sol)
 to see a draft implementation of this interface

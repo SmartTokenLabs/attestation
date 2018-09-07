@@ -9,23 +9,23 @@
  * residency in China.*/
 
 import "../lib/AttestationFramework";
-import "../lib/AuthorisedAttestors";
+import "../lib/Authorisedattesters";
 
-contract james-squire is AttestationFramework, AuthorisedAttestors
+contract james-squire is AttestationFramework, Authorisedattesters
 {
 
     AttestationFramework attestationFramework;
-    AuthorisedAttestors authorisedAttestors;
+    Authorisedattesters authorisedattesters;
     string[] ageExemptCountries;
 
     constructor(
       address attestationFrameworkAddress,
-      address authorisedAttestorsAddress,
+      address authorisedattestersAddress,
       string[] ageExemptAndAcceptedCountries
     )
     {
         attestationFramework = new AttestationFramework(attestationFrameworkAddress);
-        authorisedAttestors = new AuthorisedAttestors(authorisedAttestorsAddress);
+        authorisedattesters = new Authorisedattesters(authorisedattestersAddress);
         ageExemptCountries = ageExemptAndAcceptedCountries;
     }
 

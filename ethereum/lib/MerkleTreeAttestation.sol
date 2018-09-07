@@ -24,7 +24,7 @@ contract MerkleTreeAttestationInterface {
         uint8 v;
         bytes32 r;
         bytes32 s;
-        address attestor;
+        address issuerContract;
         address recipient;
         bytes32 salt;
         bytes32 key;
@@ -32,36 +32,4 @@ contract MerkleTreeAttestationInterface {
     }
 
     function validate(Attestation attestation) public returns(bool);
-}
-
-contract MerkleTreeAttestation is MerkleTreeAttestationInterface
-{
-    mapping(address => Attestation[]) records;
-
-    function validate(Attestation attestation) public returns(bool)
-    {
-        bytes32 keyValHashed = keccak256(
-          abi.encodePacked(
-            attestation.key,
-            attestation.val,
-            attestation.salt
-          )
-        );
-        require(keyValHashed == attestation.merklePath[0]);
-        require(msg.sender == attestation.recipient);
-        address signer = ecrecover(keyValHashed, attestation.v, attestation.r, attestation.s);
-        require(signer == attestation.attestor);
-        for(uint i = 0; i < attestation.merklePath.length - 2; i++)
-        {
-            require( attestation.merklePath[i + 2] ==
-            keccak256(
-                abi.encodePacked(
-                    attestation.merklePath[i],
-                    attestation.merklePath[i + 1])
-                )
-            );
-        }
-        return true;
-    }
-
 }

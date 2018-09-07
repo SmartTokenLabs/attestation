@@ -17,7 +17,6 @@ contract KiwiRealtorsExample is AttestationUsing {
     bytes32 list_id; /* trusted list */
     string capacity = "Notarised";
     ManagedList managedList;
-    bytes32 list_id;
     string[] predicateFunctionSignatures;
     mapping (string => string) predicates; //map predicates to their function signatures
     string predicateExample = '(|(c=NZ)(c=AU))';
@@ -45,15 +44,13 @@ contract KiwiRealtorsExample is AttestationUsing {
 
     function canPurchaseProperty(AttestationUsing.Attestation attestation) public returns (bool)
     {
-      address issuerKeyID = ecrecover(attestation.hash, attestation.r, attestation.s, attestation.v);
+      address attestationSigningKey = ecrecover(attestation.hash, attestation.r, attestation.s, attestation.v);
 
       /* issuerListContract is a predefined central registery of a)
        * list manager's key; b) list's delication mechanism; c) *
        * list's description (the verb) */
+      Issuer issuer = Issuer(attestation.issuerContract);
 
-      address issuerContract = managedList.getIssuerByKey(list_id, issuerKeyID, capacity);
-      require(issuerContract != address(0));
-      Issuer issuer = Issuer(issuerContract);
       require(issuer.validateAttestation(attestation));
 
       /* the following line delicates the call to the issuer's own

@@ -1,6 +1,6 @@
 pragma solidity ^0.4.1;
 pragma experimental ABIEncoderV2;
-import "../lib/Issuer"; //we import the issuer for validating an attestors key
+import "../lib/Issuer"; //we import the issuer for validating an attesters key
 //The purpose of this contract is to manage the list of valid issuer contracts
 // and their capacity to fulfil requirements
 contract ManagedListERC
@@ -100,7 +100,7 @@ contract IssuerListManager is ManagedListERC
           {
                address issuerContract = listsToQuery[i].issuerContracts[j];
                /* if the key exists with such capacity and isn't revoked or expired, from Issuer.sol */
-               //function validateKey(address attestor, string capacity) returns (bool);
+               //function validateKey(address attester, string capacity) returns (bool);
                bool isValid = Issuer(issuerContract).validateKey(signingKeyOfAttestation, listsToQuery[i].capacity);
                if(isValid) return issuerContract;
           }

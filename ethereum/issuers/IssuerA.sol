@@ -1,5 +1,5 @@
 pragma solidity ^0.4.17;
-import "../lib/Issuer";
+import "./Issuer";
 import "../lib/AttestationFramework"; // to get BloomFilter
 
 contract issuerA is Issuer {
@@ -28,28 +28,28 @@ contract issuerA is Issuer {
     	// all issued by a corrupt communist official
     }
 
-    function addAttestorKey(address newAttestor, string capacity, uint expiry)
+    function addattesterKey(address newattester, string capacity, uint expiry)
     {
        require(msg.sender == issuer);
 	     // keep it in the states
-       attestationSigningKeysAndCapacity[newAttestor] = capacity;
-       attestationKeyExpiry[newAttestor] = expiry;
+       attestationSigningKeysAndCapacity[newattester] = capacity;
+       attestationKeyExpiry[newattester] = expiry;
      }
 
-    function replaceKey(address attestorToReplace, string capacity, uint expiry, address newAttestor)
+    function replaceKey(address attesterToReplace, string capacity, uint expiry, address newattester)
     {
       require(msg.sender == issuer);
-      delete attestationSigningKeysAndCapacity[attestorToReplace];
-      delete attestationKeyExpiry[attestorToReplace];
-      attestationSigningKeysAndCapacity[newAttestor] = capacity;
-      attestationKeyExpiry[newAttestor] = expiry;
+      delete attestationSigningKeysAndCapacity[attesterToReplace];
+      delete attestationKeyExpiry[attesterToReplace];
+      attestationSigningKeysAndCapacity[newattester] = capacity;
+      attestationKeyExpiry[newattester] = expiry;
     }
 
-    function removeKey(address attestor)
+    function removeKey(address attester)
     {
       require(msg.sender == issuer);
-      delete attestationSigningKeysAndCapacity[attestor];
-      delete attestationKeyExpiry[attestor];
+      delete attestationSigningKeysAndCapacity[attester];
+      delete attestationKeyExpiry[attester];
     }
 
     //this bloom filter merges with the old one

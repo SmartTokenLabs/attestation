@@ -1,6 +1,6 @@
 # What is an attestation
 
-An attestation is a cryptographically signed proof by an attestor. For example, a marriage document is an attestation signed by a witness.
+An attestation is a cryptographically signed proof by an attester. For example, a marriage document is an attestation signed by a witness.
 
 In many cases, an attestation influences value. For example, a medical certificate signed by a doctor entitles the employee for paid leave and a warranty entitles a free repair service.
 
