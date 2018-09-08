@@ -86,7 +86,5 @@ contract Issuer {
 
 }`
 
-https://api-ropsten.etherscan.io/api?module=account&action=txlist&address=0x7d63340EC0B3c3702f8159488A6b7E71898d3649&endblock=99999999&startblock=1
-
 Please click [here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/example-james-squire/james-squire.sol)
 to see a draft implementation of this interface
