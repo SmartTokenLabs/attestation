@@ -2,9 +2,9 @@
 
 ### Introduction
 
-In smart contracts, we will need methods to handle cryptographic attestations to a users identifier or abilities. Let's say we have a real estate agent, KiwiRealtors, that provides an "expression of interest" function though a smart contract and requires the users to provide an attestation that they are resident of New Zealand or Australia, as a legal requirement. This has actually happened in the New Zealand property market and it is the perfect example of a need to handle such attestations.
+In smart contracts, we will need methods to handle cryptographic attestations to a users identifier or abilities. Let's say we have a real estate agent, KiwiRealtors, that provides an "expression of interest" function though a smart contract and requires the users to provide an attestation that they are a resident of New Zealand or Australia, as a legal requirement. This has actually happened in the New Zealand property market and it is the perfect example of a need to handle such attestations.
 
-However, it is not practical for a smart contract to explicitly trust an attestation issuer. There are multiple issuers who can provide an attestation on a person's residency - a local Justice of the Peace, the land title office, local police, passport authority etc. We envision a model where the effort to manage the list of qualified issuers is practically outsourced to a list.
+However, it is not practical for a smart contract to explicitly trust an attestation issuer. There are multiple issuers who can provide an attestation to a person's residency - a local Justice of the Peace, the land title office, local police, passport authority etc. We envision a model where the effort to manage the list of qualified issuers is practically outsourced to a list.
 
 Anyone can publish a list of issuers. Only the most trusted and carefully maintained lists gets popular use.
 

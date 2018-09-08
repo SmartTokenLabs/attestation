@@ -22,6 +22,12 @@ Attestations are ideal for identifying purposes. An individual's identity can't 
 
 Attestations are also a perfect way to solve the blockchain chicken-and-egg problem. Very often, in the early stages, services can't provide blockchain-only solutions. The FIFA world cup, for example, can issue blockchain tickets, but they can't mandate payment with Ether. The situation is similar to the early stage of the Internet, FIFA would find it easier to only accept credit card payment, but that denies blockchain advantages like atomic transactions for second-hand tickets (a pivotal measurement to prevent fake tickets). In such cases, tickets as attestations can be converted to non-fungible tokens if the issuer allows so by writing the corresponding smart-contracts. For example, FIFA world cup tickets can be issued as attestations and users would convert them to non-fungible tokens when they see the need to resell the tickets. FIFA does not need to maintain a blockchain connection at the point of sale.
 
+# ERC publications
+
+This repo is a work on progress and has been organised into the following ERC's
+
+[ERC1386](https://github.com/ethereum/EIPs/issues/1386), [ERC1387](https://github.com/ethereum/EIPs/issues/1387) & [ERC1388](https://github.com/ethereum/EIPs/issues/1388)
+
 # organisation of this repository
 
 This repository has the following content:
