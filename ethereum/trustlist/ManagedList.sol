@@ -1,23 +1,31 @@
 pragma solidity ^0.4.1;
 pragma experimental ABIEncoderV2;
 import "../lib/Issuer"; //we import the issuer for validating an attesters key
-//The purpose of this contract is to manage the list of valid issuer contracts
-// and their capacity to fulfil requirements
+
+/* The purpose of this contract is to manage the list of attestation
+ * issuer contracts and their capacity to fulfil requirements
+ */
 contract ManagedListERC
 {
-  //manager is the contract steward, only he/she/it can change/remove/add lists
-  //issuer is the contract that handles verification and revocation of an attestation
-  //attestation key is the key that signs attestations, note: This is not the issuer address and since issuers
-  //are contracts, there is no way for an issuer to sign anything.
+  /* a manager is the steward of a list. Only he/she/it can change the
+   * list by removing/adding attestation issuers to the list.
 
+   * A issuer in the list is represented by his/her/it contract
+   * addresses, not by the attestation signing keys managed by such a
+   * contract.
+   */
   struct List
   {
     string name;
-    string description; //short description of what the list entails
-    string capacity; //capacity is the specification of the keys authority
-    //e.g. school id card vs passport
-    //one has the capacity to buy alcohol, the other does not.
-    address[] issuerContracts; //all these addresses are contracts, no signing capacity
+    string description; // short description of what the list entails
+    string capacity; // serves as a filter for the attestation signing keys
+      /* if a smart contract spcifies a list, only attestation issued
+       * by issuers on that list is accepted. Furthermore, if that
+       * list has a non-empty capacity, only attestations signed by a
+       * signing key with that capacity is accepted. */
+
+    address[] issuerContracts; // all these addresses are contracts,
+			       // no signing capacity
     uint expiry;
   }
 
@@ -40,7 +48,7 @@ contract ManagedListERC
      * accepting these consequences: a) if one user wish to maintain
      * several lists with different capacity, he or she must use a
      * different sender address for each. b) if the user replaced the
-     * sender's key, either because he or she suspect the key is
+     * sender's key, either becauyse he or she suspect the key is
      * compromised or that it is lost and reset through special means,
      * then the list is still identified by the first sender's
      * address.

@@ -3,10 +3,12 @@ import "../lib/AttestationUsing";
 import "../trustlist/ManagedList";
 
 /*
-  Buying property in New Zealand requires the buyer
-  to be a PR/Citizen of either New Zealand or Australia
-  This example contract acts as an agent and allows potential customers
-  to validate their ability to purchase property
+ * Only Australia or New Zealand permanent residents can finalise a
+ * property purchase in New Zealand. Foreigners can't.
+ *
+ * This example contract acts on behalf of Kiwi Realtors, an agent, to
+ * accept Express of Interest. It requires its users to be attested
+ * residents of Australia or New Zealand.
 */
 
 contract KiwiRealtorsExample is AttestationUsing {
