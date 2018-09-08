@@ -11,7 +11,7 @@ An issuer can also put the validation method in their smart contract that can be
 This ERC provides an interface for attestation issuers to manage their attestation signing keys and the attestations that are issued off chain for actions such as revocation and validation.
 
 In our draft implementation we include functions to hold cryptographic attestations,
-change the issuing contracts of attestations, revoke attestations and verify the authenticity
+change the issuing contracts of attestations, revoking attestations and verify the authenticity
 of a cryptographic attestation.
 
 ### Example use cases
@@ -46,14 +46,15 @@ The wine vendors smart contract validates the attestation, checks the payment
  to prove her age again.
 
 ### Draft interface
-
-`/* each attestation issuer should provide their own verify() for the
+```
+/* each attestation issuer should provide their own verify() for the
  * attestations they issued. There are two reasons for this. First, we
  * need to leave room for new attestation methods other than the
  * Merkle Tree format we are recommending. Second, the validity of the
  * attestation may depend on the context that only the attester
  * knows. For example, a ticket as an attestation issued on a
  * successful redemption of an American Express credit */
+
 contract Issuer {
   struct Attestation
     {
@@ -67,7 +68,7 @@ contract Issuer {
         bytes32 salt;
         bytes32 key;
         bytes32 val;
-    }
+    }`
   /* Verify the authenticity of an attestation */
   function verify(Attestation attestation);
   function addAttesterKey(address newAttester, string capacity, uint expiry);
@@ -84,7 +85,10 @@ contract Issuer {
   /* revoke an attestation by replace the bloom filter, this helps preserve privacy */
   function revokeAttestations(Bloomfilter b);
 
-}`
+}
+```
 
-Please click [here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/example-james-squire/james-squire.sol)
-to see a draft implementation of this interface
+Please click [here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/example-james-squire/james-squire.sol) to see a draft implementation of this interface
+
+### Related ERC's
+#1388 #1387 

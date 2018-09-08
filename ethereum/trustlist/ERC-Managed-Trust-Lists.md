@@ -12,10 +12,11 @@ Anyone can publish a list of issuers. Only the most trusted and carefully mainta
 This ERC provides a smart contract interface for anyone to manage a list of attestation issuers. A smart contract would explicitly trust a list, and therefore all attestations issued by the issuers on the list.
 
 ### Draft implementation
+  ```
     /* The purpose of this contract is to manage the list of attestation
      * issuer contracts and their capacity to fulfil requirements
      */
-    contract ManagedListERC
+ contract ManagedListERC
     {
       /* a manager is the steward of a list. Only he/she/it can change the
        * list by removing/adding attestation issuers to the list.
@@ -26,17 +27,16 @@ This ERC provides a smart contract interface for anyone to manage a list of atte
        */
       struct List
       {
-	string name;
-	string description; // short description of what the list entails
-	string capacity; // serves as a filter for the attestation signing keys
+	      string name;
+	      string description; // short description of what the list entails
+	      string capacity; // serves as a filter for the attestation signing keys
 	  /* if a smart contract spcifies a list, only attestation issued
 	   * by issuers on that list is accepted. Furthermore, if that
 	   * list has a non-empty capacity, only attestations signed by a
 	   * signing key with that capacity is accepted. */
 
-	address[] issuerContracts; // all these addresses are contracts,
-				   // no signing capacity
-	uint expiry;
+	    address[] issuerContracts; // all these addresses are contracts, no signing capacity
+	    uint expiry;
       }
 
       // find which list the sender is managing, then add an issuer to it
@@ -69,6 +69,10 @@ This ERC provides a smart contract interface for anyone to manage a list of atte
       /* replace list manager's key with the new key */
       function replaceListIndex(List list, address manager) public returns(bool);
 
-    }`
+    }
+```
 
 Click [here](https://github.com/alpha-wallet/blockchain-attestation/blob/master/ethereum/trustlist/ManagedList.sol) to see an example implementation of this ERC
+
+### Related ERC's
+#1387 #1386
