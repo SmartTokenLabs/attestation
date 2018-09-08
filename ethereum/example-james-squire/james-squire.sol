@@ -5,30 +5,31 @@
  * buyer's age is above 18. It, however, allows the contract's owner
  * to extend to allow consumers from other countries, and in the case
  * the said country doesn't have an age restriction on drinking, for
- * example China, the contract should only requires a proof of
+ * example China, the contract should only require a proof of
  * residency in China.*/
 
 import "../lib/AttestationFramework";
-import "../lib/AuthorisedAttestors";
+import "../lib/Authorisedattesters";
 
-contract james-squire is AttestationFramework, AuthorisedAttestors
+contract james-squire is AttestationFramework, Authorisedattesters
 {
 
     AttestationFramework attestationFramework;
-    AuthorisedAttestors authorisedAttestors;
+    Authorisedattesters authorisedattesters;
     string[] ageExemptCountries;
 
     constructor(
       address attestationFrameworkAddress,
-      address authorisedAttestorsAddress,
+      address authorisedattestersAddress,
       string[] ageExemptAndAcceptedCountries
     )
     {
         attestationFramework = new AttestationFramework(attestationFrameworkAddress);
-        authorisedAttestors = new AuthorisedAttestors(authorisedAttestorsAddress);
+        authorisedattesters = new Authorisedattesters(authorisedattestersAddress);
         ageExemptCountries = ageExemptAndAcceptedCountries;
     }
 
+    //TODO range proof
     function canPurchaseAlcohol(Attestation ageAttestation) public returns (bool)
     {
         require(attestationFramework.validateMerkle(ageAttestation));
