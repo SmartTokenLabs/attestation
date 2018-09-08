@@ -28,7 +28,7 @@ contract issuerA is Issuer {
     	// all issued by a corrupt communist official
     }
 
-    function addattesterKey(address newattester, string capacity, uint expiry)
+    function addAttestationSigningKey(address newattester, string capacity, uint expiry)
     {
        require(msg.sender == issuer);
 	     // keep it in the states
@@ -36,7 +36,7 @@ contract issuerA is Issuer {
        attestationKeyExpiry[newattester] = expiry;
      }
 
-    function replaceKey(address attesterToReplace, string capacity, uint expiry, address newattester)
+    function replaceAttestationSigningKey(address attesterToReplace, string capacity, uint expiry, address newattester)
     {
       require(msg.sender == issuer);
       delete attestationSigningKeysAndCapacity[attesterToReplace];
@@ -45,22 +45,33 @@ contract issuerA is Issuer {
       attestationKeyExpiry[newattester] = expiry;
     }
 
-    function removeKey(address attester)
+    function removeAttestationSigningKey(address attester)
     {
       require(msg.sender == issuer);
       delete attestationSigningKeysAndCapacity[attester];
       delete attestationKeyExpiry[attester];
     }
 
-    //this bloom filter merges with the old one
-    //Issuer does this and constructs the bloom filter, only issuer can do this
-    //in future, the issuer may want to delete the bloom filter
-    function revokeAttestations(Bloomfilter b) {
+    /* attestations are revoked in bulk by Bloomfilters of revoked
+     * attestations' hashes. Notice that this function is not required
+     * by the Issuer interface - it is up to the issuer to decide if
+     * they use Bloomfilter for revocation */
+    function revokeAttestations(Bloomfilter b) { // only issuer can do this
   	//all bloom filters are stored in the contract variable space
-    /* attestations are revoked in bulk by Bloomfilters. Notice
-  	 * that this function is not required by the Issuer interface
-  	 * - it is up to the issuer to decide if they use Bloomfilter
-  	 * for revocation */
+
+	/* there are typically 2 strategies to use bloom
+	 * filters. Ether the contract maintains a list of bloom
+	 * filters in its state varaibles - any attestation marked by
+	 * any of them is considered revoked; or the contract
+	 * maintains only a single bloom filter - each time this
+	 * function is called, the new bloom filter replaces the old
+	 * one. The best strategy varies by issuers*/
+
+	/* IMPLEMENTATION NOTE: in an issuer organisation where each
+	 * attestation signing key owner have the privilege to revoke
+	 * the attestation it signed, this function can be called from
+	 * an Ethereum address corrisponding to the attestation
+	 * key. */
     }
 
 }

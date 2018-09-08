@@ -13,18 +13,20 @@ contract Issuer {
   /* Verify the authenticity of an attestation */
   function verify(Attestation attestation);
   //note: adding, changing and revoking attestations and attester keys requires a contract manager
-  function addattesterKey(address newattester, string capacity, uint expiry);
+  function addAttestationSigningKey(address newattester, string capacity, uint expiry);
 
   /* this should call the revoke first */
-  function replaceKey(address attesterToReplace, string capacity, uint expiry, address newattester);
+  function replaceAttestationSigningKey(address attesterToReplace, string capacity, uint expiry, address newattester);
 
   /* this revokes a single key */
-  function removeKey(address attester);
+  function removeAttestationSigningKey(address attester);
 
   /* if the key exists with such capacity and isn't revoked or expired */
   function validateKey(address attester, string capacity) returns (bool);
 
-  /* revoke an attestation by replace the bloom filter, this helps preserve privacy */
-  function revokeAttestations(Bloomfilter b);
+  /* OPTIONAL: bloomfilter is a good way to revoke attestations
+   * without revealing their hashes, but issuers are allowed to make
+   * up their own way to revoke */
+  //function revokeAttestations(Bloomfilter b);
 
 }
