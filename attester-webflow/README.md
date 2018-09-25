@@ -5,15 +5,12 @@ attesters to issue attestations.
 
 ## Play around ##
 
-Check if your development environment have equal or better tools than
-the environment this project was developed in:
+This is developed with Maven 3.3.9 and Java 11.
 
-	$ java -version
-	java version "1.8.0_171"
 	$ mvn -version
 	Apache Maven 3.3.9
 
-Then run the project:
+To run the project:
 
     $ mvn tomcat7:run
 	
@@ -22,8 +19,3 @@ when the command reaches the following output
 
     INFORMATION: Starting ProtocolHandler ["http-bio-8080"]
 
-## If you don't have Java 10 ##
-
-It should work with lower java versions. Just play around with
-`maven.compiler.source` and `maven.compiler.target` properties in
-`pom.xml`.
