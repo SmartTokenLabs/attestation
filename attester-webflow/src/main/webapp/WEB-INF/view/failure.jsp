@@ -1,5 +1,5 @@
 <html>
 <body>
-<h2>Activation Failed</h2>
+<h1>An Identity Claim was not successfully made</h1>
 </body>
 </html>

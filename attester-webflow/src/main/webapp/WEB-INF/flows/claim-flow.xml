@@ -4,13 +4,22 @@
       xsi:schemaLocation="http://www.springframework.org/schema/webflow
                           http://www.springframework.org/schema/webflow/spring-webflow.xsd">
 
-
-    <view-state id="activation">
-        <transition on="activate" to="success"/>
+    <view-state id="policy">
+        <transition on="agree" to="profile"/>
         <transition on="cancel" to="failure"/>
     </view-state>
 
-    <view-state id="success" />
+    <view-state id="profile">
+        <transition on="claim" to="evince"/>
+        <transition on="cancel" to="failure"/>
+    </view-state>
+
+    <view-state id="evince">
+        <transition on="provide" to="verify"/>
+        <transition on="cancel" to="failure"/>
+    </view-state>
+
+    <view-state id="verify" />
 
     <view-state id="failure" />
 

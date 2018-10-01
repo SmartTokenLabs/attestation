@@ -9,7 +9,7 @@ http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
 
 
     <bean class="org.springframework.webflow.mvc.servlet.FlowHandlerMapping">
-        <property name="flowRegistry" ref="activationFlowRegistry"/>
+        <property name="flowRegistry" ref="claimFlowRegistry"/>
     </bean>
 
     <flow:flow-builder-services id="flowBuilderServices"
@@ -19,14 +19,14 @@ http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
         <property name="viewResolvers" ref="jspViewResolver"/>
     </bean>
 
-    <flow:flow-registry id="activationFlowRegistry" flow-builder-services="flowBuilderServices">
-        <flow:flow-location id="activationFlow" path="/WEB-INF/flows/activation-flow.xml"/>
+    <flow:flow-registry id="claimFlowRegistry" flow-builder-services="flowBuilderServices">
+        <flow:flow-location id="claimFlow" path="/WEB-INF/flows/claim-flow.xml"/>
     </flow:flow-registry>
 
     <bean class="org.springframework.webflow.mvc.servlet.FlowHandlerAdapter">
-        <property name="flowExecutor" ref="activationFlowExecutor"/>
+        <property name="flowExecutor" ref="claimFlowExecutor"/>
     </bean>
-    <flow:flow-executor id="activationFlowExecutor" flow-registry="activationFlowRegistry"/>
+    <flow:flow-executor id="claimFlowExecutor" flow-registry="claimFlowRegistry"/>
 
 
 </beans>
