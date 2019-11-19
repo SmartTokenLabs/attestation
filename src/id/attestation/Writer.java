@@ -12,7 +12,7 @@ public class Writer {
    /* PDU: TICKET_ATTESTATION.Attestation */
    public static void main(String args[]) {
 
-      String filename = new String ("message.dat");
+      String filename = new String ("message.json");
       boolean trace = true;
       
       if (args.length > 0) {
@@ -33,10 +33,10 @@ public class Writer {
          }
       }
       
-      // Create a message buffer object
-      Asn1BerEncodeBuffer encodeBuffer =
-         new Asn1BerEncodeBuffer ();
+      // Create an encoding stream
+      Asn1JsonOutputStream encodeStream = null;
       try {
+         encodeStream = new Asn1JsonOutputStream (new java.io.OutputStreamWriter( new java.io.FileOutputStream(filename), "UTF-8") );
          id.attestation.Attestation attestation;
          attestation = new id.attestation.Attestation();
 
@@ -76,49 +76,53 @@ public class Writer {
             attestation.signedInfo.signature.elements[3] = new Asn1ObjectIdentifier(oidData);
          }
 
+         attestation.signedInfo.issuer = new Name();
+         {
+            RDNSequence obj1;
+            obj1 = new RDNSequence(0);
+
+            attestation.signedInfo.issuer.setElement(Name._RDNSEQUENCE, obj1);
+         }
+
+         attestation.signedInfo.validity = new Validity();
+
+         attestation.signedInfo.validity.notBefore = new Time();
+         {
+            Asn1GeneralizedTime obj2;
+            obj2 = new Asn1GeneralizedTime("00800303050702");
+            attestation.signedInfo.validity.notBefore.setElement(Time._GENERALTIME, obj2);
+         }
+
+         attestation.signedInfo.validity.notAfter = new Time();
+         {
+            Asn1UTCTime obj3;
+            obj3 = new Asn1UTCTime("801028023212");
+            attestation.signedInfo.validity.notAfter.setElement(Time._UTCTIME, obj3);
+         }
+
+         attestation.signedInfo.subject = new Name();
+         {
+            RDNSequence obj4;
+            obj4 = new RDNSequence(0);
+
+            attestation.signedInfo.subject.setElement(Name._RDNSEQUENCE, obj4);
+         }
+
          attestation.signedInfo.subjectPublicKeyInfo = new SubjectPublicKeyInfo();
 
-         attestation.signedInfo.subjectPublicKeyInfo.algorithm = new AlgorithmIdentifier(4);
+         attestation.signedInfo.subjectPublicKeyInfo.algorithm = new AlgorithmIdentifier(0);
 
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signedInfo.subjectPublicKeyInfo.algorithm.elements[0] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signedInfo.subjectPublicKeyInfo.algorithm.elements[1] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signedInfo.subjectPublicKeyInfo.algorithm.elements[2] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signedInfo.subjectPublicKeyInfo.algorithm.elements[3] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         attestation.signedInfo.subjectPublicKeyInfo.subjectPublicKey = new Asn1BitString("'001100010101'B");
+         attestation.signedInfo.subjectPublicKeyInfo.subjectPublicKey = new Asn1BitString("'01'B");
 
          attestation.signedInfo.dataObject = new TicketDataObject();
 
          attestation.signedInfo.dataObject.match = new Asn1Integer(1L);
 
-         attestation.signedInfo.dataObject.class_ = TicketDataObject_class_.club();
+         attestation.signedInfo.dataObject.class_ = TicketDataObject_class_.lounge();
 
          attestation.signedInfo.dataObject.admission = new Asn1Integer(0);
 
-         attestation.signatureAlgorithm = new AlgorithmIdentifier(9);
+         attestation.signatureAlgorithm = new AlgorithmIdentifier(5);
 
          {
             int[] oidData = {
@@ -155,44 +159,10 @@ public class Writer {
             attestation.signatureAlgorithm.elements[4] = new Asn1ObjectIdentifier(oidData);
          }
 
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signatureAlgorithm.elements[5] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signatureAlgorithm.elements[6] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signatureAlgorithm.elements[7] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         {
-            int[] oidData = {
-               0, 1, 2, 3, 4
-            };
-            attestation.signatureAlgorithm.elements[8] = new Asn1ObjectIdentifier(oidData);
-         }
-
-         attestation.signatureValue = new Asn1BitString("'11011100'B");
-         attestation.encode (encodeBuffer);
+         attestation.signatureValue = new Asn1BitString("'000100110111'B");
+         attestation.encode (encodeStream);
          if (trace) {
             System.out.println("Encoding was successful");
-            System.out.println("Hex dump of encoded record:");
-            encodeBuffer.hexDump ();
-            System.out.println("Binary dump:");
-            encodeBuffer.binDump ();
-            // Write the encoded record to a file
-            encodeBuffer.write (new java.io.FileOutputStream (filename));
          }
       }
       catch (Exception e) {
@@ -201,6 +171,11 @@ public class Writer {
          System.exit(1);
       }
       finally {
+         try {
+            if (encodeStream != null) encodeStream.close ();
+         }
+         catch (Exception e) {
+         }
          Asn1Util.closeRuntime();
       }
    }
