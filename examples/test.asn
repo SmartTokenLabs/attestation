@@ -1,0 +1,28 @@
+ISSUE15 DEFINITIONS ::= BEGIN
+  Attestation ::=  SEQUENCE  {
+       signedInfo           SignedInfo,
+       signatureAlgorithm   AlgorithmIdentifier,
+       signatureValue       BIT STRING  }
+
+  SignedInfo  ::=  SEQUENCE  {
+       version         [0]  EXPLICIT Version,
+       serialNumber         CertificateSerialNumber,
+       signature            AlgorithmIdentifier,
+       dataObject   [3]      TicketDataObject
+  }
+
+  TicketDataObject ::= SEQUENCE {
+         match       INTEGER (1..51),
+         class       ENUMERATED { club(0), lounge(1), silver(2), gold(3) },
+         admission   INTEGER
+  }
+
+  Version  ::=  INTEGER  {  v1(0), v2(1), v3(2)  }
+
+  CertificateSerialNumber  ::=  INTEGER
+
+  AlgorithmIdentifier  ::=  SEQUENCE  {
+        algorithm               OBJECT IDENTIFIER,
+        parameters              ANY DEFINED BY algorithm OPTIONAL }
+
+END
