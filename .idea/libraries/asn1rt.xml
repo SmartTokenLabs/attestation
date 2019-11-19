@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="asn1rt">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/asn1rt.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
