@@ -12,6 +12,8 @@ public class Reader {
    public static void main (String args[])
    {
       String filename = new String ("message.dat");
+      String output = new String ("message.json");
+
       boolean trace = true;
       // Process command line arguments
       if (args.length > 0) {
@@ -44,6 +46,11 @@ public class Reader {
          // Read and decode the message
          value = new Attestation ();
          value.decode (decodeBuffer);
+         System.out.println(value.signedInfo.serialNumber);
+         Asn1JsonOutputStream encodeStream;
+         encodeStream = new Asn1JsonOutputStream (new java.io.OutputStreamWriter(System.out));
+         value.encode(encodeStream);
+         encodeStream.close();
       }
       catch (Exception e) {
          exception = e;
