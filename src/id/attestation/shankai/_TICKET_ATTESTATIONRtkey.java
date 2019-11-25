@@ -1,4 +1,4 @@
-package id.attestation;
+package id.attestation.shankai;
 
 class _TICKET_ATTESTATIONRtkey {
    public static final byte _rtkey[] = {
