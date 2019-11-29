@@ -2,6 +2,7 @@
   <library name="asn1rt">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/asn1rt.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/aws-lambda-java-core-1.0.0.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

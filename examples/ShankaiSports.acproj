@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ASN1COptions>
    <schemas>
-      <UTF8String>test.asn</UTF8String>
+      <UTF8String>ShankaiSports.asn</UTF8String>
    </schemas>
    <language>
       <java/>
@@ -11,7 +11,7 @@
       <json/>
    </ruleset>
    <basicOptions>
-      <srcdir>../src/id/attestation</srcdir>
+      <srcdir>../src/id/attestation/shankai</srcdir>
       <libdir>lib</libdir>
       <bindir>bin</bindir>
       <objdir>obj</objdir>
@@ -22,7 +22,7 @@
    </basicOptions>
    <languageOpts>
       <java>
-         <pkgName>id.attestation</pkgName>
+         <pkgName>id.attestation.shankai</pkgName>
       </java>
    </languageOpts>
 </ASN1COptions>
