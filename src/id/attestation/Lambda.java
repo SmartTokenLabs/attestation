@@ -17,7 +17,7 @@ package id.attestation;
  *
  * $ rm     out/production/id-attestation/lambda.zip
  * $ zip -r out/production/id-attestation/lambda.zip lib
- * $ cd     out/production/id-attestation
+ * $ pushd  out/production/id-attestation
  * $ zip -r lambda.zip     id/attestation
  *
  * The directory hierarchy expected for the zip file can be found here:
@@ -27,15 +27,20 @@ package id.attestation;
  *
  * TESTING DEPLOYMENT
  *
- *
+$ aws --profile china lambda invoke --function-name parseDER --payload "\"`base64 -w0 message.dat`\"" outfile
+{
+    "StatusCode": 200,
+    "ExecutedVersion": "$LATEST"
+}
+ * the resulting outfile should have the attestation in JSON.
  */
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.objsys.asn1j.runtime.*;
 import id.attestation.shankai.Attestation;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
@@ -44,50 +49,40 @@ import static java.util.Base64.*;
 
 public class Lambda {
 
-    public static String parseShangkai(byte[] rawDER) {
-        String filename = new String("message.dat");
+    public void parseShankai(InputStream ins, OutputStream outs, Context context) throws IOException{
+        ByteBuffer DER;
+        {
+            byte[] json_input = new byte[ins.available()];
+            ins.read(json_input);
+            ins.close();
+            ByteBuffer base64_encoded = ByteBuffer.wrap(json_input, 1, json_input.length - 2);
 
-        Exception exception = null;
-        Attestation value = null;
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        try {
-            // Create an input file stream object
-            java.io.FileInputStream ins = new java.io.FileInputStream(filename);
-
+            // maybe through base64-encoded single string then decode it with:
+            DER = getDecoder().decode(base64_encoded);
+            // java.io.FileInputStream ins = new java.io.FileInputStream("message.dat");
+            Attestation value = null;
             // Create a decode buffer object
-            Asn1BerDecodeBuffer decodeBuffer =
-                    new Asn1BerDecodeBuffer(ins);
-            // Read and decode the message
-            value = new Attestation();
+        }
+
+        // System.out.println(DER.array().length);
+
+        {   // Read and decode the message
+            Asn1BerDecodeBuffer decodeBuffer = new Asn1BerDecodeBuffer(DER.array());
+            Attestation value = new Attestation();
             value.decode(decodeBuffer);
-            System.out.println(value.signatureValue);
             Asn1JsonOutputStream encodeStream;
-            encodeStream = new Asn1JsonOutputStream(new java.io.OutputStreamWriter(stream));
+            encodeStream = new Asn1JsonOutputStream(new java.io.OutputStreamWriter(outs));
             value.encode(encodeStream);
             encodeStream.close();
-        } catch (Exception e) {
-            exception = e;
+            outs.close();
+            /* To improve performance, AWS Lambda may choose to retain
+             * an instance of your function and reuse it to serve a
+             * subsequent request, rather than creating a new
+             * copy. Therefore we do not close Asn1Util runtime, so the
+             * reuse of this instance doesn't lead to a crash.
+             */
+            //Asn1Util.closeRuntime();
         }
-        if (exception == null) System.out.println("Decode was successful");
-        else System.out.println("Decode failed");
-        if (value != null) {
-            value.print(System.out, exception == null ? "value" : "partial value", 0);
-        }
-
-        Asn1Util.closeRuntime();
-
-        if (exception != null) {
-            System.out.println(exception.getMessage());
-            exception.printStackTrace();
-            System.exit(1);
-        }
-        return stream.toString();
-
-    }
-
-    public String handleRequest(String CER, Context context) throws IOException {
-        byte[] DER = getDecoder().decode(CER);
-        return parseShangkai(DER);
     }
 
     public static void main(String args[]) throws IOException {
@@ -116,6 +111,8 @@ public class Lambda {
             }
         }
         byte[] rawDER = Files.readAllBytes(Paths.get("message.dat"));
-        System.out.println(parseShangkai(rawDER));
+        String base64_encoded = '"' + Base64.getEncoder().encodeToString(rawDER) + '"';
+        InputStream ins = new ByteArrayInputStream(base64_encoded.getBytes());
+        (new Lambda()).parseShankai(ins, System.out, null);
     }
 }
