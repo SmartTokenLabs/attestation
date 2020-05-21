@@ -2,9 +2,11 @@
 
 A user, Alice, wishes to send ether to Bob who doesn’t have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob’s email address or Bob’s mobile phone number.
 
-The identifier to be attested, denoted as 𝑖 (hashed email address or mobile number†), can’t be learned from an observer with access to the Ethereum blockchain.
+The identifier to be attested, (email address or mobile number†), can’t be learned from an observer with access to the Ethereum blockchain.
 
 # Protocol
+
+We assume that both Alice and Bob knows Bob's identifier and has hashed it† to get a value 𝑖.
 
 ## Attestation
 
