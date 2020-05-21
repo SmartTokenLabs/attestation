@@ -3,7 +3,7 @@
 
 A user, Alice, wishes to send ether to Bob who doesn’t have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob’s email address or Bob’s mobile phone number.
 
-The knowledge to be attested, e.g. email, can’t be learned from an observer with access to the Ethereum blockchain.
+The identifier to be attested, denoted as 𝑥 (email address or mobile number), can’t be learned from an observer with access to the Ethereum blockchain.
 
 # Protocol
 
