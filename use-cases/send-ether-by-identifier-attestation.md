@@ -1,7 +1,7 @@
 
 # Problem
 
-A user, Alice, wishes to send ethers to Bob who doesn’t have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob’s email address or Bob’s mobile phone number.
+A user, Alice, wishes to send ether to Bob who doesn’t have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob’s email address or Bob’s mobile phone number.
 
 The knowledge to be attested, e.g. email, can’t be learned from an observer with access to the Ethereum blockchain.
 
@@ -11,7 +11,7 @@ The knowledge to be attested, e.g. email, can’t be learned from an observer wi
 
 1. Bob generates an Ethereum key (if he hasn't already) and an attestation key 𝑠.
 
-2. Bob creates the corrisponding subject subject of attestation 𝑦 = 𝑥ˢ.
+2. Bob creates the corresponding subject of attestation 𝑦 = 𝑥ˢ.
 
 3. Bob signs a CSR with his identifier (mobile number / email-address) 𝑥 two times, one with his Etheruem key and one with 𝑠.
 
