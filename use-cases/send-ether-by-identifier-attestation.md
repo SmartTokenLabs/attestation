@@ -1,40 +1,46 @@
-
 # Problem
 
-A user, Alice, wishes to send ethers to Bob who doesn't have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob's email address or Bob's mobile phone number.
+A user, Alice, wishes to send ether to Bob who doesn’t have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob’s email address or Bob’s mobile phone number.
 
-The knowledge to be attested, e.g. email, can't be learned from an observer with access to the Ethereum blockchian.
+The identifier to be attested, (email address or mobile number†), can’t be learned from an observer with access to the Ethereum blockchain.
 
+# Protocol
 
+We assume that both Alice and Bob knows Bob's identifier and has hashed it† to get a value 𝑖.
 
-## Protocol
+## Attestation
 
-1. Alice prepare by learning Bob's identifier 𝑥, picking a random salt 𝑠. Calculate ℎ(𝑥, 𝑠) as 𝑦, then ℎ(𝑦) as 𝑧.
+1. Bob generates an Ethereum key (if he hasn't already) and a privacy key 𝑝.
 
-2. Alice signs a cheque (a message that depends on an attestation) that asks her smart contract to pay out if someone sends a transaction which contains:
+2. Bob creates the corresponding subject of attestation 𝑠 = 𝑖ᵖ.
 
-    - a 𝑦 where ℎ(𝑦) = 𝑧.
+3. Bob signs a CSR (signing request) with his identifier 𝑖 two times, one with his Etheruem key and one with 𝑝.
 
-    - a known attestor's signature that binds 𝑦 to the signer of the transaction
+4. An attestor verifies that Bob owns the identifier, both signatures are valid, then issue an attestation that binds his Ethereum address with the subject 𝑠.
 
-3. Alice pass 𝑠, the cheque together to Bob.
+### Cheque
 
-4. Bob gets 𝑦 by calculating ℎ(𝑥, 𝑠) and get an attestor's signature which binds 𝑦 and his public key. To convince the attestor, Bob has to providing 𝑥, 𝑠 and verify to the attestor that he owns 𝑥 identifier.
+1. Alice wishes to send Bob some Ether and knows Bob’s identifier 𝑖. She creates a one-time-key 𝑝’, computes 𝑠’ = 𝑖ᵖ’.
 
-5. Now Bob has everything to make the smart contract spit out the money. He signs a transaction and get the money.
+2. Alice writes a cheque for anyone to redeem a certain amount of Ether from her smart contract. The cheque requires an 𝑥 such that 𝑠’ = 𝑠ˣ for a valid attestation on subject 𝑠.
 
-## Improvement
+3. Alice sends 𝑝’ and the cheque to Bob.
 
-However this protocol would require Bob to get a new attestation for each transfer to his mail address.
+### Redeem the Cheque with the Attestation
 
-When the protocol finishes, Bob would have obtained an attestation on his email address and Alice's salt (to his newly creted etherem address). Suppose another sender, Carol, asks for a different attestation, Bob could re-use the attestation provide that:
+Bob computes a value 𝑥=𝑝⁻¹𝑝’ and, in a redeeming transaction, provides
 
-1. Bob stores the salt 𝑠 from the first transfer to his mail.
-2. We can perform a group exponentiation over a large group in the smart contract.
+1. 𝑥
+2. the attestation (whose subject is 𝑠)
 
-Assume Bob holds an assertion to the value 𝑦 such that 𝑦=ℎ(𝑥)ˢ for some 𝑠 over some sufficiently large multiplicative group. The smart contract accepts a transfer request to Bob for any reference value 𝑦′ if he can present an assertion on the value 𝑦 along with a value 𝑎 s.t. 𝑦ᵃ=𝑦′
+The smart contract computes:
 
-This means that the first time someone transfers money to Bob he will use 𝑎=1 and the smart contract will simply verify the assertion 𝑦¹=𝑦. However, next time someone transfers money to Bob they will send 𝑦’=ℎ(𝑥)ˢ′.
+1. The attestation is a valid attestation that binds 𝑠 to Bob (transaction sender)’s Ethereum address.
+2. That 𝑠ˣ = 𝑠’
+3. That the amount in the attestation is less than Alice’s balance.
 
-Bob can compute the value 𝑎=𝑠⁻¹𝑠′, but only because he knows 𝑠 and 𝑠′. Other parties are not able to compute this value unless they can solve the discreet log problem. 
+If all predicates are satisfied, emits the pay to Bob.
 
+### Footnote
+
+† It is very important that the identifier is the output of a cryptographic hash function. If not, then it is possible for a blockchain node to steal the money from Bob by picking a specific identifier and get an attestation to that. However, if the identifier is the output of a hash function he will have to find a preimage of a hash function to be able to carry out that attack.
