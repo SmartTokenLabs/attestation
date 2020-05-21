@@ -14,7 +14,7 @@ The identifier to be attested, denoted as 𝑖 (email address or mobile number),
 
 3. Bob signs a CSR (signing request) with his identifier 𝑖 two times, one with his Etheruem key and one with 𝑝.
 
-4. An attestor verifies that Bob owns the identifier , both signatures are valid, then issue an attestation that binds his Ethereum address with the subject 𝑠.
+4. An attestor verifies that Bob owns the identifier, both signatures are valid, then issue an attestation that binds his Ethereum address with the subject 𝑠.
 
 ### Cheque
 
