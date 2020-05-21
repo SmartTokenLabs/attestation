@@ -2,7 +2,7 @@
 
 A user, Alice, wishes to send ether to Bob who doesn’t have an Ethereum address. Alice, however, knows an identifier of Bob that can be attested. e.g. Bob’s email address or Bob’s mobile phone number.
 
-The identifier to be attested, denoted as 𝑖 (email address or mobile number), can’t be learned from an observer with access to the Ethereum blockchain.
+The identifier to be attested, denoted as 𝑖 (hashed email address or mobile number†), can’t be learned from an observer with access to the Ethereum blockchain.
 
 # Protocol
 
@@ -38,3 +38,7 @@ The smart contract computes:
 3. That the amount in the attestation is less than Alice’s balance.
 
 If all predicates are satisfied, emits the pay to Bob.
+
+### Footnote
+
+† It is very important that the identifier is the output of a cryptographic hash function. If not, then it is possible for a blockchain node to steal the money from Bob by picking a specific identifier and get an attestation to that. However, if the identifier is the output of a hash function he will have to find a preimage of a hash function to be able to carry out that attack.
