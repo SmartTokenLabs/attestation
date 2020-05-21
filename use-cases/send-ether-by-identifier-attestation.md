@@ -22,7 +22,7 @@ The identifier to be attested, denoted as 𝑖 (email address or mobile number),
 
 2. Alice writes a cheque for anyone to redeem a certain amount of Ether from her smart contract. The cheque requires an 𝑥 such that 𝑠’ = 𝑠ˣ for a valid attestation on subject 𝑠.
 
-3. Alice sends p’ and the cheque to Bob.
+3. Alice sends 𝑝’ and the cheque to Bob.
 
 ### Redeem the Cheque with the Attestation
 
