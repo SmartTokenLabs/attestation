@@ -6,7 +6,8 @@ The identifier to be attested, (email address or mobile number†), can’t be l
 
 # Protocol
 
-We assume that both Alice and Bob knows Bob's identifier and has hashed it† to get a value 𝑖.
+- We assume that both Alice and Bob knows Bob's identifier 𝑖.
+- 𝑔ˣ to denote elliptic curve point multiplication as apposed to 𝑔·𝑥 in some other works.
 
 ## Attestation
 
@@ -40,7 +41,3 @@ The smart contract computes:
 3. That the amount in the attestation is less than Alice’s balance.
 
 If all predicates are satisfied, emits the pay to Bob.
-
-### Footnote
-
-† It is very important that the identifier is the output of a cryptographic hash function. If not, then it is possible for a blockchain node to steal the money from Bob by picking a specific identifier and get an attestation to that. However, if the identifier is the output of a hash function he will have to find a preimage of a hash function to be able to carry out that attack.
