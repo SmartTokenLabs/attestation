@@ -1,0 +1,13 @@
+AttestationFramework
+
+DEFINITIONS ::=
+BEGIN
+
+
+   SubjectPublicKeyInfo  ::=  SEQUENCE  {
+     algorithm            AlgorithmIdentifier,
+     subjectPublicKey     BIT STRING  }
+
+   SmartContract ::= INTEGER
+
+END
