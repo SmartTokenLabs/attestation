@@ -7,37 +7,44 @@ The identifier to be attested, (email address or mobile number†), can’t be l
 # Protocol
 
 - We assume that both Alice and Bob knows Bob's identifier 𝑖.
-- 𝑔ˣ to denote elliptic curve point multiplication as apposed to 𝑔·𝑥 in some other works.
+- We use *g<sup>x</sup>* to denote the generator element, *g*, taken *x* times as apposed to *G\*x* in some other works (when using elliptic curve notation).
 
 ## Attestation
 
-1. Bob generates an Ethereum key (if he hasn't already) and a privacy key 𝑝.
+1. Bob generates an Ethereum key (if he hasn't already) and a privacy key *p*.
 
-2. Bob creates the corresponding subject of attestation 𝑠 = 𝑖ᵖ.
+2. Bob creates the corresponding subject of attestation *s=H(i)<sup>p</sup>*.
 
-3. Bob signs a CSR (signing request) with his identifier 𝑖 two times, one with his Etheruem key and one with 𝑝.
+3. Bob signs a CSR (signing request) with his identifier *i* two times, one with his Etheruem key and one with *p* (viewing it as a private key for ECDSA).
 
-4. An attestor verifies that Bob owns the identifier, both signatures are valid, then issue an attestation that binds his Ethereum address with the subject 𝑠.
+4. An attestor verifies that Bob owns the identifier, both signatures are valid, then issue an attestation that binds his Ethereum address with the subject *s*.
 
 ### Cheque
 
-1. Alice wishes to send Bob some Ether and knows Bob’s identifier 𝑖. She creates a one-time-key 𝑝’, computes 𝑠’ = 𝑖ᵖ’.
+1. Alice wishes to send Bob some Ether and knows Bob’s identifier *i*. She creates a one-time-key *p'*, computes *s'=H(i)<sup>p'</sup>*.
 
-2. Alice writes a cheque for anyone to redeem a certain amount of Ether from her smart contract. The cheque requires an 𝑥 such that 𝑠’ = 𝑠ˣ for a valid attestation on subject 𝑠.
+2. Alice writes a cheque for anyone to redeem a certain amount of Ether from her smart contract. The cheque requires an *x* such that *s'=s<sup>x</sup>* for a valid attestation on subject *s*.
 
-3. Alice sends 𝑝’ and the cheque to Bob.
+3. Alice sends *p'* and the cheque to Bob.
 
 ### Redeem the Cheque with the Attestation
 
-Bob computes a value 𝑥=𝑝⁻¹𝑝’ and, in a redeeming transaction, provides
-
-1. 𝑥
-2. the attestation (whose subject is 𝑠)
+Bob computes a value *x=p<sup>-1</sup>p'* and, in a redeeming transaction, and constructs a Fiat-Shamir based Schnorr proof-of-knowledge that it knows *x* s.t. *s'=s<sup>x</sup>*. That is, Bob proceeds as follows:
+1. Pick random *r* and compute *t=s<sup>r</sup>*
+2. Next compute *c=H(s, s', t)*
+3. Finally compute *d=r+c\*x*
+4. Bob then sends *(s, s', t, d)* and the the attestation (whose subject is *s*) to the smart contract.
 
 The smart contract computes:
 
-1. The attestation is a valid attestation that binds 𝑠 to Bob (transaction sender)’s Ethereum address.
-2. That 𝑠ˣ = 𝑠’
-3. That the amount in the attestation is less than Alice’s balance.
+1. That the amount in the attestation is less than Alice’s balance.
+2. The attestation is a valid attestation that binds *s* to Bob (transaction sender)’s Ethereum address.
+3. *c=H(s, s', t)* and verifies that *s<sup>d</sup>=t\*s'<sup>c</sup>*
 
 If all predicates are satisfied, emits the pay to Bob.
+
+# Implementation Issues
+We note that despite having described the protocol using general multiplication group notation, what will actually be implement will be based on elliptic cruves. This means that *s* will actually be a point on an elliptic curve computes as *G\*p* where *G* is a generator computed deterministically from *H(i)*. Furthermore, this also means that the computation in step 3 for Bob and the smart contract will happen over the integers, modulo the curve order. 
+[This post](https://crypto.stackexchange.com/questions/34863/ec-schnorr-signature-multiple-standard) mentions some standards for EC-based Fiat-Shamir Schnorr proofs and thus where to look for further details.
+
+Furthermore, we note that there does not seem to be standard Javascript libraries to compute such an elliptic curve Fiat-Shamir Schnorr proof. Thus this must be allowed to be supported by a third party (specifically step 1-3 for Bob). However, if such a library is malicious it will learn *x* and thus be able to impersonate Bob. This *must* not happen. Thus instead of constructing a proof of knowledge of *x* s.t. *s'=s<sup>x</sup>* Bob uses such a library to cosntruct a proof of knowledge of *x+w* s.t. *s'=<sup>x+w</sup>* for a random *w*. Based on this Bob will instead send *(s, s', t, d, w)* in step 4 and teh server will instead verify *s<sup>d</sup>=t\*s'<sup>c\*w</sup>* in step 3.
