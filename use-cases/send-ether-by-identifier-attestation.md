@@ -15,7 +15,7 @@ The protocol is secure under any composition of senders (Alices) and receivers (
 # Protocol
 
 - We assume that both Alice and Bob knows Bob's identifier 𝑖.
-- We use *g<sup>x</sup>* to denote the generator element, *g*, taken *x* times as apposed to *G\*x* in some other works (when using elliptic curve notation).
+- We use *g<sup>x</sup>* to denote the generator element, *g*, taken *x* times as apposed to *G·x* in some other works (when using elliptic curve notation).
 
 ## Attestation
 This only needs to be done once for Bob and can be done either before or after receiving the first cheque.
