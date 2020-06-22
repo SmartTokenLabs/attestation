@@ -1,0 +1,145 @@
+AttestationFramework
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+	AlgorithmIdentifier,
+	Version,
+	CertificateSerialNumber,
+	Validity,
+	SubjectPublicKeyInfo,
+	Extensions
+		FROM AuthenticationFramework
+	Name
+		FROM InformationFramework;
+
+Attestation { DataObject } ::=  SEQUENCE  {
+
+     signedInfo           SignedInfo { DataObject },
+     signatureAlgorithm   AlgorithmIdentifier,
+     signatureValue       BIT STRING  }
+
+   SignedInfo {  DataObject }  ::=  SEQUENCE  {
+     version         [0]  EXPLICIT Version,
+     serialNumber         CertificateSerialNumber,
+     signature            AlgorithmIdentifier,
+     issuer               Name OPTIONAL,
+     validity             Validity OPTIONAL,
+     subject              Name OPTIONAL,
+     subjectPublicKeyInfo SubjectPublicKeyInfo OPTIONAL,
+     contract             SEQUENCE OF SmartContract OPTIONAL,
+     attestsTo            CHOICE {
+         dataObject  [0]      DataObject, -- defined per objectClass
+         extensions  [3]      EXPLICIT Extensions
+     }
+   }
+
+   SubjectPublicKeyInfo  ::=  SEQUENCE  {
+     algorithm            AlgorithmIdentifier,
+     subjectPublicKey     BIT STRING  }
+
+   SmartContract ::= INTEGER
+
+END
+
+AuthenticationFramework
+
+DEFINITIONS ::=
+BEGIN
+
+AlgorithmIdentifier ::= SEQUENCE {
+	algorithm   ALGORITHM.&id,
+	parameters  ALGORITHM.&Type	OPTIONAL
+}
+
+ALGORITHM ::= TYPE-IDENTIFIER
+
+Version ::= INTEGER { v1(0), v2(1), v3(2) }
+
+CertificateSerialNumber ::= INTEGER
+
+Validity ::= SEQUENCE {
+	notBefore	Time,
+	notAfter	Time
+}
+
+SubjectPublicKeyInfo ::= SEQUENCE {
+	algorithm         AlgorithmIdentifier,
+	subjectPublicKey  BIT STRING
+}
+
+Time ::= CHOICE {
+	utcTime			UTCTime,	-- 1950 to 2049
+	generalizedTime	GeneralizedTime
+}
+
+Extensions ::= SEQUENCE OF Extension
+
+Extension ::= SEQUENCE {
+	extnId		EXTENSION.&id,
+	critical	BOOLEAN DEFAULT FALSE,
+	extnValue	OCTET STRING
+		-- contains a DER encoding of a value of type &ExtnType
+		-- for the extension object identified by extnId
+}
+
+EXTENSION ::= CLASS {
+	&id			OBJECT IDENTIFIER UNIQUE,
+	&critical	BOOLEAN DEFAULT FALSE,
+	-- critical is absent from the fourth edition X.509 ASN.1 module
+	-- definitions.
+	&ExtnType
+}
+WITH SYNTAX {
+	SYNTAX			&ExtnType
+	[ CRITICAL		&critical ]
+	IDENTIFIED BY	&id
+}
+
+END
+
+InformationFramework
+
+DEFINITIONS ::=
+BEGIN
+
+Name ::= CHOICE {
+	rdnSequence	RDNSequence -- one possibility for now --
+}
+
+RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
+
+RelativeDistinguishedName ::= SET SIZE (1 .. MAX) OF AttributeTypeAndDistinguishedValue
+
+AttributeTypeAndDistinguishedValue ::= SEQUENCE {
+	type 					ATTRIBUTE.&id({SupportedAttributes}),
+	value					ATTRIBUTE.&Type({SupportedAttributes}{@type})
+}
+
+SupportedAttributes ATTRIBUTE ::= { ... }
+
+-- This information object class is greatly simplified.
+ATTRIBUTE ::= CLASS {
+	&Type,
+	&id OBJECT IDENTIFIER UNIQUE
+}
+WITH SYNTAX {
+	[ WITH SYNTAX			&Type ]
+	ID						&id }
+
+END
+
+MyAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+	Attestation
+		FROM AttestationFramework;
+
+-- Example usage.
+MyAttestation ::= Attestation { SEQUENCE { } }
+
+END

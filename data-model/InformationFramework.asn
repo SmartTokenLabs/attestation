@@ -1,0 +1,30 @@
+InformationFramework
+
+DEFINITIONS ::=
+BEGIN
+
+Name ::= CHOICE {
+	rdnSequence	RDNSequence -- one possibility for now --
+}
+
+RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
+
+RelativeDistinguishedName ::= SET SIZE (1 .. MAX) OF AttributeTypeAndDistinguishedValue
+
+AttributeTypeAndDistinguishedValue ::= SEQUENCE {
+	type 					ATTRIBUTE.&id({SupportedAttributes}),
+	value					ATTRIBUTE.&Type({SupportedAttributes}{@type})
+}
+
+SupportedAttributes ATTRIBUTE ::= { ... }
+
+-- This information object class is greatly simplified.
+ATTRIBUTE ::= CLASS {
+	&Type,
+	&id OBJECT IDENTIFIER UNIQUE
+}
+WITH SYNTAX {
+	[ WITH SYNTAX			&Type ]
+	ID						&id }
+
+END
