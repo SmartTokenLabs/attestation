@@ -4,21 +4,27 @@ DEFINITIONS ::=
 BEGIN
 
 Name ::= CHOICE {
-	rdnSequence	RDNSequence, -- one possibility for now --
-	null        NULL
+	rdnSequence	RDNSequence -- one possibility for now --
 }
 
 RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
 
-   RelativeDistinguishedName ::=
-     SET SIZE (1..MAX) OF AttributeTypeAndValue
+RelativeDistinguishedName ::= SET SIZE (1 .. MAX) OF AttributeTypeAndDistinguishedValue
 
-   AttributeTypeAndValue ::= SEQUENCE {
-     type     AttributeType,
-     value    AttributeValue }
+AttributeTypeAndDistinguishedValue ::= SEQUENCE {
+	type 					ATTRIBUTE.&id({SupportedAttributes}),
+	value					ATTRIBUTE.&Type({SupportedAttributes}{@type})
+}
 
-   AttributeType ::= OBJECT IDENTIFIER
+SupportedAttributes ATTRIBUTE ::= { ... }
 
-   AttributeValue ::= ANY -- DEFINED BY AttributeType
+-- This information object class is greatly simplified.
+ATTRIBUTE ::= CLASS {
+	&Type,
+	&id OBJECT IDENTIFIER UNIQUE
+}
+WITH SYNTAX {
+	[ WITH SYNTAX			&Type ]
+	ID						&id }
 
 END

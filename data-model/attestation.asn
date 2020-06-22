@@ -8,6 +8,7 @@ IMPORTS
 	Version,
 	CertificateSerialNumber,
 	Validity,
+	SubjectPublicKeyInfo,
 	Extensions
 		FROM AuthenticationFramework
 	Name
@@ -23,10 +24,10 @@ Attestation { DataObject } ::=  SEQUENCE  {
      version         [0]  EXPLICIT Version,
      serialNumber         CertificateSerialNumber,
      signature            AlgorithmIdentifier,
-     issuer               Name,
-     validity             Validity,
-     subject              Name,
-     subjectPublicKeyInfo SubjectPublicKeyInfo,
+     issuer               Name OPTIONAL,
+     validity             Validity OPTIONAL,
+     subject              Name OPTIONAL,
+     subjectPublicKeyInfo SubjectPublicKeyInfo OPTIONAL,
      contract             SEQUENCE OF SmartContract OPTIONAL,
      attestsTo            CHOICE {
          dataObject  [0]      DataObject, -- defined per objectClass
@@ -34,13 +35,9 @@ Attestation { DataObject } ::=  SEQUENCE  {
      }
    }
 
-   SubjectPublicKeyInfo  ::=  CHOICE {
-    value   SEQUENCE {
-   	            algorithm            AlgorithmIdentifier,
-                subjectPublicKey     BIT STRING  
-   	        },
-   	null   NULL
-   }
+   SubjectPublicKeyInfo  ::=  SEQUENCE  {
+     algorithm            AlgorithmIdentifier,
+     subjectPublicKey     BIT STRING  }
 
    SmartContract ::= INTEGER
 
@@ -51,20 +48,25 @@ AuthenticationFramework
 DEFINITIONS ::=
 BEGIN
 
-AlgorithmIdentifier ::= SEQUENCE  {
-    algorithm           OBJECT IDENTIFIER,
-    parameters          ANY DEFINED BY algorithm OPTIONAL -- Some validators have a issue with this line
+AlgorithmIdentifier ::= SEQUENCE {
+	algorithm   ALGORITHM.&id,
+	parameters  ALGORITHM.&Type	OPTIONAL
 }
+
+ALGORITHM ::= TYPE-IDENTIFIER
 
 Version ::= INTEGER { v1(0), v2(1), v3(2) }
 
 CertificateSerialNumber ::= INTEGER
 
-Validity ::= CHOICE {
-    value   SEQUENCE {
-                notBefore   Time,
-                notAfter    Time}, 
-    null    NULL
+Validity ::= SEQUENCE {
+	notBefore	Time,
+	notAfter	Time
+}
+
+SubjectPublicKeyInfo ::= SEQUENCE {
+	algorithm         AlgorithmIdentifier,
+	subjectPublicKey  BIT STRING
 }
 
 Time ::= CHOICE {
@@ -103,22 +105,28 @@ DEFINITIONS ::=
 BEGIN
 
 Name ::= CHOICE {
-	rdnSequence	RDNSequence, -- one possibility for now --
-	null        NULL
+	rdnSequence	RDNSequence -- one possibility for now --
 }
 
 RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
 
-   RelativeDistinguishedName ::=
-     SET SIZE (1..MAX) OF AttributeTypeAndValue
+RelativeDistinguishedName ::= SET SIZE (1 .. MAX) OF AttributeTypeAndDistinguishedValue
 
-   AttributeTypeAndValue ::= SEQUENCE {
-     type     AttributeType,
-     value    AttributeValue }
+AttributeTypeAndDistinguishedValue ::= SEQUENCE {
+	type 					ATTRIBUTE.&id({SupportedAttributes}),
+	value					ATTRIBUTE.&Type({SupportedAttributes}{@type})
+}
 
-   AttributeType ::= OBJECT IDENTIFIER
+SupportedAttributes ATTRIBUTE ::= { ... }
 
-   AttributeValue ::= ANY -- DEFINED BY AttributeType
+-- This information object class is greatly simplified.
+ATTRIBUTE ::= CLASS {
+	&Type,
+	&id OBJECT IDENTIFIER UNIQUE
+}
+WITH SYNTAX {
+	[ WITH SYNTAX			&Type ]
+	ID						&id }
 
 END
 

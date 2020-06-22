@@ -6,18 +6,24 @@
  <namedType name="AlgorithmIdentifier">
   <type>
    <sequence>
-    <element name="algorithm" type="asnx:OBJECT-IDENTIFIER"/>
+    <element name="algorithm">
+     <type>
+      <fromClass class="ALGORITHM" fieldName="id"/>
+     </type>
+    </element>
     <optional>
      <element name="parameters">
       <type>
-       <anyElement/> <!-- defined by algorithm -->
+       <fromClass class="ALGORITHM" fieldName="Type"/>
       </type>
      </element>
     </optional>
    </sequence>
   </type>
  </namedType>
- 
+
+ <namedClass name="ALGORITHM" class="ASN-TYPE-IDENTIFIER"/>
+
  <namedType name="Version">
   <type>
    <namedNumberList>
@@ -32,13 +38,19 @@
 
  <namedType name="Validity">
   <type>
-   <choice>
-    <sequence name="value">
-     <element name="notBefore" type="Time"/>
-     <element name="notAfter" type="Time"/>
-    </sequence>
-    <element name="null" type="asnx:NULL"/>
-   </choice>
+   <sequence>
+    <element name="notBefore" type="Time"/>
+    <element name="notAfter" type="Time"/>
+   </sequence>
+  </type>
+ </namedType>
+
+ <namedType name="SubjectPublicKeyInfo">
+  <type>
+   <sequence>
+    <element name="algorithm" type="AlgorithmIdentifier"/>
+    <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
+   </sequence>
   </type>
  </namedType>
 
@@ -54,7 +66,7 @@
  <namedType name="Extensions">
   <type>
    <sequenceOf>
-    <element name="item" type="Extension"/>
+    <element name="item" identifier="" type="Extension"/>
    </sequenceOf>
   </type>
  </namedType>

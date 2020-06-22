@@ -2,18 +2,7 @@ AttestationFramework
 
 DEFINITIONS ::=
 BEGIN
-
-IMPORTS
-    AlgorithmIdentifier,
-    Version,
-    CertificateSerialNumber,
-    Validity,
-    Extensions
-        FROM AuthenticationFramework
-    Name
-        FROM InformationFramework;
-
-Attestation { DataObject } ::=  SEQUENCE  {
+MyAttestation { DataObject } ::=  SEQUENCE  {
 
      signedInfo           SignedInfo { DataObject },
      signatureAlgorithm   AlgorithmIdentifier,
@@ -23,10 +12,10 @@ Attestation { DataObject } ::=  SEQUENCE  {
      version         [0]  EXPLICIT Version,
      serialNumber         CertificateSerialNumber,
      signature            AlgorithmIdentifier,
-     issuer               Name,
-     validity             Validity,
-     subject              Name,
-     subjectPublicKeyInfo SubjectPublicKeyInfo,
+     issuer               Name OPTIONAL,
+     validity             Validity OPTIONAL,
+     subject              Name OPTIONAL,
+     subjectPublicKeyInfo SubjectPublicKeyInfo OPTIONAL,
      contract             SEQUENCE OF SmartContract OPTIONAL,
      attestsTo            CHOICE {
          dataObject  [0]      DataObject, -- defined per objectClass
@@ -34,13 +23,9 @@ Attestation { DataObject } ::=  SEQUENCE  {
      }
    }
 
-   SubjectPublicKeyInfo  ::=  CHOICE {
-     value   SEQUENCE {
-                algorithm            AlgorithmIdentifier,
-                subjectPublicKey     BIT STRING  
-             },
-     null    NULL
-   }
+   SubjectPublicKeyInfo  ::=  SEQUENCE  {
+     algorithm            AlgorithmIdentifier,
+     subjectPublicKey     BIT STRING  }
 
    SmartContract ::= INTEGER
 
