@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <asnx:module xmlns:asnx="urn:ietf:params:xml:ns:asnx"
              name="AttestationFramework"
              tagDefault="explicit">
@@ -9,10 +9,10 @@
  <import name="InformationFramework"
          schemaLocation="InformationFramework.asd"/>
 
- <namedType name="MyAttestation">
+ <namedType name="MyAttestation" type="Attestation">
   <type>
    <sequence>
-    <element name="signedInfo">
+    <element name="signedInfo" type="SignedInfo">
      <type>
       <sequence>
        <element name="version">
@@ -22,24 +22,16 @@
        </element>
        <element name="serialNumber" type="CertificateSerialNumber"/>
        <element name="signature" type="AlgorithmIdentifier"/>
-       <optional>
-        <element name="issuer" type="Name"/>
-       </optional>
-       <optional>
-        <element name="validity" type="Validity"/>
-       </optional>
-       <optional>
-        <element name="subject" type="Name"/>
-       </optional>
-       <optional>
-        <element name="subjectPublicKeyInfo"
+       <element name="issuer" type="Name"/>
+       <element name="validity" type="Validity"/>
+       <element name="subject" type="Name"/>
+       <element name="subjectPublicKeyInfo"
                  type="SubjectPublicKeyInfo"/>
-       </optional>
        <optional>
         <element name="contract">
          <type>
           <sequenceOf>
-           <element name="item" identifier="" type="SmartContract"/>
+           <element name="item" type="SmartContract"/>
           </sequenceOf>
          </type>
         </element>
@@ -49,11 +41,7 @@
          <choice>
           <element name="dataObject">
            <type>
-            <tagged number="0">
-             <type explicit="true">
-              <sequence/>
-             </type>
-            </tagged>
+            <tagged number="0" type="DataObject"/>
            </type>
           </element>
           <element name="extensions">
@@ -75,13 +63,15 @@
 
  <namedType name="SubjectPublicKeyInfo">
   <type>
-   <sequence>
-    <element name="algorithm" type="AlgorithmIdentifier"/>
-    <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
-   </sequence>
+   <choice>
+    <sequence>
+     <element name="algorithm" type="AlgorithmIdentifier"/>
+     <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
+    </sequence>
+    <element name="null" type="asnx:NULL"/>
+   </choice>
   </type>
  </namedType>
 
  <namedType name="SmartContract" type="asnx:INTEGER"/>
-
 </asnx:module>
