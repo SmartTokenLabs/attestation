@@ -1,0 +1,11 @@
+MyAttestation
+
+DEFINITIONS ::=
+BEGIN
+DataObject ::=  SEQUENCE {
+     numero INTEGER,
+     class ENUMERATED { normal(0), gifted(1), vip(2) },
+     date UTCTime
+     }
+
+END
