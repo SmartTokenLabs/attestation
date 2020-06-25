@@ -1,10 +1,12 @@
 # What is an attestation
 
-An attestation is a cryptographically signed proof by an attester. For example, a marriage document is an attestation signed by a witness.
+An attestation is a signed claim by an attester. For example, a marriage certificate is an attestation to attest the marriage.
 
-In many cases, an attestation influences value. For example, a medical certificate signed by a doctor entitles the employee for paid leave and a warranty entitles a free repair service.
+Attestations are useful on the web. For example, an email address attestation helps the website to be sure that the user owns the email address without having to resort to sending email verification code.
 
-In many other cases, an attestation represents value, e.g. a ticket for the FIFA world cup. In such cases, it is like Non-fungible tokens. The relationship between attestations and non-fungible tokens will become apparent later.
+And it is useful on the blockchain. For example, an ICO contract could be written in a way that only attested investors could participate in the early rounds. A financial advisor can sign such attestation. In the `use-cases` directory there is an example of allowing one to redeem either using an identifier attestation. It enables the scenario like "Alice sends Bob 𝑥 amount of Ether without knowing Bob's Ethereum address (but Bob's identifier like email address)."
+
+Attestation can also serve the purpose of blockchain Token. For example, a FIFA ticket, a non-fungible token in Ethereum terms. A smart contract can be made to work with such attestations, for example, allowing one to be transferred to a new Etheruem address.
 
 Attestations are issued off-chain and used on-chain.
 
