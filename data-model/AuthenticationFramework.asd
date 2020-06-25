@@ -80,10 +80,8 @@
   <class>
    <valueField name="id" unique="true"
                type="asnx:OBJECT-IDENTIFIER"/>
-   <optional>
-    <valueField name="critical" type="asnx:BOOLEAN"/>
-    <default literalValue="false"/>
-   </optional>
+   <valueField name="critical" type="asnx:BOOLEAN"/>
+   <default literalValue="false"/>
    <typeField name="ExtnType"/>
   </class>
  </namedClass>
