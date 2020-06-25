@@ -8,38 +8,14 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           custodian="false"
 >
-    <asnx:module name="AnonymouseIdentity">
-        <namedType name="AnonymousIdentity">
-            <type>
-                <sequence>
-                    <element name="identifier" type="asnx:OCTET-STRING">
-                        <annotation>Cryptographically hidden
-                        identifiers like email address or mobile phone
-                        number.</annotation>
-                    </element>
-                    <element name="type">
-                        <type>
-                            <enumerated>
-                                <enumeration name="email" number="0"/>
-                                <enumeration name="mobile" number="1"/>
-                            </enumerated>
-                        </type>
-                    </element>
-                </sequence>
-            </type>
-        </namedType>
-        <namedType name="IdentifierAttestationSingingRequest">
-            <type>
-                <sequence>
-                    <!-- needs to be filled in -->
-                </sequence>
-            </type>
-        </namedType>
-    </asnx:module>
+    <import name="Identifier" schemaLocation="../data-model/IdentifierAttestation.asd"/>
     <ts:label>
         <ts:string>Personal Identifier attestation</ts:string>
     </ts:label>
     <card type="action" name="renew">
+      …
+    </card>
+    <card type="action" name="authenticate">
       …
     </card>
 </ts:attestation>
