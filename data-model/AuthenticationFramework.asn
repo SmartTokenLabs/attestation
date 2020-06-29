@@ -13,10 +13,13 @@ Version ::= INTEGER { v1(0), v2(1), v3(2) }
 CertificateSerialNumber ::= INTEGER
 
 Validity ::= CHOICE {
-    value   SEQUENCE {
-                notBefore   Time,
-                notAfter    Time}, 
-    null    NULL
+    value       ValidityValue,
+    null        NULL 
+}
+		
+ValidityValue ::= SEQUENCE {
+    notBefore       Time,
+    notAfter        Time 
 }
 
 Time ::= CHOICE {

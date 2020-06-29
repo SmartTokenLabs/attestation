@@ -33,12 +33,18 @@
  <namedType name="Validity">
   <type>
    <choice>
-    <sequence name="value">
-     <element name="notBefore" type="Time"/>
-     <element name="notAfter" type="Time"/>
-    </sequence>
+    <element name="value" type="ValidityValue"/>
     <element name="null" type="asnx:NULL"/>
    </choice>
+  </type>
+ </namedType>
+
+ <namedType name="ValidityValue">
+  <type>
+   <sequence>
+    <element name="notBefore" type="Time"/>
+    <element name="notAfter" type="Time"/>
+   </sequence>
   </type>
  </namedType>
 
@@ -80,8 +86,10 @@
   <class>
    <valueField name="id" unique="true"
                type="asnx:OBJECT-IDENTIFIER"/>
-   <valueField name="critical" type="asnx:BOOLEAN"/>
-   <default literalValue="false"/>
+   <optional>
+    <valueField name="critical" type="asnx:BOOLEAN"/>
+    <default literalValue="false"/>
+   </optional>
    <typeField name="ExtnType"/>
   </class>
  </namedClass>

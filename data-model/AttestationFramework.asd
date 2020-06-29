@@ -41,7 +41,7 @@
          <choice>
           <element name="dataObject">
            <type>
-            <tagged number="0" type="DataObject"/>
+            <tagged number="4" type="DataObject"/>
            </type>
           </element>
           <element name="extensions">
@@ -64,12 +64,18 @@
  <namedType name="SubjectPublicKeyInfo">
   <type>
    <choice>
-    <sequence>
-     <element name="algorithm" type="AlgorithmIdentifier"/>
-     <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
-    </sequence>
+    <element name="value" type="SubjectPublicKeyInfoValue"/>
     <element name="null" type="asnx:NULL"/>
    </choice>
+  </type>
+ </namedType>
+
+ <namedType name="SubjectPublicKeyInfoValue">
+  <type>
+   <sequence>
+    <element name="algorithm" type="AlgorithmIdentifier"/>
+    <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
+   </sequence>
   </type>
  </namedType>
 
