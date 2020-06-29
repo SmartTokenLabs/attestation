@@ -15,7 +15,7 @@
  <namedType name="RDNSequence">
   <type>
    <sequenceOf>
-    <element name="item" 
+    <element name="item" identifier=""
              type="RelativeDistinguishedName"/>
    </sequenceOf>
   </type>
@@ -24,7 +24,7 @@
  <namedType name="RelativeDistinguishedName">
   <type>
    <setOf minSize="1">
-    <element name="item"
+    <element name="item" identifier=""
              type="AttributeTypeAndValue"/>
    </setOf>
   </type>
@@ -42,7 +42,7 @@
  <namedType name="AttributeType" value="asnx:OBJECT-IDENTIFIER"/>
  <namedType name="AttributeValue">
   <type>
-   <anyElement/> <!-- defined by AttributeType -->
+   <element name="value"/> <!-- any as specified by AttributeType -->
   </type>
  </namedType>
 

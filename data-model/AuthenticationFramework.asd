@@ -10,7 +10,7 @@
     <optional>
      <element name="parameters">
       <type>
-       <anyElement/> <!-- defined by algorithm -->
+       <element name="value"/> <!-- defined by algorithm -->
       </type>
      </element>
     </optional>
@@ -54,7 +54,7 @@
  <namedType name="Extensions">
   <type>
    <sequenceOf>
-    <element name="item" type="Extension"/>
+    <element name="item" identifier="" type="Extension"/>
    </sequenceOf>
   </type>
  </namedType>
