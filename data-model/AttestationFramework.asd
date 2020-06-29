@@ -9,10 +9,10 @@
  <import name="InformationFramework"
          schemaLocation="InformationFramework.asd"/>
 
- <namedType name="MyAttestation" type="Attestation">
+ <namedType name="MyAttestation">
   <type>
    <sequence>
-    <element name="signedInfo" type="SignedInfo">
+    <element name="signedInfo">
      <type>
       <sequence>
        <element name="version">
