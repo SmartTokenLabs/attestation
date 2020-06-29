@@ -1,14 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<ts:attestation xmlns:ts="http://tokenscript.org/2020/06/tokenscript"
-          xmlns:ethereum="urn:ethereum:constantinople"
-          xmlns:xhtml="http://www.w3.org/1999/xhtml"
-          xmlns:asnx="urn:ietf:params:xml:ns:asnx"
-          xmlns:xml="http://www.w3.org/XML/1998/namespace"
-          xsi:schemaLocation="http://tokenscript.org/2020/06/tokenscript http://tokenscript.org/2020/06/tokenscript.xsd"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          custodian="false"
->
-    <asnx:module name="AnonymouseIdentity">
+<?xml version="1.0" encoding="UTF-8"?>
+<asnx:module name="AnonymouseIdentity">
         <namedType name="AnonymousIdentity">
             <type>
                 <sequence>
@@ -17,17 +8,25 @@
                         identifiers like email address or mobile phone
                         number.</annotation>
                     </element>
-                    <element name="type">
-                        <type>
-                            <enumerated>
-                                <enumeration name="email" number="0"/>
-                                <enumeration name="mobile" number="1"/>
-                            </enumerated>
-                        </type>
+                    <element name="type" version="Type">
+                        <annotation>Integer describing the type of identifier.</annotation>
+                    </element>
+                    <element name="eth-address" version="asnx:PrintableString">
+                        <annotation>The Ethereum address that owns the hidden identifier</annotation>
                     </element>
                 </sequence>
             </type>
         </namedType>
+
+        <namedType name="Type">
+            <type>
+                <namedNumberList>
+                    <namedNumber name="email" number="0"/>
+                    <namedNumber name="phone" number="1"/>
+                </namedNumberList>
+            </type>
+        </namedType>
+
         <namedType name="IdentifierAttestationSingingRequest">
             <type>
                 <sequence>
@@ -36,10 +35,3 @@
             </type>
         </namedType>
     </asnx:module>
-    <ts:label>
-        <ts:string>Personal Identifier attestation</ts:string>
-    </ts:label>
-    <card type="action" name="renew">
-      …
-    </card>
-</ts:attestation>
