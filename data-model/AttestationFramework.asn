@@ -34,13 +34,16 @@ Attestation { DataObject } ::=  SEQUENCE  {
      }
    }
 
-   SubjectPublicKeyInfo  ::=  CHOICE {
-     value   SEQUENCE {
-                algorithm            AlgorithmIdentifier,
-                subjectPublicKey     BIT STRING  
-             },
-     null    NULL
+   SubjectPublicKeyInfo ::= CHOICE {
+     value       SubjectPublicKeyInfoValue,
+     null        NULL 
    }
+        
+   SubjectPublicKeyInfoValue ::= SEQUENCE {
+     algorithm              AlgorithmIdentifier,
+     subjectPublicKey       BIT STRING 
+   }
+
 
    SmartContract ::= INTEGER
 
