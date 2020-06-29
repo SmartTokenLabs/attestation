@@ -31,7 +31,7 @@
         <element name="contract">
          <type>
           <sequenceOf>
-           <element name="item" type="SmartContract"/>
+           <element name="item" identifier="" type="SmartContract"/>
           </sequenceOf>
          </type>
         </element>

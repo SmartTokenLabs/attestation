@@ -13,7 +13,7 @@ IMPORTS
     Name
         FROM InformationFramework;
 
-Attestation { DataObject } ::=  SEQUENCE  {
+MyAttestation { DataObject } ::=  SEQUENCE  {
 
      signedInfo           SignedInfo { DataObject },
      signatureAlgorithm   AlgorithmIdentifier,
