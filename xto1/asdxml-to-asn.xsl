@@ -26,8 +26,10 @@
 		<xsl:text>END</xsl:text>
 	</xsl:template>
 	<xsl:template match="namedType[type/sequence]">
-		<xsl:value-of select="@name"/>
-		<xsl:if test="descendant-or-self::element[@name='dataObject']"> { DataObject }</xsl:if> ::= <xsl:value-of select="upper-case(local-name(type/sequence))"/><xsl:text> {</xsl:text><xsl:call-template name="newLine"/>
+		<xsl:choose>
+			<xsl:when test="lower-case(substring(@name,1,2)) = 'my'"><xsl:value-of select="substring(@name, 3)"/></xsl:when>
+			<xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+		</xsl:choose><xsl:if test="descendant-or-self::element[@name='dataObject']"> { DataObject }</xsl:if> ::= <xsl:value-of select="upper-case(local-name(type/sequence))"/><xsl:text> {</xsl:text><xsl:call-template name="newLine"/>
 		<xsl:apply-templates mode="element" select="type/sequence/element[type/sequence]"/>
 		<xsl:apply-templates select="type/sequence/node() except type/sequence/element[type/sequence]"/> 
 }
@@ -158,7 +160,7 @@
 			<xsl:if test="position()!=last()">,<xsl:call-template name="newLine"/></xsl:if>
 		</xsl:for-each> 
 }
-	WITH SYNTAX { [<xsl:value-of select="concat('&amp;',class//typeField/@name)"/>] <xsl:for-each select="class/optional/valueField">[<xsl:value-of select="concat(upper-case(@name),' &amp;',lower-case(@name))"/>]</xsl:for-each> IDENTIFIED BY <xsl:value-of select="concat('&amp;',class/valueField/@name)"/> }
+	WITH SYNTAX { <xsl:value-of select="concat('&amp;',class//typeField/@name)"/> <xsl:for-each select="class/optional/valueField"><xsl:value-of select="concat(' ', upper-case(@name),' &amp;',lower-case(@name))"/></xsl:for-each> IDENTIFIED BY <xsl:value-of select="concat('&amp;',class/valueField/@name)"/> }
 		<xsl:call-template name="newLine"/>
 		<xsl:call-template name="newLine"/>
 	</xsl:template>
@@ -172,7 +174,4 @@
 	<xsl:template name="newLine">
 		<xsl:value-of select="'&#13;&#10;'" disable-output-escaping="yes"/>
 	</xsl:template>
-	<!--xsl:function name="f:new-line">
-		<xsl:param name="count"/>
-	</xsl:function-->
 </xsl:transform>
