@@ -27,7 +27,9 @@ We desire an attestation to be expressed as succinctly as possible to thus allow
 The design of the attestation URI is motivated by succinctness and thus to avoid it including redundant information or be of low entropy. In particular as URLs and URIs are recommended to be less than 2048 ASCII characters. The overall attestation takes close inspiration from the X.509 certificate specification, RFC-5280, but makes several fields optional, adds a few new ones and changes some formats. 
 
 ### Design specification
-Observe that an attestation is expressed by a JSON object based on the following ASN1 code:
+
+Observe that an attestation is based on the following ASN.1 module:
+
 ````Asn1
 Attestation-Module DEFINITIONS AUTOMATIC TAGS ::= BEGIN
 Attestation { DataObject } ::=  SEQUENCE  {
@@ -54,22 +56,21 @@ SmartContract ::= INTEGER
 
 END
 ````
-We discuss the fields of `SignedInfo` in relation to X.509 as described in RFC 5280. Other fields that are the same as described in X.509 will not be reiterated here and we instead refer to RFC 5280 <https://tools.ietf.org/html/rfc5280>.
+We discuss the fields of `SignedInfo` in relation to X.509 as described in RFC 5280. Other fields that are the same as described in X.509 will not be reiterated here, and we instead refer to [RFC 5280[(https://tools.ietf.org/html/rfc5280).
 
 ### Dropped fields
 
 #### issuerUniqueID and subjectUniqueID
-These fields have been removed as they are optional in X.509 and since identification to the issuer is done implicitly based on its public key and since it might not be desired to explicitly identify a subject.
-
+These fields have been removed as they are optional in X.509 and since identification to the issuer is done implicitly based on its public key and can be managed by a smart contract.
 
 ### Change of optionality
-We are, for reasons described below, allowing certain fields to be optional. However due to issues with unambiguous encoding and decoding, we don't use the OPTIONAL keyword but instead require these fields, but allow their content to simply be NULL. The fields in question is `issue`, `validity`, `subject` and `subjectPublicKeyInfo`. 
+We are, for reasons described below, allowing certain fields to be optional. However, due to issues with unambiguous encoding and decoding, we don't use the OPTIONAL keyword but instead require these fields, but allow their content to simply be NULL. The fields in question is `issue`, `validity`, `subject` and `subjectPublicKeyInfo`. 
 
 #### validity
-`validity` is defined as in RFC 5280, except that it is also allowed to be NULL. This is because the contract may have an internal mechanism by which time the attestation is no longer valid. e.g. an event ticket is invalidated when the event finishes. If the event date is changed, the smart contract is reconfigured without requiring the attestations to be reissued.
+`validity` is defined as in RFC 5280, except that it is also allowed to be `NULL`. This is because the contract may have an internal mechanism by which time the attestation is no longer valid. e.g. an event ticket is invalidated when the event finishes. If the event date is changed, the smart contract is reconfigured without requiring the attestations to be reissued.
 
 #### subject
-`subject` is defined as in RFC 5280, except that it is also allowed to be NULL here. This is so since the attestation constructor might not be identifiable; as-in describable by key-value pairs. We note however that the attestation is still uniquely defined by its serial number and the public key used to construct it.
+`subject` is defined as in RFC 5280, except that it is also allowed to be `NULL` here. This is so since the attestation constructor might not be identifiable; as-in describable by key-value pairs. We note however that the attestation is still uniquely defined by its serial number and the public key used to construct it.
 
 #### subjectPublicKeyInfo
 `subjectPublicKeyInfo` is defined as in RFC 5280, except that it also allowed to be NULL here. This is so because an attestation may bind some claims ("facts") to another attestation instead of a public key. 
@@ -86,10 +87,10 @@ Let `b` be the underlying X.509 certificate which the attention is based on. As 
 The `version` value of `Attestation` is then defined to be the result of the arithmetic computation (`a`-1)\*16+`b`-1. For example consider that `Attestation` is at version 5 and it is based on X.509 v. 2. Thus `a`=5 and `b`=2 and `version`=65 since (5-1)\*16+2-2=65.
 
 #### issuer
-`issuer` is a sequence of relative distinguished names, in particular this includes the string field `Common Name`. For attestations this will be _mandatory_ and not contain a common name, but instead contain information about the public key used to sign the attestation.  If the `signatureAlgorithm` has OID 1.2.840.10045.4.3.2, then this field will contain the Ethereum address. That is, the string "0x" followed by the 20 hex characters defining the address. If the `signatureAlgorithm` does not have OID 1.2.840.10045.4.3.2, then the field _must_ contain the bitstring representing the public key (encoded in non-human readable ASCII).
+`issuer` is a sequence of RDN (relative distinguished names), in particular this includes the string field `CommonName`. For attestations this will be _mandatory_ and not contain a common name, but instead contain information about the public key used to sign the attestation.  If the `signatureAlgorithm` has OID 1.2.840.10045.4.3.2, then this field will contain the Ethereum address. That is, the string "0x" followed by the 20 hex characters defining the address. If the `signatureAlgorithm` does not have OID 1.2.840.10045.4.3.2, then the field _must_ contain the bitstring representing the public key (encoded in non-human readable ASCII).
 
 #### subjectPublicKeyInfo
-`subjectPublicKeyInfo` contain info about the entity which the attestation is attesting something for; _if_ the field is not NULL. We note it will have the asn.1 format as follows, as specified in RFC 2459:
+`subjectPublicKeyInfo` contain info about the entity which the attestation is attesting something for; _if_ the field is not NULL. We note it will have the ASN.1 format as follows, as specified in RFC 2459:
 ````Asn1
 SubjectPublicKeyInfo  ::=  CHOICE {
     value   SEQUENCE {
@@ -97,7 +98,7 @@ SubjectPublicKeyInfo  ::=  CHOICE {
                 subjectPublicKey     BIT STRING  
             },
     null    NULL
-   }
+    }
 ````
 The `algorithm` field may be left out, in which case it is implicitly assumed to be reflect ECDSA using secp256k1 with SHA256 through OID 1.2.840.10045.4.3.2.
 
@@ -130,7 +131,7 @@ The encoding then proceeds as follows:
 
 4. The DER encoding is then base64 encoded, with the following exceptions:
 * The content of `dataObject` is decoded back into its human readable ASCII representation. It is furthermore moved to the beginning of the encoding (i.e. before the base64 encoding starts) and appended an exclamation point, !. 
-* If the `signatureAlgorithm` has OID 1.2.840.10045.4.3.2 then the data in the `Common Name` field within the `Name` structure of the `issuer` field is decoded back into ASCII (which implicitly is actually a hex encoding, and thus human readable). It is  appended an exclamation point, !, and then moved to be right after the exclamation point ending the `dataObject` encoding. Thus the format of the encoding is now:
+* If the `signatureAlgorithm` has OID 1.2.840.10045.4.3.2 then the data in the `CommonName` field within the `Name` structure of the `issuer` field is decoded back into ASCII (which implicitly is actually a hex encoding, and thus human readable). It is  appended an exclamation point, !, and then moved to be right after the exclamation point ending the `dataObject` encoding. Thus the format of the encoding is now:
 `<dataObject>!0x<fingerprint>!<base64 of DER encoding>`
 
 5. URL sensitive characters of the ASCII representation are escaped using the URL percent encoding approach as specified in RFC 3986 section 2.1.
@@ -138,9 +139,9 @@ The encoding then proceeds as follows:
 6. The address of the smart contract which the attestation is being linked to is appended with an exclamation point, !. Finally the address and exclamation point is prepended to the encoding of the attestation.
 
 7. URL sensitive characters of the encoding (specifically the base64 encoded part) are substituted according to the following rules:
-* Addition sign, +, is replaced with the minus sign, -.
-* Forward slash, /, is replaced with the underscore, \_.
-* Equality, =, is replaced with the multiplication sign, \*.
+* Addition sign, `+`, is replaced with the minus sign, `-`.
+* Forward slash, `/`, is replaced with the underscore, `_`.
+* Equality, `=`, is replaced with the multiplication sign, `*`.
 
 That is, an attestation will look something like the following when the smart contract address is assumed to be 0x34288B5B65D616B746AE, the fingerprint of the public is 0xAB89BBEF99736629DC23, the `dataObject` has the following ASN.1 form:
 ````Asn1
