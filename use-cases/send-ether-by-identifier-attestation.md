@@ -42,13 +42,14 @@ Bob computes a value *x=p<sup>-1</sup>p'* and, in a redeeming transaction, and c
 1. Pick random *r* and compute *t=s<sup>r</sup>*
 2. Next compute *c=H(s, s', t)*
 3. Finally compute *d=r+c\*x*
-4. Bob then sends *(s, s', t, d)* and the the attestation (whose subject is *s*) to the smart contract.
+4. Bob then signs *(s, s', t, d)* and the attestation (whose subject is *s*) and sends all these values and the signature to the smart contract.
 
 The smart contract computes:
 
 1. That the amount in the attestation is less than Alice’s balance.
 2. The attestation is a valid attestation that binds *s* to Bob (transaction sender)’s Ethereum address.
-3. *c=H(s, s', t)* and verifies that *s<sup>d</sup>=t\*s'<sup>c</sup>*
+3. That the signature is correct.
+4. *c=H(s, s', t)* and verifies that *s<sup>d</sup>=t\*s'<sup>c</sup>*
 
 If all predicates are satisfied, emits the pay to Bob.
 
