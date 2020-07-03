@@ -3,10 +3,10 @@
 ## Outline
 This document outlines the way of implementing the MVP of the Cheque protocol and which issues that are. The setup considers a Sender who sends a cheque to a Receiver. The Receiver may not have an attestation nor an Ethereum address and thus might need to create that after receiving a cheque. For this is a CA considered (which will construct an Attestation to Bob (associating his Ethereum address to his email or phone), based on a Certificate Signing Request CSR)). Using this Bob can construct a RedeemCheque object that includes the Cheque, his Attestation and a Proof that he knows the secret using in his Attestation. This is then submitted to the Smart Contract that handles cashing cheques, which verifies these values. 
 
-## Sender
+### Sender
 The sender constructs a signed cheque based on the description of SignedCheque.asn. This also involves constructing a secret, which is send out of band to the receiver. The SignedCheque can either be posted to a Smart Contract or distributed in some other way and contains no confidential information as the identity of the Receiver is hidden (by being hashed).
 
-## Receiver
+### Receiver
 The Receiver starts by constructing a CSR (PKCS#10, RFC 2986) with the `commonName` in  `subject` being his Ethereum address.
 Next, as specified in send-ether-by-identifier-attestation.md, he computes `identifier=H(mail)^sk` where `sk` is is private Ethereum signing key and `mail` is his mail address or phone number.
 The `identifier` is thus a curve point, which he encodes as an octet string, as described in [Sec1](https://www.secg.org/sec1-v2.pdf). He then add `identifier` as an `Attribute` to the CSR.
@@ -15,10 +15,18 @@ As a result he get an X509v3 certificate (RFC 5280), which is his attestation an
 
 To redeem a SignedCheque object he then constructs a RedeemCheque object, containing his attestation, the SignedCheque, and a new Schnorr proof of knowledge that he knows the secret exponent. See blockchain-attestation/use-cases/send-ether-by-identifier-attestation.md for details on the actual protocol. 
 
-### CA
+#### CA
 The `identifier` is stored as a `Critical` `Extension` of an Octet string object, and is the only extension in the certificate. The Ethereum address is stored as the `commonName` in the `subject`. 
 
-## Compiling
+## The code
+A java proof-of-concept of this implementation can be found in the src folder.
+
+### Missing features
+1. I could not get asn1c to compile RedeemCheque because of the reference to x509v3, which it for unknown reasons would not import. This means that in the Java implementation this is currently not handled and thus plain (unsigned objects) are passed along instead. This is top priority to correct.
+2. The SignedCheque still needs to contain a not-valid-after (and perhaps also a not-valid-before) timestamp. 
+
+
+### Compiling
 The following ASN1 objects are used; x509v3.asn (as specified in RFC 5280), CSR (as specified in RFC 2986), SignedCheque.asn (as specified in SignedCheque.asd) and RedeemCheque.asn (as specified in RedeemCheque.asd).
 
 To convert asd files to asn files you can use Saxon. E.g. as follows:
@@ -27,7 +35,7 @@ To convert asd files to asn files you can use Saxon. E.g. as follows:
 These can then be used to build object files, e.g. as done for Java in the reference implementation using ObjSys's library:
 `../../../bin/asn1c  SignedCheque.asn -der -java -print -pkgname dk.alexandra.stormbird.cheque`
 
-## Verifying
+### Verifying
 Since the CSR and Attestation are RFC standards compliant they can be verified or created using openssl:
 
 Create keys

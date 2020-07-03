@@ -23,9 +23,11 @@ import java.util.Random;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.BERSet;
+import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DEREncodable;
 import org.bouncycastle.asn1.DERInteger;
 import org.bouncycastle.asn1.DERObjectIdentifier;
@@ -105,4 +107,5 @@ public class Receiver {
         new Asn1OctetString(proof.get(2)), new Asn1OctetString(proof.get(3)));
     return res;
   }
+
 }
