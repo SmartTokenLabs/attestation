@@ -1,0 +1,19 @@
+SignedCheque
+
+DEFINITIONS ::=
+BEGIN
+
+SignedCheque ::= SEQUENCE {
+    cheque               Cheque,
+    publicKey            BIT STRING,
+    signatureValue       BIT STRING 
+}
+		
+
+Cheque ::= SEQUENCE {
+    amount       INTEGER,
+    riddle       OCTET STRING 
+}
+		
+
+END
