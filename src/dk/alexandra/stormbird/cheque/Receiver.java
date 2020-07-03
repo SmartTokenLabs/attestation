@@ -2,6 +2,7 @@ package dk.alexandra.stormbird.cheque;
 
 import static org.bouncycastle.asn1.x500.style.BCStyle.CN;
 
+import com.objsys.asn1j.runtime.Asn1OctetString;
 import com.sun.jarsigner.ContentSigner;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -13,12 +14,15 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
+import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.List;
 import java.util.Random;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.BERSet;
@@ -54,45 +58,32 @@ import sun.security.pkcs10.PKCS10;
 import sun.security.x509.X500Name;
 
 public class Receiver {
-  private final SecureRandom rand;
   private final String address;
+  private final Crypto crypto;
+  private final KeyPair keys;
   private static final X9ECParameters curve = SECNamedCurves.getByName ("secp256k1");
   private static final ECDomainParameters domain = new ECDomainParameters (curve.getCurve (), curve.getG (), curve.getN (), curve.getH ());
 
-  public Receiver(String address) {
+  public Receiver(String address, KeyPair keys, Crypto crypto) {
     this.address = address;
-    rand = new SecureRandom(); // This MUST not be deterministic. Java self-seeds SecureRandom
-  }
-
-
-  public AsymmetricCipherKeyPair createBCKeys() throws Exception {
-        X9ECParameters curve = SECNamedCurves.getByName ("secp256k1");
-    ECDomainParameters domain = new ECDomainParameters (curve.getCurve (), curve.getG (), curve.getN (), curve.getH ());
-    ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters (domain, rand);
-    ECKeyPairGenerator generator = new ECKeyPairGenerator();
-    generator.init (keygenParams);
-    AsymmetricCipherKeyPair keypair = generator.generateKeyPair ();
-    ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate ();
-    ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic ();
-    return  keypair;
+    this.keys = keys;
+    this.crypto = crypto;
   }
 
   /**
    * DER encoded CSR with ECDSA SHA256 spec
-   * @param keys
-   * @param secret
-   * @param identifier
-   * @param type
-   * @return
-   * @throws Exception
    */
-  public PKCS10CertificationRequest createCSR(KeyPair keys, ECPoint identifier) throws Exception {
+  public CSRAndSecret createCSR(String identity, int type) throws Exception {
+    BigInteger secret = crypto.makeRandomExponent();
+    ECPoint identifier = crypto.generateRiddle(type, identity, secret);
+
+    // Encode ETH address as CommonName
     X509Principal name = new X509Principal("CN=" + address);
     byte[] encoding = identifier.getEncoded();
     ASN1Set attributes = new DERSet(new ASN1Encodable[]{
         new DERSequence(new ASN1Encodable[]{
-            // Octet string
-            new DERObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40"), new DEROctetString(encoding)
+            // Encode encrypted identity as an Octet string attribute
+            new DERObjectIdentifier(Util.OID_OCTETSTRING), new DEROctetString(encoding)
         })
 //        , new DERSequence(new ASN1Encodable[]{
 //            // Integer
@@ -100,27 +91,18 @@ public class Receiver {
 //          new DEROctetString(secret), new DERInteger(type)
     });
     // OID for ECDSA with SHA256
-    PKCS10CertificationRequest csr = new PKCS10CertificationRequest("1.2.840.10045.4.3.2", name, keys.getPublic(), attributes, keys.getPrivate());
-    return csr;
-
-// generate PKCS10 certificate request
-//    String sigAlg = "ECDSA";
-//    PKCS10 pkcs10 = new PKCS10(keys.getPublic());
-//    Signature signature = Signature.getInstance(sigAlg);
-//    signature.initSign(keys.getPrivate());
-//    // common, orgUnit, org, locality, state, country
-//    X500Principal principal = new X500Principal( "CN=Ole Nordmann, OU=ACME, O=Sales, C=NO");
-//    X500Name x500name=null;
-//    x500name= new X500Name(principal.getEncoded());
-//    pkcs10.encodeAndSign(x500name, signature);
-//    ByteArrayOutputStream bs = new ByteArrayOutputStream();
-//    PrintStream ps = new PrintStream(bs);
-//    pkcs10.print(ps);
-//    byte[] c = bs.toByteArray();
-//    return c;
+    PKCS10CertificationRequest csr = new PKCS10CertificationRequest(Util.OID_SHA256ECDSA, name, keys.getPublic(), attributes, keys.getPrivate());
+    return new CSRAndSecret(csr, secret);
   }
 
-  public void receiveCheque(Crypto crypto, Cheque cheque, BigInteger solution, BigInteger secret) {
-
+  public Proof redeemCheque(ChequeAndSecret chequeAndSecret, X509Certificate cert, BigInteger secret) throws Exception {
+    ECPoint decodedRiddle = crypto.decodePoint(chequeAndSecret.getCheque().cheque.riddle.value);
+    BigInteger x = secret.modInverse(crypto.curveOrder).multiply(chequeAndSecret.getSecret()).mod(crypto.curveOrder);
+    // It now holds that identifier.multiply(x) = riddle
+    ECPoint identifier = crypto.decodePoint(Util.getIdentifierFromCert(cert));
+    List<byte[]> proof = crypto.computeProof(identifier, decodedRiddle, x);
+    Proof res = new Proof(new Asn1OctetString(proof.get(0)), new Asn1OctetString(proof.get(1)),
+        new Asn1OctetString(proof.get(2)), new Asn1OctetString(proof.get(3)));
+    return res;
   }
 }

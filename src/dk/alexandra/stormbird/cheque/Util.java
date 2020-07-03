@@ -1,12 +1,44 @@
 package dk.alexandra.stormbird.cheque;
 
+import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
+import com.objsys.asn1j.runtime.Asn1Seq;
+import com.objsys.asn1j.runtime.Asn1Type;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 
 public class Util {
   public static final int CHARS_IN_LINE = 65;
+  public static final String OID_SHA256ECDSA = "1.2.840.10045.4.3.2";
+  public static final String OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
+
+  public static byte[] encodeASNObject(Asn1Type object) {
+    Asn1BerEncodeBuffer outputStream = new Asn1BerEncodeBuffer();
+    object.encode(outputStream);
+    return outputStream.getMsgCopy();
+  }
+
+  public static byte[] getIdentifierFromCert(X509Certificate cert) throws Exception {
+    byte[] byteIdentifier = cert.getExtensionValue(Util.OID_OCTETSTRING);
+    ASN1InputStream input = new ASN1InputStream(byteIdentifier);
+    DEROctetString object = (DEROctetString) input.readObject();
+    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
+    input = new ASN1InputStream(object.getOctets());
+    object = (DEROctetString) input.readObject();
+    return object.getOctets();
+  }
+
+  public static String printCheque(SignedCheque input) throws Exception {
+    byte[] encodedCert = Base64.getEncoder().encode(Util.encodeASNObject(input));
+    StringBuilder builder = new StringBuilder();
+    builder.append("-----BEGIN CHEQUE-----\n");
+    addBytes(builder, encodedCert);
+    builder.append("-----END CHEQUE-----");
+    return builder.toString();
+  }
 
   public static String printDERCert(X509Certificate input) throws Exception {
     byte[] encodedCert = Base64.getEncoder().encode(input.getEncoded());

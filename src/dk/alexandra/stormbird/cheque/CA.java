@@ -26,17 +26,12 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.bouncycastle.x509.extension.SubjectKeyIdentifierStructure;
 
 public class CA {
-  private final SecureRandom rand;
   private final KeyPair keys;
-  private final String address;
-  private static final X9ECParameters curve = SECNamedCurves.getByName ("secp256k1");
-  private static final ECDomainParameters domain = new ECDomainParameters (curve.getCurve (), curve.getG (), curve.getN (), curve.getH ());
+  private static final X9ECParameters curve = SECNamedCurves.getByName (Crypto.ECDSA_CURVE);
 
-  public CA(String address, KeyPair keys ) {
+  public CA(KeyPair keys ) {
     Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-    this.address = address;
     this.keys = keys;
-    rand = new SecureRandom(); // This MUST not be deterministic. Java self-seeds SecureRandom
   }
 
   public X509Certificate makeCert(PKCS10CertificationRequest csr) throws Exception {
@@ -54,11 +49,13 @@ public class CA {
     serverCertGen.setPublicKey(keys.getPublic());
     serverCertGen.setSignatureAlgorithm("SHA256withECDSA");
     ASN1Set attributes = csr.getCertificationRequestInfo().getAttributes();
+    // We encode the attributes of the CSR as an Extension to be compatible with X509v3
     for (ASN1Encodable current : attributes.toArray()) {
-      // The encoding is a sequence of pairs
+      // The encoding is a sequence of triples of object identifier, boolean, and object
       DERSequence currentOb = (DERSequence) current.toASN1Object();
       DERObjectIdentifier oid = (DERObjectIdentifier) currentOb.getObjectAt(0);
       DERObject object = (DERObject) currentOb.getObjectAt(1);
+      // CRITICAL is always set to true
       serverCertGen.addExtension(oid, true, object);
     }
     return serverCertGen.generateX509Certificate(keys.getPrivate(), "BC");

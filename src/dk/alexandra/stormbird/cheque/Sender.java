@@ -1,9 +1,11 @@
 package dk.alexandra.stormbird.cheque;
 
+import com.objsys.asn1j.runtime.Asn1BitString;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -23,14 +25,22 @@ import org.bouncycastle.math.ec.ECPoint;
 public class Sender {
 
   private final String address;
+  private final KeyPair keys;
+  private final Crypto crypto;
 
-  public Sender(String address) {
+  public Sender(String address, KeyPair keys, Crypto crypto) {
+    this.crypto = crypto;
     this.address = address;
+    this.keys = keys;
   }
 
-  public Cheque makeCheque(String identifier, int type, int amount, BigInteger secret) {
-//    ECPoint riddle = Crypto.generateRiddle(type, identifier, secret);
-//    return new Cheque(amount, riddle.getEncoded());
-    return null;
+  public ChequeAndSecret makeCheque(String identifier, int type, int amount) throws Exception {
+    BigInteger secret = crypto.makeRandomExponent();
+    ECPoint riddle = crypto.generateRiddle(type, identifier, secret);
+    Cheque unsignedCheque = new Cheque(amount, riddle.getEncoded());
+    byte[] unsignedChequeBytes = Util.encodeASNObject(unsignedCheque);
+    byte[] signature = crypto.signBytes(unsignedChequeBytes, keys);
+    SignedCheque signedCheque = new SignedCheque(unsignedCheque, new Asn1BitString(keys.getPublic().getEncoded()), new Asn1BitString(signature));
+    return  new ChequeAndSecret(signedCheque, secret);
   }
 }

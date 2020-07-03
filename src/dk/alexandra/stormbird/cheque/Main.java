@@ -1,61 +1,63 @@
 package dk.alexandra.stormbird.cheque;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.SecureRandom;
+import java.security.Signature;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.math.ec.ECPoint;
+import com.objsys.asn1j.runtime.*;
 
 public class Main {
+  private static final String RECEIVER_ADDRESS = "0x666666666666";
+  private static final String RECEIVER_IDENTITY = "tore@alex.dk";
+  private static final int RECEIVER_TYPE = 0; // 0: email, 1:phone
+
+  private static final String SENDER_ADDRESS = "0x424242424242";
+  private static final int SENDER_AMOUNT = 42;
+
 
   public static void main(String args[])  {
     try {
-      Crypto crypto = new Crypto(new SecureRandom());
-      String identity = "tore@alex.dk";
-      int type = 0;
-      Sender s = new Sender("0x424242");
-      BigInteger riddleSolution = crypto.makeRandomExponent();
-      ECPoint riddle = crypto.generateRiddle(type, identity, riddleSolution);
-      KeyPair senderKeys = crypto.createKeyPair();
-      Cheque cheque = new Cheque(42, riddle.getEncoded());
+      // Deterministic for testing purposes ONLY!!
+      SecureRandom rnd = SecureRandom.getInstance("SHA1PRNG");
+      rnd.setSeed("seed".getBytes());
+      Crypto crypto = new Crypto(rnd);
 
-      Receiver r = new Receiver("0x66666666");
-      KeyPair keys = crypto.createKeyPair();
-      BigInteger secret = crypto.makeRandomExponent();
-      ECPoint identifier = crypto.generateRiddle(type, identity, secret);
-      PKCS10CertificationRequest csr = r.createCSR(keys, identifier);
-      System.out.println(Util.printDERCSR(csr));
-      CA ca = new CA("0x33333333", crypto.createKeyPair());
-      X509Certificate cert = ca.makeCert(csr);
+      // SENDER
+      KeyPair senderKeys = crypto.createKeyPair();
+      Sender s = new Sender(SENDER_ADDRESS, senderKeys, crypto);
+      ChequeAndSecret chequeAndSec = s.makeCheque(RECEIVER_IDENTITY, RECEIVER_TYPE, SENDER_AMOUNT);
+      System.out.println(Util.printCheque(chequeAndSec.getCheque()));
+
+      // RECEIVER
+      KeyPair receiverKeys = crypto.createKeyPair();
+      Receiver r = new Receiver(RECEIVER_ADDRESS, receiverKeys, crypto);
+      CSRAndSecret csrAndSec = r.createCSR(RECEIVER_IDENTITY, RECEIVER_TYPE);
+      System.out.println(Util.printDERCSR(csrAndSec.getCsr()));
+
+      // CA
+      CA ca = new CA(crypto.createKeyPair());
+      X509Certificate cert = ca.makeCert(csrAndSec.getCsr());
       System.out.println(Util.printDERCert(cert));
 
-      ECPoint decodedRiddle = crypto.decodePoint(cheque.getRiddle());
-      BigInteger x = secret.modInverse(crypto.curveOrder).multiply(riddleSolution).mod(crypto.curveOrder);
-      // It now holds that identifier.multiply(x) = riddle
-      List<byte[]> proof = crypto.computeProof(identifier, decodedRiddle, x);
+      // RECEIVER
+      Proof proof = r.redeemCheque(chequeAndSec, cert, csrAndSec.getSecret());
 
-      cert.checkValidity();
-      cert.verify(cert.getPublicKey(), "BC");
-      // Retrieve string
-      byte[] byteIdentifier = cert.getExtensionValue("1.3.6.1.4.1.1466.115.121.1.40");
-      ASN1InputStream input = new ASN1InputStream(byteIdentifier);
-      DEROctetString object = (DEROctetString) input.readObject();
-      // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-      input = new ASN1InputStream(object.getOctets());
-      object = (DEROctetString) input.readObject();
-      ECPoint decodedIdentifier = crypto.decodePoint(object.getOctets());
-      if (!Arrays.equals(decodedIdentifier.getEncoded(), proof.get(0))) {
-        throw new RuntimeException("Identity of proof and cert does not match");
+      // SMART CONTRACT
+      SmartContract sm = new SmartContract(crypto);
+      // TODO this should be an ASN1 RedeemCheque (signed) object instead, but I have not been able to parse x509v3 to Java
+      if (!sm.cashCheque(cert, proof, chequeAndSec.getCheque())) {
+        System.out.println("Failed to accept cashing request");
       }
-      if (!crypto.verifyProof(proof)) {
-        throw new RuntimeException("Proof did not verify");
-      }
-
     } catch (Exception e ) {
       e.printStackTrace();
     }

@@ -1,6 +1,7 @@
 package dk.alexandra.stormbird.cheque;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +9,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
 import java.security.spec.ECFieldFp;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
@@ -25,15 +27,17 @@ import org.bouncycastle.math.ec.ECPoint;
 public class Crypto {
 
   public static final int COMP_SEC = 32; // 256 bits
+  public static final String ECDSA_CURVE = "secp256k1";
+  public static final String MAC_ALGO = "HmacSHA256";
   public final BigInteger fieldSize;
   public final BigInteger curveOrder;
   public final ECNamedCurveParameterSpec spec;
-  private final Random rand;
+  private final SecureRandom rand;
 
-  public Crypto(Random rand) {
+  public Crypto(SecureRandom rand) {
     this.rand = rand;
-    spec = ECNamedCurveTable.getParameterSpec("secp256k1");
-    ECNamedCurveSpec params = new ECNamedCurveSpec("secp256k1", spec.getCurve(), spec.getG(),
+    spec = ECNamedCurveTable.getParameterSpec(ECDSA_CURVE);
+    ECNamedCurveSpec params = new ECNamedCurveSpec(ECDSA_CURVE, spec.getCurve(), spec.getG(),
         spec.getN());
     fieldSize = ((ECFieldFp) params.getCurve().getField()).getP();
     curveOrder = params.getOrder();
@@ -43,9 +47,29 @@ public class Crypto {
 
     Security.addProvider(new BouncyCastleProvider());
     KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDSA", "BC");
-    ECGenParameterSpec ecSpec = new ECGenParameterSpec("secp256k1");
-    keyGen.initialize(ecSpec, new SecureRandom());
+    ECGenParameterSpec ecSpec = new ECGenParameterSpec(ECDSA_CURVE);
+    keyGen.initialize(ecSpec, rand);
     return keyGen.generateKeyPair();
+  }
+
+//  public AsymmetricCipherKeyPair createBCKeys() throws Exception {
+//        X9ECParameters curve = SECNamedCurves.getByName ("secp256k1");
+//    ECDomainParameters domain = new ECDomainParameters (curve.getCurve (), curve.getG (), curve.getN (), curve.getH ());
+//    ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters (domain, rand);
+//    ECKeyPairGenerator generator = new ECKeyPairGenerator();
+//    generator.init (keygenParams);
+//    AsymmetricCipherKeyPair keypair = generator.generateKeyPair ();
+//    ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate ();
+//    ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic ();
+//    return  keypair;
+//  }
+
+
+  public byte[] signBytes(byte[] input, KeyPair keys) throws Exception {
+    Signature sig = Signature.getInstance(keys.getPublic().getAlgorithm());
+    sig.initSign(keys.getPrivate());
+    sig.update(input);
+    return sig.sign();
   }
 
   public BigInteger makeRandomExponent() {
@@ -66,7 +90,7 @@ public class Crypto {
     return Arrays.asList(base.getEncoded(), riddle.getEncoded(), t.getEncoded(), d.toByteArray());
   }
 
-  public boolean verifyProof(List<byte[]> proof) throws Exception {
+  public boolean verifyProof(List<byte[]> proof) throws IOException {
     ECPoint base = decodePoint(proof.get(0));
     ECPoint riddle = decodePoint(proof.get(1));
     ECPoint t = decodePoint(proof.get(2));
@@ -77,7 +101,7 @@ public class Crypto {
     return lhs.equals(rhs);
   }
 
-  private byte[] makeArray(List<ECPoint> points ) throws Exception {
+  private byte[] makeArray(List<ECPoint> points ) throws IOException {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     for (ECPoint current : points) {
       outputStream.write(current.getX().toBigInteger().toByteArray());
@@ -101,8 +125,8 @@ public class Crypto {
   private BigInteger mapToInteger(byte[] value) {
     try {
       // We use HMAC to avoid issues with extension attacks, although SHA3 or double hashing should be sufficient on its own
-      Mac mac = Mac.getInstance("HmacSHA256");
-      SecretKeySpec keySpec = new SecretKeySpec("static_key".getBytes((StandardCharsets.UTF_8)), "HmacSHA256");
+      Mac mac = Mac.getInstance(MAC_ALGO);
+      SecretKeySpec keySpec = new SecretKeySpec("static_key".getBytes((StandardCharsets.UTF_8)), MAC_ALGO);
       mac.init(keySpec);
       mac.update(value);
       byte[] macData = mac.doFinal();
