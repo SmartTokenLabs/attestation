@@ -7,6 +7,10 @@
                 <element name="riddle" type="asnx:OCTET-STRING">
                     <annotation>The elliptic curve point that is the riddle</annotation>
                 </element>
+                <element name="publicKey" type="asnx:BIT-STRING"/>
+                <element name="signatureValue" type="asnx:BIT-STRING">
+                    <annotation>Algorithm is always ECDSA secp256k1</annotation>
+                </element>
             </sequence>
         </type>
     </namedType>

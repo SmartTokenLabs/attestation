@@ -12,6 +12,8 @@ An IdentifierAttestation is achieved by sending a Certificate Signing Request as
 
 The CA constructs an Attestation with `AnonymousIdentity` as `dataObject` if the checks are ok. 
 
+### CA
+The identifier and type are stored as attributes to make the CSR RFC 2986. To make the signed attestation compliant with x509 the identifier and type  should be encoded as subjectAltName using a sequnce of otherName
 
 ## Compiling
 Convert asnx files to asd:
@@ -24,5 +26,9 @@ Create keys
 `openssl ecparam -name secp256k1 -genkey -param_enc explicit -out private-key.pem`
 Create CSR
 `openssl req -new -sha256 -key private-key.pem -out csr.csr`
-Sign
+Print CSR
+`openssl req -in csr.csr -noout -text`
+Sign CSR
 `openssl req -x509 -sha256 -days 365 -key private-key.pem -in csr.csr -out certificate.pem`
+Print certificate
+`openssl x509 -in certificate.pem -text -noout`

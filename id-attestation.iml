@@ -12,5 +12,6 @@
     <orderEntry type="library" scope="TEST" name="junit:junit:4.13" level="project" />
     <orderEntry type="library" name="org.junit.jupiter:junit-jupiter:5.6.0" level="project" />
     <orderEntry type="library" name="bouncycastle:bcprov-jdk16:140" level="application" />
+    <orderEntry type="library" name="junit:junit:4.13" level="project" />
   </component>
 </module>
