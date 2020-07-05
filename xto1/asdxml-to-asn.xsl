@@ -22,8 +22,17 @@
 		<xsl:text>BEGIN</xsl:text>
 		<xsl:call-template name="newLine"/>
 		<xsl:call-template name="newLine"/>
-		<xsl:apply-templates select="node()"/>
+		<xsl:if test="import">
+			<xsl:text>IMPORTS</xsl:text><xsl:call-template name="newLine"/>
+			<xsl:apply-templates select="import"/>
+			<xsl:call-template name="newLine"/>
+		</xsl:if>
+		<xsl:apply-templates select="node() except import"/>
 		<xsl:text>END</xsl:text>
+	</xsl:template>
+	<xsl:template match="import">
+		<xsl:value-of select="@name"/><xsl:text> FROM </xsl:text><xsl:value-of select="replace(@schemaLocation,'.asd','')"/>
+		<xsl:call-template name="newLine"/>
 	</xsl:template>
 	<xsl:template match="namedType[type/sequence]">
 		<xsl:choose>
