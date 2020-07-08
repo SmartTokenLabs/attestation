@@ -81,7 +81,7 @@
 			</xsl:for-each><xsl:for-each select="table">({<xsl:value-of select="@objectSet"/>}<xsl:for-each select="restrictBy">{<xsl:value-of select="concat('@',.)"/>}</xsl:for-each>)</xsl:for-each>
 		</xsl:for-each>
 		<xsl:for-each select="type/sequenceOf"> SEQUENCE OF <xsl:value-of select="element/@type"/>
-		</xsl:for-each><xsl:if test="..[self::optional]"><xsl:value-of select="concat(' ',upper-case(local-name(..)))"/></xsl:if>
+		</xsl:for-each><xsl:apply-templates select="type/element[@name='value' and count(@*) = 1 and not(child::*)]"/><xsl:if test="..[self::optional]"><xsl:value-of select="concat(' ',upper-case(local-name(..)))"/></xsl:if>
 	</xsl:template>
 	<xsl:template mode="element" match="element">
 		<xsl:value-of select="substring($vSpaces, 1, 4)"/>
@@ -90,6 +90,9 @@
 	<xsl:template match="element">
 		<xsl:value-of select="substring($vSpaces, 1, 4)"/>
 		<xsl:call-template name="process-element"/><xsl:text>,</xsl:text><xsl:call-template name="newLine"/>
+	</xsl:template>
+	<xsl:template match="element[@name='value' and count(@*) = 1 and not(child::*)]" priority="1">
+		<xsl:text> ANY</xsl:text>
 	</xsl:template>
 	<xsl:template match="element[not(following-sibling::*)]">
 		<xsl:value-of select="substring($vSpaces, 1, 4)"/>
