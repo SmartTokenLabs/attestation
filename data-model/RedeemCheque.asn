@@ -4,12 +4,14 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
+    MyAttestation
+        FROM AttestationFramework
     SignedCheque
         FROM SignedCheque;
 
 RedeemCheque ::= SEQUENCE {
     signedCheque         SignedCheque,
-    attestation          X509Certificate,
+    attestation          MyAttestation,
     proof                Proof,
     signatureValue       BIT STRING 
 }

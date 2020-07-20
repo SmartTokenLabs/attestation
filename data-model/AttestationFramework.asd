@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <asnx:module xmlns:asnx="urn:ietf:params:xml:ns:asnx"
              name="AttestationFramework"
              tagDefault="explicit">
@@ -22,19 +22,11 @@
        </element>
        <element name="serialNumber" type="CertificateSerialNumber"/>
        <element name="signature" type="AlgorithmIdentifier"/>
-       <optional>
-        <element name="issuer" type="Name"/>
-       </optional>
-       <optional>
-        <element name="validity" type="Validity"/>
-       </optional>
-       <optional>
-        <element name="subject" type="Name"/>
-       </optional>
-       <optional>
-        <element name="subjectPublicKeyInfo"
+       <element name="issuer" type="Name"/>
+       <element name="validity" type="Validity"/>
+       <element name="subject" type="Name"/>
+       <element name="subjectPublicKeyInfo"
                  type="SubjectPublicKeyInfo"/>
-       </optional>
        <optional>
         <element name="contract">
          <type>
@@ -46,22 +38,7 @@
        </optional>
        <element name="attestsTo">
         <type>
-         <choice>
-          <element name="dataObject">
-           <type>
-            <tagged number="0">
-             <type explicit="true">
-              <sequence/>
-             </type>
-            </tagged>
-           </type>
-          </element>
-          <element name="extensions">
-           <type>
-            <tagged number="3" tagging="explicit" type="Extensions"/>
-           </type>
-          </element>
-         </choice>
+         <tagged number="3" tagging="explicit" type="Extensions"/>
         </type>
        </element>
       </sequence>
@@ -75,6 +52,15 @@
 
  <namedType name="SubjectPublicKeyInfo">
   <type>
+   <choice>
+    <element name="value" type="SubjectPublicKeyInfoValue"/>
+    <element name="null" type="asnx:NULL"/>
+   </choice>
+  </type>
+ </namedType>
+
+ <namedType name="SubjectPublicKeyInfoValue">
+  <type>
    <sequence>
     <element name="algorithm" type="AlgorithmIdentifier"/>
     <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
@@ -83,5 +69,4 @@
  </namedType>
 
  <namedType name="SmartContract" type="asnx:INTEGER"/>
-
 </asnx:module>

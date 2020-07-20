@@ -1,20 +1,9 @@
 package dk.alexandra.stormbird.cheque;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.math.BigInteger;
+import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
 import java.security.KeyPair;
 import java.security.SecureRandom;
-import java.security.Signature;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.jce.PKCS10CertificationRequest;
-import org.bouncycastle.math.ec.ECPoint;
-import com.objsys.asn1j.runtime.*;
 
 public class Main {
   private static final String RECEIVER_ADDRESS = "0x666666666666";
@@ -50,12 +39,11 @@ public class Main {
       System.out.println(Util.printDERCert(cert));
 
       // RECEIVER
-      Proof proof = r.redeemCheque(chequeAndSec, cert, csrAndSec.getSecret());
+      RedeemCheque redeem = r.redeemCheque(chequeAndSec, cert, csrAndSec.getSecret(), receiverKeys);
 
       // SMART CONTRACT
-      SmartContract sm = new SmartContract(crypto);
-      // TODO this should be an ASN1 RedeemCheque (signed) object instead, but I have not been able to parse x509v3 to Java
-      if (!sm.cashCheque(cert, proof, chequeAndSec.getCheque())) {
+      SmartContractDummy sm = new SmartContractDummy(crypto);
+      if (!sm.cashCheque(cert, redeem, chequeAndSec.getCheque())) {
         System.out.println("Failed to accept cashing request");
       }
     } catch (Exception e ) {

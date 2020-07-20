@@ -6,24 +6,18 @@
  <namedType name="AlgorithmIdentifier">
   <type>
    <sequence>
-    <element name="algorithm">
-     <type>
-      <fromClass class="ALGORITHM" fieldName="id"/>
-     </type>
-    </element>
+    <element name="algorithm" type="asnx:OBJECT-IDENTIFIER"/>
     <optional>
      <element name="parameters">
       <type>
-       <fromClass class="ALGORITHM" fieldName="Type"/>
+       <element name="value"/> <!-- defined by algorithm -->
       </type>
      </element>
     </optional>
    </sequence>
   </type>
  </namedType>
-
- <namedClass name="ALGORITHM" class="ASN-TYPE-IDENTIFIER"/>
-
+ 
  <namedType name="Version">
   <type>
    <namedNumberList>
@@ -38,18 +32,18 @@
 
  <namedType name="Validity">
   <type>
-   <sequence>
-    <element name="notBefore" type="Time"/>
-    <element name="notAfter" type="Time"/>
-   </sequence>
+   <choice>
+    <element name="value" type="ValidityValue"/>
+    <element name="null" type="asnx:NULL"/>
+   </choice>
   </type>
  </namedType>
 
- <namedType name="SubjectPublicKeyInfo">
+ <namedType name="ValidityValue">
   <type>
    <sequence>
-    <element name="algorithm" type="AlgorithmIdentifier"/>
-    <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
+    <element name="notBefore" type="Time"/>
+    <element name="notAfter" type="Time"/>
    </sequence>
   </type>
  </namedType>

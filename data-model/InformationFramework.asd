@@ -7,6 +7,7 @@
   <type>
    <choice>
     <element name="rdnSequence" type="RDNSequence"/>
+    <element name="null" type="asnx:NULL"/>
    </choice>
   </type>
  </namedType>
@@ -24,52 +25,26 @@
   <type>
    <setOf minSize="1">
     <element name="item" identifier=""
-             type="AttributeTypeAndDistinguishedValue"/>
+             type="AttributeTypeAndValue"/>
    </setOf>
   </type>
  </namedType>
 
- <namedType name="AttributeTypeAndDistinguishedValue">
+ <namedType name="AttributeTypeAndValue">
   <type>
    <sequence>
-    <element name="type">
-     <type>
-      <constrained>
-       <type>
-        <fromClass class="ATTRIBUTE" fieldName="id"/>
-       </type>
-       <table objectSet="SupportedAttributes"/>
-      </constrained>
-     </type>
-    </element>
-    <element name="value">
-     <type>
-      <constrained>
-       <type>
-        <fromClass class="ATTRIBUTE" fieldName="Type"/>
-       </type>
-       <table objectSet="SupportedAttributes">
-        <restrictBy>type</restrictBy>
-       </table>
-      </constrained>
-     </type>
-    </element>
+    <element name="type" type="AttributeType"/>
+    <element name="value" type="AttributeValue"/>
    </sequence>
   </type>
  </namedType>
 
- <namedObjectSet name="SupportedAttributes" class="ATTRIBUTE">
-  <objectSet>
-   <extension/>
-  </objectSet>
- </namedObjectSet>
+ <namedType name="AttributeType" value="asnx:OBJECT-IDENTIFIER"/>
+ <namedType name="AttributeValue">
+  <type>
+   <element name="value"/> <!-- any as specified by AttributeType -->
+  </type>
+ </namedType>
 
- <namedClass name="ATTRIBUTE">
-  <class>
-   <typeField name="Type"/>
-   <valueField name="id" unique="true"
-               type="asnx:OBJECT-IDENTIFIER"/>
-  </class>
- </namedClass>
 
 </asnx:module>

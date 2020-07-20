@@ -1,14 +1,12 @@
 package dk.alexandra.stormbird.cheque;
 
+import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
+import dk.alexandra.stormbird.cheque.asnobjects.SmartContract;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.List;
-import java.util.Random;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.jce.PKCS10CertificationRequest;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.Assert;
 
@@ -72,11 +70,11 @@ public class Test {
     X509Certificate cert = ca.makeCert(csrAndSec.getCsr());
 
     // RECEIVER
-    Proof proof = r.redeemCheque(chequeAndSec, cert, csrAndSec.getSecret());
+    RedeemCheque redeem = r.redeemCheque(chequeAndSec, cert, csrAndSec.getSecret(), receiverKeys);
 
     // SMART CONTRACT
-    SmartContract sm = new SmartContract(crypto);
-    Assert.assertTrue(sm.cashCheque(cert, proof, chequeAndSec.getCheque()));
+    SmartContractDummy sm = new SmartContractDummy(crypto);
+    Assert.assertTrue(sm.cashCheque(cert, redeem, chequeAndSec.getCheque()));
   }
 
 }

@@ -1,8 +1,8 @@
 package dk.alexandra.stormbird.cheque;
 
 import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
-import com.objsys.asn1j.runtime.Asn1Seq;
 import com.objsys.asn1j.runtime.Asn1Type;
+import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;

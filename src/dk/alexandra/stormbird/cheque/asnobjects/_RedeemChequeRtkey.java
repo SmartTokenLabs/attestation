@@ -1,4 +1,4 @@
-package dk.alexandra.stormbird.cheque;
+package dk.alexandra.stormbird.cheque.asnobjects;
 
 class _RedeemChequeRtkey {
    public static final byte _rtkey[] = {

@@ -1,5 +1,6 @@
 package dk.alexandra.stormbird.cheque;
 
+import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
 import java.math.BigInteger;
 
 public class ChequeAndSecret {
