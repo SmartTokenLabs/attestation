@@ -1,12 +1,17 @@
 package dk.alexandra.stormbird.cheque;
 
+import dk.alexandra.stormbird.cheque.asnobjects.MyAttestation;
 import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
 import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.DEROctetString;
+import sun.security.x509.X509CertImpl;
 
 public class SmartContractDummy {
     private final Crypto crypto;
@@ -15,7 +20,9 @@ public class SmartContractDummy {
       this.crypto = crypto;
     }
 
-    public boolean cashCheque(X509Certificate cert, RedeemCheque redeem, SignedCheque cheque) throws IOException {
+    public boolean cashCheque(RedeemCheque redeem) throws IOException, CertificateException {
+      InputStream inStream = new ByteArrayInputStream(Util.encodeASNObject(redeem.attestation));
+      X509Certificate cert = new X509CertImpl(inStream);
       try {
         cert.checkValidity();
         cert.verify(cert.getPublicKey(), "BC");
@@ -36,7 +43,7 @@ public class SmartContractDummy {
         System.err.println("Identity of proof and cert does not match");
         return false;
       }
-      byte[] decodedRiddle = crypto.decodePoint(cheque.cheque.riddle.value).getEncoded();
+      byte[] decodedRiddle = crypto.decodePoint(redeem.signedCheque.cheque.riddle.value).getEncoded();
       if (!Arrays.equals(decodedRiddle, redeem.proof.riddle.value)) {
         System.err.println("The riddle of the proof and cheque does not match");
         return false;

@@ -43,7 +43,7 @@ public class Main {
 
       // SMART CONTRACT
       SmartContractDummy sm = new SmartContractDummy(crypto);
-      if (!sm.cashCheque(cert, redeem, chequeAndSec.getCheque())) {
+      if (!sm.cashCheque(redeem)) {
         System.out.println("Failed to accept cashing request");
       }
     } catch (Exception e ) {
