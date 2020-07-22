@@ -2,6 +2,7 @@ package dk.alexandra.stormbird.cheque;
 
 import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
 import com.objsys.asn1j.runtime.Asn1Type;
+import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
 import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -37,6 +38,15 @@ public class Util {
     builder.append("-----BEGIN CHEQUE-----\n");
     addBytes(builder, encodedCert);
     builder.append("-----END CHEQUE-----");
+    return builder.toString();
+  }
+
+  public static String printRedeem(RedeemCheque input) throws Exception {
+    byte[] encodedCert = Base64.getEncoder().encode(Util.encodeASNObject(input));
+    StringBuilder builder = new StringBuilder();
+    builder.append("-----BEGIN REDEEM-----\n");
+    addBytes(builder, encodedCert);
+    builder.append("-----END REDEEM-----");
     return builder.toString();
   }
 

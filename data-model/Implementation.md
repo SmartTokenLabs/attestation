@@ -22,8 +22,7 @@ The `identifier` is stored as a `Critical` `Extension` of an Octet string object
 A java proof-of-concept of this implementation can be found in the src folder.
 
 ### Missing features
-1. I could not get asn1c to compile RedeemCheque because of the reference to x509v3, which it for unknown reasons would not import. This means that in the Java implementation this is currently not handled and thus plain (unsigned objects) are passed along instead. This is top priority to correct.
-2. The SignedCheque still needs to contain a not-valid-after (and perhaps also a not-valid-before) timestamp. 
+1. The SignedCheque still needs to contain a not-valid-after (and perhaps also a not-valid-before) timestamp. 
 
 
 ### Compiling

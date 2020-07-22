@@ -4,7 +4,6 @@ import com.objsys.asn1j.runtime.Asn1BerDecodeBuffer;
 import com.objsys.asn1j.runtime.Asn1DerDecodeBuffer;
 import dk.alexandra.stormbird.cheque.asnobjects.MyAttestation;
 import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
-import dk.alexandra.stormbird.cheque.asnobjects.SmartContract;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;

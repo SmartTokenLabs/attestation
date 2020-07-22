@@ -1,6 +1,5 @@
 package dk.alexandra.stormbird.cheque;
 
-import dk.alexandra.stormbird.cheque.asnobjects.MyAttestation;
 import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
 import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
 import java.io.ByteArrayInputStream;

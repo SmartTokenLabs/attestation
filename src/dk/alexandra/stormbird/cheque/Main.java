@@ -40,6 +40,7 @@ public class Main {
 
       // RECEIVER
       RedeemCheque redeem = r.redeemCheque(chequeAndSec, cert, csrAndSec.getSecret(), receiverKeys);
+      System.out.println(Util.printRedeem(redeem));
 
       // SMART CONTRACT
       SmartContractDummy sm = new SmartContractDummy(crypto);

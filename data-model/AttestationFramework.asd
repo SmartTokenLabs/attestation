@@ -38,7 +38,18 @@
        </optional>
        <element name="attestsTo">
         <type>
-         <tagged number="3" tagging="explicit" type="Extensions"/>
+         <choice>
+          <element name="extensions">
+           <type>
+            <tagged number="3" tagging="explicit" type="Extensions"/>
+           </type>
+          </element>
+          <element name="dataObject">
+           <type>
+            <tagged number="4" type="DataObject"/>
+           </type>
+          </element>
+         </choice>
         </type>
        </element>
       </sequence>
@@ -69,4 +80,7 @@
  </namedType>
 
  <namedType name="SmartContract" type="asnx:INTEGER"/>
+
+ <!-- Placeholder type to allow this file to be self-contained -->
+ <namedType name="DataObject" type="asnx:INTEGER"/>
 </asnx:module>
