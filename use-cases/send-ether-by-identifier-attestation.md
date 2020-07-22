@@ -32,7 +32,7 @@ This only needs to be done once for Bob and can be done either before or after r
 
 1. Alice wishes to send Bob some Ether and knows Bob’s identifier *i*. She creates a one-time-key *p'*, computes *s'=H(i)<sup>p'</sup>*.
 
-2. Alice writes a cheque for anyone to redeem a certain amount of Ether from her smart contract. The cheque requires an *x* such that *s'=s<sup>x</sup>* for a valid attestation on subject *s*.
+2. Alice writes a cheque for anyone to redeem a certain amount of Ether from her smart contract (valid for a certain amount time period). The cheque requires an *x* such that *s'=s<sup>x</sup>* for a valid attestation on subject *s*.
 
 3. Alice sends *p'* and the cheque to Bob.
 
@@ -48,8 +48,9 @@ The smart contract computes:
 
 1. That the amount in the attestation is less than Alice’s balance.
 2. The attestation is a valid attestation that binds *s* to Bob (transaction sender)’s Ethereum address.
-3. That the signature is correct.
+3. That the signatures is correct.
 4. *c=H(s, s', t)* and verifies that *s<sup>d</sup>=t\*s'<sup>c</sup>*
+5. That the cheque is still valid.
 
 If all predicates are satisfied, emits the pay to Bob.
 
