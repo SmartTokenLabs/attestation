@@ -4,9 +4,11 @@ import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
 import com.objsys.asn1j.runtime.Asn1Type;
 import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
 import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
+import java.io.ByteArrayOutputStream;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
@@ -30,6 +32,14 @@ public class Util {
     input = new ASN1InputStream(object.getOctets());
     object = (DEROctetString) input.readObject();
     return object.getOctets();
+  }
+
+  public static byte[] getBytes(List<Asn1Type> input) throws Exception {
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    for (Asn1Type current : input ) {
+      outputStream.write(Util.encodeASNObject(current));
+    }
+    return outputStream.toByteArray( );
   }
 
   public static String printCheque(SignedCheque input) throws Exception {

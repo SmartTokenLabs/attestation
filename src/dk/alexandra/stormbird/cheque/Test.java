@@ -81,7 +81,8 @@ public class Test {
     CSRAndSecret csrAndSec = r.createCSR(RECEIVER_IDENTITY, RECEIVER_TYPE);
 
     // CA
-    CA ca = new CA(crypto.createKeyPair());
+    KeyPair caKeys = crypto.createKeyPair();
+    CA ca = new CA(caKeys);
     X509Certificate cert = ca.makeCert(csrAndSec.getCsr());
 
     // RECEIVER
@@ -89,7 +90,7 @@ public class Test {
 
     // SMART CONTRACT
     SmartContractDummy sm = new SmartContractDummy(crypto);
-    Assert.assertTrue(sm.cashCheque(redeem));
+    Assert.assertTrue(sm.cashCheque(redeem, caKeys.getPublic(), senderKeys.getPublic()));
   }
 
   @org.junit.Test

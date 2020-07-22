@@ -3,6 +3,9 @@ SignedCheque
 DEFINITIONS ::=
 BEGIN
 
+IMPORTS
+ValidityValue FROM AuthenticationFramework;
+
 SignedCheque ::= SEQUENCE {
     cheque               Cheque,
     publicKey            BIT STRING,
@@ -11,8 +14,9 @@ SignedCheque ::= SEQUENCE {
 		
 
 Cheque ::= SEQUENCE {
-    amount       INTEGER,
-    riddle       OCTET STRING 
+    amount         INTEGER,
+    validity       ValidityValue,
+    riddle         OCTET STRING 
 }
 		
 

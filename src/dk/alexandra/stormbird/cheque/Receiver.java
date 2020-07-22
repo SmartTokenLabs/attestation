@@ -7,11 +7,10 @@ import com.objsys.asn1j.runtime.Asn1OctetString;
 import dk.alexandra.stormbird.cheque.asnobjects.MyAttestation;
 import dk.alexandra.stormbird.cheque.asnobjects.Proof;
 import dk.alexandra.stormbird.cheque.asnobjects.RedeemCheque;
-import dk.alexandra.stormbird.cheque.asnobjects.SignedCheque;
-import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1Set;
@@ -30,7 +29,7 @@ public class Receiver {
   private final String address;
   private final Crypto crypto;
   private final KeyPair keys;
-  private static final X9ECParameters curve = SECNamedCurves.getByName ("secp256k1");
+  private static final X9ECParameters curve = SECNamedCurves.getByName (Crypto.ECDSA_CURVE);
   private static final ECDomainParameters domain = new ECDomainParameters (curve.getCurve (), curve.getG (), curve.getN (), curve.getH ());
 
   public Receiver(String address, KeyPair keys, Crypto crypto) {
@@ -73,21 +72,14 @@ public class Receiver {
     Proof proof = new Proof(new Asn1OctetString(proofBytes.get(0)), new Asn1OctetString(proofBytes.get(1)),
         new Asn1OctetString(proofBytes.get(2)), new Asn1OctetString(proofBytes.get(3)));
 
+    // We decode the cert into an Attestation object since we know it is an attestation and now a general cert
     MyAttestation attestation = new MyAttestation();
     Asn1BerDecodeBuffer buffer = new Asn1DerDecodeBuffer(cert.getEncoded());
     attestation.decode (buffer);
 
-    byte[] signature = crypto.signBytes(getBytes(chequeAndSecret.getCheque(), attestation, proof), keys);
+    byte[] signature = crypto.signBytes(Util.getBytes(Arrays.asList(chequeAndSecret.getCheque(), attestation, proof)), keys);
     RedeemCheque redeemCheque = new RedeemCheque(chequeAndSecret.getCheque(), attestation, proof, new Asn1BitString(signature));
     return redeemCheque;
-  }
-
-  private byte[] getBytes(SignedCheque cheque, MyAttestation attestation, Proof proof) throws Exception {
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    outputStream.write(Util.encodeASNObject(cheque));
-    outputStream.write(Util.encodeASNObject(attestation));
-    outputStream.write(Util.encodeASNObject(proof));
-    return outputStream.toByteArray( );
   }
 
 //  private void makeASN1Redeem(SignedCheque cheque, X509Certificate cert, List<byte[]> proof) {

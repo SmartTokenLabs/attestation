@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
@@ -14,7 +15,6 @@ import java.security.spec.ECFieldFp;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.jce.ECNamedCurveTable;
@@ -66,10 +66,17 @@ public class Crypto {
 
 
   public byte[] signBytes(byte[] input, KeyPair keys) throws Exception {
-    Signature sig = Signature.getInstance(keys.getPublic().getAlgorithm());
+    Signature sig = Signature.getInstance(Util.OID_SHA256ECDSA, "BC");
     sig.initSign(keys.getPrivate());
     sig.update(input);
     return sig.sign();
+  }
+
+  public boolean verifyBytes(byte[] input, byte[] signature, PublicKey key) throws Exception {
+    Signature sig = Signature.getInstance(Util.OID_SHA256ECDSA, "BC");
+    sig.initVerify(key);
+    sig.update(input);
+    return sig.verify(signature);
   }
 
   public BigInteger makeRandomExponent() {

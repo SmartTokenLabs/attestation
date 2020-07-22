@@ -34,7 +34,8 @@ public class Main {
       System.out.println(Util.printDERCSR(csrAndSec.getCsr()));
 
       // CA
-      CA ca = new CA(crypto.createKeyPair());
+      KeyPair caKeys = crypto.createKeyPair();
+      CA ca = new CA(caKeys);
       X509Certificate cert = ca.makeCert(csrAndSec.getCsr());
       System.out.println(Util.printDERCert(cert));
 
@@ -44,7 +45,7 @@ public class Main {
 
       // SMART CONTRACT
       SmartContractDummy sm = new SmartContractDummy(crypto);
-      if (!sm.cashCheque(redeem)) {
+      if (!sm.cashCheque(redeem, caKeys.getPublic(), senderKeys.getPublic())) {
         System.out.println("Failed to accept cashing request");
       }
     } catch (Exception e ) {
