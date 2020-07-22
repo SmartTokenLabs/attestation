@@ -21,12 +21,8 @@ The `identifier` is stored as a `Critical` `Extension` of an Octet string object
 ## The code
 A java proof-of-concept of this implementation can be found in the src folder.
 
-### Missing features
-1. The SignedCheque still needs to contain a not-valid-after (and perhaps also a not-valid-before) timestamp. 
-
-
 ### Compiling
-The following ASN1 objects are used; x509v3.asn (as specified in RFC 5280), CSR (as specified in RFC 2986), SignedCheque.asn (as specified in SignedCheque.asd) and RedeemCheque.asn (as specified in RedeemCheque.asd).
+The following ASN1 objects are used; AttestrationFramework.asn (and its dependencies AuthenticationFramework.asn and InformationFramework.asn), SignedCheque.asn (as specified in SignedCheque.asd) and RedeemCheque.asn (as specified in RedeemCheque.asd).
 
 To convert asd files to asn files you can use Saxon. E.g. as follows:
 `java -jar saxon-he-10.1.jar -s:../blockchain-attestation/data-model/SignedCheque.asd -xsl:../blockchain-attestation/xto1/asdxml-to-asn.xsl >> ../blockchain-attestation/data-model/SignedCheque.asn`
