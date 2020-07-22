@@ -24,16 +24,29 @@
 		<xsl:call-template name="newLine"/>
 		<xsl:if test="import">
 			<xsl:text>IMPORTS</xsl:text><xsl:call-template name="newLine"/>
-			<xsl:apply-templates select="import"/>
+			<xsl:for-each-group select="import" group-by="@schemaLocation">
+				<xsl:for-each select="current-group()">
+					<xsl:value-of select="@name"/>
+					<xsl:if test="position() != last()">
+						<xsl:text>, </xsl:text>
+					</xsl:if>
+				</xsl:for-each>
+				<xsl:text> FROM </xsl:text><xsl:value-of select="replace(@schemaLocation,'.asd','')"/>
+				<xsl:if test="position() != last()">
+					<xsl:call-template name="newLine"/>
+				</xsl:if>
+			</xsl:for-each-group>
+			<!--xsl:apply-templates select="import"/--><xsl:text>;</xsl:text>
+			<xsl:call-template name="newLine"/>
 			<xsl:call-template name="newLine"/>
 		</xsl:if>
 		<xsl:apply-templates select="node() except import"/>
 		<xsl:text>END</xsl:text>
 	</xsl:template>
-	<xsl:template match="import">
+	<!--xsl:template match="import">
 		<xsl:value-of select="@name"/><xsl:text> FROM </xsl:text><xsl:value-of select="replace(@schemaLocation,'.asd','')"/>
 		<xsl:call-template name="newLine"/>
-	</xsl:template>
+	</xsl:template-->
 	<xsl:template match="namedType[type/sequence]">
 		<xsl:choose>
 			<xsl:when test="lower-case(substring(@name,1,2)) = 'my'"><xsl:value-of select="substring(@name, 3)"/></xsl:when>
@@ -127,7 +140,7 @@
 		</xsl:for-each>
 	</xsl:template>
 	<xsl:template match="element[type/tagged]" priority="99">
-		<xsl:value-of select="substring($vSpaces, 1, (4 * count(ancestor::element)))"/><xsl:value-of select="@name"/><xsl:value-of select="substring($vSpaces, 1, 8)"/>[<xsl:value-of select="type/tagged/@number"/>] <xsl:if test=".[not(@type) and descendant-or-self::element[@name='dataObject']]"> <xsl:value-of select="concat(upper-case(substring(@name,1,1)),substring(@name, 2))"/></xsl:if><xsl:value-of select="string-join((upper-case(type/tagged/@tagging),type/tagged/@type), ' ')"/><xsl:if test="..[not(self::choice or self::sequence)]"><xsl:value-of select="concat(' ', upper-case(local-name(..)))"/></xsl:if><xsl:if test="following-sibling::* or ..[following-sibling::*]">,</xsl:if><xsl:call-template name="newLine"/>
+		<xsl:value-of select="substring($vSpaces, 1, (4 * count(ancestor::element)))"/><xsl:value-of select="@name"/><xsl:value-of select="substring($vSpaces, 1, 8)"/>[<xsl:value-of select="type/tagged/@number"/>] <!--xsl:if test=".[not(@type) and descendant-or-self::element[@name='dataObject']]"> <xsl:value-of select="concat(upper-case(substring(@name,1,1)),substring(@name, 2))"/></xsl:if--><xsl:value-of select="string-join((upper-case(type/tagged/@tagging),type/tagged/@type), ' ')"/><xsl:if test="..[not(self::choice or self::sequence)]"><xsl:value-of select="concat(' ', upper-case(local-name(..)))"/></xsl:if><xsl:if test="following-sibling::* or ..[following-sibling::*]">,</xsl:if><xsl:call-template name="newLine"/>
 	</xsl:template>
 	<xsl:template match="optional[element[type/fromClass]]">
 		<xsl:value-of select="substring($vSpaces, 1, 4)"/>
