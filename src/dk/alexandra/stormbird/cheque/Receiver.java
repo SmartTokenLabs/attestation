@@ -13,16 +13,16 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Set;
-import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.jce.PKCS10CertificationRequest;
-import org.bouncycastle.jce.X509Principal;
 import org.bouncycastle.math.ec.ECPoint;
 
 public class Receiver {
@@ -46,12 +46,12 @@ public class Receiver {
     ECPoint identifier = crypto.generateRiddle(type, identity, secret);
 
     // Encode ETH address as CommonName
-    X509Principal name = new X509Principal("CN=" + address);
-    byte[] encoding = identifier.getEncoded();
+    X509Name name = new X509Name("CN=" + address);
+    byte[] encoding = identifier.getEncoded(false);
     ASN1Set attributes = new DERSet(new ASN1Encodable[]{
         new DERSequence(new ASN1Encodable[]{
             // Encode encrypted identity as an Octet string attribute
-            new DERObjectIdentifier(Util.OID_OCTETSTRING), new DEROctetString(encoding)
+            new ASN1ObjectIdentifier(Util.OID_OCTETSTRING), new DERSet(new DEROctetString(encoding))
         })
 //        , new DERSequence(new ASN1Encodable[]{
 //            // Integer

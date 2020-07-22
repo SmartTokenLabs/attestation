@@ -12,14 +12,9 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.List;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Set;
-import org.bouncycastle.asn1.DERObject;
 import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.X509Name;
-import org.bouncycastle.asn1.x509.X509NameEntryConverter;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 import org.junit.Assert;
@@ -48,7 +43,7 @@ public class Test {
     BigInteger x = secret.modInverse(crypto.curveOrder).multiply(riddleSolution).mod(crypto.curveOrder);
     // It now holds that identifier.multiply(x) = riddle
     ECPoint expectedRiddle = identifier.multiply(x);
-    Assert.assertEquals(expectedRiddle.getX().toBigInteger(), (riddle.getX().toBigInteger()));
+    Assert.assertEquals(expectedRiddle.getEncoded(false), (riddle.getEncoded(false)));
   }
 
   @org.junit.Test

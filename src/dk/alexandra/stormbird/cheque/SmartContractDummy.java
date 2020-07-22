@@ -53,14 +53,14 @@ public class SmartContractDummy {
       object = (DEROctetString) input.readObject();
 
       // CHECK verify the identity of the proof and the attestation matcher
-      byte[] decodedIdentifier = crypto.decodePoint(object.getOctets()).getEncoded();
+      byte[] decodedIdentifier = crypto.decodePoint(object.getOctets()).getEncoded(false);
       if (!Arrays.equals(decodedIdentifier, redeem.proof.base.value)) {
         System.err.println("Identity of proof and cert does not match");
         return false;
       }
 
       // CHECK verify that the riddle of the proof and cheque matches
-      byte[] decodedRiddle = crypto.decodePoint(redeem.signedCheque.cheque.riddle.value).getEncoded();
+      byte[] decodedRiddle = crypto.decodePoint(redeem.signedCheque.cheque.riddle.value).getEncoded(false);
       if (!Arrays.equals(decodedRiddle, redeem.proof.riddle.value)) {
         System.err.println("The riddle of the proof and cheque does not match");
         return false;

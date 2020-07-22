@@ -94,7 +94,7 @@ public class Crypto {
     // TODO ideally Bob's ethreum address should also be part of the challenge
     BigInteger c = mapToInteger(makeArray(Arrays.asList(base, riddle, t))).mod(curveOrder);
     BigInteger d = r.add(c.multiply(exponent)).mod(curveOrder);
-    return Arrays.asList(base.getEncoded(), riddle.getEncoded(), t.getEncoded(), d.toByteArray());
+    return Arrays.asList(base.getEncoded(false), riddle.getEncoded(false), t.getEncoded(false), d.toByteArray());
   }
 
   public boolean verifyProof(List<byte[]> proof) throws IOException {
@@ -111,8 +111,7 @@ public class Crypto {
   private byte[] makeArray(List<ECPoint> points ) throws IOException {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     for (ECPoint current : points) {
-      outputStream.write(current.getX().toBigInteger().toByteArray());
-      outputStream.write(current.getY().toBigInteger().toByteArray());
+      outputStream.write(current.getEncoded(false));
     }
     byte[] res = outputStream.toByteArray();
     outputStream.close();
@@ -174,6 +173,6 @@ public class Crypto {
       // Check that the squareroot actually exists and hence that we have a point on the curve
       expected = y.multiply(y).mod(p);
     } while (!expected.equals(ySquare));
-    return params.createPoint(x, y, false);
+    return params.createPoint(x, y);
   }
 }

@@ -6,9 +6,8 @@ import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Set;
-import org.bouncycastle.asn1.DERObject;
-import org.bouncycastle.asn1.DERObjectIdentifier;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x509.X509Name;
@@ -36,18 +35,18 @@ public class CA {
     serverCertGen.setIssuerDN(new X509Name("CN=Alex"));
     serverCertGen.setNotBefore(new Date());
     serverCertGen.setNotAfter(new Date(System.currentTimeMillis() + 2592000000L));
-    serverCertGen.setSubjectDN(csr.getCertificationRequestInfo().getSubject());
+    serverCertGen.setSubjectDN(X509Name.getInstance(csr.getCertificationRequestInfo().getSubject()));
     serverCertGen.setPublicKey(csr.getPublicKey());
     serverCertGen.setSignatureAlgorithm(Util.OID_SHA256ECDSA);
     ASN1Set attributes = csr.getCertificationRequestInfo().getAttributes();
     // We encode the attributes of the CSR as an Extension to be compatible with X509v3
     for (ASN1Encodable current : attributes.toArray()) {
       // The encoding is a sequence of triples of object identifier, boolean, and object
-      DERSequence currentOb = (DERSequence) current.toASN1Object();
-      DERObjectIdentifier oid = (DERObjectIdentifier) currentOb.getObjectAt(0);
-      DERObject object = (DERObject) currentOb.getObjectAt(1);
-      // CRITICAL is always set to true
-      serverCertGen.addExtension(oid, true, object);
+      DERSequence currentOb = (DERSequence) current.toASN1Primitive();
+      ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) currentOb.getObjectAt(0);
+      ASN1Set object = (ASN1Set) currentOb.getObjectAt(1).toASN1Primitive();
+      // CRITICAL is always set to true and we need to get the first object in the set
+      serverCertGen.addExtension(oid, true, object.getObjectAt(0));
     }
     return serverCertGen.generateX509Certificate(keys.getPrivate(), "BC");
   }

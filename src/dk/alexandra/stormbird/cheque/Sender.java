@@ -36,7 +36,7 @@ public class Sender {
     LocalDateTime laterTime = currentTime.plusDays(30);
     later.set_generalizedTime(new Asn1GeneralizedTime(laterTime.format(dtf)));
     ValidityValue validity = new ValidityValue(now, later);
-    Cheque unsignedCheque = new Cheque(amount, validity, riddle.getEncoded());
+    Cheque unsignedCheque = new Cheque(amount, validity, riddle.getEncoded(false));
     byte[] unsignedChequeBytes = Util.encodeASNObject(unsignedCheque);
     byte[] signature = crypto.signBytes(unsignedChequeBytes, keys);
     SignedCheque signedCheque = new SignedCheque(unsignedCheque, new Asn1BitString(keys.getPublic().getEncoded()), new Asn1BitString(signature));
