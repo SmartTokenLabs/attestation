@@ -22,11 +22,13 @@ This only needs to be done once for Bob and can be done either before or after r
 
 1. Bob generates an Ethereum key (if he hasn't already) and a privacy key *p*.
 
-2. Bob creates the corresponding subject of attestation *s=H(i)<sup>p</sup>*.
+2. Bob creates then computes a hiding of his identifier; *s=H(i)<sup>p</sup>*.
 
-3. Bob signs a CSR (signing request) with his identifier *i* two times, one with his Etheruem key and one with *p* (viewing it as a private key for ECDSA).
+3. He then constructs a zero-knowledge proof that he know the exponent *p*: He picks random *r* and computes *t=H(i)<sup>r</sup>*, *c=H(s, H(i), t)* and *d=r+c\*p*. Let the proof be denoted by *q=(s, H(i), t, d)*.
 
-4. An attestor verifies that Bob owns the identifier, both signatures are valid, then issue an attestation that binds his Ethereum address with the subject *s*.
+4. Bob signs a CSR (signing request) with his identifier *i* using his Etheruem key. He also signs the proof *q*. 
+
+5. An attestor verifies that Bob owns the identifier, that the signatures are valid and that the proof is valid by computing *c=H(s, H(i), t)* and verifying that *H(i)<sup>d</sup>=t\*s<sup>c</sup>*. If these checks are ok then issue an attestation that binds his Ethereum address with the subject *s*.
 
 ### Cheque
 
