@@ -1,9 +1,11 @@
 package dk.alexandra.stormbird.cheque;
 
+import dk.alexandra.stormbird.cheque.asnobjects.Proof;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.Security;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Date;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -17,18 +19,39 @@ import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 public class CA {
   private final KeyPair keys;
+  private final Crypto crypto;
   private static final X9ECParameters curve = SECNamedCurves.getByName (Crypto.ECDSA_CURVE);
 
-  public CA(KeyPair keys ) {
+  public CA(Crypto crypto, KeyPair keys ) {
     Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+    this.crypto = crypto;
     this.keys = keys;
+  }
+
+  public boolean verifyRequest(CSRAndSecret csrAndSecret) throws Exception {
+    // TODO verify that Bob holds the mail address
+    // CHECK: ZK proof
+    Proof proof = csrAndSecret.getProof();
+    if (!crypto.verifyProof(Arrays.asList(
+        proof.base.value, proof.riddle.value, proof.challengePoint.value, proof.reponseValue.value))) {
+      System.err.println("Proof did not verify");
+      return false;
+    }
+    // CHECK: Signature on overall request
+    byte[] signedValue = Util.getBytes(Arrays.asList(
+        Util.getAsnBytes(Arrays.asList(csrAndSecret.getProof())),
+        csrAndSecret.getCsr().getEncoded()));
+    if (!crypto.verifyBytes(signedValue, csrAndSecret.getProofSignature(), csrAndSecret.getCsr().getPublicKey())) {
+      System.err.println("The signature on CSR request is not valid");
+      return false;
+    }
+    return true;
   }
 
   public X509Certificate makeCert(PKCS10CertificationRequest csr) throws Exception {
     if (!csr.verify()) {
       throw new RuntimeException("CSR is not valid");
     }
-
     X509V3CertificateGenerator serverCertGen = new X509V3CertificateGenerator();
     serverCertGen.setSerialNumber(new BigInteger("123456789"));
     // X509Certificate caCert=null;

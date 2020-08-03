@@ -43,7 +43,8 @@ public class Receiver {
    */
   public CSRAndSecret createCSR(String identity, int type) throws Exception {
     BigInteger secret = crypto.makeRandomExponent();
-    ECPoint identifier = crypto.generateRiddle(type, identity, secret);
+    ECPoint hashedIdentity = crypto.hashIdentifier(type, identity);
+    ECPoint identifier = hashedIdentity.multiply(secret);
 
     // Encode ETH address as CommonName
     X509Name name = new X509Name("CN=" + address);
@@ -60,7 +61,14 @@ public class Receiver {
     });
     // OID for ECDSA with SHA256
     PKCS10CertificationRequest csr = new PKCS10CertificationRequest(Util.OID_SHA256ECDSA, name, keys.getPublic(), attributes, keys.getPrivate());
-    return new CSRAndSecret(csr, secret);
+    // Construct proof of knowledge of secret
+    List<byte[]> proofBytes = crypto.computeProof(identifier, hashedIdentity, secret);
+    Proof proof = new Proof(new Asn1OctetString(proofBytes.get(0)), new Asn1OctetString(proofBytes.get(1)),
+        new Asn1OctetString(proofBytes.get(2)), new Asn1OctetString(proofBytes.get(3)));
+
+    byte[] encodedProofBytes = Util.getAsnBytes(Arrays.asList(proof));
+    byte[] signature = crypto.signBytes(Util.getBytes(Arrays.asList(encodedProofBytes, csr.getEncoded())), keys);
+    return new CSRAndSecret(csr, secret, proof, signature);
   }
 
   public RedeemCheque redeemCheque(ChequeAndSecret chequeAndSecret, X509Certificate cert, BigInteger secret, KeyPair keys) throws Exception {
@@ -77,7 +85,7 @@ public class Receiver {
     Asn1BerDecodeBuffer buffer = new Asn1DerDecodeBuffer(cert.getEncoded());
     attestation.decode (buffer);
 
-    byte[] signature = crypto.signBytes(Util.getBytes(Arrays.asList(chequeAndSecret.getCheque(), attestation, proof)), keys);
+    byte[] signature = crypto.signBytes(Util.getAsnBytes(Arrays.asList(chequeAndSecret.getCheque(), attestation, proof)), keys);
     RedeemCheque redeemCheque = new RedeemCheque(chequeAndSecret.getCheque(), attestation, proof, new Asn1BitString(signature));
     return redeemCheque;
   }

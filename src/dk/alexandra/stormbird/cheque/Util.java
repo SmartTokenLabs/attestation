@@ -34,10 +34,18 @@ public class Util {
     return object.getOctets();
   }
 
-  public static byte[] getBytes(List<Asn1Type> input) throws Exception {
+  public static byte[] getAsnBytes(List<Asn1Type> input) throws Exception {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     for (Asn1Type current : input ) {
       outputStream.write(Util.encodeASNObject(current));
+    }
+    return outputStream.toByteArray( );
+  }
+
+  public static byte[] getBytes(List<byte[]> input) throws Exception {
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
+    for (byte[] current : input) {
+      outputStream.write(current);
     }
     return outputStream.toByteArray( );
   }

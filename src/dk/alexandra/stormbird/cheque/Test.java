@@ -77,7 +77,7 @@ public class Test {
 
     // CA
     KeyPair caKeys = crypto.createKeyPair();
-    CA ca = new CA(caKeys);
+    CA ca = new CA(crypto, caKeys);
     X509Certificate cert = ca.makeCert(csrAndSec.getCsr());
 
     // RECEIVER

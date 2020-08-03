@@ -35,7 +35,10 @@ public class Main {
 
       // CA
       KeyPair caKeys = crypto.createKeyPair();
-      CA ca = new CA(caKeys);
+      CA ca = new CA(crypto, caKeys);
+      if (ca.verifyRequest(csrAndSec) == false) {
+        throw new RuntimeException("CSR request is invalid");
+      }
       X509Certificate cert = ca.makeCert(csrAndSec.getCsr());
       System.out.println(Util.printDERCert(cert));
 

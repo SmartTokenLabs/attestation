@@ -120,12 +120,16 @@ public class Crypto {
 
   public ECPoint generateRiddle(int type, String identifier, BigInteger secret) {
     try {
-      BigInteger idenNum = mapToInteger(type, identifier.getBytes(StandardCharsets.UTF_8));
-      ECPoint identityGen = computePoint(spec.getCurve(), fieldSize, idenNum);
+      ECPoint identityGen = hashIdentifier(type, identifier);
       return identityGen.multiply(secret);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public ECPoint hashIdentifier(int type, String identifier) {
+    BigInteger idenNum = mapToInteger(type, identifier.getBytes(StandardCharsets.UTF_8));
+    return computePoint(spec.getCurve(), fieldSize, idenNum);
   }
 
   private BigInteger mapToInteger(byte[] value) {

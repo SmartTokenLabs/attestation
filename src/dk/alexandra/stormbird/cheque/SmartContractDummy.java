@@ -34,13 +34,13 @@ public class SmartContractDummy {
       }
 
       // CHECK verify signature on RedeemCheque is from the same party that holds the attestation
-      if (!crypto.verifyBytes(Util.getBytes(Arrays.asList(redeem.signedCheque, redeem.attestation, redeem.proof)), redeem.signatureValue.value, cert.getPublicKey())) {
+      if (!crypto.verifyBytes(Util.getAsnBytes(Arrays.asList(redeem.signedCheque, redeem.attestation, redeem.proof)), redeem.signatureValue.value, cert.getPublicKey())) {
         System.err.println("The signature on RedeemCheque is not valid");
         return false;
       }
 
       // CHECK verify signature on the cheque against the sender's public key
-      if (!crypto.verifyBytes(Util.getBytes(Arrays.asList(redeem.signedCheque.cheque)), redeem.signedCheque.signatureValue.value, senderPublicKey)) {
+      if (!crypto.verifyBytes(Util.getAsnBytes(Arrays.asList(redeem.signedCheque.cheque)), redeem.signedCheque.signatureValue.value, senderPublicKey)) {
         System.err.println("The signature on the cheque is not valid");
         return false;
       }
@@ -52,28 +52,28 @@ public class SmartContractDummy {
       input = new ASN1InputStream(object.getOctets());
       object = (DEROctetString) input.readObject();
 
-      // CHECK verify the identity of the proof and the attestation matcher
+      // CHECK: verify the identity of the proof and the attestation matcher
       byte[] decodedIdentifier = crypto.decodePoint(object.getOctets()).getEncoded(false);
       if (!Arrays.equals(decodedIdentifier, redeem.proof.base.value)) {
         System.err.println("Identity of proof and cert does not match");
         return false;
       }
 
-      // CHECK verify that the riddle of the proof and cheque matches
+      // CHECK: verify that the riddle of the proof and cheque matches
       byte[] decodedRiddle = crypto.decodePoint(redeem.signedCheque.cheque.riddle.value).getEncoded(false);
       if (!Arrays.equals(decodedRiddle, redeem.proof.riddle.value)) {
         System.err.println("The riddle of the proof and cheque does not match");
         return false;
       }
 
-      // CHECK verify the proof is valid
+      // CHECK: verify the proof is valid
       if (!crypto.verifyProof(Arrays.asList(
           redeem.proof.base.value, redeem.proof.riddle.value, redeem.proof.challengePoint.value, redeem.proof.reponseValue.value))) {
         System.err.println("Proof did not verify");
         return false;
       }
 
-      // CHECK that the cheque is still valid
+      // CHECK: that the cheque is still valid
       String ca = redeem.signedCheque.cheque.validity.notAfter.getElemName();
       if (redeem.signedCheque.cheque.validity.notAfter.getElemName() != "generalizedTime" ||
           redeem.signedCheque.cheque.validity.notBefore.getElemName() != "generalizedTime") {
@@ -88,7 +88,7 @@ public class SmartContractDummy {
         System.err.println("Cheque is no longer valid");
         return false;
       }
-      // CHECK the Ethereum address on the attestation matches receivers signing key
+      // CHECK: the Ethereum address on the attestation matches receivers signing key
       // TODO
       return true;
     }
