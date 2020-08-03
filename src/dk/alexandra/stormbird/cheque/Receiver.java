@@ -62,7 +62,7 @@ public class Receiver {
     // OID for ECDSA with SHA256
     PKCS10CertificationRequest csr = new PKCS10CertificationRequest(Util.OID_SHA256ECDSA, name, keys.getPublic(), attributes, keys.getPrivate());
     // Construct proof of knowledge of secret
-    List<byte[]> proofBytes = crypto.computeProof(identifier, hashedIdentity, secret);
+    List<byte[]> proofBytes = crypto.computeProof(hashedIdentity, identifier, secret);
     Proof proof = new Proof(new Asn1OctetString(proofBytes.get(0)), new Asn1OctetString(proofBytes.get(1)),
         new Asn1OctetString(proofBytes.get(2)), new Asn1OctetString(proofBytes.get(3)));
 
