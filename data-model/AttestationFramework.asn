@@ -30,7 +30,7 @@ MyAttestation ::=  SEQUENCE  {
      contract             SEQUENCE OF SmartContract OPTIONAL,
      attestsTo         CHOICE {
         extensions        [3] EXPLICIT Extensions,
-        dataObject        [4] DataObject
+        dataObject        [4] DataObject -- defined per objectClass
      }
    }
 
@@ -47,6 +47,6 @@ MyAttestation ::=  SEQUENCE  {
 
    SmartContract ::= INTEGER
 
-   DataObject ::= INTEGER
+   DataObject ::= INTEGER -- TODO placeholder
 
 END

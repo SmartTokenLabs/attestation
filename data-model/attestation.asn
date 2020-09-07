@@ -44,10 +44,9 @@ MyAttestation ::=  SEQUENCE  {
      subjectPublicKey       BIT STRING 
    }
 
-
    SmartContract ::= INTEGER
 
-   DataObject ::= INTEGER
+   DataObject ::= INTEGER -- TODO Placeholder
 
 END
 
@@ -69,7 +68,7 @@ Validity ::= CHOICE {
     value       ValidityValue,
     null        NULL 
 }
-		
+
 ValidityValue ::= SEQUENCE {
     notBefore       Time,
     notAfter        Time 
