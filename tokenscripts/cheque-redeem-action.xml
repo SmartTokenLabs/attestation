@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ts:card type="action" xmlns:ts="http://tokenscript.org/2020/06/tokenscript"
+         xmlns:ethereum="urn:ethereum:constantinople"
+         xmlns:xml="http://www.w3.org/XML/1998/namespace"
+         xmlns:asnx="urn:ietf:params:xml:ns:asnx"
+         xsi:schemaLocation="http://tokenscript.org/2020/06/tokenscript http://tokenscript.org/2020/06/tokenscript.xsd"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:asnx="urn:ietf:params:xml:ns:asnx"
+         xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+    <import name="Cheque" schemaLocation="../data-model/Cheque.asd"/>
+    <ts:input>
+        <ts:token>
+            <ts:contract name="weth" interface="erc20">
+                <ts:address network="1">
+                    0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+                </ts:address>
+            </ts:contract>
+        </ts:token>
+    </ts:input>
+    <!-- consider if we should include output here. I'm inclined to not to for now -->
+    <ts:view>
+        <xhtml:script>
+            /* JavaScript object is injected by TokenScript Engine
+            which has a class called "redeem-by-email" that has
+            "amount" and "riddle" can be initalised / assigned in the
+            view and returned) */
+
+            // stuff like this:
+            var checque = new Cheque();
+            cheque.setAmount(1);
+            cheque.setRiddle(getRiddle();
+            cheque.assertFinalised(); // should be true
+
+            // not like this:
+            var ASN = new ASN_block();
+            block.setType() = ASN.Sequence;
+            block.append(1); // amount
+            block.append(getRiddle())
+            prepareToBeSigned(block);
+
+        </xhtml:script>
+    </ts:view>
+    <ts:sign module="cheque" type="redeem-by-email"/>
+</ts:card>
