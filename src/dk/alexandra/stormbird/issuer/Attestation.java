@@ -99,8 +99,6 @@ public class Attestation {
       return res;
     } catch (IOException e) {
       throw new RuntimeException("Could not decode public key");
-//    } catch (CertificateEncodingException e) {
-//      throw new RuntimeException("Could not encode cert");
     }
   }
 
@@ -162,7 +160,9 @@ public class Attestation {
    * @return
    */
   public static AsymmetricKeyParameter restoreKey(byte[] input) throws IOException {
-    AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_SIGNATURE_ALG), CURVE_PARAM.toASN1Primitive());
+    AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
+        // OID_SIGNATURE_ALG is needed here otherwise the reconstruction fails
+        new ASN1ObjectIdentifier(OID_SIGNATURE_ALG), CURVE_PARAM.toASN1Primitive());
     ASN1BitString keyEnc = DERBitString.getInstance(input);
     ASN1Sequence spkiEnc = new DERSequence(new ASN1Encodable[] {identifierEnc, keyEnc});
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(spkiEnc);
