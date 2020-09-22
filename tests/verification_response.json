@@ -1,0 +1,174 @@
+{
+  "TransactionID": "3839a35c-5dc9-4e0b-9462-1b60a5392a5b",
+  "UploadedDt": "2020-09-21T12:21:13",
+  "CountryCode": "NZ",
+  "ProductName": "Identity Verification",
+  "Record": {
+    "TransactionRecordID": "2084ca69-7bd3-e4de-800f-3487e05ad4fa",
+    "RecordStatus": "match",
+    "DatasourceResults": [
+      {
+        "DatasourceName": "Business Directory",
+        "DatasourceFields": [],
+        "AppendedFields": [],
+        "Errors": [],
+        "FieldGroups": []
+      },
+      {
+        "DatasourceName": "International Watchlist",
+        "DatasourceFields": [
+          {
+            "FieldName": "FirstSurName",
+            "Status": "missing"
+          },
+          {
+            "FieldName": "FirstGivenName",
+            "Status": "missing"
+          },
+          {
+            "FieldName": "YearOfBirth",
+            "Status": "missing"
+          },
+          {
+            "FieldName": "MiddleName",
+            "Status": "missing"
+          }
+        ],
+        "AppendedFields": [
+          {
+            "FieldName": "WatchlistState",
+            "Data": "Clear"
+          }
+        ],
+        "Errors": [],
+        "FieldGroups": []
+      },
+      {
+        "DatasourceName": "Motor Vehicle Registry",
+        "DatasourceFields": [],
+        "AppendedFields": [],
+        "Errors": [],
+        "FieldGroups": []
+      },
+      {
+        "DatasourceName": "National Change of Address",
+        "DatasourceFields": [
+          {
+            "FieldName": "FirstGivenName",
+            "Status": "match"
+          },
+          {
+            "FieldName": "FirstSurName",
+            "Status": "match"
+          },
+          {
+            "FieldName": "BuildingNumber",
+            "Status": "match"
+          },
+          {
+            "FieldName": "StreetName",
+            "Status": "match"
+          },
+          {
+            "FieldName": "StreetType",
+            "Status": "match"
+          },
+          {
+            "FieldName": "Suburb",
+            "Status": "match"
+          },
+          {
+            "FieldName": "StateProvinceCode",
+            "Status": "match"
+          },
+          {
+            "FieldName": "PostalCode",
+            "Status": "match"
+          },
+          {
+            "FieldName": "City",
+            "Status": "match"
+          }
+        ],
+        "AppendedFields": [],
+        "Errors": [],
+        "FieldGroups": []
+      },
+      {
+        "DatasourceName": "NZ Credit",
+        "DatasourceFields": [],
+        "AppendedFields": [],
+        "Errors": [],
+        "FieldGroups": []
+      },
+      {
+        "DatasourceName": "NZ Driver Licence",
+        "DatasourceFields": [
+          {
+            "FieldName": "FirstGivenName",
+            "Status": "match"
+          },
+          {
+            "FieldName": "FirstSurName",
+            "Status": "match"
+          },
+          {
+            "FieldName": "DayOfBirth",
+            "Status": "match"
+          },
+          {
+            "FieldName": "MonthOfBirth",
+            "Status": "match"
+          },
+          {
+            "FieldName": "YearOfBirth",
+            "Status": "match"
+          },
+          {
+            "FieldName": "BuildingNumber",
+            "Status": "match"
+          },
+          {
+            "FieldName": "StreetName",
+            "Status": "match"
+          },
+          {
+            "FieldName": "StreetType",
+            "Status": "match"
+          },
+          {
+            "FieldName": "Suburb",
+            "Status": "match"
+          },
+          {
+            "FieldName": "StateProvinceCode",
+            "Status": "match"
+          },
+          {
+            "FieldName": "PostalCode",
+            "Status": "match"
+          },
+          {
+            "FieldName": "City",
+            "Status": "match"
+          }
+        ],
+        "AppendedFields": [],
+        "FieldGroups": []
+      },
+      {
+        "DatasourceName": "Property Owners",
+        "DatasourceFields": [],
+        "AppendedFields": [],
+        "Errors": [],
+        "FieldGroups": []
+      }
+    ],
+    "Errors": [],
+    "Rule": {
+      "RuleName": "Category 3 KYC v3",
+      "Note": "Match(FamilyAndGivenInitial, DOB) or Match(FamilyAndGivenInitial, FullAddress) or Match(FamilyAndGivenInitial, ID) MiddleName Ignored"
+    }
+  },
+  "Errors": []
+}
