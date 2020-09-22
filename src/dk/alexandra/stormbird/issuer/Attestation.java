@@ -2,33 +2,62 @@ package dk.alexandra.stormbird.issuer;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.asn1.x509.TBSCertificate;
+import org.bouncycastle.asn1.x509.Time;
+import org.bouncycastle.asn1.x509.V3TBSCertificateGenerator;
 import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
 import org.json.JSONObject;
 
 public class Attestation {
-  public static final String ECDSA_CURVE = "secp256k1";
+  public static final String OID_SHA256ECDSA = "1.2.840.10045.4.3.2";
+  public static final String OID_ECDSA = "1.2.840.10045.4";// "1.2.840.113635.100.2.7";
+  public static final String OID_SECP256R1 = "1.2.840.10045.3.1.7";
+  public static final String ECDSA_CURVE = "secp256r1";
   public static final String OID_SIGNATURE_ALG = "1.2.840.10045.2.1"; // OID for elliptic curve crypto
   public static final X9ECParameters CURVE_PARAM = SECNamedCurves.getByName(ECDSA_CURVE);
   private final AsymmetricCipherKeyPair serverKey;
+  private final AlgorithmIdentifier serverSigningAlgo;
+  private final ContentSigner signer;
 
   public Attestation(AsymmetricCipherKeyPair serverKey) {
     this.serverKey = serverKey;
+    try {
+//      serverSigningAlgo = new AlgorithmIdentifier(
+//          new ASN1ObjectIdentifier(OID_SIGNATURE_ALG), CURVE_PARAM.toASN1Primitive());
+      AlgorithmIdentifier identifier = new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_SHA256ECDSA));
+      AlgorithmIdentifier hashIdentifier = new DefaultDigestAlgorithmIdentifierFinder().find(identifier);
+      BcECContentSignerBuilder contentBuilder = new BcECContentSignerBuilder(identifier, hashIdentifier);
+      signer = contentBuilder.build(serverKey.getPrivate());
+      serverSigningAlgo = new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_SHA256ECDSA));
+    } catch (OperatorCreationException e) {
+      throw new RuntimeException("Could not parse server key");
+    }
   }
 
 
@@ -38,35 +67,68 @@ public class Attestation {
    *
    * @param request Json request
    * @param response Json response
-   * @param signature DER encoded signature of a Secp256k1 key with Keccak
+   * @param signature DER encoded signature of exactly  the json request string encoded as UTF-8 using a Secp256k1 key with Keccak
    * @param publicKey DER encoded public key (SubjectPublicKeyInfo object)
    * @return List of DER encoded x509 attestations
    */
   public List<byte[]> constructAttestation(String request, String response, byte[] signature, byte[] publicKey) {
     try {
+      AsymmetricKeyParameter userKey = restoreKey(publicKey);
+      byte[] bytes = request.getBytes(StandardCharsets.UTF_8);
+      if (!SignatureUtil.verifyKeccak(bytes, signature, userKey)) {
+        throw new IllegalArgumentException("Request signature is not valid");
+      }
       JSONObject requestJson = new JSONObject(request);
       JSONObject responseJson = new JSONObject(response);
-      List<Certificate> certs = constructAttestation(requestJson, responseJson, signature, restoreKey(publicKey));
+      List<X509CertificateHolder> certs = constructAttestationWOVerification(requestJson, responseJson, signature, userKey);
       List<byte[]> res = new ArrayList<>();
-      for (Certificate current : certs) {
+      for (X509CertificateHolder current : certs) {
         res.add(current.getEncoded());
       }
       return res;
     } catch (IOException e) {
       throw new RuntimeException("Could not decode public key");
-    } catch (CertificateEncodingException e) {
-      throw new RuntimeException("Could not encode cert");
+//    } catch (CertificateEncodingException e) {
+//      throw new RuntimeException("Could not encode cert");
     }
   }
 
-  public List<Certificate> constructAttestation(JSONObject request, JSONObject response, byte[] signature, AsymmetricKeyParameter userKey) {
-    if (!SignatureUtil.verify(request.toString().getBytes(StandardCharsets.UTF_8), signature, userKey)) {
-      throw new IllegalArgumentException("Request signature is not valid");
+  List<X509CertificateHolder> constructAttestationWOVerification(JSONObject request, JSONObject response, byte[] signature, AsymmetricKeyParameter userKey) {
+    try {
+      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKey);
+      // todo hack to create a valid spki
+      spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_ECDSA)),
+          spki.getPublicKeyData());
+      V3TBSCertificateGenerator certBuilder = new V3TBSCertificateGenerator();
+      certBuilder.setSignature(serverSigningAlgo);
+      certBuilder.setIssuer(new X500Name("CN=test"));
+      certBuilder.setSerialNumber(new ASN1Integer(1));
+      certBuilder.setStartDate(new Time(new Date(System.currentTimeMillis())));
+      certBuilder.setEndDate(new Time(new Date(System.currentTimeMillis()+36000000)));
+      certBuilder.setSubject(new X500Name("CN=subjectTest"));
+      certBuilder.setSubjectPublicKeyInfo(spki);
+      TBSCertificate tbsCert = certBuilder.generateTBSCertificate();
+      return Arrays.asList(new X509CertificateHolder(constructSignedAttestation(tbsCert)));
+//      return null;
+    } catch (IOException e) {
+      throw new RuntimeException("Could not parse server key");
     }
-    return null;
+
   }
 
-
+  private byte[] constructSignedAttestation(TBSCertificate unsignedAtt) {
+    try {
+      byte[] rawAtt = unsignedAtt.getEncoded();
+      byte[] signature = SignatureUtil.signSha256(rawAtt, serverKey.getPrivate());
+      ASN1EncodableVector res = new ASN1EncodableVector();
+      res.add(ASN1Primitive.fromByteArray(rawAtt));
+      res.add(serverSigningAlgo);
+      res.add(new DERBitString(signature));
+      return new DERSequence(res).getEncoded();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   /**
    * Extract the public key from its DER encoded BITString
