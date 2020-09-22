@@ -13,5 +13,6 @@
     <orderEntry type="library" name="junit:junit:4.13" level="project" />
     <orderEntry type="library" name="bcprov-jdk15on-166" level="project" />
     <orderEntry type="library" name="org.json:json:20200518" level="project" />
+    <orderEntry type="library" name="junit:junit:4.131" level="project" />
   </component>
 </module>
