@@ -3,9 +3,9 @@ package dk.alexandra.stormbird.issuer;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -18,6 +18,7 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x509.TBSCertificate;
 import org.bouncycastle.asn1.x509.Time;
@@ -38,15 +39,25 @@ public class Attestation {
   public static final String OID_SHA256ECDSA = "1.2.840.10045.4.3.2";
   public static final String OID_ECDSA = "1.2.840.10045.4";// "1.2.840.113635.100.2.7";
   public static final String OID_SECP256R1 = "1.2.840.10045.3.1.7";
-  public static final String ECDSA_CURVE = "secp256r1";
   public static final String OID_SIGNATURE_ALG = "1.2.840.10045.2.1"; // OID for elliptic curve crypto
+  public static final String ECDSA_CURVE = "secp256k1";
   public static final X9ECParameters CURVE_PARAM = SECNamedCurves.getByName(ECDSA_CURVE);
   private final AsymmetricCipherKeyPair serverKey;
+  private final X500Name serverInfo;
+  private final long lifeTime;
   private final AlgorithmIdentifier serverSigningAlgo;
   private final ContentSigner signer;
 
-  public Attestation(AsymmetricCipherKeyPair serverKey) {
+  /**
+   *
+   * @param serverKey The key used for signing the cert
+   * @param serverInfo The information about the issuer to include in the cert
+   * @param lifeTime Lifetime of cert in milliseconds
+   */
+  public Attestation(AsymmetricCipherKeyPair serverKey, X500Name serverInfo, long lifeTime) {
     this.serverKey = serverKey;
+    this.serverInfo = serverInfo;
+    this.lifeTime = lifeTime;
     try {
 //      serverSigningAlgo = new AlgorithmIdentifier(
 //          new ASN1ObjectIdentifier(OID_SIGNATURE_ALG), CURVE_PARAM.toASN1Primitive());
@@ -94,26 +105,41 @@ public class Attestation {
   }
 
   List<X509CertificateHolder> constructAttestationWOVerification(JSONObject request, JSONObject response, byte[] signature, AsymmetricKeyParameter userKey) {
-    try {
-      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKey);
-      // todo hack to create a valid spki
-      spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_ECDSA)),
-          spki.getPublicKeyData());
-      V3TBSCertificateGenerator certBuilder = new V3TBSCertificateGenerator();
-      certBuilder.setSignature(serverSigningAlgo);
-      certBuilder.setIssuer(new X500Name("CN=test"));
-      certBuilder.setSerialNumber(new ASN1Integer(1));
-      certBuilder.setStartDate(new Time(new Date(System.currentTimeMillis())));
-      certBuilder.setEndDate(new Time(new Date(System.currentTimeMillis()+36000000)));
-      certBuilder.setSubject(new X500Name("CN=subjectTest"));
-      certBuilder.setSubjectPublicKeyInfo(spki);
-      TBSCertificate tbsCert = certBuilder.generateTBSCertificate();
-      return Arrays.asList(new X509CertificateHolder(constructSignedAttestation(tbsCert)));
-//      return null;
-    } catch (IOException e) {
-      throw new RuntimeException("Could not parse server key");
-    }
+    List<X509CertificateHolder> res = new ArrayList<>();
+    Parser parser = new Parser(request, response);
+    Map<String, X500Name> subjectNames = parser.getX500Names();
+    Map<String, Extensions> subjectExtensions = parser.getExtensions();
+    for (String currentAttName : subjectNames.keySet()) {
+      try {
+        long time = System.currentTimeMillis();
+        V3TBSCertificateGenerator certBuilder = new V3TBSCertificateGenerator();
+        certBuilder.setSignature(serverSigningAlgo);
+        certBuilder.setIssuer(serverInfo);
 
+        certBuilder.setSerialNumber(new ASN1Integer(time));
+
+        certBuilder.setStartDate(new Time(new Date(time)));
+        certBuilder.setEndDate(new Time(new Date(time + lifeTime)));
+
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKey);
+        // todo hack to create a valid spki
+        spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_ECDSA)),
+            spki.getPublicKeyData());
+        certBuilder.setSubjectPublicKeyInfo(spki);
+        certBuilder.setSubject(subjectNames.get(currentAttName));
+        certBuilder.setExtensions(subjectExtensions.get(currentAttName));
+        TBSCertificate tbsCert = certBuilder.generateTBSCertificate();
+        res.add(new X509CertificateHolder(constructSignedAttestation(tbsCert)));
+
+        // To ensure that we get a new serial number for every cert
+        Thread.sleep(1);
+      } catch (IOException e) {
+        throw new RuntimeException("Could not parse server key");
+      } catch (InterruptedException e) {
+        throw new RuntimeException("Could not sleep");
+      }
+    }
+    return res;
   }
 
   private byte[] constructSignedAttestation(TBSCertificate unsignedAtt) {
