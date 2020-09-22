@@ -1,12 +1,13 @@
 package dk.alexandra.stormbird.issuer;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
@@ -14,9 +15,17 @@ import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.Keccak.Digest256;
 
 public class SignatureUtil {
-  public static byte[] sign(byte[] toSign, AsymmetricKeyParameter key) {
+  public static byte[] signKeccak(byte[] toSign, AsymmetricKeyParameter key) {
     Digest256 digest = new Keccak.Digest256();
     byte[] digestBytes = digest.digest(toSign);
+    return signHashed(digestBytes, key);
+  }
+
+  public static byte[] signSha256(byte[] toSign, AsymmetricKeyParameter key) {
+    byte[] digestBytes = new byte[32];
+    Digest digest = new SHA256Digest();
+    digest.update(toSign, 0, toSign.length);
+    digest.doFinal(digestBytes, 0);
     return signHashed(digestBytes, key);
   }
 
@@ -39,10 +48,17 @@ public class SignatureUtil {
     }
   }
 
-  public static boolean verify(byte[] request, byte[] signature, AsymmetricKeyParameter publicKey) {
-    byte[] unsigned = request.toString().getBytes(StandardCharsets.UTF_8);
+  public static boolean verifyKeccak(byte[] request, byte[] signature, AsymmetricKeyParameter publicKey) {
     Digest256 digest = new Keccak.Digest256();
-    byte[] digestBytes = digest.digest(unsigned);
+    byte[] digestBytes = digest.digest(request);
+    return verifyHashed(digestBytes, signature, publicKey);
+  }
+
+  public static boolean verifySha256(byte[] request, byte[] signature, AsymmetricKeyParameter publicKey) {
+    byte[] digestBytes = new byte[32];
+    Digest digest = new SHA256Digest();
+    digest.update(request, 0, request.length);
+    digest.doFinal(digestBytes, 0);
     return verifyHashed(digestBytes, signature, publicKey);
   }
 
@@ -64,4 +80,5 @@ public class SignatureUtil {
       throw new RuntimeException(e);
     }
   }
+
 }
