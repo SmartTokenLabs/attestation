@@ -76,13 +76,4 @@ public class TestAttestation {
     generator.init(keygenParams);
     return generator.generateKeyPair();
   }
-
-//  public static AsymmetricCipherKeyPair constructStandardKeys(SecureRandom rand) {
-//    ECKeyPairGenerator generator = new ECKeyPairGenerator();
-//    ECNamedDomainParameters n = new ECNamedDomainParameters(new ASN1ObjectIdentifier(
-//        Attestation.OID_SIGNATURE_ALG), DOMAIN);
-//    ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(n, rand);
-//    generator.init(keygenParams);
-//    return generator.generateKeyPair();
-//  }
 }
