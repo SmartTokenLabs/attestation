@@ -4,22 +4,22 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-	AlgorithmIdentifier,
-	Version,
-	CertificateSerialNumber,
-	Validity,
-	Extensions
-		FROM AuthenticationFramework
-	Name
-		FROM InformationFramework;
+    AlgorithmIdentifier,
+    Version,
+    CertificateSerialNumber,
+    Validity,
+    Extensions
+        FROM AuthenticationFramework
+    Name
+        FROM InformationFramework;
 
-Attestation { DataObject } ::=  SEQUENCE  {
+MyAttestation ::=  SEQUENCE  {
 
-     signedInfo           SignedInfo { DataObject },
+     signedInfo           SignedInfo,
      signatureAlgorithm   AlgorithmIdentifier,
      signatureValue       BIT STRING  }
 
-   SignedInfo {  DataObject }  ::=  SEQUENCE  {
+   SignedInfo ::=  SEQUENCE  {
      version         [0]  EXPLICIT Version,
      serialNumber         CertificateSerialNumber,
      signature            AlgorithmIdentifier,
@@ -28,9 +28,9 @@ Attestation { DataObject } ::=  SEQUENCE  {
      subject              Name,
      subjectPublicKeyInfo SubjectPublicKeyInfo,
      contract             SEQUENCE OF SmartContract OPTIONAL,
-     attestsTo            CHOICE {
-         dataObject  [4]      DataObject, -- defined per objectClass
-         extensions  [3]      EXPLICIT Extensions
+     attestsTo         CHOICE {
+        extensions        [3] EXPLICIT Extensions,
+        dataObject        [4] DataObject
      }
    }
 
@@ -43,7 +43,10 @@ Attestation { DataObject } ::=  SEQUENCE  {
      algorithm              AlgorithmIdentifier,
      subjectPublicKey       BIT STRING 
    }
+
    SmartContract ::= INTEGER
+
+   DataObject ::= INTEGER -- TODO Placeholder
 
 END
 
@@ -65,7 +68,7 @@ Validity ::= CHOICE {
     value       ValidityValue,
     null        NULL 
 }
-    
+
 ValidityValue ::= SEQUENCE {
     notBefore       Time,
     notAfter        Time 
@@ -123,19 +126,5 @@ RDNSequence ::= SEQUENCE OF RelativeDistinguishedName
    AttributeType ::= OBJECT IDENTIFIER
 
    AttributeValue ::= ANY -- DEFINED BY AttributeType
-
-END
-
-MyAttestation
-
-DEFINITIONS ::=
-BEGIN
-
-IMPORTS
-	Attestation
-		FROM AttestationFramework;
-
--- Example usage.
-MyAttestation ::= Attestation { SEQUENCE { } }
 
 END

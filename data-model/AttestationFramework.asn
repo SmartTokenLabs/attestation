@@ -13,13 +13,13 @@ IMPORTS
     Name
         FROM InformationFramework;
 
-MyAttestation { DataObject } ::=  SEQUENCE  {
+MyAttestation ::=  SEQUENCE  {
 
-     signedInfo           SignedInfo { DataObject },
+     signedInfo           SignedInfo,
      signatureAlgorithm   AlgorithmIdentifier,
      signatureValue       BIT STRING  }
 
-   SignedInfo {  DataObject }  ::=  SEQUENCE  {
+   SignedInfo ::=  SEQUENCE  {
      version         [0]  EXPLICIT Version,
      serialNumber         CertificateSerialNumber,
      signature            AlgorithmIdentifier,
@@ -28,9 +28,9 @@ MyAttestation { DataObject } ::=  SEQUENCE  {
      subject              Name,
      subjectPublicKeyInfo SubjectPublicKeyInfo,
      contract             SEQUENCE OF SmartContract OPTIONAL,
-     attestsTo            CHOICE {
-         dataObject  [4]      DataObject, -- defined per objectClass
-         extensions  [3]      EXPLICIT Extensions
+     attestsTo         CHOICE {
+        extensions        [3] EXPLICIT Extensions,
+        dataObject        [4] DataObject -- defined per objectClass
      }
    }
 
@@ -46,5 +46,7 @@ MyAttestation { DataObject } ::=  SEQUENCE  {
 
 
    SmartContract ::= INTEGER
+
+   DataObject ::= INTEGER -- TODO placeholder
 
 END

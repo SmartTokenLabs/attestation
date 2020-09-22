@@ -1,0 +1,58 @@
+
+<ts:token …>
+
+<!-- this is where the module is defined -->
+…
+<asnx:module>
+ <namedType name="ticket">
+  <type>
+   <sequence>
+    <element name=”numero” type=”asn:Integer”/>
+    <element name=”class”>
+      <type><enumerated>
+        <enumeration name=”normal” number=”0"/>
+        <enumeration name=”gift” number=”1"/>
+        <enumeration name=”VIP” number=”2"/>
+      </enumerated></type>
+    </element>
+    <element name=”start” type=”asn:UTCTime”/>
+   </sequence>
+  </type>
+ </namedType>
+</asn:module>
+…
+
+
+<!-- this is an action where user fills value -->
+
+<card>
+  <!-- this is where values for numero, class and start is obtained -->
+
+  <attribute name="user-typed-numero"/>
+  <attribute name="user-selected-class"/>
+  …
+
+  <!-- this is the action of the result, which is an attestation is signed
+  -->
+  <attestation type="ticket">
+     <value name="numero" ref="user-typed-numero"/>
+     <value name="class" ref="user-selected-class"/>
+     <value name="start">…</value>
+  </attestation>
+</card>
+
+
+<!-- this is better -->
+
+<card dataObject="ticket">
+    <attribute name="numero">
+       <origins>…</origins>
+    </attribute>
+    <attribute name="class">
+       <origins>…</origins>
+    </attribute>
+    <attribute name="start">
+       <origins>…</origins>
+    </attribute>
+    <attestation signer="…"/>
+</card>
