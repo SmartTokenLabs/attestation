@@ -9,6 +9,7 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
@@ -39,7 +40,8 @@ public class TestAttestation {
 
   @Test
   public void testSunshine() throws Exception {
-    Attestation att = new Attestation(serverKeys);
+    long lifetime = 31536000000l; // one year
+    Attestation att = new Attestation(serverKeys, new X500Name("CN=Stormbird"), lifetime);
     byte[] requestJson = request.getBytes(StandardCharsets.UTF_8);
     byte[] signature = SignatureUtil.signKeccak(requestJson, userKeys.getPrivate());
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic());
