@@ -9,6 +9,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.Test;
 
 public class TestAttestation {
@@ -25,6 +26,7 @@ public class TestAttestation {
     userKeys = constructKeys(rand);
     request = Files.readString(Path.of("../test/verification_request.json"));
     response = Files.readString(Path.of("../test/verification_response.json"));
+    
   }
 
   @Test
@@ -32,7 +34,8 @@ public class TestAttestation {
     Attestation att = new Attestation(serverKeys);
     byte[] requestJson = request.toString().getBytes(StandardCharsets.UTF_8);
     byte[] signature = SignatureUtil.sign(requestJson, userKeys.getPrivate());
-//    att.constructAttestation(request, response, signature, userKeys.getPublic());
+    byte[] pk = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic()).getPublicKeyData().getBytes();
+    att.constructAttestation(request, response, signature, pk);
   }
 
   public static AsymmetricCipherKeyPair constructKeys(SecureRandom rand) {

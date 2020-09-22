@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -30,12 +32,26 @@ public class Attestation {
   }
 
 
-  public byte[] constructAttestation(String request, String response, byte[] signature, byte[] publicKey) {
+  /**
+   * Constructs a list of X509 attestations to each of the relevant DatasourceName lists of elements
+   * in the response json.
+   *
+   * @param request Json request
+   * @param response Json response
+   * @param signature DER encoded signature of a Secp256k1 key with Keccak
+   * @param publicKey DER encoded public key (SubjectPublicKeyInfo object)
+   * @return List of DER encoded x509 attestations
+   */
+  public List<byte[]> constructAttestation(String request, String response, byte[] signature, byte[] publicKey) {
     try {
       JSONObject requestJson = new JSONObject(request);
       JSONObject responseJson = new JSONObject(response);
-      Certificate cert = constructAttestation(requestJson, responseJson, signature, restoreKey(publicKey));
-      return cert.getEncoded();
+      List<Certificate> certs = constructAttestation(requestJson, responseJson, signature, restoreKey(publicKey));
+      List<byte[]> res = new ArrayList<>();
+      for (Certificate current : certs) {
+        res.add(current.getEncoded());
+      }
+      return res;
     } catch (IOException e) {
       throw new RuntimeException("Could not decode public key");
     } catch (CertificateEncodingException e) {
@@ -43,7 +59,7 @@ public class Attestation {
     }
   }
 
-  public Certificate constructAttestation(JSONObject request, JSONObject response, byte[] signature, AsymmetricKeyParameter userKey) {
+  public List<Certificate> constructAttestation(JSONObject request, JSONObject response, byte[] signature, AsymmetricKeyParameter userKey) {
     if (!SignatureUtil.verify(request.toString().getBytes(StandardCharsets.UTF_8), signature, userKey)) {
       throw new IllegalArgumentException("Request signature is not valid");
     }
