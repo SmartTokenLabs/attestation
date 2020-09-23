@@ -5,12 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.security.SecureRandom;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.X509Certificate;
+import java.security.Security;
+import java.util.Date;
 import java.util.List;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509ContentVerifierProviderBuilder;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -18,9 +19,9 @@ import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentVerifierProvider;
 import org.junit.Assert;
 import org.junit.Test;
-import sun.security.x509.X509CertImpl;
 
 public class TestAttestation {
   public static final ECDomainParameters DOMAIN = new ECDomainParameters(Attestation.CURVE_PARAM.getCurve(), Attestation.CURVE_PARAM.getG(), Attestation.CURVE_PARAM.getN(), Attestation.CURVE_PARAM.getH());
@@ -40,6 +41,7 @@ public class TestAttestation {
 
   @Test
   public void testSunshine() throws Exception {
+    Security.addProvider(new BouncyCastleProvider());
     long lifetime = 31536000000l; // one year
     Attestation att = new Attestation(serverKeys, new X500Name("CN=Stormbird"), lifetime);
     byte[] requestJson = request.getBytes(StandardCharsets.UTF_8);
@@ -47,26 +49,28 @@ public class TestAttestation {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic());
     byte[] userPK = spki.getPublicKeyData().getEncoded();
     List<byte[]> certs = att.constructAttestation(request, response, signature, userPK);
-//    JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
-//    SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
-//    issuerSpki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_SIGNATURE_ALG)),  // ECDSA with SHA256 which is needed for a proper x509
-//        issuerSpki.getPublicKeyData());
-//    ContentVerifierProvider verifier = builder.build(issuerSpki);
-//    for (byte[] current : certs) {
-//      X509CertificateHolder currentCert = new X509CertificateHolder(current);
-//      Assert.assertTrue(currentCert.isValidOn(new Date(System.currentTimeMillis())));
-//      Assert.assertTrue(currentCert.isSignatureValid(verifier));
-//    }
+    JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
+    SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
+    ContentVerifierProvider verifier = builder.build(issuerSpki);
     PublicKey serverPK = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic()));
+    System.out.println(ASN1Util.printDER(serverPK.getEncoded(), "PUBLIC KEY"));
     for (byte[] current : certs) {
-      X509Certificate cert = new X509CertImpl(current);
-      try {
-        cert.verify(serverPK, new BouncyCastleProvider());
-        cert.checkValidity();
-      } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-        Assert.fail();
-      }
+      System.out.println(ASN1Util.printDER(current, "CERTIFICATE"));
+      X509CertificateHolder currentCert = new X509CertificateHolder(current);
+      Assert.assertTrue(currentCert.isValidOn(new Date(System.currentTimeMillis())));
+      Assert.assertTrue(currentCert.isSignatureValid(verifier));
     }
+
+    // TODO the code below does not work since only named ECParameters are supported in X509CertImpl
+//    for (byte[] current : certs) {
+//      X509Certificate cert = new X509CertImpl(current);
+//      try {
+//        cert.verify(serverPK, new BouncyCastleProvider());
+//        cert.checkValidity();
+//      } catch (CertificateExpiredException | CertificateNotYetValidException e) {
+//        Assert.fail();
+//      }
+//    }
 
   }
 

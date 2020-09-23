@@ -6,13 +6,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.bouncycastle.asn1.ASN1BitString;
-import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
@@ -27,7 +24,6 @@ import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
@@ -36,10 +32,10 @@ import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
 import org.json.JSONObject;
 
 public class Attestation {
-  public static final String OID_SHA256ECDSA = "1.2.840.10045.4.3.2";
-  public static final String OID_ECDSA = "1.2.840.10045.4";// "1.2.840.113635.100.2.7";
+  public static final String OID_ECDSA = "1.2.840.10045.4";
   public static final String OID_SECP256R1 = "1.2.840.10045.3.1.7";
   public static final String OID_SIGNATURE_ALG = "1.2.840.10045.2.1"; // OID for elliptic curve crypto
+  public static final String OID_SHA256ECDSA = "1.2.840.10045.4.3.2";
   public static final String ECDSA_CURVE = "secp256k1";
   public static final X9ECParameters CURVE_PARAM = SECNamedCurves.getByName(ECDSA_CURVE);
   private final AsymmetricCipherKeyPair serverKey;
@@ -84,7 +80,8 @@ public class Attestation {
    */
   public List<byte[]> constructAttestation(String request, String response, byte[] signature, byte[] publicKey) {
     try {
-      AsymmetricKeyParameter userKey = restoreKey(publicKey);
+      // OID_SIGNATURE_ALG is needed here otherwise the reconstruction fails
+      AsymmetricKeyParameter userKey = ASN1Util.restoreKey(publicKey, CURVE_PARAM, OID_SIGNATURE_ALG);
       byte[] bytes = request.getBytes(StandardCharsets.UTF_8);
       if (!SignatureUtil.verifyKeccak(bytes, signature, userKey)) {
         throw new IllegalArgumentException("Request signature is not valid");
@@ -120,9 +117,9 @@ public class Attestation {
         certBuilder.setEndDate(new Time(new Date(time + lifeTime)));
 
         SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKey);
-        // todo hack to create a valid spki
-        spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_ECDSA)),
-            spki.getPublicKeyData());
+//        // todo hack to create a valid spki without ECNamedParameters
+//        spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_ECDSA)),
+//            spki.getPublicKeyData());
         certBuilder.setSubjectPublicKeyInfo(spki);
         certBuilder.setSubject(subjectNames.get(currentAttName));
         certBuilder.setExtensions(subjectExtensions.get(currentAttName));
@@ -154,19 +151,6 @@ public class Attestation {
     }
   }
 
-  /**
-   * Extract the public key from its DER encoded BITString
-   * @param input
-   * @return
-   */
-  public static AsymmetricKeyParameter restoreKey(byte[] input) throws IOException {
-    AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
-        // OID_SIGNATURE_ALG is needed here otherwise the reconstruction fails
-        new ASN1ObjectIdentifier(OID_SIGNATURE_ALG), CURVE_PARAM.toASN1Primitive());
-    ASN1BitString keyEnc = DERBitString.getInstance(input);
-    ASN1Sequence spkiEnc = new DERSequence(new ASN1Encodable[] {identifierEnc, keyEnc});
-    SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(spkiEnc);
-    return PublicKeyFactory.createKey(spki);
-  }
+
 }
 
