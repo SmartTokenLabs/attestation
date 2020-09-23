@@ -60,8 +60,8 @@ public class TestParser {
     Set<String> expectedCAExtensions = new HashSet<>(Arrays.asList(Parser.OID_STREET_ADDRESS, Parser.OID_SUBURB, Parser.OID_POSTAL_CODE));
     Set<String> caOids = Arrays.stream(extensions.get("National Change of Address").getExtensionOIDs()).map(c -> c.toString()).collect(
         Collectors.toSet());
-    Assert.assertEquals(expectedDLExtensions.size(), caOids.size());
-    Assert.assertEquals(expectedDLExtensions, caOids);
+    Assert.assertEquals(expectedCAExtensions.size(), caOids.size());
+    Assert.assertEquals(expectedCAExtensions, caOids);
     Set<String> caEncs = Arrays.stream(extensions.get("National Change of Address").getExtensionOIDs()).map(c -> new String(extensions.get("National Change of Address").getExtension(c).getExtnValue().getOctets())).collect(
         Collectors.toSet());
     Assert.assertEquals(caEncs.size(), 3);
