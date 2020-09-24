@@ -21,8 +21,9 @@ import java.util.stream.Collectors;
 // aws lambda update-function-code --function-name AttestationIssuer --zip-file fileb://build/distributions/blockchain-attestation.zip
 
 // Handler value: example.Handler
-public class LambdaHandler implements RequestStreamHandler {
+public class AttestationIssuer implements RequestStreamHandler {
   Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
   @Override
   public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context) throws IOException
   {
@@ -53,5 +54,10 @@ public class LambdaHandler implements RequestStreamHandler {
       reader.close();
       writer.close();
     }
+  }
+
+  public void handleTruliooVerifyResponse(InputStream inputStream, OutputStream outputStream, Context context) throws IOException
+  {
+    handleRequest(inputStream, outputStream, context);
   }
 }
