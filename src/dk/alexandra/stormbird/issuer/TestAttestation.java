@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -20,13 +21,15 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentVerifierProvider;
+import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class TestAttestation {
   public static final ECDomainParameters DOMAIN = new ECDomainParameters(Attestation.CURVE_PARAM.getCurve(), Attestation.CURVE_PARAM.getG(), Attestation.CURVE_PARAM.getN(), Attestation.CURVE_PARAM.getH());
   private static AsymmetricCipherKeyPair serverKeys, userKeys;
-  private static String request, response;
+  private static String request;
+  private static JSONObject record; // "Record" from the verifyResponse.json
   private static SecureRandom rand;
 
   @org.junit.BeforeClass
@@ -36,7 +39,8 @@ public class TestAttestation {
     serverKeys = constructSecp256k1Keys(rand);
     userKeys = constructSecp256k1Keys(rand);
     request = Files.readString(Path.of("tests/verification_request.json"));
-    response = Files.readString(Path.of("tests/verification_response.json"));
+    JSONObject response = new JSONObject(Files.readString(Path.of("tests/verification_response.json")));
+    record = response.getJSONObject("Record");
   }
 
   @Test
@@ -46,9 +50,11 @@ public class TestAttestation {
     Attestation att = new Attestation(serverKeys, new X500Name("CN=Stormbird"), lifetime);
     byte[] requestJson = request.getBytes(StandardCharsets.UTF_8);
     byte[] signature = SignatureUtil.signKeccak(requestJson, userKeys.getPrivate());
+    System.out.println(new String(Base64.getEncoder().encode(signature)));
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic());
     byte[] userPK = spki.getPublicKeyData().getEncoded();
-    List<byte[]> certs = att.constructAttestation(request, response, signature, userPK);
+    System.out.println(new String(Base64.getEncoder().encode(userPK)));
+    List<byte[]> certs = att.constructAttestation(request, record.toString(), signature, userPK);
     JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
     SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
     ContentVerifierProvider verifier = builder.build(issuerSpki);
