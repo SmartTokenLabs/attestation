@@ -74,9 +74,11 @@ public class Parser {
 
   private Map<String, String> globalValues(JSONObject request, JSONObject response) {
     Map<String, String> output = new HashMap<>();
-    if (request.getString("CountryCode").equals(response.getString("CountryCode"))) {
-      output.put(OID_COUNTRY_NAME, response.getString("CountryCode"));
-    }
+    // TODO: this might be a security issue:
+    // the country code relationship of verify request and response is not checked here as we roll out only in 1 country
+    //if (request.getString("CountryCode").equals(response.getString("CountryCode"))) {
+      output.put(OID_COUNTRY_NAME, request.getString("CountryCode"));
+    //}
     return output;
   }
 
@@ -84,7 +86,7 @@ public class Parser {
     Map<String, Map<String, Object>> preprocessed = new HashMap<>();
     JSONObject datafields = request.getJSONObject("DataFields");
 
-    JSONArray datasourceResults = ((JSONObject) response.getJSONObject("Record")).getJSONArray("DatasourceResults");
+    JSONArray datasourceResults = response.getJSONArray("DatasourceResults");
 
     for(Object o: datasourceResults) {
       JSONObject current = (JSONObject)o;
