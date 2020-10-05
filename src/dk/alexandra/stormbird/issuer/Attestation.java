@@ -81,7 +81,7 @@ public class Attestation {
   public List<byte[]> constructAttestation(String request, String response, byte[] signature, byte[] publicKey) {
     try {
       // OID_SIGNATURE_ALG is needed here otherwise the reconstruction fails
-      AsymmetricKeyParameter userKey = ASN1Util.restoreKey(publicKey, CURVE_PARAM, OID_SIGNATURE_ALG);
+      AsymmetricKeyParameter userKey = ASN1Util.restorePublicKey(publicKey, CURVE_PARAM, OID_SIGNATURE_ALG);
       byte[] bytes = request.getBytes(StandardCharsets.UTF_8);
       if (!SignatureUtil.verifyKeccak(bytes, signature, userKey)) {
         throw new IllegalArgumentException("Request signature is not valid");

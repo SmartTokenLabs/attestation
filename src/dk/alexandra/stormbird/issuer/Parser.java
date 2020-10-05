@@ -86,7 +86,7 @@ public class Parser {
     Map<String, Map<String, Object>> preprocessed = new HashMap<>();
     JSONObject datafields = request.getJSONObject("DataFields");
 
-    JSONArray datasourceResults = response.getJSONArray("DatasourceResults");
+    JSONArray datasourceResults = response.getJSONObject("Record").getJSONArray("DatasourceResults");
 
     for(Object o: datasourceResults) {
       JSONObject current = (JSONObject)o;
