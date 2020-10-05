@@ -28,6 +28,7 @@ dependencies {
     runtimeOnly 'com.amazonaws:aws-lambda-java-log4j2:1.2.0'
     implementation 'junit:junit:4.13'
     implementation 'org.json:json:20200518'
+    testCompile 'junit:junit:4.13'
     testImplementation 'junit:junit:4.13'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
@@ -35,6 +36,13 @@ dependencies {
 
 sourceSets {
     main {
+        java {
+            srcDirs 'src'
+            exclude 'id' // the code is being reworked on
+            exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
+        }
+    }
+    test {
         java {
             srcDirs 'src'
             exclude 'id' // the code is being reworked on
