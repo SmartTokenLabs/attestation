@@ -55,26 +55,7 @@ task packageFat(type: Zip) {
     }
 }
 
-task packageLambda(type: Zip) {
-    from compileJava
-    from processResources
-    into('lib') {
-        from configurations.runtimeClasspath
-    }
-    // work in progress - the following libraries are seemingly unused
-    exclude('aws-**')
-    exclude('lambda-**')
-    exclude('bcprov-**')
-    exclude('http**')
-    exclude('log4j-**')
-    exclude('jackson-**')
-    exclude('json-**')
-    exclude('netty-**')
-    dirMode = 0755
-    fileMode = 0755
-}
-
-task packageLibs(type: Zip) {
+task packageLibs(type: Jar) {
     into('java/lib') {
         from configurations.runtimeClasspath
     }
@@ -82,7 +63,7 @@ task packageLibs(type: Zip) {
     fileMode = 0755
 }
 
-task packageSkinny(type: Zip) {
+task packageSkinny(type: Jar) {
     from compileJava
     from processResources
 }
