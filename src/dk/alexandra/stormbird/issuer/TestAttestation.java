@@ -31,36 +31,41 @@ public class TestAttestation {
   private static String request;
   private static JSONObject record; // "Record" from the verifyResponse.json
   private static SecureRandom rand;
+  private static Attestation att;
 
   @org.junit.BeforeClass
-  public static void setupKeys() throws Exception {
+  public static void setupAttestation() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
+    long lifetime = 31536000000l; // one year
     serverKeys = constructSecp256k1Keys(rand);
-    userKeys = constructSecp256k1Keys(rand);
-    request = Files.readString(Path.of("tests/verification_request.json"));
+    PublicKey serverPK = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic()));
+    System.out.println(ASN1Util.printDER(serverPK.getEncoded(), "PUBLIC KEY"));
+    att = new Attestation(serverKeys, new X500Name("CN=Stormbird"), lifetime);
     JSONObject response = new JSONObject(Files.readString(Path.of("tests/verification_response.json")));
     record = response.getJSONObject("Record");
   }
 
   @Test
   public void testSunshine() throws Exception {
-    Security.addProvider(new BouncyCastleProvider());
-    long lifetime = 31536000000l; // one year
-    Attestation att = new Attestation(serverKeys, new X500Name("CN=Stormbird"), lifetime);
-    byte[] requestJson = request.getBytes(StandardCharsets.UTF_8);
-    byte[] signature = SignatureUtil.signKeccak(requestJson, userKeys.getPrivate());
-    System.out.println(new String(Base64.getEncoder().encode(signature)));
+    /* setting up user's key, to sign verifyRequest */
+    userKeys = constructSecp256k1Keys(rand);
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic());
     byte[] userPK = spki.getPublicKeyData().getEncoded();
-    System.out.println(new String(Base64.getEncoder().encode(userPK)));
-    List<byte[]> certs = att.constructAttestation(request, record.toString(), signature, userPK);
+    //System.out.println(ASN1Util.printDER(userPK, "PUBLIC KEY"));
+
+    /* signing verifyRequest */
+    request = Files.readString(Path.of("tests/verification_request.json"));
+    Security.addProvider(new BouncyCastleProvider());
+    byte[] requestJson = request.getBytes(StandardCharsets.UTF_8);
+    byte[] signature = SignatureUtil.signKeccak(requestJson, userKeys.getPrivate());
+
+    /* obtaining resulting attestations */
+    List<byte[]> derEncodedAttestations = att.constructAttestation(request, record.toString(), signature, userPK);
     JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
     SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
     ContentVerifierProvider verifier = builder.build(issuerSpki);
-    PublicKey serverPK = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic()));
-    System.out.println(ASN1Util.printDER(serverPK.getEncoded(), "PUBLIC KEY"));
-    for (byte[] current : certs) {
+    for (byte[] current : derEncodedAttestations) {
       System.out.println(ASN1Util.printDER(current, "CERTIFICATE"));
       X509CertificateHolder currentCert = new X509CertificateHolder(current);
       Assert.assertTrue(currentCert.isValidOn(new Date(System.currentTimeMillis())));
