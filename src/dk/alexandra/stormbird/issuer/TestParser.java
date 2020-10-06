@@ -19,7 +19,7 @@ public class TestParser {
   public void testSunshine() throws Exception {
     String request = Files.readString(Path.of("tests/verification_request.json"));
     String response = Files.readString(Path.of("tests/verification_response.json"));
-    Parser parser = new Parser(new JSONObject(request), new JSONObject(response));
+    Parser parser = new Parser(new JSONObject(request), (new JSONObject(response)).getJSONObject("Record"));
     Map<String, X500Name> names = parser.getX500Names();
     Map<String, Extensions> extensions = parser.getExtensions();
 
