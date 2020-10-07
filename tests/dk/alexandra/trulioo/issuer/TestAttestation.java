@@ -1,6 +1,6 @@
-package dk.alexandra.stormbird.issuer;
+package dk.alexandra.trulioo.issuer;
 
-import static dk.alexandra.stormbird.issuer.Attestation.CURVE_PARAM;
+import static dk.alexandra.trulioo.issuer.Attestation.CURVE_PARAM;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -21,8 +21,9 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentVerifierProvider;
 import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 public class TestAttestation {
   public static final String ISSUER_ENCODED_PK = "-----BEGIN PUBLIC KEY-----\n"
@@ -56,7 +57,7 @@ public class TestAttestation {
   private static SecureRandom rand;
   private static Attestation att;
 
-  @org.junit.BeforeClass
+  @BeforeAll
   public static void setupAttestation() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
@@ -93,8 +94,8 @@ public class TestAttestation {
       System.out.println(ASN1Util.printDER(cert.getEncoded(), "CERTIFICATE"));
       // This is how to take a encoded certificate and convert it back to X509CertificateHolder
       // X509CertificateHolder currentCert = new X509CertificateHolder(cert.getEncoded);
-      Assert.assertTrue(cert.isValidOn(new Date(System.currentTimeMillis())));
-      Assert.assertTrue(cert.isSignatureValid(verifier));
+      Assertions.assertTrue(cert.isValidOn(new Date(System.currentTimeMillis())));
+      Assertions.assertTrue(cert.isSignatureValid(verifier));
     }
 
     // TODO the code below does not work since only named ECParameters are supported in X509CertImpl

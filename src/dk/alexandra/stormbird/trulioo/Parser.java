@@ -1,4 +1,4 @@
-package dk.alexandra.stormbird.issuer;
+package dk.alexandra.trulioo.issuer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
