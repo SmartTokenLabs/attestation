@@ -1,4 +1,4 @@
-package dk.alexandra.stormbird.issuer;
+package dk.alexandra.trulioo.issuer;
 
 import java.math.BigInteger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
