@@ -57,11 +57,10 @@ public class Attestor {
     try {
 //      serverSigningAlgo = new AlgorithmIdentifier(
 //          new ASN1ObjectIdentifier(OID_SIGNATURE_ALG), CURVE_PARAM.toASN1Primitive());
-      AlgorithmIdentifier identifier = new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_SHA256ECDSA));
-      AlgorithmIdentifier hashIdentifier = new DefaultDigestAlgorithmIdentifierFinder().find(identifier);
-      BcECContentSignerBuilder contentBuilder = new BcECContentSignerBuilder(identifier, hashIdentifier);
-      signer = contentBuilder.build(serverKey.getPrivate());
       serverSigningAlgo = new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_SHA256ECDSA));
+      AlgorithmIdentifier hashIdentifier = new DefaultDigestAlgorithmIdentifierFinder().find(serverSigningAlgo);
+      BcECContentSignerBuilder contentBuilder = new BcECContentSignerBuilder(serverSigningAlgo, hashIdentifier);
+      signer = contentBuilder.build(serverKey.getPrivate());
     } catch (OperatorCreationException e) {
       throw new RuntimeException("Could not parse server key");
     }
@@ -82,7 +81,7 @@ public class Attestor {
    */
 
   public List<X509CertificateHolder> constructAttestations(String request, JSONObject verifyRecord, byte[] signature, AsymmetricKeyParameter userPK) {
-    if (!SignatureUtil.verifyKeccak(request.getBytes(StandardCharsets.UTF_8), signature, userPK)) {
+    if (!SignatureUtil.verifySha256(request.getBytes(StandardCharsets.UTF_8), signature, userPK)) {
       throw new IllegalArgumentException("Request signature is not valid");
     }
     List<X509CertificateHolder> res = new ArrayList<>();
