@@ -31,7 +31,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
 import org.json.JSONObject;
 
-public class Attestation {
+public class Attestor {
   public static final String OID_ECDSA = "1.2.840.10045.4";
   public static final String OID_SECP256R1 = "1.2.840.10045.3.1.7";
   public static final String OID_SIGNATURE_ALG = "1.2.840.10045.2.1"; // OID for elliptic curve crypto
@@ -50,7 +50,7 @@ public class Attestation {
    * @param serverInfo The information about the issuer to include in the cert
    * @param lifeTime Lifetime of cert in milliseconds
    */
-  public Attestation(AsymmetricCipherKeyPair serverKey, X500Name serverInfo, long lifeTime) {
+  public Attestor(AsymmetricCipherKeyPair serverKey, X500Name serverInfo, long lifeTime) {
     this.serverKey = serverKey;
     this.serverInfo = serverInfo;
     this.lifeTime = lifeTime;

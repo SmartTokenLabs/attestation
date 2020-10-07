@@ -1,6 +1,6 @@
 package dk.alexandra.trulioo.issuer;
 
-import static dk.alexandra.trulioo.issuer.Attestation.CURVE_PARAM;
+import static dk.alexandra.trulioo.issuer.Attestor.CURVE_PARAM;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 
-public class TestAttestation {
+public class AttestorTest {
   public static final String ISSUER_ENCODED_PK = "-----BEGIN PUBLIC KEY-----\n"
       + "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////\n"
       + "////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
@@ -55,16 +55,16 @@ public class TestAttestation {
   private static String request;
   private static JSONObject record; // "Record" from the verifyResponse.json
   private static SecureRandom rand;
-  private static Attestation att;
+  private static Attestor attestor;
 
   @BeforeAll
-  public static void setupAttestation() throws Exception {
+  public static void setupAttestor() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     long lifetime = 31536000000l; // one year
     serverKeys = new AsymmetricCipherKeyPair(ASN1Util.restoreBase64PublicKey(ISSUER_ENCODED_PK),
         ASN1Util.restoreBase64PrivateKey(ISSUER_ENCODED_SK));
-    att = new Attestation(serverKeys, new X500Name("CN=Stormbird"), lifetime);
+    attestor = new Attestor(serverKeys, new X500Name("CN=Stormbird"), lifetime);
     JSONObject response = new JSONObject(Files.readString(Path.of("tests/verification_response.json")));
     record = response.getJSONObject("Record");
   }
@@ -85,7 +85,7 @@ public class TestAttestation {
     byte[] signature = SignatureUtil.signKeccak(request.getBytes(StandardCharsets.UTF_8), userKeys.getPrivate());
 
     /* obtaining resulting attestations */
-    List<X509CertificateHolder> certs = att.constructAttestations(request, record, signature, userKeys.getPublic());
+    List<X509CertificateHolder> certs = attestor.constructAttestations(request, record, signature, userKeys.getPublic());
 
     JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
     SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
