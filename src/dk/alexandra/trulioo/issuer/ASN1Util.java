@@ -36,7 +36,7 @@ public class ASN1Util {
   }
 
   /**
-   * Extract the private key from its base 64 encoding
+   * Extract the private key from its PEM, base 64 encoding
    * @param input
    * @return
    */
@@ -52,7 +52,7 @@ public class ASN1Util {
   }
 
   /**
-   * Extract the public key from its base 64 encoding
+   * Extract the public key from its PEM, base 64 encoding
    * @param input
    * @return
    */

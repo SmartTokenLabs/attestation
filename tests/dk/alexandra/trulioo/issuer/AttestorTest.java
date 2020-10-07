@@ -61,7 +61,7 @@ public class AttestorTest {
     request = Files.readString(Path.of("tests/verification_request.json"));
     Security.addProvider(new BouncyCastleProvider());
     byte[] signature = SignatureUtil
-        .signKeccak(request.getBytes(StandardCharsets.UTF_8), userKeys.getPrivate());
+        .signSha256(request.getBytes(StandardCharsets.UTF_8), userKeys.getPrivate());
 
     /* obtaining resulting attestations */
     List<X509CertificateHolder> certs = attestor.constructAttestations(request, record, signature, userKeys.getPublic());
