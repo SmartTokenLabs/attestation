@@ -73,25 +73,28 @@ public class TestAttestation {
     /* setting up user's key, to sign verifyRequest */
     userKeys = constructSecp256k1Keys(rand);
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic());
-    byte[] userPK = spki.getPublicKeyData().getEncoded();
-    //System.out.println(ASN1Util.printDER(userPK, "PUBLIC KEY"));
+    { // just to print newly generated public key here:
+      byte[] userPK = spki.getPublicKeyData().getEncoded();
+      System.out.println(ASN1Util.printDER(userPK, "PUBLIC KEY"));
+    }
 
     /* signing verifyRequest */
     request = Files.readString(Path.of("tests/verification_request.json"));
     Security.addProvider(new BouncyCastleProvider());
-    byte[] requestJson = request.getBytes(StandardCharsets.UTF_8);
-    byte[] signature = SignatureUtil.signKeccak(requestJson, userKeys.getPrivate());
+    byte[] signature = SignatureUtil.signKeccak(request.getBytes(StandardCharsets.UTF_8), userKeys.getPrivate());
 
     /* obtaining resulting attestations */
-    List<byte[]> derEncodedAttestations = att.constructAttestation(request, record.toString(), signature, userPK);
+    List<X509CertificateHolder> certs = att.constructAttestations(request, record, signature, userKeys.getPublic());
+
     JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
     SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
     ContentVerifierProvider verifier = builder.build(issuerSpki);
-    for (byte[] current : derEncodedAttestations) {
-      System.out.println(ASN1Util.printDER(current, "CERTIFICATE"));
-      X509CertificateHolder currentCert = new X509CertificateHolder(current);
-      Assert.assertTrue(currentCert.isValidOn(new Date(System.currentTimeMillis())));
-      Assert.assertTrue(currentCert.isSignatureValid(verifier));
+    for (X509CertificateHolder cert : certs) {
+      System.out.println(ASN1Util.printDER(cert.getEncoded(), "CERTIFICATE"));
+      // This is how to take a encoded certificate and convert it back to X509CertificateHolder
+      // X509CertificateHolder currentCert = new X509CertificateHolder(cert.getEncoded);
+      Assert.assertTrue(cert.isValidOn(new Date(System.currentTimeMillis())));
+      Assert.assertTrue(cert.isSignatureValid(verifier));
     }
 
     // TODO the code below does not work since only named ECParameters are supported in X509CertImpl

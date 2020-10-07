@@ -72,7 +72,7 @@ public class Parser {
     return res;
   }
 
-  private Map<String, String> globalValues(JSONObject request, JSONObject response) {
+  private Map<String, String> globalValues(JSONObject request, JSONObject verifyRecord) {
     Map<String, String> output = new HashMap<>();
     // TODO: this might be a security issue:
     // the country code relationship of verify request and response is not checked here as we roll out only in 1 country
@@ -82,11 +82,11 @@ public class Parser {
     return output;
   }
 
-  private Map<String, Map<String, String>> matching(JSONObject request, JSONObject response) {
+  private Map<String, Map<String, String>> matching(JSONObject request, JSONObject verifyRecord) {
     Map<String, Map<String, Object>> preprocessed = new HashMap<>();
     JSONObject datafields = request.getJSONObject("DataFields");
 
-    JSONArray datasourceResults = response.getJSONArray("DatasourceResults");
+    JSONArray datasourceResults = verifyRecord.getJSONArray("DatasourceResults");
 
     for(Object o: datasourceResults) {
       JSONObject current = (JSONObject)o;
@@ -153,4 +153,3 @@ public class Parser {
     return output;
   }
 }
-
