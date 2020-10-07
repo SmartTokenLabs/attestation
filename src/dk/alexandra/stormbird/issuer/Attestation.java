@@ -67,41 +67,26 @@ public class Attestation {
     }
   }
 
-
   /**
    * Constructs a list of X509 attestations to each of the relevant DatasourceName lists of elements
    * in the response json.
    *
-   * @param request Json request
-   * @param response Json response
-   * @param signature DER encoded signature of exactly  the json request string encoded as UTF-8 using a Secp256k1 key with Keccak
-   * @param publicKey DER encoded public key (SubjectPublicKeyInfo object)
+   * @param request Json request in a Sring - verification request that was sent to Trulioo Global Gateway†
+   * @param verifyRecord Json object of the Record in verifyResponse, from Trulioo Global Gateway‡
+   * @param signature DER encoded signature of exactly the json request string encoded as UTF-8 using a Secp256k1 key with Keccak
+   * @param userPK user's public key (SubjectPublicKeyInfo object)
    * @return List of DER encoded x509 attestations
+   *
+   * † An example can be found https://developer.trulioo.com/docs/identity-verification-step-6-verify
+   * ‡ Observe the "Record" in https://developer.trulioo.com/docs/identity-verification-verify-response
    */
-  public List<byte[]> constructAttestation(String request, String response, byte[] signature, byte[] publicKey) {
-    try {
-      // OID_SIGNATURE_ALG is needed here otherwise the reconstruction fails
-      AsymmetricKeyParameter userKey = ASN1Util.restorePublicKey(publicKey, CURVE_PARAM, OID_SIGNATURE_ALG);
-      byte[] bytes = request.getBytes(StandardCharsets.UTF_8);
-      if (!SignatureUtil.verifyKeccak(bytes, signature, userKey)) {
-        throw new IllegalArgumentException("Request signature is not valid");
-      }
-      JSONObject requestJson = new JSONObject(request);
-      JSONObject responseJson = new JSONObject(response);
-      List<X509CertificateHolder> certs = constructAttestationWOVerification(requestJson, responseJson, signature, userKey);
-      List<byte[]> res = new ArrayList<>();
-      for (X509CertificateHolder current : certs) {
-        res.add(current.getEncoded());
-      }
-      return res;
-    } catch (IOException e) {
-      throw new RuntimeException("Could not decode public key");
-    }
-  }
 
-  List<X509CertificateHolder> constructAttestationWOVerification(JSONObject request, JSONObject response, byte[] signature, AsymmetricKeyParameter userKey) {
+  public List<X509CertificateHolder> constructAttestations(String request, JSONObject verifyRecord, byte[] signature, AsymmetricKeyParameter userPK) {
+    if (!SignatureUtil.verifyKeccak(request.getBytes(StandardCharsets.UTF_8), signature, userPK)) {
+      throw new IllegalArgumentException("Request signature is not valid");
+    }
     List<X509CertificateHolder> res = new ArrayList<>();
-    Parser parser = new Parser(request, response);
+    Parser parser = new Parser(new JSONObject(request), verifyRecord);
     Map<String, X500Name> subjectNames = parser.getX500Names();
     Map<String, Extensions> subjectExtensions = parser.getExtensions();
     for (String currentAttName : subjectNames.keySet()) {
@@ -116,7 +101,7 @@ public class Attestation {
         certBuilder.setStartDate(new Time(new Date(time)));
         certBuilder.setEndDate(new Time(new Date(time + lifeTime)));
 
-        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKey);
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userPK);
 //        // todo hack to create a valid spki without ECNamedParameters
 //        spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier(OID_ECDSA)),
 //            spki.getPublicKeyData());
@@ -150,7 +135,6 @@ public class Attestation {
       throw new RuntimeException(e);
     }
   }
-
 
 }
 
