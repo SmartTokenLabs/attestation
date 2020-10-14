@@ -6,8 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -52,16 +52,22 @@ public class AttestorTest {
     /* setting up user's key, to sign verifyRequest */
     userKeys = constructSecp256k1Keys(rand);
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(userKeys.getPublic());
-    { // just to print newly generated public key here:
-      byte[] userPK = spki.getPublicKeyData().getEncoded();
-      System.out.println(ASN1Util.printDER(userPK, "PUBLIC KEY"));
-    }
+    byte[] userPK = spki.getPublicKeyData().getEncoded();
+    // just to print newly generated public key here:
+    //System.out.println(ASN1Util.printDER(userPK, "PUBLIC KEY"));
 
     /* signing verifyRequest */
     request = Files.readString(Path.of("tests/verification_request.json"));
     Security.addProvider(new BouncyCastleProvider());
     byte[] signature = SignatureUtil
         .signSha256(request.getBytes(StandardCharsets.UTF_8), userKeys.getPrivate());
+
+    /* build a JSON object for testing */
+    HashMap<String,String> csr = new HashMap<>();
+    csr.put("verifyRequest", request);
+    csr.put("signature", Base64.getEncoder().encodeToString(signature));
+    csr.put("publicKey", Base64.getEncoder().encodeToString(userPK));
+    System.out.println((new JSONObject(csr)).toString());
 
     /* obtaining resulting attestations */
     List<X509CertificateHolder> certs = attestor.constructAttestations(request, record, signature, userKeys.getPublic());
