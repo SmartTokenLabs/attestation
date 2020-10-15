@@ -82,7 +82,9 @@ public class Attestor {
 
   public List<X509CertificateHolder> constructAttestations(String request, JSONObject verifyRecord, byte[] signature, AsymmetricKeyParameter userPK) {
     if (!SignatureUtil.verifySha256(request.getBytes(StandardCharsets.UTF_8), signature, userPK)) {
-      throw new IllegalArgumentException("Request signature is not valid");
+      throw new IllegalArgumentException("Request signature verification failed. "
+      + "Make sure that your message is unaltered, signature is created by hashing the message with SHA256"
+      + "and using a key of secp256k1 type.");
     }
     List<X509CertificateHolder> res = new ArrayList<>();
     Parser parser = new Parser(new JSONObject(request), verifyRecord);
