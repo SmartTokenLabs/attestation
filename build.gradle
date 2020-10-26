@@ -24,14 +24,14 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDirs 'src'
+            srcDirs = ['src/main/java']
             exclude 'id' // the code is being reworked on
             exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
         }
     }
     test {
         java {
-            srcDirs 'tests'
+            srcDirs = ['src/test/java']
             exclude 'id' // the code is being reworked on
             exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
         }
