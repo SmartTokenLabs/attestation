@@ -78,13 +78,18 @@ task packageLibs(type: Jar) {
     fileMode = 0755
 }
 
-task packageSkinny(type: Jar) {
+task packageAttestation(type: Jar) {
     from compileJava
     from processResources
+    exclude 'com/alphawallet/attestation/demo'
+    exclude 'com/alphawallet/ethereum/**'
+    exclude 'com/alphawallet/token/**'
+    exclude 'id/attestation/**'
+    exclude 'dk/**'
     manifest {
         attributes('Implementation-Title': project.name,
                 'Implementation-Version': project.version)
     }
 }
 
-build.dependsOn packageSkinny
+build.dependsOn packageAttestation
