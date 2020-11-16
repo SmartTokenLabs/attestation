@@ -157,7 +157,8 @@ public class AttestationCrypto {
   }
 
   /**
-   * Compute a specific point on the curve (generator) based on x
+   * Compute a specific point on the curve (generator) based on x using the try-and-increment method
+   * https://eprint.iacr.org/2009/226.pdf
    * @param params
    * @param p The size of the underlying field
    * @param x The x-coordiante for which we will compute y
