@@ -1,39 +1,57 @@
-# Attestations Facilitating Cheques on Blockchain
+# Attestations Facilitating Cheques (redeemable crypto-assets) on Blockchain
 
 ## Outline
+
 This document outlines a way of using attestations (to an arbitrary user-unique identifier) to facilitate sending and redeeming cheques over a blockchain. Specifically this document describes how to do this with Ethereum using the minimal proof-of-concept Demo.jar.
+
 The document will first describe the overall intuition of the protocol and its security followed by a minimal demonstration flow using Demo.jar.
+
 For information about the underlying cryptography used in the protocol please consult this [document](https://github.com/AlphaWallet/blockchain-attestation/blob/master/use-cases/send-ether-by-identifier-attestation.md).
 
 More specifically this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using Demo.jar). 
-Concretely we consider a user, Alice, who wishes to send ether to Bob, who might not have an Ethereum address. 
+
+Concretely we consider a user, Alice, who wishes to send some crypto asset to Bob, who might not have an Ethereum address. 
+
 Alice, however, knows an identifier of Bob that can be attested to. e.g. Bob’s email address or Bob’s mobile phone number. 
+
 Bob is able to prove that he has access to this identifier by requesting an attestation to that from an Attestor, e.g. [attestation.id](http://attestation.id).
 
 ### The Flow
+
 Alice starts by constructing a virtual cheque, based on some newly sampled randomness and Bob's identifier (say his e-mail). This will result in a public riddle, cryptographically linked to Bob's identifier, and a secret solution.
- Alice posts the public riddle to a smart contract along with some ether and sends the secret solution to Bob. 
- The smart contract will pay out the ether to anyone who is able to prove that they hold the secret solution for its riddle *and* show an attestation, with a cryptographic linking to this riddle. 
+ Alice posts the public riddle to a smart contract along with some ether and sends the secret solution to Bob.
  
- In order to cash the cheque Bob must get an attestation to his e-mail which was used in constructing the public riddle. 
- For this he picks some unique and newly sampled randomness to be a secret, only known to him, which will be used in his attestation. 
-  Based on Bob's secret randomness he contacts an Attestor and proves to this that he has access to his email address (the one that the cheque was signed to).  
- As a result he receives a *reusable* and public attestation cryptographically constructed based on his secret randomness. 
- Using this attestation, his own randomness and the randomness for the cheque he received from Alice, he can now redeem the cheque from the smart contract by submitting his public attestation, and a proof that he knows the secret solution to the cheque.
+The smart contract will pay out the ether to anyone who is able to prove that they hold the secret solution for its riddle *and* show an attestation, with a cryptographic linking to this riddle. 
+ 
+In order to cash the cheque Bob must get an attestation to his e-mail which was used in constructing the public riddle. 
+ For this he picks some unique and newly sampled randomness to be a secret, only known to him, which will be used in his attestation.
+ 
+Based on Bob's secret randomness he contacts an Attestor and proves to this that he has access to his email address (the one that the cheque was signed to).  
+
+As a result he receives a *reusable* and public attestation cryptographically constructed based on his secret randomness. 
+ 
+Using this attestation, his own randomness and the randomness for the cheque he received from Alice, he can now redeem the cheque from the smart contract by submitting his public attestation, and a proof that he knows the secret solution to the cheque.
 
 ### Security
-In order to cash the cheque Bob must both know the secret solution to its riddle *and* have an attestation that to an identifier which is *the same* that was used to construct the riddle *and* know the secret randomness he used when getting his attestation. 
-Because of the randomness used both in the riddle and the attestation, the identifier attested to, (email address or mobile number), can’t be learned from an observer with access to the Ethereum blockchain. 
+
+In order to cash the cheque Bob must both know the secret solution to its riddle *and* have an attestation that to an identifier which is *the same* that was used to construct the riddle *and* know the secret randomness he used when getting his attestation.
+
+Because of the randomness used both in the riddle and the attestation, the identifier attested to, (email address or mobile number), can’t be learned from an observer with access to the Ethereum blockchain.
+
 However, it will be possible for Alice to see that Bob receives cheques from other parties in the future.
 The attestation can be reused in the future and anyone sending a cheque to Bob *does not* need to know anything about Bob's attestation when they construct the cheque. The only thing they need is his identifier.
+
 The protocol is secure under any composition of senders (Alices) and receivers (Bobs) based on a one-more discrete logarithm-like assumption.
 
 ## Using Demo.jar
-The Demo.jar contains all methods needed to run a full demo flow. 
+
+The Demo.jar contains all methods needed to run a full demo flow.
+
 The general syntax for running a command with Demo.jar is `java -jar Demo.jar <name-of-command>` where `name-of-command` is one of the following: `keys, create-cheque, request-attest, construct-attest, receive-cheque`. 
 We discuss these commands below.
 
 ### Construct keys
+
 Demo.jar can construct SECP256k1 cryptographic keys.
 This should be run by all parties.
 
@@ -45,7 +63,8 @@ For example:
 
 `java -jar Demo.jar keys pub.pem priv.pem` 
 
-### Create Cheque 
+### Create Cheque
+
 Constructs a cheque of an integer amount, to an identifier of a certain type, which will be valid for a certain amount of seconds, using a private signing key. The command outputs the public and private aspects of the cheque in two separate files.
 This method should be run by Alice.
  
@@ -66,6 +85,7 @@ For example:
 `java -jar Demo.jar create-cheque 42 test@test.ts mail 3600 priv.pem cheque.pem cheque-secret.pem`
 
 ### Request Attestation
+
 Constructs a request for an attestation to a specific identifier of a certain type, signed using a private key. The command outputs the public attestation requests and the private attestation secret.
 This method should be run by Bob.
 
@@ -102,6 +122,7 @@ For example:
 `java -jar Demo.jar construct-attest priv.pem AlphaWallet 3600 request.pem attestation.crt`
 
 ### Redeem Cheque
+
 Redeems a cheque using an attestation, its secret, the public cheque and its secret, signed using a private key.
 This method should be run by Bob.
 
@@ -121,6 +142,7 @@ For example:
 `java -jar Demo.jar receive-cheque priv.pem cheque-secret.pem request-secret.pem cheque.pem attestation.crt Attestor-pub.pem`
 
 ### Full local execution
+
 To run the full protocol locally execute the following commands: 
 
 `java -jar Demo.jar keys Alice-pub.pem Alice-priv.pem`
