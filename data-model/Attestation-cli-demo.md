@@ -2,15 +2,15 @@
 
 ## Outline
 
-This document outlines a way of using attestations (to an arbitrary user-unique identifier) to facilitate sending and redeeming cheques over a blockchain. Specifically this document describes how to do this with Ethereum using the minimal proof-of-concept Demo.jar.
+This document outlines a way of using attestations on an arbitrary user-unique identifier to facilitate sending and redeeming cheques over a blockchain. Specifically, this document describes how to do this with Ethereum using the minimal proof-of-concept Demo.jar.
 
-The document will first describe the overall intuition of the protocol and its security followed by a minimal demonstration flow using Demo.jar.
+The document will first describe the overall intuition of the protocol and its security, followed by a minimal demonstration flow using Demo.jar.
 
-For information about the underlying cryptography used in the protocol please consult this [document](https://github.com/AlphaWallet/blockchain-attestation/blob/master/use-cases/send-ether-by-identifier-attestation.md).
+For information about the underlying cryptography used in the protocol, please consult this [document](https://github.com/AlphaWallet/blockchain-attestation/blob/master/use-cases/send-ether-by-identifier-attestation.md).
 
-More specifically this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using Demo.jar). 
+More specifically, this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using Demo.jar). 
 
-Concretely we consider a user, Alice, who wishes to send some crypto asset to Bob, who might not have an Ethereum address. 
+Concretely we consider an issuer, Alice, who wishes to send some crypto asset to Bob, who might not have an Ethereum address. 
 
 Alice, however, knows an identifier of Bob that can be attested to. e.g. Bob’s email address or Bob’s mobile phone number. 
 
@@ -18,17 +18,18 @@ Bob is able to prove that he has access to this identifier by requesting an atte
 
 ### The Flow
 
-Alice starts by constructing a virtual cheque, based on some newly sampled randomness and Bob's identifier (say his e-mail). This will result in a public riddle, cryptographically linked to Bob's identifier, and a secret solution.
+Alice starts by constructing a virtual cheque (redeemable crypto asset), based on some newly sampled randomness and Bob's identifier (say his e-mail). This will result in a public riddle, cryptographically linked to Bob's identifier, and a secret solution.
  Alice posts the public riddle to a smart contract along with some ether and sends the secret solution to Bob.
  
 The smart contract will pay out the ether to anyone who is able to prove that they hold the secret solution for its riddle *and* show an attestation, with a cryptographic linking to this riddle. 
  
-In order to cash the cheque Bob must get an attestation to his e-mail which was used in constructing the public riddle. 
- For this he picks some unique and newly sampled randomness to be a secret, only known to him, which will be used in his attestation.
- 
-Based on Bob's secret randomness he contacts an Attestor and proves to this that he has access to his email address (the one that the cheque was signed to).  
+In order to use the cheque (with a smart contract), Bob must get an attestation to his e-mail which was used in constructing the public riddle. 
 
-As a result he receives a *reusable* and public attestation cryptographically constructed based on his secret randomness. 
+For this he picks some unique and newly sampled randomness to be a secret, only known to him, which will be used in his attestation.
+ 
+Based on Bob's secret randomness he contacts an Attester and proves to this that he has access to his email address (the one that the cheque was signed to). 
+
+As a result, he receives a *reusable* and public attestation cryptographically constructed based on his secret randomness. 
  
 Using this attestation, his own randomness and the randomness for the cheque he received from Alice, he can now redeem the cheque from the smart contract by submitting his public attestation, and a proof that he knows the secret solution to the cheque.
 
