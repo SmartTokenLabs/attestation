@@ -40,6 +40,7 @@ public class AttestationCrypto {
   public static final ECNamedCurveSpec params = new ECNamedCurveSpec(ECDSA_CURVE, spec.getCurve(), spec.getG(),
           spec.getN());
   public static final BigInteger fieldSize = ((ECFieldFp) params.getCurve().getField()).getP();
+  // TODO if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = params.getOrder();
   private final SecureRandom rand;
 
@@ -165,20 +166,27 @@ public class AttestationCrypto {
    * @return A corresponding y coordinate for x
    */
   private static ECPoint computePoint(ECCurve params, BigInteger p, BigInteger x) {
+
     x = x.mod(p);
     BigInteger y, expected, ySquare;
+    ECPoint resPoint, referencePoint;
     do {
-      x = x.add(BigInteger.ONE).mod(p);
-      BigInteger a = params.getA().toBigInteger();
-      BigInteger b = params.getB().toBigInteger();
-      ySquare = x.modPow(new BigInteger("3"), p).add(a.multiply(x)).add(b).mod(p);
-      // Since we use secp256k1 we use the Lagrange trick to compute the squareroot (since p mod 4=3)
-      BigInteger magicExp = p.add(BigInteger.ONE).divide(new BigInteger("4"));
-      y = ySquare.modPow(magicExp, p);
-      // Check that the squareroot actually exists and hence that we have a point on the curve
-      expected = y.multiply(y).mod(p);
-    } while (!expected.equals(ySquare));
-    return params.createPoint(x, y);
+      do {
+        x = x.add(BigInteger.ONE).mod(p);
+        BigInteger a = params.getA().toBigInteger();
+        BigInteger b = params.getB().toBigInteger();
+        ySquare = x.modPow(new BigInteger("3"), p).add(a.multiply(x)).add(b).mod(p);
+        // Since we use secp256k1 we use the Lagrange trick to compute the squareroot (since p mod 4=3)
+        BigInteger magicExp = p.add(BigInteger.ONE).divide(new BigInteger("4"));
+        y = ySquare.modPow(magicExp, p);
+        // Check that the squareroot actually exists and hence that we have a point on the curve
+        expected = y.multiply(y).mod(p);
+      } while (!expected.equals(ySquare));
+      resPoint = params.createPoint(x, y).normalize();
+      referencePoint = resPoint.multiply(curveOrder.subtract(BigInteger.ONE)).normalize();
+      // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
+    } while(!resPoint.equals(referencePoint) && !resPoint.equals(referencePoint.negate().normalize()));
+    return resPoint;
   }
 
   public static ECPoint decodePoint(byte[] point) {
