@@ -21,7 +21,9 @@ The protocol is secure under any composition of senders (Alices) and receivers (
 
 This only needs to be done once for Bob and can be done either before or after receiving the first cheque.
 
-1. Bob generates an Ethereum key (if he hasn't already) and a privacy key *p*.
+0. Bob generates an Ethereum key (if he hasn't already)
+
+1. Bob generates a privacy key *p*.
 
 2. Bob creates then computes a hiding of his identifier; *s=H(i)<sup>p</sup>*.
 
