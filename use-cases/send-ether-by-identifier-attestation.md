@@ -21,15 +21,17 @@ The protocol is secure under any composition of senders (Alices) and receivers (
 
 This only needs to be done once for Bob and can be done either before or after receiving the first cheque.
 
-1. Bob generates an Ethereum key (if he hasn't already) and a privacy key *p*.
+1. Bob generates an Ethereum key (if he hasn't already)
 
-2. Bob creates then computes a hiding of his identifier; *s=H(i)<sup>p</sup>*.
+2. Bob generates a privacy key *p*.
 
-3. He then constructs a zero-knowledge proof that he knows the exponent *p*: He picks random *r* and computes *t=H(i)<sup>r</sup>*, *c=H(s, H(i), t)* and *d=r+c\*p*. Let the proof be denoted by *q=(s, H(i), t, d)*.
+3. Bob creates then computes a hiding of his identifier; *s=H(i)<sup>p</sup>*.
 
-4. Bob signs a CSR (signing request) with his identifier *i* using his Etheruem key. He also signs the proof *q*. 
+4. He then constructs a zero-knowledge proof that he knows the exponent *p*: He picks random *r* and computes *t=H(i)<sup>r</sup>*, *c=H(s, H(i), t)* and *d=r+c\*p*. Let the proof be denoted by *q=(s, H(i), t, d)*.
 
-5. An attestor verifies that Bob owns the identifier, that the signatures are valid and that the proof is valid by computing *c=H(s, H(i), t)* and verifying that *H(i)<sup>d</sup>=t\*s<sup>c</sup>*. If these checks are ok then issue an attestation that binds his Ethereum address with *s* as the subject.
+5. Bob signs a CSR (signing request) with his identifier *i* using his Etheruem key. He also signs the proof *q*. 
+
+6. An attestor verifies that Bob owns the identifier, that the signatures are valid and that the proof is valid by computing *c=H(s, H(i), t)* and verifying that *H(i)<sup>d</sup>=t\*s<sup>c</sup>*. If these checks are ok then issue an attestation that binds his Ethereum address with *s* as the subject.
 
 ### Cheque
 
