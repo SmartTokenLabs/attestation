@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.security.spec.ECFieldFp;
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.bouncycastle.math.ec.ECCurve;
@@ -45,6 +47,7 @@ public class AttestationCrypto {
   private final SecureRandom rand;
 
   public AttestationCrypto(SecureRandom rand) {
+    Security.addProvider(new BouncyCastleProvider());
     this.rand = rand;
   }
 
@@ -90,13 +93,14 @@ public class AttestationCrypto {
 
   static byte[] constructPointBytesFromIdentity(String identity, AttestationType type, BigInteger secret) {
     ECPoint hashedIdentity = hashIdentifier(type.ordinal(), identity);
-    ECPoint identifierPoint = hashedIdentity.multiply(secret);
+    ECPoint identifierPoint = hashedIdentity.multiply(secret).normalize();
     return identifierPoint.getEncoded(false);
   }
 
   public byte[] makeRiddle(String identity, AttestationType type, BigInteger secret) {
     ECPoint hashedIdentity = hashIdentifier(type.ordinal(), identity);
-    return hashedIdentity.multiply(secret).getEncoded(false);
+    ECPoint res = hashedIdentity.multiply(secret).normalize();
+    return res.getEncoded(false);
   }
 
   ProofOfExponent computeProof(ECPoint base, ECPoint riddle, BigInteger exponent) {
@@ -141,9 +145,8 @@ public class AttestationCrypto {
 
   private static BigInteger mapToInteger(byte[] value) {
     try {
-      Keccak.DigestKeccak kecc = new Keccak.Digest256();
-      kecc.update(value, 0, value.length);
-      BigInteger idenNum = new BigInteger(kecc.digest());
+      final MessageDigest digest = MessageDigest.getInstance("Keccak-256");
+      BigInteger idenNum = new BigInteger( digest.digest(value));
       return idenNum.mod(fieldSize);
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -162,7 +165,7 @@ public class AttestationCrypto {
    * https://eprint.iacr.org/2009/226.pdf
    * @param params
    * @param p The size of the underlying field
-   * @param x The x-coordiante for which we will compute y
+   * @param x The x-coordinate for which we will compute y
    * @return A corresponding y coordinate for x
    */
   private static ECPoint computePoint(ECCurve params, BigInteger p, BigInteger x) {
@@ -185,11 +188,12 @@ public class AttestationCrypto {
       resPoint = params.createPoint(x, y).normalize();
       referencePoint = resPoint.multiply(curveOrder.subtract(BigInteger.ONE)).normalize();
       // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
+      // NOTE: this is ONLY needed if we DON'T use secp256k1, so currently it is superflous but we are keeping it this check is crucial for security on most other curves!
     } while(!resPoint.equals(referencePoint) && !resPoint.equals(referencePoint.negate().normalize()));
-    return resPoint;
+    return resPoint.normalize();
   }
 
   public static ECPoint decodePoint(byte[] point) {
-    return spec.getCurve().decodePoint(point);
+    return spec.getCurve().decodePoint(point).normalize();
   }
 }
