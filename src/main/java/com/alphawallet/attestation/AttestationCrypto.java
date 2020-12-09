@@ -91,13 +91,7 @@ public class AttestationCrypto {
     return computeProof(hashedIdentity, identifier, secret);
   }
 
-  static byte[] constructPointBytesFromIdentity(String identity, AttestationType type, BigInteger secret) {
-    ECPoint hashedIdentity = hashIdentifier(type.ordinal(), identity);
-    ECPoint identifierPoint = hashedIdentity.multiply(secret).normalize();
-    return identifierPoint.getEncoded(false);
-  }
-
-  public byte[] makeRiddle(String identity, AttestationType type, BigInteger secret) {
+  public static byte[] makeRiddle(String identity, AttestationType type, BigInteger secret) {
     ECPoint hashedIdentity = hashIdentifier(type.ordinal(), identity);
     ECPoint res = hashedIdentity.multiply(secret).normalize();
     return res.getEncoded(false);
@@ -186,10 +180,17 @@ public class AttestationCrypto {
         expected = y.multiply(y).mod(p);
       } while (!expected.equals(ySquare));
       resPoint = params.createPoint(x, y).normalize();
+      // Ensure that we have a consistent choice of which "sign" of y we use. We always use the smallest possible value of y
+      if (resPoint.getYCoord().toBigInteger().compareTo(fieldSize.divide(new BigInteger("2"))) > 0) {
+        resPoint = resPoint.negate().normalize();
+      }
       referencePoint = resPoint.multiply(curveOrder.subtract(BigInteger.ONE)).normalize();
+      if (referencePoint.getYCoord().toBigInteger().compareTo(fieldSize.divide(new BigInteger("2"))) > 0) {
+        referencePoint = referencePoint.negate().normalize();
+      }
       // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
       // NOTE: this is ONLY needed if we DON'T use secp256k1, so currently it is superflous but we are keeping it this check is crucial for security on most other curves!
-    } while(!resPoint.equals(referencePoint) && !resPoint.equals(referencePoint.negate().normalize()));
+    } while(!resPoint.equals(referencePoint));
     return resPoint.normalize();
   }
 
