@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.apache.logging.log4j.core.util.Assert;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
