@@ -2,6 +2,7 @@ package com.alphawallet.attestation;
 
 import com.alphawallet.token.entity.Signable;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -289,8 +290,13 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   @Override
-  public byte[] getDerEncoding() {
-    return getPrehash();
+  public byte[] getDerEncoding() throws InvalidObjectException {
+    byte[] attEncoded = getPrehash();
+    // The method returns null if the encoding is invalid
+    if (attEncoded == null) {
+      throw new InvalidObjectException("The attestation is not valid");
+    }
+    return attEncoded;
   }
 
   /**

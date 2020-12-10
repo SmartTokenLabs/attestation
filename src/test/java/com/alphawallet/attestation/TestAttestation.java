@@ -86,6 +86,16 @@ public class TestAttestation {
     }
 
     @Test
+    public void testExpired() throws Exception {
+        Attestation res = TestHelper.makeUnsignedx509Att(subjectKeys.getPublic());
+        assertTrue(res.checkValidity());
+        assertTrue(res.isValidX509());
+        Date almostNow = new Date(System.currentTimeMillis() - 1000);
+        res.setNotValidAfter(almostNow);
+        assertFalse(res.checkValidity());
+    }
+
+    @Test
     public void testFullDecoding() throws Exception {
         byte[] encoding = TestHelper.makeMaximalAtt(subjectKeys.getPublic()).getPrehash();
         Attestation newAtt = new Attestation(encoding);

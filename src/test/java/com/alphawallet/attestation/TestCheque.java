@@ -2,9 +2,11 @@ package com.alphawallet.attestation;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import org.apache.logging.log4j.core.util.Assert;
@@ -44,6 +46,22 @@ public class TestCheque {
     // Note that apparently a proper equality has not been implemented for AsymmetricKeyParameter
 //    Assert.assertEquals(cheque.getPublicKey(), otherConstructor.getPublicKey());
     assertArrayEquals(encoded, otherConstructor.getDerEncoding());
+  }
+
+  @Test
+  public void testIllegalKeys() throws Exception {
+    Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, BigInteger.TEN);
+    Field field = cheque.getClass().getDeclaredField("signature");
+    field.setAccessible(true);
+    // Change a bit in the signature
+    ((byte[]) field.get(cheque))[20] ^= 1;
+    assertFalse(cheque.verify());
+  }
+
+  @Test
+  public void testInvalid() {
+    Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, -1000, senderKeys, BigInteger.TEN);
+    assertFalse(cheque.checkValidity());
   }
 
 }
