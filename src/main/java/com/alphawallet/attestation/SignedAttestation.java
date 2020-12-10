@@ -1,5 +1,9 @@
 package com.alphawallet.attestation;
 
+import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.core.Validateable;
+import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import org.bouncycastle.asn1.ASN1EncodableVector;

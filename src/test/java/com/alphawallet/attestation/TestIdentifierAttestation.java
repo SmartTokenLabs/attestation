@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.alphawallet.attestation.core.AttestationCrypto;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.apache.logging.log4j.core.util.Assert;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;

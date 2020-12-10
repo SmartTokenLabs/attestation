@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
 import java.security.PublicKey;
@@ -12,7 +14,6 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import org.apache.logging.log4j.core.util.Assert;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;

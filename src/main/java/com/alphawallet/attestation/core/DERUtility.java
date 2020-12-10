@@ -1,4 +1,4 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.core;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

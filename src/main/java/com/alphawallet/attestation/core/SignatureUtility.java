@@ -1,4 +1,4 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.core;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -27,7 +27,8 @@ public class SignatureUtility {
      * @return
      */
     public static AsymmetricKeyParameter restoreKey(byte[] input) throws IOException {
-        AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(new ASN1ObjectIdentifier(AttestationCrypto.OID_SIGNATURE_ALG), AttestationCrypto.curve.toASN1Primitive());
+        AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(new ASN1ObjectIdentifier(
+            AttestationCrypto.OID_SIGNATURE_ALG), AttestationCrypto.curve.toASN1Primitive());
         ASN1BitString keyEnc = DERBitString.getInstance(input);
         ASN1Sequence spkiEnc = new DERSequence(new ASN1Encodable[] {identifierEnc, keyEnc});
         SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(spkiEnc);
@@ -40,7 +41,7 @@ public class SignatureUtility {
         return signHashed(digestBytes, key);
     }
 
-    static byte[] signHashed(byte[] digest, AsymmetricKeyParameter key) {
+    public static byte[] signHashed(byte[] digest, AsymmetricKeyParameter key) {
         try {
             ECDSASigner signer = new ECDSASigner();
             signer.init(true, key);

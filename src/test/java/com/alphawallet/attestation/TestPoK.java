@@ -6,10 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.demo.SmartContract;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.apache.logging.log4j.core.util.Assert;
 import org.junit.jupiter.api.Test;
 
 public class TestPoK {

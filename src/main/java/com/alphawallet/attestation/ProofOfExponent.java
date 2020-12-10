@@ -1,5 +1,8 @@
 package com.alphawallet.attestation;
 
+import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -11,7 +14,7 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.math.ec.ECPoint;
 
-public class ProofOfExponent implements ASNEncodable, Verifiable{
+public class ProofOfExponent implements ASNEncodable, Verifiable {
   private final ECPoint base;
   private final ECPoint riddle;
   private final ECPoint tPoint;

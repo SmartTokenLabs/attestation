@@ -1,5 +1,7 @@
 package com.alphawallet.attestation;
 
+import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.token.entity.Signable;
 import java.io.IOException;
 import java.io.InvalidObjectException;

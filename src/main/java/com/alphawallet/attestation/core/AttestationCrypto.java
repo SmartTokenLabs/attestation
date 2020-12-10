@@ -1,6 +1,7 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.core;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.ProofOfExponent;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -97,7 +98,7 @@ public class AttestationCrypto {
     return res.getEncoded(false);
   }
 
-  ProofOfExponent computeProof(ECPoint base, ECPoint riddle, BigInteger exponent) {
+  public ProofOfExponent computeProof(ECPoint base, ECPoint riddle, BigInteger exponent) {
     BigInteger r = makeSecret();
     ECPoint t = base.multiply(r);
     // TODO ideally Bob's ethreum address should also be part of the challenge
@@ -131,7 +132,7 @@ public class AttestationCrypto {
     }
   }
 
-   protected static ECPoint hashIdentifier(int type, String identifier) {
+   public static ECPoint hashIdentifier(int type, String identifier) {
     // TODO check that identifier is legal in other ways
     BigInteger idenNum = mapToInteger(type, identifier.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
     return computePoint(spec.getCurve(), fieldSize, idenNum);
