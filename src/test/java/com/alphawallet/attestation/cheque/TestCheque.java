@@ -1,15 +1,15 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.cheque;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.apache.logging.log4j.core.util.Assert;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

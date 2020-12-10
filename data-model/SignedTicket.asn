@@ -1,0 +1,25 @@
+SignedTicket
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+AlgorithmIdentifier FROM AuthenticationFramework;
+
+SignedTicket ::= SEQUENCE {
+    ticket               Ticket,
+    signatureAlgorithm   AlgorithmIdentifier,
+    signatureValue       BIT STRING
+}
+
+
+Ticket ::= SEQUENCE {
+    ticketId         INTEGER,
+    ticketClass      INTEGER,
+    conferenceId     INTEGER,
+--  (currently not specified)      --
+--  co2_token         OCTET STRING --
+    riddle         OCTET STRING
+}
+
+END

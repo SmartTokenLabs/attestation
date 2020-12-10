@@ -1,6 +1,11 @@
 package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.core.Validateable;
+import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;

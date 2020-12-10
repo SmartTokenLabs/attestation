@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.core.AttestationCrypto;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Date;
-import org.apache.logging.log4j.core.util.Assert;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;

@@ -1,14 +1,14 @@
 package com.alphawallet.attestation.demo;
 
 import com.alphawallet.attestation.Attestation;
-import com.alphawallet.attestation.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.AttestationRequest;
-import com.alphawallet.attestation.Cheque;
-import com.alphawallet.attestation.DERUtility;
+import com.alphawallet.attestation.cheque.Cheque;
+import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.RedeemCheque;
+import com.alphawallet.attestation.cheque.RedeemCheque;
 import com.alphawallet.attestation.SignedAttestation;
 import java.io.File;
 import java.io.FileNotFoundException;

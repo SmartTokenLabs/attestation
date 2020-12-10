@@ -1,5 +1,7 @@
 package com.alphawallet.attestation;
 
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;

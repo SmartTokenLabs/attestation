@@ -1,4 +1,4 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.core;
 
 public interface Verifiable {
   /**

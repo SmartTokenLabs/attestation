@@ -1,4 +1,4 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.core;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
