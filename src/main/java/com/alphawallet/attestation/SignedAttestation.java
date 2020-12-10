@@ -1,6 +1,7 @@
 package com.alphawallet.attestation;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -74,7 +75,11 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
 
   @Override
   public boolean verify() {
-    return SignatureUtility.verify(att.getDerEncoding(), signature, publicKey);
+    try {
+      return SignatureUtility.verify(att.getDerEncoding(), signature, publicKey);
+    } catch (InvalidObjectException e) {
+      return false;
+    }
   }
 
 
