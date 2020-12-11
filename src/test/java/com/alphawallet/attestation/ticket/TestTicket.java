@@ -2,17 +2,15 @@ package com.alphawallet.attestation.ticket;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import jdk.internal.net.http.ResponseTimerEvent;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -27,6 +25,7 @@ public class TestTicket {
   private static final BigInteger SECRET = new BigInteger("48646");
 
   private static AsymmetricCipherKeyPair senderKeys;
+  private static AsymmetricCipherKeyPair otherKeys;
   private static SecureRandom rand;
 
   @BeforeAll
@@ -35,6 +34,7 @@ public class TestTicket {
     rand.setSeed("seed".getBytes());
     AttestationCrypto crypto = new AttestationCrypto(rand);
     senderKeys = crypto.constructECKeys();
+    otherKeys = crypto.constructECKeys();
   }
 
   @Test
@@ -58,5 +58,37 @@ public class TestTicket {
     assertArrayEquals(ticketSpki.getEncoded(), otherSpki.getEncoded());
 
     assertArrayEquals(encoded, otherConstructor.getDerEncoding());
+  }
+
+
+  @Test
+  public void testIllegalKeys() throws Exception {
+    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
+    Field field = ticket.getClass().getDeclaredField("signature");
+    field.setAccessible(true);
+    // Change a bit in the signature
+    ((byte[]) field.get(ticket))[20] ^= 1;
+    assertFalse(ticket.verify());
+    // Check we cannot make a new ticket with invalid signature
+    try {
+      Ticket newTicket = new Ticket(ticket.getTicketId(), ticket.getTicketClass(),
+          ticket.getConferenceId(), ticket.getRiddle(), ticket.getSignature(),
+          senderKeys.getPublic());
+      fail();
+    } catch (IllegalArgumentException e) {
+      // Expected
+    }
+  }
+
+  @Test
+  public void testWrongKey() throws Exception {
+    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
+    byte[] encoding = ticket.getDerEncoding();
+    try {
+      Ticket otherTicket = new Ticket(encoding, otherKeys.getPublic());
+      fail();
+    } catch (IllegalArgumentException e) {
+      // Expected
+    }
   }
 }
