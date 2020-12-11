@@ -1,0 +1,26 @@
+UseTicket
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    MyAttestation
+        FROM AttestationFramework
+    SignedTicket
+        FROM SignedTicket;
+
+UseTicket ::= SEQUENCE {
+    signedTicket         SignedTicket,
+    attestation          MyAttestation,
+    proof                Proof,
+    signatureValue       BIT STRING
+}
+
+Proof ::= SEQUENCE {
+    base                 OCTET STRING,
+    riddle               OCTET STRING,
+    challengePoint       OCTET STRING,
+    responseValue        OCTET STRING
+}
+
+END
