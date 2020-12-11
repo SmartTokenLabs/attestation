@@ -2,7 +2,7 @@
 <asnx:module name="RedeemCheque" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
     <import name="SignedCheque"
          schemaLocation="SignedCheque.asd"/>
-    <import name="AttestationFramework"
+    <import name="MyAttestation"
          schemaLocation="AttestationFramework.asd"/>
     <namedType name="RedeemCheque">
         <type>
@@ -10,7 +10,7 @@
                 <element name="signedCheque" type="SignedCheque">
                     <annotation>The actual, signed, cheque object</annotation>
                 </element>
-                <element name="attestation" type="Attestation">
+                <element name="attestation" type="MyAttestation">
                     <annotation>The X509v3 certificate that is the attestation to be used for redeeming</annotation>
                 </element>
                 <element name="proof" type="Proof">
@@ -34,7 +34,7 @@
                 <element name="challengePoint" type="asnx:OCTET-STRING">
                     <annotation>The random point which the prover knows the DL of</annotation>
                 </element>
-                <element name="reponseValue" type="asnx:OCTET-STRING">
+                <element name="responseValue" type="asnx:OCTET-STRING">
                     <annotation>The response value in the proof</annotation>
                 </element>
             </sequence>
