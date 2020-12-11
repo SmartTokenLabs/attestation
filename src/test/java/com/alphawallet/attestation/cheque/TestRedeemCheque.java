@@ -35,7 +35,7 @@ public class TestRedeemCheque {
   private static AsymmetricCipherKeyPair issuerKeys;
   private static AsymmetricCipherKeyPair senderKeys;
   private static SecureRandom rand;
-  private AttestedObject<Cheque> redeem;
+  private AttestedObject<Cheque> attestedCheque;
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -49,15 +49,15 @@ public class TestRedeemCheque {
   }
 
   @BeforeEach
-  public void makeRedeem() {
+  public void makeAttestedCheque() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret);
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
-    redeem = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
-    assertTrue(redeem.verify());
-    assertTrue(redeem.checkValidity());
+    attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
+    assertTrue(attestedCheque.verify());
+    assertTrue(attestedCheque.checkValidity());
   }
 
   @Test
@@ -66,21 +66,21 @@ public class TestRedeemCheque {
     try {
       PublicKey pk;
       System.out.println("Signed attestation:");
-      System.out.println(DERUtility.printDER(redeem.getAtt().getDerEncoding(), "SIGNABLE"));
+      System.out.println(DERUtility.printDER(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE"));
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
       System.out.println("Attestation verification key:");
       System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
 
       System.out.println("Cheque:");
-      System.out.println(DERUtility.printDER(redeem.getAttestableObject().getDerEncoding(), "CHEQUE"));
+      System.out.println(DERUtility.printDER(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE"));
       System.out.println("Signed cheque verification key:");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()));
       System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
 
-      System.out.println("Redeem Cheque:");
-      System.out.println(DERUtility.printDER(redeem.getDerEncoding(), "REDEEM"));
+      System.out.println("Attested Cheque:");
+      System.out.println(DERUtility.printDER(attestedCheque.getDerEncoding(), "REDEEM"));
       System.out.println("Signed user public key (for redeem verification):");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic()));
@@ -92,58 +92,60 @@ public class TestRedeemCheque {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newRedeem = new AttestedObject(redeem.getDerEncoding(), new ChequeDecoder(),
+    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncoding(), new ChequeDecoder(),
         issuerKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
     assertTrue(newRedeem.getPok().verify());
 
-    assertArrayEquals(redeem.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
-    assertArrayEquals(redeem.getAtt().getDerEncoding(), newRedeem.getAtt().getDerEncoding());
-    assertArrayEquals(redeem.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
-    assertArrayEquals(redeem.getSignature(), newRedeem.getSignature());
-    assertEquals(redeem.getUserPublicKey(), subjectKeys.getPublic());
-    assertArrayEquals(redeem.getDerEncoding(), redeem.getDerEncoding());
+    assertArrayEquals(
+        attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
+    assertArrayEquals(attestedCheque.getAtt().getDerEncoding(), newRedeem.getAtt().getDerEncoding());
+    assertArrayEquals(attestedCheque.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
+    assertArrayEquals(attestedCheque.getSignature(), newRedeem.getSignature());
+    assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
+    assertArrayEquals(attestedCheque.getDerEncoding(), attestedCheque.getDerEncoding());
 
-    AttestedObject newConstructor = new AttestedObject(redeem.getAttestableObject(), redeem.getAtt(), redeem.getPok(),
-        redeem.getSignature(), issuerKeys.getPublic(), subjectKeys.getPublic());
+    AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
+        .getAtt(), attestedCheque.getPok(),
+        attestedCheque.getSignature(), issuerKeys.getPublic(), subjectKeys.getPublic());
 
-    assertArrayEquals(redeem.getDerEncoding(), newConstructor.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncoding(), newConstructor.getDerEncoding());
   }
 
   @Test
   public void testNegativeAttestation() throws Exception {
-    Attestation att = redeem.getAtt().getUnsignedAttestation();
+    Attestation att = attestedCheque.getAtt().getUnsignedAttestation();
     Field field = att.getClass().getSuperclass().getDeclaredField("version");
     field.setAccessible(true);
     // Invalid version for Identity Attestation along with failing signature
     field.set(att, new ASN1Integer(19));
     // Only correctly formed Identity Attestations are allowed
     assertFalse(att.checkValidity());
-    assertFalse(redeem.checkValidity());
+    assertFalse(attestedCheque.checkValidity());
     // Verification should also fail since signature is now invalid
-    assertFalse(redeem.getAtt().verify());
-    assertFalse(redeem.verify());
+    assertFalse(attestedCheque.getAtt().verify());
+    assertFalse(attestedCheque.verify());
   }
 
   @Test
   public void testNegativeCheque() throws Exception {
-    Cheque cheque = redeem.getAttestableObject();
+    Cheque cheque = attestedCheque.getAttestableObject();
     Field field = cheque.getClass().getDeclaredField("notValidAfter");
     field.setAccessible(true);
     // Set validity to the past
     field.set(cheque, System.currentTimeMillis()-1000);
     assertFalse(cheque.checkValidity());
-    assertFalse(redeem.checkValidity());
+    assertFalse(attestedCheque.checkValidity());
     // Verification should also fail since signature is now invalid
     assertFalse(cheque.verify());
-    assertFalse(redeem.verify());
+    assertFalse(attestedCheque.verify());
   }
 
   // Test that the key used to sign the RedeemCheque is the same as attested to
   @Test
   public void testNegativeUnmatchingKeys() throws Exception {
-    Attestation att = redeem.getAtt().getUnsignedAttestation();
+    Attestation att = attestedCheque.getAtt().getUnsignedAttestation();
     Field field = att.getClass().getSuperclass().getDeclaredField("subjectPublicKeyInfo");
     field.setAccessible(true);
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic());
@@ -151,23 +153,23 @@ public class TestRedeemCheque {
     // Change public key
     field.set(att, spki);
     // Validation should not fail
-    assertFalse(redeem.getAtt().checkValidity());
-    assertFalse(redeem.checkValidity());
+    assertFalse(attestedCheque.getAtt().checkValidity());
+    assertFalse(attestedCheque.checkValidity());
     // Verification should fail
-    assertFalse(redeem.getAtt().verify());
-    assertFalse(redeem.verify());
+    assertFalse(attestedCheque.getAtt().verify());
+    assertFalse(attestedCheque.verify());
   }
 
   @Test
   public void testNegativeDifferentKeys() throws Exception {
-    SignedAttestation att = redeem.getAtt();
+    SignedAttestation att = attestedCheque.getAtt();
     Field field = att.getClass().getDeclaredField("publicKey");
     field.setAccessible(true);
     // Change public key
     field.set(att, subjectKeys.getPublic());
     // Verification should fail
     assertFalse(att.verify());
-    assertFalse(redeem.verify());
+    assertFalse(attestedCheque.verify());
   }
 
   @Test
@@ -175,15 +177,15 @@ public class TestRedeemCheque {
     AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     // Add an extra "t" in the mail address
     ProofOfExponent newPok = crypto.constructProof("testt@test.ts", AttestationType.EMAIL, new BigInteger("42424242"));
-    Field field = redeem.getClass().getDeclaredField("pok");
+    Field field = attestedCheque.getClass().getDeclaredField("pok");
     field.setAccessible(true);
     // Change the base point
-    field.set(redeem, newPok);
+    field.set(attestedCheque, newPok);
     // Validation should fail
-    assertFalse(redeem.checkValidity());
+    assertFalse(attestedCheque.checkValidity());
     // Verification should not fail
     assertTrue(newPok.verify());
-    assertTrue(redeem.verify());
+    assertTrue(attestedCheque.verify());
   }
 
   @Test
@@ -192,14 +194,14 @@ public class TestRedeemCheque {
     Cheque newCheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, secret);
     assertTrue(newCheque.checkValidity());
     assertTrue(newCheque.verify());
-    Field field = redeem.getClass().getDeclaredField("attestableObject");
+    Field field = attestedCheque.getClass().getDeclaredField("attestableObject");
     field.setAccessible(true);
     // Set validity to the past
-    field.set(redeem, newCheque);
+    field.set(attestedCheque, newCheque);
     // Validation should fail since the cheque construction is randomized
-    assertFalse(redeem.checkValidity());
+    assertFalse(attestedCheque.checkValidity());
     // Verification should not fail
-    assertTrue(redeem.verify());
+    assertTrue(attestedCheque.verify());
   }
 
   @Test
