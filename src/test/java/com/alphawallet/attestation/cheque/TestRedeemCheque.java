@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.Attestation;
+import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
@@ -14,6 +15,7 @@ import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.TestHelper;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.PublicKey;
@@ -33,7 +35,7 @@ public class TestRedeemCheque {
   private static AsymmetricCipherKeyPair issuerKeys;
   private static AsymmetricCipherKeyPair senderKeys;
   private static SecureRandom rand;
-  private RedeemCheque redeem;
+  private AttestedObject<Cheque> redeem;
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -53,7 +55,7 @@ public class TestRedeemCheque {
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret);
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
-    redeem = new RedeemCheque(cheque, signed, subjectKeys, subjectSecret, senderSecret);
+    redeem = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
     assertTrue(redeem.verify());
     assertTrue(redeem.checkValidity());
   }
@@ -71,7 +73,7 @@ public class TestRedeemCheque {
       System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
 
       System.out.println("Cheque:");
-      System.out.println(DERUtility.printDER(redeem.getCheque().getDerEncoding(), "CHEQUE"));
+      System.out.println(DERUtility.printDER(redeem.getAttestableObject().getDerEncoding(), "CHEQUE"));
       System.out.println("Signed cheque verification key:");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()));
@@ -89,21 +91,21 @@ public class TestRedeemCheque {
   }
 
   @Test
-  public void testDecoding() {
-    RedeemCheque newRedeem = new RedeemCheque(redeem.getDerEncoding(), issuerKeys.getPublic(),
-        subjectKeys.getPublic());
-    assertTrue(newRedeem.getCheque().verify());
+  public void testDecoding() throws InvalidObjectException {
+    AttestedObject newRedeem = new AttestedObject(redeem.getDerEncoding(), new ChequeDecoder(),
+        issuerKeys.getPublic(), subjectKeys.getPublic());
+    assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
     assertTrue(newRedeem.getPok().verify());
 
-    assertArrayEquals(redeem.getCheque().getDerEncoding(), newRedeem.getCheque().getDerEncoding());
+    assertArrayEquals(redeem.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
     assertArrayEquals(redeem.getAtt().getDerEncoding(), newRedeem.getAtt().getDerEncoding());
     assertArrayEquals(redeem.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
     assertArrayEquals(redeem.getSignature(), newRedeem.getSignature());
     assertEquals(redeem.getUserPublicKey(), subjectKeys.getPublic());
     assertArrayEquals(redeem.getDerEncoding(), redeem.getDerEncoding());
 
-    RedeemCheque newConstructor = new RedeemCheque(redeem.getCheque(), redeem.getAtt(), redeem.getPok(),
+    AttestedObject newConstructor = new AttestedObject(redeem.getAttestableObject(), redeem.getAtt(), redeem.getPok(),
         redeem.getSignature(), issuerKeys.getPublic(), subjectKeys.getPublic());
 
     assertArrayEquals(redeem.getDerEncoding(), newConstructor.getDerEncoding());
@@ -126,7 +128,7 @@ public class TestRedeemCheque {
 
   @Test
   public void testNegativeCheque() throws Exception {
-    Cheque cheque = redeem.getCheque();
+    Cheque cheque = redeem.getAttestableObject();
     Field field = cheque.getClass().getDeclaredField("notValidAfter");
     field.setAccessible(true);
     // Set validity to the past
@@ -190,7 +192,7 @@ public class TestRedeemCheque {
     Cheque newCheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, secret);
     assertTrue(newCheque.checkValidity());
     assertTrue(newCheque.verify());
-    Field field = redeem.getClass().getDeclaredField("cheque");
+    Field field = redeem.getClass().getDeclaredField("attestableObject");
     field.setAccessible(true);
     // Set validity to the past
     field.set(redeem, newCheque);
@@ -209,7 +211,7 @@ public class TestRedeemCheque {
     // Add an extra t in the mail
     Cheque cheque = new Cheque("testt@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
-      RedeemCheque current = new RedeemCheque(cheque, signed, subjectKeys, subjectSecret, senderSecret);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong email
@@ -225,21 +227,21 @@ public class TestRedeemCheque {
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
       // Wrong subject secret
-      RedeemCheque current = new RedeemCheque(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
     }
     try {
       // Wrong sender secret
-      RedeemCheque current = new RedeemCheque(cheque, signed, subjectKeys, subjectSecret, senderSecret.add(BigInteger.ONE));
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret.add(BigInteger.ONE));
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
     }
     try {
       // Correlated secrets
-      RedeemCheque current = new RedeemCheque(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret.add(BigInteger.ONE));
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret.add(BigInteger.ONE));
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret

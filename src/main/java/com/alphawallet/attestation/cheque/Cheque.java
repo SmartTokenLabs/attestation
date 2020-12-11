@@ -1,22 +1,17 @@
 package com.alphawallet.attestation.cheque;
 
-import com.alphawallet.attestation.core.ASNEncodable;
-import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.core.Attestable;
+import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.Validateable;
-import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.text.ParseException;
 import java.util.Date;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1GeneralizedTime;
-import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DEROctetString;
@@ -26,7 +21,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class Cheque implements ASNEncodable, Verifiable, Validateable {
+public class Cheque implements Attestable {
   private final byte[] riddle;
   private final long amount;
   private final long notValidBefore;
@@ -86,34 +81,6 @@ public class Cheque implements ASNEncodable, Verifiable, Validateable {
     }
   }
 
-  public Cheque(byte[] derEncoded) throws IOException {
-    this.encoded = derEncoded;
-    ASN1InputStream input = new ASN1InputStream(derEncoded);
-    ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-    ASN1Sequence cheque = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    this.amount = (ASN1Integer.getInstance(cheque.getObjectAt(0))).getValue().longValueExact();
-
-    ASN1Sequence validity = ASN1Sequence.getInstance(cheque.getObjectAt(1));
-    ASN1GeneralizedTime notValidBeforeEnc = ASN1GeneralizedTime.getInstance(validity.getObjectAt(0));
-    ASN1GeneralizedTime notValidAfterEnc = ASN1GeneralizedTime.getInstance(validity.getObjectAt(1));
-    try {
-      this.notValidBefore = notValidBeforeEnc.getDate().getTime();
-      this.notValidAfter = notValidAfterEnc.getDate().getTime();
-    } catch (ParseException e) {
-      throw new IOException("Validity is not encoded properly");
-    }
-
-    this.riddle = (ASN1OctetString.getInstance(cheque.getObjectAt(2))).getOctets();
-
-    this.publicKey = SignatureUtility.restoreKey(DERBitString.getInstance(asn1.getObjectAt(1)).getEncoded());
-
-    // Verify signature
-    this.signature = DERBitString.getInstance(asn1.getObjectAt(2)).getBytes();
-    if (!verify()) {
-      throw new IllegalArgumentException("Signature is invalid");
-    }
-  }
-
   private ASN1Sequence makeCheque(byte[] riddle, long amount, long notValidBefore, long notValidAfter) {
     ASN1EncodableVector cheque = new ASN1EncodableVector();
     cheque.add(new ASN1Integer(amount));
@@ -165,6 +132,7 @@ public class Cheque implements ASNEncodable, Verifiable, Validateable {
     return encoded;
   }
 
+  @Override
   public byte[] getRiddle() {
     return riddle;
   }
