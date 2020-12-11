@@ -1,6 +1,7 @@
 package com.alphawallet.attestation.demo;
 
 import com.alphawallet.attestation.Attestation;
+import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.cheque.Cheque;
@@ -8,7 +9,7 @@ import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.cheque.RedeemCheque;
+import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.SignedAttestation;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -185,7 +186,7 @@ public class Demo {
     byte[] attestationSecretBytes = DERUtility.restoreBytes(readFile(attestationSecretDir));
     BigInteger attestationSecret = DERUtility.decodeSecret(attestationSecretBytes);
     byte[] chequeBytes = DERUtility.restoreBytes(readFile(chequeDir));
-    Cheque cheque = new Cheque(chequeBytes);
+    Cheque cheque = (new ChequeDecoder()).decode(chequeBytes);
     byte[] attestationBytes = DERUtility.restoreBytes(readFile(attestationDir));
     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
         DERUtility.restoreBytes(readFile(attestorKeyDir)));
@@ -208,7 +209,7 @@ public class Demo {
       throw new RuntimeException("Verification failed");
     }
 
-    RedeemCheque redeem = new RedeemCheque(cheque, att, userKeys, attestationSecret, chequeSecret);
+    AttestedObject redeem = new AttestedObject(cheque, att, userKeys, attestationSecret, chequeSecret);
     if (!redeem.checkValidity()) {
       System.err.println("Could not validate redeem request");
       throw new RuntimeException("Validation failed");

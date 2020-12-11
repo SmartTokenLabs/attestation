@@ -41,7 +41,7 @@ public class TestTicket {
   public void testFullDecoding() throws Exception {
     Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncoding();
-    Ticket newTicket = new Ticket(encoded, senderKeys.getPublic());
+    Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
     assertArrayEquals(encoded, newTicket.getDerEncoding());
 
@@ -85,7 +85,7 @@ public class TestTicket {
     Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
     byte[] encoding = ticket.getDerEncoding();
     try {
-      Ticket otherTicket = new Ticket(encoding, otherKeys.getPublic());
+      Ticket otherTicket = (new TicketDecoder(otherKeys.getPublic())).decode(encoding);
       fail();
     } catch (IllegalArgumentException e) {
       // Expected

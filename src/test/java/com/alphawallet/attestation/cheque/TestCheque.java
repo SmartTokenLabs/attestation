@@ -32,7 +32,7 @@ public class TestCheque {
   public void testFullDecoding() throws Exception {
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, BigInteger.TEN);
     byte[] encoded = cheque.getDerEncoding();
-    Cheque newCheque = new Cheque(encoded);
+    Cheque newCheque = (new ChequeDecoder()).decode(encoded);
     assertTrue(cheque.verify());
     assertTrue(cheque.checkValidity());
     assertArrayEquals(encoded, newCheque.getDerEncoding());

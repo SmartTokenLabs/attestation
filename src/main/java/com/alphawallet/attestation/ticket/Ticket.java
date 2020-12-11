@@ -1,18 +1,14 @@
 package com.alphawallet.attestation.ticket;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DEROctetString;
@@ -23,7 +19,8 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class Ticket implements ASNEncodable, Verifiable {
+public class Ticket implements Attestable {
+
   // TODO we need details on this
   public enum TicketClass {
     REGULAR(0),
@@ -110,39 +107,6 @@ public class Ticket implements ASNEncodable, Verifiable {
     }
   }
 
-  public Ticket(byte[] derEncoded, AsymmetricKeyParameter publicKey) throws IOException, IllegalArgumentException {
-    this.encoded = derEncoded;
-    ASN1InputStream input = new ASN1InputStream(derEncoded);
-    ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-    ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    this.ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(0))).getValue();
-    int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(1)).getValue().intValueExact();
-    for (TicketClass current : TicketClass.values()) {
-      if (current.value == ticketClassInt) {
-        this.ticketClass = current;
-      }
-    }
-    if (ticketClass == null) {
-      throw new IOException("Not valid ticket class");
-    }
-    this.conferenceId = (ASN1Integer.getInstance(ticket.getObjectAt(2))).getValue().intValueExact();
-    this.riddle = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
-
-    this.algorithm = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
-    this.publicKey = publicKey;
-    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey);
-    // Ensure that the right type of public key is given
-    if (!Arrays.equals(spki.getAlgorithm().getEncoded(), algorithm.getEncoded())) {
-      throw new IllegalArgumentException("The public key is not of the same type as used to sign the ticket");
-    }
-
-    // Verify signature
-    this.signature = DERBitString.getInstance(asn1.getObjectAt(2)).getBytes();
-    if (!verify()) {
-      throw new IllegalArgumentException("Signature is invalid");
-    }
-  }
-
   private ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new ASN1Integer(ticketId));
@@ -173,6 +137,13 @@ public class Ticket implements ASNEncodable, Verifiable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public boolean checkValidity() {
+    // The ticket is always valid on its own. It depends on which conference it is used
+    // and whether it has been revoked that decides if it can be used
+    return true;
   }
 
   public BigInteger getTicketId() {

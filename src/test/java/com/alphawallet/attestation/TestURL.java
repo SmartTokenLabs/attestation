@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.cheque.Cheque;
+import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
@@ -41,7 +42,7 @@ public class TestURL {
     String url = URLUtility.encodeList(Arrays.asList(cheque.getDerEncoding(), senderPublicKey));
 
     List<byte[]> decoded = URLUtility.decodeList(url);
-    Cheque newCheque = new Cheque(decoded.get(0));
+    Cheque newCheque = (new ChequeDecoder()).decode(decoded.get(0));
     assertTrue(newCheque.verify());
     assertTrue(newCheque.checkValidity());
     assertArrayEquals(cheque.getDerEncoding(), newCheque.getDerEncoding());
@@ -57,7 +58,7 @@ public class TestURL {
     BigInteger senderSecret = new BigInteger("112");
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     String url = URLUtility.encodeData(cheque.getDerEncoding());
-    Cheque newCheque = new Cheque(URLUtility.decodeData(url));
+    Cheque newCheque =  (new ChequeDecoder()).decode(URLUtility.decodeData(url));
     String newUrl = URLUtility.encodeData(newCheque.getDerEncoding());
     assertEquals(url, newUrl);
   }

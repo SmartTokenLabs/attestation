@@ -1,11 +1,9 @@
-package com.alphawallet.attestation.cheque;
+package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -24,8 +22,8 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.math.ec.ECPoint;
 
-public class RedeemCheque implements ASNEncodable, Verifiable {
-  private final Cheque cheque;
+public class AttestedObject<T extends Attestable> implements ASNEncodable, Verifiable {
+  private final T attestableObject;
   private final SignedAttestation att;
   private final ProofOfExponent pok;
   private final byte[] signature;
@@ -35,15 +33,15 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
   private final byte[] unsignedEncoding;
   private final byte[] encoding;
 
-  public RedeemCheque(Cheque cheque, SignedAttestation att, AsymmetricCipherKeyPair userKeys, BigInteger attestationSecret, BigInteger chequeSecret) {
-    this.cheque = cheque;
+  public AttestedObject(T attestableObject, SignedAttestation att, AsymmetricCipherKeyPair userKeys, BigInteger attestationSecret, BigInteger chequeSecret) {
+    this.attestableObject = attestableObject;
     this.att = att;
     this.userPublicKey = userKeys.getPublic();
 
     try {
       this.pok = makeProof(att, attestationSecret, chequeSecret);
       ASN1EncodableVector vec = new ASN1EncodableVector();
-      vec.add(ASN1Sequence.getInstance(cheque.getDerEncoding()));
+      vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
       this.unsignedEncoding = new DERSequence(vec).getEncoded();
@@ -58,8 +56,8 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
     }
   }
 
-  public RedeemCheque(Cheque cheque, SignedAttestation att, ProofOfExponent pok, byte[] signature, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
-    this.cheque = cheque;
+  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+    this.attestableObject = object;
     this.att = att;
     this.userPublicKey = userPublicKey;
     this.pok = pok;
@@ -67,7 +65,7 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
 
     try {
       ASN1EncodableVector vec = new ASN1EncodableVector();
-      vec.add(ASN1Sequence.getInstance(cheque.getDerEncoding()));
+      vec.add(ASN1Sequence.getInstance(object.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
       this.unsignedEncoding = new DERSequence(vec).getEncoded();
@@ -81,13 +79,13 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
     }
   }
 
-  public RedeemCheque(byte[] derEncoding, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
     this.encoding = derEncoding;
     this.userPublicKey = userPublicKey;
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-      this.cheque = new Cheque(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
+      this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
       this.pok = new ProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
@@ -100,8 +98,8 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
     }
   }
 
-  public Cheque getCheque() {
-    return cheque;
+  public T getAttestableObject() {
+    return attestableObject;
   }
 
   public SignedAttestation getAtt() {
@@ -143,7 +141,7 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
     }
 
     // CHECK: that the cheque is still valid
-    if (!getCheque().checkValidity()) {
+    if (!getAttestableObject().checkValidity()) {
       System.err.println("Cheque is not valid");
       return false;
     }
@@ -172,7 +170,7 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
     }
 
     // CHECK: verify that the riddle of the proof and cheque matches
-    byte[] decodedRiddle = AttestationCrypto.decodePoint(getCheque().getRiddle()).getEncoded(false);
+    byte[] decodedRiddle = AttestationCrypto.decodePoint(getAttestableObject().getRiddle()).getEncoded(false);
     if (!Arrays.equals(decodedRiddle, getPok().getRiddle().getEncoded(false))) {
       System.err.println("The riddle of the proof and cheque does not match");
       return false;
@@ -185,13 +183,13 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
 
   @Override
   public boolean verify() {
-    return cheque.verify() && att.verify() && pok.verify() && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
+    return attestableObject.verify() && att.verify() && pok.verify() && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
   }
 
   private ProofOfExponent makeProof(SignedAttestation att, BigInteger attestationSecret, BigInteger chequeSecret) {
     // TODO Bob should actually verify the cheque is valid before trying to cash it to avoid wasting gas
     AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-    ECPoint decodedRiddle = crypto.decodePoint(cheque.getRiddle());
+    ECPoint decodedRiddle = crypto.decodePoint(attestableObject.getRiddle());
     BigInteger x = attestationSecret.modInverse(crypto.curveOrder).multiply(chequeSecret).mod(crypto.curveOrder);
     // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
     ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
