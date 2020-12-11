@@ -80,7 +80,8 @@ public class SignatureUtility {
             signer.init(false, key);
             return signer.verifySignature(digest, r, s);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            // Something went wrong so the signature cannot be verified
+           return false;
         }
     }
 }

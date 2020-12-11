@@ -1,6 +1,7 @@
 package com.alphawallet.attestation;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import org.bouncycastle.asn1.ASN1Boolean;
@@ -38,7 +39,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    setRiddle(AttestationCrypto.constructPointBytesFromIdentity(identity, type, secret));
+    setRiddle(AttestationCrypto.makeRiddle(identity, type, secret));
   }
 
   /**
@@ -46,7 +47,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    * You still need to set the optional fields, that is
    * issuer, notValidBefore, notValidAfter, smartcontracts
    */
-  public IdentifierAttestation(String identity, AttestationType type, byte[] riddle, AsymmetricKeyParameter key)  {
+  public IdentifierAttestation(byte[] riddle, AsymmetricKeyParameter key)  {
     super();
     this.crypto = new AttestationCrypto(new SecureRandom());
     super.setVersion(18); // Our initial version
@@ -86,9 +87,11 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     if (getSubject() == null || getSubject().length() != 45 || !getSubject()
         .startsWith("CN=0x")) { // The address is 2*20+5 chars long because it starts with CN=0x
       System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
+      return false;
     }
     if (!getSignature().equals(AttestationCrypto.OID_SIGNATURE_ALG)) {
       System.err.println("The signature algorithm is supposed to be " + AttestationCrypto.OID_SIGNATURE_ALG);
+      return false;
     }
     // Verify that the subject public key matches the subject common name
     try {
@@ -97,6 +100,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       String parsedSubject = "CN=" + crypto.addressFromKey(parsedSubjectKey);
       if (!parsedSubject.equals(getSubject())) {
         System.err.println("The subject public key does not match the Ethereum address attested to");
+        return false;
       }
     } catch (IOException e) {
       System.err.println("Could not parse subject public key");
@@ -118,8 +122,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   @Override
-  public byte[] getDerEncoding() {
-    return this.getPrehash();
+  public byte[] getDerEncoding() throws InvalidObjectException {
+   return super.getDerEncoding();
   }
 
   @Override

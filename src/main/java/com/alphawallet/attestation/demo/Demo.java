@@ -257,7 +257,7 @@ public class Demo {
       System.err.println("Could not verify attestation signing request");
       throw new RuntimeException("Validation failed");
     }
-    Attestation att = new IdentifierAttestation(request.getIdentity(), request.getType(),
+    Attestation att = new IdentifierAttestation(
         request.getPok().getRiddle().getEncoded(false), request.getPublicKey());
     att.setIssuer("CN=" + issuerName);
     att.setSerialNumber(new Random().nextLong());

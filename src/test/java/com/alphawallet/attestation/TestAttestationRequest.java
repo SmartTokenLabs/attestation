@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.apache.logging.log4j.core.util.Assert;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
@@ -93,4 +92,17 @@ public class TestAttestationRequest {
     assertTrue(request.verify()); // Signature and proof are ok by themselves
     assertFalse(request.checkValidity()); // However, the proof is not done over the right type
   }
+
+  @Test
+  public void testBadSig() {
+    String id = "+4588888888";
+    AttestationType type = AttestationType.PHONE;
+    BigInteger secret = new BigInteger("42");
+    ProofOfExponent pok = crypto.constructProof(id, type, secret);
+    AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
+    // Modify a bit of the signature
+    request.getSignature()[20] ^= 1;
+    assertFalse(request.verify());
+  }
+
 }

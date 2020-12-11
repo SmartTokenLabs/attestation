@@ -1,6 +1,7 @@
 package com.alphawallet.attestation;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -119,12 +120,16 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
   public boolean checkValidity() {
     // CHECK: that it is an identity attestation otherwise not all the checks of validity needed gets carried out
     try {
-      IdentifierAttestation std = new IdentifierAttestation(att.getUnsignedAttestation().getDerEncoding());
+      byte[] attEncoded = att.getUnsignedAttestation().getDerEncoding();
+      IdentifierAttestation std = new IdentifierAttestation(attEncoded);
       // CHECK: perform the needed checks of an identity attestation
       if (!std.checkValidity()) {
         System.err.println("The attestation is not a valid standard attestation");
         return false;
       }
+    } catch (InvalidObjectException e) {
+      System.err.println("The attestation is invalid");
+      return false;
     } catch (IOException e) {
       System.err.println("The attestation could not be parsed as a standard attestation");
       return false;
@@ -189,7 +194,7 @@ public class RedeemCheque implements ASNEncodable, Verifiable {
     ECPoint identifier = crypto.decodePoint(identifierEnc.getOctets());
     ProofOfExponent ex = crypto.computeProof(identifier, decodedRiddle, x);
     if (!ex.verify()) {
-      throw new RuntimeException("dsfdsaf");
+      throw new RuntimeException("The redeem proof did not verify");
     }
     return ex;
   }
