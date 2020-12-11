@@ -4,16 +4,12 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
-import java.io.InvalidObjectException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.text.ParseException;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1GeneralizedTime;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -114,7 +110,7 @@ public class Ticket implements ASNEncodable, Verifiable {
     }
   }
 
-  public Ticket(byte[] derEncoded, AsymmetricKeyParameter publicKey) throws IOException {
+  public Ticket(byte[] derEncoded, AsymmetricKeyParameter publicKey) throws IOException, IllegalArgumentException {
     this.encoded = derEncoded;
     ASN1InputStream input = new ASN1InputStream(derEncoded);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
@@ -137,7 +133,7 @@ public class Ticket implements ASNEncodable, Verifiable {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey);
     // Ensure that the right type of public key is given
     if (!Arrays.equals(spki.getAlgorithm().getEncoded(), algorithm.getEncoded())) {
-      throw new RuntimeException("The public key is not of the same type as used to sign the ticket");
+      throw new IllegalArgumentException("The public key is not of the same type as used to sign the ticket");
     }
 
     // Verify signature
