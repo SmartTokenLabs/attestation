@@ -115,7 +115,7 @@ public class AttestationCrypto {
   }
 
   public BigInteger makeSecret() {
-    return new BigInteger(256, rand).mod(curveOrder);
+    return new BigInteger(256+128, rand).mod(curveOrder);
   }
 
   private static byte[] makeArray(List<ECPoint> points ) {
