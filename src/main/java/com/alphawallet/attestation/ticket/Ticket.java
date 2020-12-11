@@ -11,6 +11,7 @@ import java.io.InvalidObjectException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.text.ParseException;
+import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1GeneralizedTime;
 import org.bouncycastle.asn1.ASN1InputStream;
@@ -23,9 +24,10 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class Ticket implements ASNEncodable, Verifiable, Validateable {
+public class Ticket implements ASNEncodable, Verifiable {
   // TODO we need details on this
   public enum TicketClass {
     REGULAR(0),
@@ -42,12 +44,13 @@ public class Ticket implements ASNEncodable, Verifiable, Validateable {
   }
 
   private final BigInteger ticketId;
-  private final TicketClass ticketClass;
+  private TicketClass ticketClass = null;
   private final int conferenceId;
   private final byte[] riddle;
   private final AlgorithmIdentifier algorithm;
   private final byte[] signature;
 
+  private final AsymmetricKeyParameter publicKey;
   private final byte[] encoded;
 
   /**
@@ -80,18 +83,24 @@ public class Ticket implements ASNEncodable, Verifiable, Validateable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    this.publicKey = keys.getPublic();
     if (!verify()) {
       throw new IllegalArgumentException("Public and private keys are incorrect");
     }
   }
 
-  public Ticket(BigInteger ticketId, TicketClass ticketClass, int conferenceId, byte[] riddle,
-      AlgorithmIdentifier algorithm, byte[] signature) {
+  public Ticket(BigInteger ticketId, TicketClass ticketClass, int conferenceId, byte[] riddle, byte[] signature, AsymmetricKeyParameter publicKey) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
     this.conferenceId = conferenceId;
     this.riddle = riddle;
-    this.algorithm = algorithm;
+    try {
+      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
+          publicKey);
+      this.algorithm = spki.getAlgorithm();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     this.signature = signature;
     ASN1Sequence ticket = makeTicket();
     try {
@@ -99,12 +108,44 @@ public class Ticket implements ASNEncodable, Verifiable, Validateable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    this.publicKey = publicKey;
     if (!verify()) {
       throw new IllegalArgumentException("Signature is invalid");
     }
   }
 
+  public Ticket(byte[] derEncoded, AsymmetricKeyParameter publicKey) throws IOException {
+    this.encoded = derEncoded;
+    ASN1InputStream input = new ASN1InputStream(derEncoded);
+    ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+    ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+    this.ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(0))).getValue();
+    int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(1)).getValue().intValueExact();
+    for (TicketClass current : TicketClass.values()) {
+      if (current.value == ticketClassInt) {
+        this.ticketClass = current;
+      }
+    }
+    if (ticketClass == null) {
+      throw new IOException("Not valid ticket class");
+    }
+    this.conferenceId = (ASN1Integer.getInstance(ticket.getObjectAt(2))).getValue().intValueExact();
+    this.riddle = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
 
+    this.algorithm = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
+    this.publicKey = publicKey;
+    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey);
+    // Ensure that the right type of public key is given
+    if (!Arrays.equals(spki.getAlgorithm().getEncoded(), algorithm.getEncoded())) {
+      throw new RuntimeException("The public key is not of the same type as used to sign the ticket");
+    }
+
+    // Verify signature
+    this.signature = DERBitString.getInstance(asn1.getObjectAt(2)).getBytes();
+    if (!verify()) {
+      throw new IllegalArgumentException("Signature is invalid");
+    }
+  }
 
   private ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
@@ -124,17 +165,45 @@ public class Ticket implements ASNEncodable, Verifiable, Validateable {
   }
 
   @Override
-  public byte[] getDerEncoding() throws InvalidObjectException {
-    return new byte[0];
-  }
-
-  @Override
-  public boolean checkValidity() {
-    return false;
+  public byte[] getDerEncoding() {
+    return encoded;
   }
 
   @Override
   public boolean verify() {
-    return false;
+    try {
+      ASN1Sequence ticket = makeTicket();
+      return SignatureUtility.verify(ticket.getEncoded(), signature, this.publicKey);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public BigInteger getTicketId() {
+    return ticketId;
+  }
+
+  public TicketClass getTicketClass() {
+    return ticketClass;
+  }
+
+  public int getConferenceId() {
+    return conferenceId;
+  }
+
+  public byte[] getRiddle() {
+    return riddle;
+  }
+
+  public AlgorithmIdentifier getAlgorithm() {
+    return algorithm;
+  }
+
+  public byte[] getSignature() {
+    return signature;
+  }
+
+  public AsymmetricKeyParameter getPublicKey() {
+    return publicKey;
   }
 }

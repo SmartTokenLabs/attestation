@@ -10,13 +10,22 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import jdk.internal.net.http.ResponseTimerEvent;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class TestTicket {
+  private static final String MAIL = "test@test.ts";
+  private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
+  private static final TicketClass TICKET_CLASS = TicketClass.REGULAR;
+  private static final int CONFERENCE_ID = 6;
+  private static final BigInteger SECRET = new BigInteger("48646");
+
   private static AsymmetricCipherKeyPair senderKeys;
   private static SecureRandom rand;
 
@@ -30,24 +39,24 @@ public class TestTicket {
 
   @Test
   public void testFullDecoding() throws Exception {
-    AlgorithmIdentifier identifier = new AlgorithmIdentifier(new ASN1ObjectIdentifier(AttestationCrypto.OID_SIGNATURE_ALG));
-    Ticket ticket = new Ticket(new BigInteger("58954"), TicketClass.SPEAKER, 6, new byte[1], identifier, new byte[1]);
-//    byte[] encoded = cheque.getDerEncoding();
-//    Cheque newCheque = new Cheque(encoded);
-//    assertTrue(cheque.verify());
-//    assertTrue(cheque.checkValidity());
-//    assertArrayEquals(encoded, newCheque.getDerEncoding());
-//
-//    Cheque otherConstructor = new Cheque(newCheque.getRiddle(), newCheque.getAmount(),
-//        newCheque.getNotValidBefore(), newCheque.getNotValidAfter(), newCheque.getSignature(),
-//        newCheque.getPublicKey());
-//    assertEquals(cheque.getAmount(), otherConstructor.getAmount());
-//    assertEquals(cheque.getNotValidBefore(), otherConstructor.getNotValidBefore());
-//    assertEquals(cheque.getNotValidAfter(), otherConstructor.getNotValidAfter());
-//    assertArrayEquals(cheque.getRiddle(), otherConstructor.getRiddle());
-//    assertArrayEquals(cheque.getSignature(), otherConstructor.getSignature());
-//    // Note that apparently a proper equality has not been implemented for AsymmetricKeyParameter
-////    Assert.assertEquals(cheque.getPublicKey(), otherConstructor.getPublicKey());
-//    assertArrayEquals(encoded, otherConstructor.getDerEncoding());
+    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
+    byte[] encoded = ticket.getDerEncoding();
+    Ticket newTicket = new Ticket(encoded, senderKeys.getPublic());
+    assertTrue(ticket.verify());
+    assertArrayEquals(encoded, newTicket.getDerEncoding());
+
+    Ticket otherConstructor = new Ticket(newTicket.getTicketId(), newTicket.getTicketClass(), newTicket.getConferenceId(),
+        newTicket.getRiddle(), newTicket.getSignature(), newTicket.getPublicKey());
+    assertEquals(ticket.getTicketId(), otherConstructor.getTicketId());
+    assertEquals(ticket.getTicketClass(), otherConstructor.getTicketClass());
+    assertEquals(ticket.getConferenceId(), otherConstructor.getConferenceId());
+    assertEquals(ticket.getAlgorithm(), otherConstructor.getAlgorithm());
+    assertArrayEquals(ticket.getRiddle(), otherConstructor.getRiddle());
+    assertArrayEquals(ticket.getSignature(), otherConstructor.getSignature());
+    SubjectPublicKeyInfo ticketSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(ticket.getPublicKey());
+    SubjectPublicKeyInfo otherSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getPublicKey());
+    assertArrayEquals(ticketSpki.getEncoded(), otherSpki.getEncoded());
+
+    assertArrayEquals(encoded, otherConstructor.getDerEncoding());
   }
 }

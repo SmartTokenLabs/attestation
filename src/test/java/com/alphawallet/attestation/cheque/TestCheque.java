@@ -10,7 +10,9 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -43,8 +45,10 @@ public class TestCheque {
     assertEquals(cheque.getNotValidAfter(), otherConstructor.getNotValidAfter());
     assertArrayEquals(cheque.getRiddle(), otherConstructor.getRiddle());
     assertArrayEquals(cheque.getSignature(), otherConstructor.getSignature());
-    // Note that apparently a proper equality has not been implemented for AsymmetricKeyParameter
-//    Assert.assertEquals(cheque.getPublicKey(), otherConstructor.getPublicKey());
+    SubjectPublicKeyInfo chequeSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(cheque.getPublicKey());
+    SubjectPublicKeyInfo otherSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getPublicKey());
+    assertArrayEquals(chequeSpki.getEncoded(), otherSpki.getEncoded());
+
     assertArrayEquals(encoded, otherConstructor.getDerEncoding());
   }
 
