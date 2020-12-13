@@ -23,7 +23,7 @@ async function() {
 async function vip-room-clicked() {
     
     /// ... let user choose which ticket to use for authentication
-    vip-tickets = tokens.reduce( ticket => (ticket.ticketClass== "VIP") );
+    vip-tickets = tokens.filter( ticket => (ticket.ticketClass== "VIP") );
 
     // populate the vip-ticket selector window
     populate-vip-ticket(vip-tickets).then(chosenTicket => {
