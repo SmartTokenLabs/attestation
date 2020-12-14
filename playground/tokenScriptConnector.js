@@ -1,7 +1,7 @@
 // import Negotiator()
 // import Authenticator()
 
-const negotiatorAuthenticator = {};
+const tokenScriptConnector = {};
 const currentUser = 2;
 
 // Mock of Negotiator
@@ -29,7 +29,7 @@ const Authenticator = {
 };
 
 // to provide the VIP Status and Tokens
-negotiatorAuthenticator.init = async () => {
+tokenScriptConnector.init = async () => {
     // 1. Get most up to date Tokens
     const tokens = await Negotiator.getTokenInstances();
     // 2. Determine if the user has VIP tokens (for front end developers UI / UX)
@@ -40,21 +40,21 @@ negotiatorAuthenticator.init = async () => {
 
 // to confirm with Weiwu if the init is for the front end developer (e.g. devcon team) to
 // design their UI with the info, e.g. VIP banner, when the user is VIP.
-// negotiatorAuthenticator.init().then((results) => {
+// tokenScriptConnector.init().then((results) => {
 //     if (results.isVip === true) {
 //         document.getElementByID("vip-only-section").style.visibility = "visible";
 //     }
 // });
 
 // to handle the vip click event from the end user
-negotiatorAuthenticator.vipClickEvent = async () => {
+tokenScriptConnector.vipClickEvent = async () => {
     // 1. Get most up to date Tokens (Confirm if this should be done)
     const tokens = await Negotiator.getTokenInstances();
     // 2. Gather all VIP tickets
     const vipTickets = tokens.filter(ticket => (ticket.token.ticketClass == "VIP"));
     // 3. Build a Html template of tickets to show inside Modal
-    let ticketsToHtml = "";
-    vipTickets.map(function (ticket) { ticketsToHtml += `<button style="margin: 20px" data-id="${ticket.id}" onClick="negotiatorAuthenticator.selectVipTicket(${ticket.id})">${ticket.id}</button>`; });
+    let ticketsToHtml = "<p>Select a VIP TICKET</p>";
+    vipTickets.map(function (ticket) { ticketsToHtml += `<button style="margin: 20px" data-id="${ticket.id}" onClick="tokenScriptConnector.selectVipTicket(${ticket.id})">${ticket.id}</button>`; });
     // 4. Render the tickets inside the Modal
     document.getElementById("modal-inner-content").innerHTML = ticketsToHtml;
     // 5. Show Modal
@@ -62,14 +62,13 @@ negotiatorAuthenticator.vipClickEvent = async () => {
 }
 
 // to handle the vip selection click event from the end user
-negotiatorAuthenticator.selectVipTicket = async (ticketId) => {
+tokenScriptConnector.selectVipTicket = async (ticketId) => {
     event.stopPropagation();
     // 1. Get most up to date Tokens (Confirm if this should be done each time)
     const tokens = await Negotiator.getTokenInstances();
     // 2. Get the ticket using ID
     const chosenTicket = tokens.filter(ticket => (ticket.id == ticketId))[0];
     // 3. Authenticator (non-Disney mode)
-    // to confirm with Weiwu - the following steps:
     if (chosenTicket.ownerAddress == null) {
         // lead to email code modal process, created by Authenticator.
         Authenticator.findOwner();

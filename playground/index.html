@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tokenScriptConnector playground</title>
+  <script src="negotiator-authenticator.js"></script>
+  <style>
+    button {
+      cursor: pointer;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body onload="initApp()">
+  <div id="tokenCards"></div>
+  <div style="margin: 20px 0;">
+    <button id="vip" style="display: none;" onclick="vipClickEvent()">VIP ACCESS</button>
+  </div>
+  <div id="modal" onclick="closeModal()"
+    style="cursor: pointer; position: absolute; top: 0; left: 0; display: none; width: 100%; height: 100%; background: rgba(0,0,0,0.7);">
+    <div id="modal-inner-container"
+      style="border-radius: 12px; cursor: default; width: 90%; height: 90%; background: white; margin: 5%;">
+      <div id="modal-inner-content" style="padding: 20px;"></div>
+    </div>
+  </div>
+
+  <script>
+    var tokens = [];
+    function initApp() {
+      negotiatorAuthenticator.init().then(function (results) {
+        // VIP ACCESS Enabled
+        if (results.isVIP) document.getElementById("vip").style.display = "block";
+        // Show All Tokens
+        results.tokens.map(
+          ticketToken => {
+            const container = document.createElement("li");
+            const tokenId = document.createTextNode(ticketToken.id);
+            container.appendChild(tokenId);
+            document.getElementById("tokenCards").appendChild(container);
+          }
+        );
+      });
+    }
+    // End user opens the vip modal
+    function vipClickEvent() {
+      negotiatorAuthenticator.vipClickEvent();
+    }
+  </script>
+
+</body>
+
+</html>
