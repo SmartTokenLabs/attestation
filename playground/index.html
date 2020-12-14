@@ -15,7 +15,7 @@
 </head>
 
 <body onload="initApp()">
-  <div id="tokenCards"></div>
+  <ul id="tokenCards"></ul>
   <div style="margin: 20px 0;">
     <button id="vip-only-section" style="display: none;" onclick="vipClickEvent()">VIP ACCESS</button>
   </div>
@@ -34,7 +34,7 @@
         tokens.map(
           ticketToken => {
             const container = document.createElement("li");
-            const tokenId = document.createTextNode(ticketToken.id);
+            const tokenId = document.createTextNode(ticketToken.ticketId);
             container.appendChild(tokenId);
             document.getElementById("tokenCards").appendChild(container);
           }

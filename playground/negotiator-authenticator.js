@@ -18,9 +18,9 @@ const asyncHelper = async (promise) => {
 const Negotiator = {
     getTokenInstances: function async() {
         return [
-            { id: 42, token: { ticketClass: "VIP" }, ownerAddress: null },
-            { id: 32, token: { ticketClass: "STANDARD" }, ownerAddress: 2 },
-            { id: 15, token: { ticketClass: "VIP" }, ownerAddress: 2 },
+            { token: { ticketId: 42, ticketClass: "VIP", conferenceId: 1 }, ownerAddress: null },
+            { token: { ticketId: 32, ticketClass: "STANDARD", conferenceId: 1 }, ownerAddress: 2 },
+            { token: { ticketId: 15, ticketClass: "VIP", conferenceId: 1 }, ownerAddress: 2 },
         ];
     }
 };
@@ -60,7 +60,7 @@ negotiatorAuthenticator.vipClickEvent = async () => {
     const vipTickets = tokens.filter(ticket => (ticket.token.ticketClass == "VIP"));
     // 3. Build a Html template of tickets to show inside Modal
     let ticketsToHtml = "<p>Your VIP Tickets</p>";
-    vipTickets.map(function (ticket) { ticketsToHtml += `<button style="margin: 20px" data-id="${ticket.id}" onClick="negotiatorAuthenticator.selectVipTicket(${ticket.id})">${ticket.id}</button>`; });
+    vipTickets.map(function (ticket) { ticketsToHtml += `<button style="margin: 20px" data-id="${ticket.token.ticketId}" onClick="negotiatorAuthenticator.selectVipTicket(${ticket.token.ticketId})">${ticket.token.ticketId}</button>`; });
     // 4. Render the tickets inside the Modal
     document.getElementById("modal-inner-content").innerHTML = ticketsToHtml;
     // 5. Show Modal
@@ -74,7 +74,7 @@ negotiatorAuthenticator.selectVipTicket = async (ticketId) => {
     const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
     if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
     // 2. Get the ticket using ID
-    const chosenTicket = tokens.filter(ticket => (ticket.id == ticketId))[0];
+    const chosenTicket = tokens.filter(ticket => (ticket.token.ticket.ticketId == ticketId))[0];
     // 3. Authenticator (non-Disney mode)
     // to confirm with Weiwu - the following steps: do I create this modal within an Authenticator module?
     if (chosenTicket.ownerAddress == null) {
@@ -96,7 +96,7 @@ negotiatorAuthenticator.selectVipTicket = async (ticketId) => {
         console.log(error);
     });
     // Demo only - Show the selected ticket id.
-    alert("Card Selected: " + chosenTicket.id);
+    alert("Card Selected: " + chosenTicket.token.ticketId);
 }
 
 negotiatorAuthenticator.errorHandler = (msg) => {
