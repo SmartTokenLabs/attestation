@@ -4,6 +4,16 @@
 const negotiatorAuthenticator = {};
 const currentUser = 2;
 
+// Helper for success and failed promises
+const asyncHelper = async (promise) => {
+    try {
+        const data = await promise;
+        return [data, undefined];
+    } catch (error) {
+        return [undefined, error];
+    }
+}
+
 // Mock of Negotiator
 const Negotiator = {
     getTokenInstances: function async() {
@@ -31,29 +41,25 @@ const Authenticator = {
 // to provide the VIP Status and Tokens
 negotiatorAuthenticator.init = async () => {
     // 1. Get most up to date Tokens
-    const tokens = await Negotiator.getTokenInstances();
+    const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
+    if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
     // 2. Determine if the user has VIP tokens (for front end developers UI / UX)
+    let isVIP = false;
     tokens.map(ticket => { if (ticket.token.ticketClass == "VIP") isVIP = true });
-    // 3. Return the VIP state and tokens
-    return { isVIP, tokens };
+    if (isVIP) document.getElementById("vip-only-section").style.display = "block";
+    // 3. Return the and tokens
+    return tokens;
 }
-
-// to confirm with Weiwu if the init is for the front end developer (e.g. devcon team) to
-// design their UI with the info, e.g. VIP banner, when the user is VIP.
-// negotiatorAuthenticator.init().then((results) => {
-//     if (results.isVip === true) {
-//         document.getElementByID("vip-only-section").style.visibility = "visible";
-//     }
-// });
 
 // to handle the vip click event from the end user
 negotiatorAuthenticator.vipClickEvent = async () => {
     // 1. Get most up to date Tokens (Confirm if this should be done)
-    const tokens = await Negotiator.getTokenInstances();
+    const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
+    if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
     // 2. Gather all VIP tickets
     const vipTickets = tokens.filter(ticket => (ticket.token.ticketClass == "VIP"));
     // 3. Build a Html template of tickets to show inside Modal
-    let ticketsToHtml = "";
+    let ticketsToHtml = "<p>Your VIP Tickets</p>";
     vipTickets.map(function (ticket) { ticketsToHtml += `<button style="margin: 20px" data-id="${ticket.id}" onClick="negotiatorAuthenticator.selectVipTicket(${ticket.id})">${ticket.id}</button>`; });
     // 4. Render the tickets inside the Modal
     document.getElementById("modal-inner-content").innerHTML = ticketsToHtml;
@@ -65,11 +71,12 @@ negotiatorAuthenticator.vipClickEvent = async () => {
 negotiatorAuthenticator.selectVipTicket = async (ticketId) => {
     event.stopPropagation();
     // 1. Get most up to date Tokens (Confirm if this should be done each time)
-    const tokens = await Negotiator.getTokenInstances();
+    const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
+    if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
     // 2. Get the ticket using ID
     const chosenTicket = tokens.filter(ticket => (ticket.id == ticketId))[0];
     // 3. Authenticator (non-Disney mode)
-    // to confirm with Weiwu - the following steps:
+    // to confirm with Weiwu - the following steps: do I create this modal within an Authenticator module?
     if (chosenTicket.ownerAddress == null) {
         // lead to email code modal process, created by Authenticator.
         Authenticator.findOwner();
@@ -91,6 +98,10 @@ negotiatorAuthenticator.selectVipTicket = async (ticketId) => {
     // Demo only - Show the selected ticket id.
     alert("Card Selected: " + chosenTicket.id);
 }
+
+negotiatorAuthenticator.errorHandler = (msg) => {
+    return { error: msg }
+};
 
 function closeModal() {
     document.getElementById("modal").style.display = 'none';
