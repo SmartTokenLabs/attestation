@@ -1,10 +1,37 @@
-// import Negotiator()
-// import Authenticator()
 
-const negotiatorAuthenticator = {};
-const currentUser = 2;
+// Mock value
+const currentUser = {
+    ownerAddress: 2
+};
+
+let tokenMock = [
+    { token: { ticketId: 42, ticketClass: "VIP", conferenceId: 1 }, ownerAddress: null },
+    { token: { ticketId: 32, ticketClass: "STANDARD", conferenceId: 1 }, ownerAddress: 2 },
+    { token: { ticketId: 15, ticketClass: "VIP", conferenceId: 1 }, ownerAddress: 2 },
+];
+
+// Negotiator Module
+const Negotiator = {
+    getTokenInstances: function async() { return tokenMock }
+};
+
+// Authenticator Module
+const Authenticator = {
+    authenticateAddress: async function (ownerAddress) {
+        return true;
+    },
+    findOwner: async function () {
+        // Mock for now
+        tokenMock[0].token.ownerAddress = 2;
+        return tokenMock[0].token.ownerAddress;
+    },
+    authenticate: async function () {
+        return "Authenticated"
+    }
+};
 
 // Helper for success and failed promises
+// negotiatorAuthenticator code 
 const asyncHelper = async (promise) => {
     try {
         const data = await promise;
@@ -14,106 +41,58 @@ const asyncHelper = async (promise) => {
     }
 }
 
-// Mock of Negotiator
-const Negotiator = {
-    getTokenInstances: function async() {
-        return [
-            { token: { ticketId: 42, ticketClass: "VIP", conferenceId: 1 }, ownerAddress: null },
-            { token: { ticketId: 32, ticketClass: "STANDARD", conferenceId: 1 }, ownerAddress: 2 },
-            { token: { ticketId: 15, ticketClass: "VIP", conferenceId: 1 }, ownerAddress: 2 },
-        ];
-    }
-};
+const handlerSubmit = (event) => {
+    event.preventDefault();
+    Authenticator.findOwner(event.currentTarget[0].value).then(function (result) {
+        // sequence of steps to trigger...
+        // authenticateAddress(ownerAddress)
+        // authenticate(chosenTicket)
+        // Close Modal, provide permission to VIP Room
+        document.getElementById("modal").style.display = 'none';
+        alert('user can enter the VIP room');
+    }, function (error) {
+        // handle error
+    });
+}
 
-// Mock of Authenticator
-const Authenticator = {
-    authenticateAddress: async function () {
-        return true;
-    },
-    findOwner: async function () {
-        return 2
-    },
-    authenticate: async function () {
-        return "Authenticated"
-    }
-};
+const negotiatorAuthenticator = {};
 
-// to provide the VIP Status and Tokens
 negotiatorAuthenticator.init = async () => {
     // 1. Get most up to date Tokens
     const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
     if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
-    // 2. Determine if the user has VIP tokens (for front end developers UI / UX)
-    let isVIP = false;
-    tokens.map(ticket => { if (ticket.token.ticketClass == "VIP") isVIP = true });
-    if (isVIP) document.getElementById("vip-only-section").style.display = "block";
-    // 3. Return the and tokens
+    // 2. Return tokens
     return tokens;
 }
-
-// to handle the vip click event from the end user
-negotiatorAuthenticator.vipClickEvent = async () => {
-    // 1. Get most up to date Tokens (Confirm if this should be done)
-    const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
-    if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
-    // 2. Gather all VIP tickets
-    const vipTickets = tokens.filter(ticket => (ticket.token.ticketClass == "VIP"));
-    // 3. Build a Html template of tickets to show inside Modal
-    let ticketsToHtml = "<p>Your VIP Tickets</p>";
-    vipTickets.map(function (ticket) { ticketsToHtml += `<button style="margin: 20px" data-id="${ticket.token.ticketId}" onClick="negotiatorAuthenticator.selectVipTicket(${ticket.token.ticketId})">${ticket.token.ticketId}</button>`; });
-    // 4. Render the tickets inside the Modal
-    document.getElementById("modal-inner-content").innerHTML = ticketsToHtml;
+negotiatorAuthenticator.findOwner = (chosenTicket) => {
+    // Open Modal Process Here to confirm via email
+    // 4. Render the tickets inside the vip-tickets-list
+    document.getElementById("modal-inner-content").innerHTML = `
+        <form onSubmit="handlerSubmit(event)">
+            <label for="email">Please enter your email Address:</label><br>
+            <input type="text" id="email" name="email" value="test@test.com" style="margin: 12px 0"><br>
+            <input type="submit" value="Submit">
+        </form>
+    `;
     // 5. Show Modal
     document.getElementById("modal").style.display = 'block';
 }
 
-// to handle the vip selection click event from the end user
-negotiatorAuthenticator.selectVipTicket = async (ticketId) => {
-    event.stopPropagation();
-    // 1. Get most up to date Tokens (Confirm if this should be done each time)
-    const [tokens, tokensErr] = await asyncHelper(Negotiator.getTokenInstances());
-    if (tokensErr) return negotiatorAuthenticator.errorHandler("Could not resolve token instances");
-    // 2. Get the ticket using ID
-    const chosenTicket = tokens.filter(ticket => (ticket.token.ticket.ticketId == ticketId))[0];
-    // 3. Authenticator (non-Disney mode)
-    // to confirm with Weiwu - the following steps: do I create this modal within an Authenticator module?
-    if (chosenTicket.ownerAddress == null) {
-        // lead to email code modal process, created by Authenticator.
-        Authenticator.findOwner();
-    }
-    if (chosenTicket.ownerAddress == currentUser.ownerAddress) {
-        // this will lead to sign-message, even if user typed the code in email.
-        Authenticator.authenticateAddress(currentUser.ownerAddress).then(function (result) {
-            console.log(result);
-        }, function (error) {
-            console.log(error);
-        });
-    }
-    // 4. Authenticate ticket
-    Authenticator.authenticate(chosenTicket).then(function (result) {
-        console.log(result);
-    }, function (error) {
-        console.log(error);
-    });
-    // Demo only - Show the selected ticket id.
-    alert("Card Selected: " + chosenTicket.token.ticketId);
-}
+negotiatorAuthenticator.authenticateAddress = async () => {
 
+}
+negotiatorAuthenticator.authenticate = async function () {
+    return "Authenticated"
+}
 negotiatorAuthenticator.errorHandler = (msg) => {
     return { error: msg }
-};
-
-function closeModal() {
-    document.getElementById("modal").style.display = 'none';
 }
 
 // onload :
 // async function() {
 //     const tokens = (await Negotiator.getXXXTokenInstances());
 //     tokens.forEach(putTokenOnUI);
-
 //     // getting the attributes of tokens
-
 //     isVIP = false;
 //     tokens.forEach(
 //         ticket => {
