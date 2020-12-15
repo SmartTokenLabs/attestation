@@ -64,6 +64,7 @@ negotiatorAuthenticator.init = async () => {
     // 2. Return tokens
     return tokens;
 }
+// emulates the modal process
 negotiatorAuthenticator.findOwner = (chosenTicket) => {
     // Open Modal Process Here to confirm via email
     // 4. Render the tickets inside the vip-tickets-list
@@ -77,12 +78,15 @@ negotiatorAuthenticator.findOwner = (chosenTicket) => {
     // 5. Show Modal
     document.getElementById("modal").style.display = 'block';
 }
-
-negotiatorAuthenticator.authenticateAddress = async () => {
-
+negotiatorAuthenticator.authenticateAddress = async (ownerAddress) => {
+    const [address, addressErr] = await asyncHelper(Authenticator.authenticateAddress(ownerAddress));
+    if (addressErr) return negotiatorAuthenticator.errorHandler("Could not validate ownerAddress");
+    return address;
 }
-negotiatorAuthenticator.authenticate = async function () {
-    return "Authenticated"
+negotiatorAuthenticator.authenticate = async (chosenTicket) => {
+    const [ticket, ticketErr] = await asyncHelper(Authenticator.authenticate(chosenTicket));
+    if (ticketErr) return negotiatorAuthenticator.errorHandler("Could not authenticate ticket");
+    return ticket;
 }
 negotiatorAuthenticator.errorHandler = (msg) => {
     return { error: msg }
