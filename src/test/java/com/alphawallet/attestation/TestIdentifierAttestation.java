@@ -21,6 +21,7 @@ public class TestIdentifierAttestation {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair otherKeys;
   private static SecureRandom rand;
+  private static final String mail = "test@test.ts";
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -33,7 +34,7 @@ public class TestIdentifierAttestation {
 
   @Test
   public void testFullDecoding() throws Exception {
-    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE);
+    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, mail);
     byte[] encoding = initial.getDerEncoding();
     Attestation newAtt = new IdentifierAttestation(encoding);
     assertArrayEquals(encoding, newAtt.getPrehash());
@@ -53,7 +54,7 @@ public class TestIdentifierAttestation {
 
   @Test
   public void testCannotSet() {
-    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE);
+    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "otherTest@test.ts");
     try {
       initial.setSubject("012345678901234567890123456789012345678901234");
       fail();
@@ -76,7 +77,7 @@ public class TestIdentifierAttestation {
 
   @Test
   public void testInvalidSubject() throws Exception {
-    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE);
+    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, mail);
     Field field = initial.getClass().getSuperclass().getDeclaredField("subject");
     field.setAccessible(true);
     // Change the subject address
@@ -86,7 +87,7 @@ public class TestIdentifierAttestation {
 
   @Test
   public void testInvalidSignature() throws Exception {
-    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE);
+    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.TEN, mail);
     Field field = initial.getClass().getSuperclass().getDeclaredField("signature");
     field.setAccessible(true);
     // Change the signature identifier
@@ -96,7 +97,7 @@ public class TestIdentifierAttestation {
 
   @Test
   public void testInvalidPublicKey() throws Exception {
-    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE);
+    IdentifierAttestation initial = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, mail);
     Field field = initial.getClass().getSuperclass().getDeclaredField("subjectPublicKeyInfo");
     field.setAccessible(true);
     // Change the public key

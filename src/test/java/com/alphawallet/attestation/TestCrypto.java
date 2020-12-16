@@ -29,7 +29,7 @@ public class TestCrypto {
   private static final BigInteger SECRET = new BigInteger("684084084843542003217847860141382018669978641584584765489");
 
   @BeforeEach
-  public void setupAttestation() throws NoSuchAlgorithmException {
+  public void setupCrypto() throws NoSuchAlgorithmException {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
@@ -82,7 +82,10 @@ public class TestCrypto {
     // Test with other randomness
     ProofOfExponent pok2 = crypto.constructProof(ID, TYPE, SECRET);
     assertTrue(AttestationCrypto.verifyProof(pok2));
-    assertNotEquals(pok, pok2);
+    assertNotEquals(pok.getPoint(), pok2.getPoint());
+    assertNotEquals(pok.getChallenge(), pok2.getChallenge());
+    assertEquals(pok.getBase(), pok2.getBase());
+    assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other type
     pok = crypto.constructProof(ID, AttestationType.PHONE, SECRET);
