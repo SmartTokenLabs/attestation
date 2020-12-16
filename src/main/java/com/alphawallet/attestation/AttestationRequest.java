@@ -15,7 +15,6 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERVisibleString;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
@@ -57,8 +56,7 @@ public class AttestationRequest implements ASNEncodable, Validateable, Verifiabl
           ASN1Integer.getInstance(unsigned.getObjectAt(1)).getValue().intValueExact()];
       this.pok = new ProofOfExponent(
           ASN1Sequence.getInstance(unsigned.getObjectAt(2)).getEncoded());
-      this.publicKey = PublicKeyFactory
-          .createKey(SubjectPublicKeyInfo.getInstance(asn1.getObjectAt(1)));
+      this.publicKey = SignatureUtility.restoreKey(DERBitString.getInstance(asn1.getObjectAt(1)).getEncoded());
       DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
       this.signature = signatureEnc.getBytes();
     } catch (IOException e) {
@@ -99,7 +97,7 @@ public class AttestationRequest implements ASNEncodable, Validateable, Verifiabl
       byte[] rawData = getUnsignedEncoding();
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Primitive.fromByteArray(rawData));
-      res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey));
+      res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey).getPublicKeyData());
       res.add(new DERBitString(signature));
       return new DERSequence(res).getEncoded();
     } catch (Exception e) {
