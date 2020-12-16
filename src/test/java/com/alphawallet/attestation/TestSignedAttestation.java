@@ -39,7 +39,7 @@ public class TestSignedAttestation {
 
   @Test
   public void testSignAttestation() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE);
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
