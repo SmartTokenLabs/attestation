@@ -32,8 +32,9 @@ public class TestHelper {
 //    return keyGen.generateKeyPair();
 //  }
 
-  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter key, BigInteger secret) {
-    IdentifierAttestation att = new IdentifierAttestation("test@test.ts", AttestationType.EMAIL, key, secret);
+  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter key,
+      BigInteger secret, String mail) {
+    IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL, key, secret);
     att.setIssuer("CN=ALX");
     att.setSerialNumber(1);
     Date now = new Date();
