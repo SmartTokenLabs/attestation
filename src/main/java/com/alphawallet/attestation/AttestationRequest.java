@@ -37,7 +37,7 @@ public class AttestationRequest implements ASNEncodable, Validateable, Verifiabl
       this.pok = pok;
       this.publicKey = PublicKeyFactory
           .createKey( SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keys.getPublic()));
-      this.signature = SignatureUtility.sign(getUnsignedEncoding(), keys.getPrivate());
+      this.signature = SignatureUtility.signDeterministic(getUnsignedEncoding(), keys.getPrivate());
 
       if (!verify()) {
         throw new IllegalArgumentException("The signature is not valid");

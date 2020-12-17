@@ -50,7 +50,7 @@ public class Cheque implements Attestable {
     this.notValidAfter = this.notValidBefore + validity;
     ASN1Sequence cheque = makeCheque(this.riddle, amount, notValidBefore, notValidAfter);
     try {
-      this.signature = SignatureUtility.sign(cheque.getEncoded(), keys.getPrivate());
+      this.signature = SignatureUtility.signDeterministic(cheque.getEncoded(), keys.getPrivate());
       this.encoded = encodeSignedCheque(cheque, this.signature, this.publicKey);
     } catch (IOException e) {
       throw new RuntimeException(e);

@@ -66,7 +66,7 @@ public class TestSignedAttestation {
     Digest digest = new SHA256Digest();
     digest.update(toSign, 0, toSign.length);
     digest.doFinal(digestBytes, 0);
-    byte[] signature = SignatureUtility.signHashed(digestBytes, issuerKeys.getPrivate());
+    byte[] signature = SignatureUtility.signHashedRandomized(digestBytes, issuerKeys.getPrivate());
     byte[] signed = SignedAttestation.constructSignedAttestation(att, signature);
     // Test X509 compliance
     CertificateFactory fact = CertificateFactory.getInstance("X.509");

@@ -11,9 +11,9 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.spec.EllipticCurve;
 import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -133,12 +133,14 @@ public class TestCrypto {
     // Sanity check algorithms
     for (int i = 0; i < 20; i++) {
       point = AttestationCrypto.hashIdentifier(i % 2 , String.valueOf(i));
-      EllipticCurve curve = AttestationCrypto.params.getCurve();
-
+      ECCurve curve = AttestationCrypto.curve;
       // Verify that y^2 = x^3 + ax + b
       BigInteger ySquared = point.getYCoord().multiply(point.getYCoord()).toBigInteger();
       BigInteger x = point.getXCoord().toBigInteger();
-      BigInteger expected = x.multiply(x).multiply(x).add(x.multiply(curve.getA())).add(curve.getB()).mod(AttestationCrypto.fieldSize);
+      // expected = x^3+Ax+B
+      BigInteger expected = x.multiply(x).multiply(x).add(
+          x.multiply(curve.getA().toBigInteger())).add(
+              curve.getB().toBigInteger()).mod(AttestationCrypto.fieldSize);
       assertEquals(ySquared, expected);
 
       // Verify the order is correct

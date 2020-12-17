@@ -24,7 +24,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
 
   public SignedAttestation(Attestation att, AsymmetricCipherKeyPair key) {
     this.att = att;
-    this.signature = SignatureUtility.sign(att.getPrehash(), key.getPrivate());
+    this.signature = SignatureUtility.signDeterministic(att.getPrehash(), key.getPrivate());
     this.publicKey = key.getPublic();
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
