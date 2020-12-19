@@ -1,9 +1,11 @@
-# TokenScript  - attestation stream
+# TokenScript - Attestation
 
 This repository host the attestation stream of work under TokenScript. Discussion goes to the forum https://community.tokenscript.org/
 
 ## What is attestation
 
+In short, an attestation is a signed message. It is created off-chain and
+usable on-chain. An example of an attestation would be a Devcon ticket.
 See document here: http://tokenscript.org/Attestation.html
 
 ## In this Repo
