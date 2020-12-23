@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>tokenScriptConnector playground</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
   <script src="negotiator-authenticator.js"></script>
   <style>
     button {
@@ -32,6 +33,10 @@
   </div>
 
   <script>
+
+    // TODO's:
+    // Don’t encapsulate authenticate address - use web3 challenge
+
     function initApp() {
       negotiatorAuthenticator.init().then(function (tokens) {
         let isVIP = false;
@@ -84,21 +89,33 @@
         // 3. Authenticator (non-Disney mode) - no owner - open modal to retrieve owner
         if (chosenTicket.ownerAddress == null) {
           // lead to email code modal process, created by Authenticator.
-          negotiatorAuthenticator.findOwner(chosenTicket);
+          negotiatorAuthenticator.assetOwnerAddress(chosenTicket);
         }
         // 4. If owner address is found, authenticateAddress
         if (chosenTicket.ownerAddress == currentUser.ownerAddress) {
           // this will lead to sign-message, even if user typed the code in email.
-          negotiatorAuthenticator.authenticateAddress(currentUser.ownerAddress).then(function (result) {
-            // 5. is the address is valid authenticate the ticket
+
+          // TODO: Don’t encapsulate 'authenticateAddress' - use web3 challenge
+          let web3 = new Web3('HTTP://127.0.0.1:7545');
+          // Gnache / Mock Private Key only
+          const signature = web3.eth.accounts.sign('Some data', '35335e2eac26772c5b1aed0114f7f635b99eb17fe8ef37cd68edd7acf093fa9c');
+          console.log(signature);
+          // Get the Public key of the signed message
+          const signatureValid = web3.eth.accounts.recover(signature);
+          console.log(signatureValid);
+          //
+          // negotiatorAuthenticator.authenticateAddress(currentUser.ownerAddress).then(function (result) {
+          // 5. is the address is valid authenticate the ticket
+          if (signatureValid) {
             negotiatorAuthenticator.authenticate(chosenTicket).then(function (result) {
               alert('user can enter the VIP room');
             }, function (error) {
               console.log(error);
             });
-          }, function (error) {
-            console.log(error);
-          });
+          }
+          // }, function (error) {
+          //   console.log(error);
+          // });
         }
       }, function (error) {
         console.log("error", error);

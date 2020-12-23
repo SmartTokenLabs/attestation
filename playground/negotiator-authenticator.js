@@ -20,8 +20,7 @@ const Authenticator = {
     authenticateAddress: async function (ownerAddress) {
         return true;
     },
-    findOwner: async function () {
-        // Mock for now
+    assetOwnerAddress: async function () {
         tokenMock[0].token.ownerAddress = 2;
         return tokenMock[0].token.ownerAddress;
     },
@@ -43,7 +42,7 @@ const asyncHelper = async (promise) => {
 
 const handlerSubmit = (event) => {
     event.preventDefault();
-    Authenticator.findOwner(event.currentTarget[0].value).then(function (result) {
+    Authenticator.assetOwnerAddress(event.currentTarget[0].value).then(function (result) {
         // sequence of steps to trigger...
         // authenticateAddress(ownerAddress)
         // authenticate(chosenTicket)
@@ -65,7 +64,7 @@ negotiatorAuthenticator.init = async () => {
     return tokens;
 }
 // emulates the modal process
-negotiatorAuthenticator.findOwner = (chosenTicket) => {
+negotiatorAuthenticator.assetOwnerAddress = (chosenTicket) => {
     // Open Modal Process Here to confirm via email
     // 4. Render the tickets inside the vip-tickets-list
     document.getElementById("modal-inner-content").innerHTML = `

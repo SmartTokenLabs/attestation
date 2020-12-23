@@ -1,17 +1,21 @@
+import tokenMock from './tokenMock';
+
 const Authenticator = {
-  init: () => {
-    return "Hello Authenticator";
+  authenticateAddress: function async(ownerAddress) {
+    return new Promise((resolve, reject) => {
+      return resolve(true);
+    });
   },
-  authenticateAddress: async function (ownerAddress) {
-    return true;
+  findOwner: function async() {
+    return new Promise((resolve, reject) => {
+      tokenMock[0].token.ownerAddress = 2;
+      return resolve(tokenMock[0].token.ownerAddress);
+    });
   },
-  findOwner: async function () {
-    // Mock for now
-    tokenMock[0].token.ownerAddress = 2;
-    return tokenMock[0].token.ownerAddress;
-  },
-  authenticate: async function () {
-    return "Authenticated"
+  authenticate: function async() {
+    return new Promise((resolve, reject) => {
+      return resolve("Authenticated");
+    });
   }
 }
 
