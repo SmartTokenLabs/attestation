@@ -152,9 +152,7 @@ export default class SignedTicket {
     const asn1 = compareSchema(schema, schema, SignedTicket.schema());
 
     if (asn1.verified === false)
-      throw new Error(
-        "Object's schema was not verified against input data for SignedTicket"
-      );
+		throw new Error("Object's schema was not verified against input data for SignedTicket");
 
     //endregion
 
@@ -177,9 +175,14 @@ export default class SignedTicket {
     if ("ticket.conferenceId" in asn1.result)
 		this.conferenceId = asn1.result["ticket.conferenceId"].valueBlock.valueDec;
 
-    if ("ticket.riddle" in asn1.result)
-		this.riddle = asn1.result["ticket.riddle"].valueBlock.valueDec;
-
+    if ("ticket.riddle" in asn1.result){
+		const hex = bufferToHexCodes(
+			asn1.result["ticket.riddle"].valueBlock.valueHex
+		);
+	  
+		const riddle = BigInt(`0x${hex}`);
+		this.riddle = riddle;
+	}
     this.signatureAlgorithm = new AlgorithmIdentifier({
       schema: asn1.result.signatureAlgorithm,
     });
