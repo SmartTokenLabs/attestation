@@ -57,7 +57,7 @@ function ticket(parameters = {}) {
       }),
       new OctetString({
         name: names.riddle || "ticket.riddle",
-      }),
+      })
     ],
   });
 }
@@ -85,6 +85,11 @@ export default class SignedTicket {
       "conferenceId",
       SignedTicket.defaultValues("conferenceId")
     );
+	this.riddle = getParametersValue(
+      parameters,
+      "riddle",
+      SignedTicket.defaultValues("riddle")
+    );
 
     //region If input argument array contains "schema" for this object
     if ("schema" in parameters) this.fromSchema(parameters.schema);
@@ -105,6 +110,8 @@ export default class SignedTicket {
         return 1;
       case "conferenceId":
         return 1;
+	  case "riddle":
+        return 1;	
       case "signatureAlgorithm":
         return new AlgorithmIdentifier();
 
@@ -192,7 +199,7 @@ export default class SignedTicket {
       const hex = bufferToHexCodes(
         asn1.result["ticket.ticketId"].valueBlock._valueHex
       );
-
+	  /* Big int does not work directly if we do not use hex conversion */
       const ticketId = BigInt(`0x${hex}`);
 
       this.ticketId = ticketId;

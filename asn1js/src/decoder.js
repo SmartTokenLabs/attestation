@@ -7,19 +7,8 @@ export function updateAsn1jsSpan(text) {
   asn1jsspan.textContent = text;
 }
 
-const toBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsText(file, "UTF-8");
-    // reader.readAsArrayBuffer(file);
-    // reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
-  });
-};
-
-export function decode(file) {
-  const der = Buffer.from(file, "base64");
+export function decode(inputContent) {
+  const der = Buffer.from(inputContent, "base64");
 
   const ber = new Uint8Array(der).buffer;
 
@@ -32,9 +21,9 @@ export function decode(file) {
   return ticket;
 }
 
-export async function decodeAnsn1(file) {
-  const base64 = await toBase64(file);
+export async function decodeAnsn1(input) {
+  const inputContent = input.value;
 
-  const result = decode(base64);
+  const result = decode(inputContent);
   return result;
 }
