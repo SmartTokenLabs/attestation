@@ -9,34 +9,6 @@ import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./algorithm_identifier.js";
 
 function ticket(parameters = {}) {
-  //TBSCertList  ::=  SEQUENCE  {
-  //    version                 Version OPTIONAL,
-  //                                 -- if present, MUST be v2
-  //    signature               AlgorithmIdentifier,
-  //    issuer                  Name,
-  //    thisUpdate              Time,
-  //    nextUpdate              Time OPTIONAL,
-  //    revokedCertificates     SEQUENCE OF SEQUENCE  {
-  //        userCertificate         CertificateSerialNumber,
-  //        revocationDate          Time,
-  //        crlEntryExtensions      Extensions OPTIONAL
-  //        -- if present, version MUST be v2
-  //    }  OPTIONAL,
-  //    crlExtensions           [0]  EXPLICIT Extensions OPTIONAL
-  //    -- if present, version MUST be v2
-  //}
-
-  /**
-   * @type {Object}
-   * @property {string} [blockName]
-   * @property {string} [tbsCertListVersion]
-   * @property {string} [signature]
-   * @property {string} [issuer]
-   * @property {string} [tbsCertListThisUpdate]
-   * @property {string} [tbsCertListNextUpdate]
-   * @property {string} [tbsCertListRevokedCertificates]
-   * @property {string} [crlExtensions]
-   */
   const names = getParametersValue(parameters, "names", {});
 
   return new Sequence({
@@ -50,10 +22,6 @@ function ticket(parameters = {}) {
       }),
       new Integer({
         name: names.conferenceId || "ticket.conferenceId",
-      }),
-      new OctetString({
-        optional: true,
-        name: names.co2_token || "ticket.co2_token",
       }),
       new OctetString({
         name: names.riddle || "ticket.riddle",
@@ -174,7 +142,6 @@ export default class SignedTicket {
       "ticket.ticketId",
       "ticket.ticketClass",
       "ticket.conferenceId",
-      "ticket.co2_token",
       "ticket.riddle",
       "signatureAlgorithm",
       "signatureValue",
@@ -201,24 +168,17 @@ export default class SignedTicket {
       );
 	  /* Big int does not work directly if we do not use hex conversion */
       const ticketId = BigInt(`0x${hex}`);
-
       this.ticketId = ticketId;
-
-      //   this.ticketId = asn1.result["ticket.ticketId"].valueBlock.valueDec;
     }
 
     if ("ticket.ticketClass" in asn1.result)
       this.ticketClass = asn1.result["ticket.ticketClass"].valueBlock.valueDec;
 
     if ("ticket.conferenceId" in asn1.result)
-      this.conferenceId =
-        asn1.result["ticket.conferenceId"].valueBlock.valueDec;
-
-    // if ("ticket.co2_token" in asn1.result)
-    //   this.co2_token = asn1.result["ticket.co2_token"].valueBlock.valueDec;
+		this.conferenceId = asn1.result["ticket.conferenceId"].valueBlock.valueDec;
 
     if ("ticket.riddle" in asn1.result)
-      this.riddle = asn1.result["ticket.riddle"].valueBlock.valueDec;
+		this.riddle = asn1.result["ticket.riddle"].valueBlock.valueDec;
 
     this.signatureAlgorithm = new AlgorithmIdentifier({
       schema: asn1.result.signatureAlgorithm,
