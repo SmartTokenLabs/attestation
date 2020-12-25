@@ -42,7 +42,7 @@ public class Cheque implements Attestable {
    */
   public Cheque(String identifier, AttestationType type, long amount, long validity, AsymmetricCipherKeyPair keys, BigInteger secret) {
     AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-    this.riddle = crypto.makeRiddle(identifier, type, secret);
+    this.riddle = crypto.makeCommitment(identifier, type, secret);
     this.publicKey = keys.getPublic();
     this.amount = amount;
     long current =  System.currentTimeMillis();

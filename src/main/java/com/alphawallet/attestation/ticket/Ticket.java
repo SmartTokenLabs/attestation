@@ -61,7 +61,7 @@ public class Ticket implements Attestable {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
     this.devconId = devconId;
-    this.riddle = crypto.makeRiddle(mail, AttestationType.EMAIL, secret);
+    this.riddle = crypto.makeCommitment(mail, AttestationType.EMAIL, secret);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
           keys.getPublic());

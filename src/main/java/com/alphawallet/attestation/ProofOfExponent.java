@@ -2,10 +2,8 @@ package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -14,7 +12,7 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.math.ec.ECPoint;
 
-public class ProofOfExponent implements ASNEncodable, Verifiable {
+public class ProofOfExponent implements ASNEncodable {
   private final ECPoint base;
   private final ECPoint riddle;
   private final ECPoint tPoint;
@@ -44,9 +42,6 @@ public class ProofOfExponent implements ASNEncodable, Verifiable {
       this.tPoint = AttestationCrypto.decodePoint(tPointEnc.getOctets());
     } catch (IOException e) {
       throw new RuntimeException(e);
-    }
-    if (!verify()) {
-      throw new IllegalArgumentException("The proof is not valid");
     }
   }
 
@@ -84,10 +79,4 @@ public class ProofOfExponent implements ASNEncodable, Verifiable {
     return encoding;
   }
 
-  @Override
-  public boolean verify() {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-    // TODO refactor into the POK class
-    return crypto.verifyProof(this);
-  }
 }

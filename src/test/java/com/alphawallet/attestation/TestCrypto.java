@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,60 +54,87 @@ public class TestCrypto {
   }
 
   @Test
-  public void testMakeRiddle() {
-    byte[] point = AttestationCrypto.makeRiddle(ID, TYPE, SECRET);
+  public void testMakeCommitment() {
+    byte[] point = AttestationCrypto.makeCommitment(ID, TYPE, SECRET);
     // Sanity checks
     assertTrue(point.length > 32);
     assertFalse(Arrays.equals(point, new byte[point.length]));
+    ECPoint encodedPoint = AttestationCrypto.decodePoint(point);
+    assertFalse(encodedPoint.isInfinity());
 
     // Check consistency
-    byte[] point2 = AttestationCrypto.makeRiddle(ID, TYPE, SECRET);
+    byte[] point2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET);
     assertArrayEquals(point, point2);
 
     // Negative tests
-    point2 = AttestationCrypto.makeRiddle("test", TYPE, SECRET);
+    point2 = AttestationCrypto.makeCommitment("test", TYPE, SECRET);
     assertFalse(Arrays.equals(point, point2));
-    point2 = AttestationCrypto.makeRiddle(ID + "   1", TYPE, SECRET);
+    point2 = AttestationCrypto.makeCommitment(ID + "   1", TYPE, SECRET);
     assertFalse(Arrays.equals(point, point2));
-    point2 = AttestationCrypto.makeRiddle(ID, AttestationType.PHONE, SECRET);
+    point2 = AttestationCrypto.makeCommitment(ID, AttestationType.PHONE, SECRET);
     assertFalse(Arrays.equals(point, point2));
-    point2 = AttestationCrypto.makeRiddle(ID, TYPE, SECRET.add(BigInteger.ONE));
+    point2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET.add(BigInteger.ONE));
     assertFalse(Arrays.equals(point, point2));
   }
 
   @Test
-  public void testVerifyProof() {
-    ProofOfExponent pok = crypto.constructProof(ID, TYPE, SECRET);
-    assertTrue(AttestationCrypto.verifyProof(pok));
+  public void testMakeRiddle() {
+    ECPoint hiding = AttestationCrypto.H.multiply(SECRET);
+    byte[] riddleBytes = AttestationCrypto.makeRiddle(ID, TYPE, hiding);
+    byte[] commitmentBytes = AttestationCrypto.makeCommitment(ID, TYPE, SECRET);
+    ECPoint riddle = AttestationCrypto.decodePoint(riddleBytes);
+    // Sanity checks
+    assertFalse(riddle.isInfinity());
+    assertArrayEquals(riddleBytes, commitmentBytes);
+
+    // Check consistency
+    byte[] riddleBytes2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET);
+    assertArrayEquals(riddleBytes, riddleBytes2);
+
+    // Negative tests
+    riddleBytes2 = AttestationCrypto.makeRiddle("test", TYPE, hiding);
+    assertFalse(Arrays.equals(riddleBytes, riddleBytes2));
+    riddleBytes2 = AttestationCrypto.makeRiddle(ID + "   1", TYPE, hiding);
+    assertFalse(Arrays.equals(riddleBytes, riddleBytes2));
+    riddleBytes2 = AttestationCrypto.makeRiddle(ID, AttestationType.PHONE, hiding);
+    assertFalse(Arrays.equals(riddleBytes, riddleBytes2));
+    riddleBytes2 = AttestationCrypto.makeRiddle(ID, TYPE, hiding.add(hiding));
+    assertFalse(Arrays.equals(riddleBytes, riddleBytes2));
+  }
+
+  @Test
+  public void testVerifyAttestationRequestProof() {
+    ProofOfExponent pok = crypto.computeAttestationProof(SECRET);
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
     // Test with other randomness
-    ProofOfExponent pok2 = crypto.constructProof(ID, TYPE, SECRET);
-    assertTrue(AttestationCrypto.verifyProof(pok2));
+    ProofOfExponent pok2 = crypto.computeAttestationProof(SECRET);
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok2));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallenge(), pok2.getChallenge());
     assertEquals(pok.getBase(), pok2.getBase());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other type
-    pok = crypto.constructProof(ID, AttestationType.PHONE, SECRET);
-    assertTrue(AttestationCrypto.verifyProof(pok));
+    pok = crypto.computeAttestationProof(SECRET);
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
 
     // Test with other secret
-    pok = crypto.constructProof(ID, AttestationType.PHONE, BigInteger.ONE);
-    assertTrue(AttestationCrypto.verifyProof(pok));
+    pok = crypto.computeAttestationProof(BigInteger.ONE);
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
 
     // Negative tests
-    pok = crypto.constructProof(ID, TYPE, SECRET);
+    pok = crypto.computeAttestationProof(SECRET);
     pok2 = new ProofOfExponent(pok.getBase().add(pok.getBase()), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyProof(pok2));
+    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
 
     pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle().add(pok.getBase()), pok.getPoint(), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyProof(pok2));
+    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
 
     pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().add(pok.getBase()), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyProof(pok2));
+    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
 
     pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-    assertFalse(AttestationCrypto.verifyProof(pok2));
+    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
   }
 
   @Test
@@ -121,62 +148,43 @@ public class TestCrypto {
   }
 
   @Test
-  public void testHashIdentifier() {
-    ECPoint point = AttestationCrypto.hashIdentifier(TYPE.ordinal(), ID);
+  public void testMapToInteger() {
+    BigInteger value = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID);
     // Sanity checks
-    assertFalse(point.isInfinity());
+    assertFalse(value.equals(BigInteger.ZERO));
+    assertFalse(value.equals(BigInteger.ONE));
+    assertFalse(value.equals(AttestationCrypto.curveOrder));
+    assertFalse(value.equals(AttestationCrypto.fieldSize));
+    assertFalse(value.equals(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)));
+    assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
+    assertTrue(value.compareTo(AttestationCrypto.curveOrder) < 0 );
 
     // Check consistency
-    ECPoint point2 = AttestationCrypto.hashIdentifier(TYPE.ordinal(), ID);
-    assertEquals(point, point2);
+    BigInteger value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID);
+    assertEquals(value, value2);
 
-    // Sanity check algorithms
-    for (int i = 0; i < 20; i++) {
-      point = AttestationCrypto.hashIdentifier(i % 2 , String.valueOf(i));
-      ECCurve curve = AttestationCrypto.curve;
-      // Verify that y^2 = x^3 + ax + b
-      BigInteger ySquared = point.getYCoord().multiply(point.getYCoord()).toBigInteger();
-      BigInteger x = point.getXCoord().toBigInteger();
-      // expected = x^3+Ax+B
-      BigInteger expected = x.multiply(x).multiply(x).add(
-          x.multiply(curve.getA().toBigInteger())).add(
-              curve.getB().toBigInteger()).mod(AttestationCrypto.fieldSize);
-      assertEquals(ySquared, expected);
-
-      // Verify the order is correct
-      ECPoint o = point.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize();
-      assertFalse(o.isInfinity());
-      assertFalse(point.isInfinity());
-      assertEquals(o.getXCoord(), point.getXCoord());
-      // Sanity check
-      o = point.multiply(AttestationCrypto.curveOrder).normalize();
-      assertNotEquals(o.getXCoord(), point.getXCoord());
-      o = point.multiply(AttestationCrypto.fieldSize).normalize();
-      assertNotEquals(o.getXCoord(), point.getXCoord());
-      assertFalse(o.isInfinity());
-    }
     // Negative tests
-    point2 = AttestationCrypto.hashIdentifier(TYPE.ordinal(), "test");
-    assertNotEquals(point.getXCoord(), point2.getXCoord());
-    point2 = AttestationCrypto.hashIdentifier(TYPE.ordinal(), ID + "   1");
-    assertNotEquals(point.getXCoord(), point2.getXCoord());
-    point2 = AttestationCrypto.hashIdentifier(AttestationType.PHONE.ordinal(), ID);
-    assertNotEquals(point.getXCoord(), point2.getXCoord());
+    value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), "test");
+    assertNotEquals(value, value2);
+    value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID + "   1");
+    assertNotEquals(value, value2);
+    value2 = AttestationCrypto.mapToInteger(AttestationType.PHONE.ordinal(), ID);
+    assertNotEquals(value, value2);
   }
 
   @Test
-  public void testConstructProof() throws NoSuchAlgorithmException{
+  public void testConstructAttRequestProof() throws NoSuchAlgorithmException{
     SecureRandom rand2 = SecureRandom.getInstance("SHA1PRNG");
     rand2.setSeed("otherseed".getBytes());
     AttestationCrypto crypt2 = new AttestationCrypto(rand2);
-    ProofOfExponent pok = crypt2.constructProof(ID, TYPE, SECRET);
-    assertTrue(pok.verify());
+    ProofOfExponent pok = crypt2.computeAttestationProof(SECRET);
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
 
     // Check consistency
     rand2 = SecureRandom.getInstance("SHA1PRNG");
     rand2.setSeed("otherseed".getBytes());
     crypt2 = new AttestationCrypto(rand2);
-    ProofOfExponent pok2 = crypt2.constructProof(ID, TYPE, SECRET);
+    ProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET);
     assertEquals(pok.getBase(), pok2.getBase());
     assertEquals(pok.getPoint(), pok2.getPoint());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
@@ -185,9 +193,9 @@ public class TestCrypto {
 
   @Test
   public void testDecodePoint() {
-    ECPoint point = AttestationCrypto.hashIdentifier(TYPE.ordinal(), ID);
-    byte[] encoded = point.getEncoded(false);
+    byte[] encoded = AttestationCrypto.makeCommitment(ID, TYPE, SECRET);
     ECPoint decoded = AttestationCrypto.decodePoint(encoded);
+    ECPoint point = AttestationCrypto.curve.decodePoint(encoded);
     assertEquals(point, decoded);
 
     ECPoint newPoint = point.add(point);
@@ -199,5 +207,23 @@ public class TestCrypto {
     assertNotEquals(point, newPoint);
     assertNotEquals(encoded, newEncoded);
     assertNotEquals(decoded, newDecoded);
+  }
+
+  @Test
+  public void computeGenerators() throws Exception {
+    Method mapToInteger = AttestationCrypto.class.getDeclaredMethod("mapToInteger", byte[].class);
+    mapToInteger.setAccessible(true);
+    Method computePoint = AttestationCrypto.class.getDeclaredMethod("computePoint", BigInteger.class);
+    computePoint.setAccessible(true);
+
+    byte[] input = new byte[1];
+    input[0] = 0;
+    BigInteger gVal = (BigInteger) mapToInteger.invoke(crypto, input);
+    ECPoint g = (ECPoint) computePoint.invoke(crypto, gVal);
+    assertEquals(AttestationCrypto.G, g);
+    input[0] = 1;
+    BigInteger hVal = (BigInteger) mapToInteger.invoke(crypto, input);
+    ECPoint h = (ECPoint) computePoint.invoke(crypto, hVal);
+    assertEquals(AttestationCrypto.H, h);
   }
 }

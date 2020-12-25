@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.TestHelper;
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.DERUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
@@ -22,6 +22,9 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -96,7 +99,9 @@ public class TestRedeemCheque {
         issuerKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
-    assertTrue(newRedeem.getPok().verify());
+    ASN1Sequence extensions = DERSequence.getInstance(newRedeem.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
+    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+    assertTrue(AttestationCrypto.verifyEqualityProof(attCom, newRedeem.getAttestableObject().getRiddle(), newRedeem.getPok()));
 
     assertArrayEquals(
         attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
@@ -176,16 +181,16 @@ public class TestRedeemCheque {
   public void testNegativeWrongProofIdentity() throws Exception {
     AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     // Add an extra "t" in the mail address
-    ProofOfExponent newPok = crypto.constructProof("testt@test.ts", AttestationType.EMAIL, new BigInteger("42424242"));
+    ProofOfExponent newPok = crypto.computeAttestationProof( new BigInteger("42424242"));
     Field field = attestedCheque.getClass().getDeclaredField("pok");
     field.setAccessible(true);
-    // Change the base point
+    // Change the proof
     field.set(attestedCheque, newPok);
-    // Validation should fail
-    assertFalse(attestedCheque.checkValidity());
-    // Verification should not fail
-    assertTrue(newPok.verify());
-    assertTrue(attestedCheque.verify());
+    // Validation should still pass
+    assertTrue(attestedCheque.checkValidity());
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(newPok));
+    // Verification should fail since the proof is not for the same identity as the attestation and cheque
+    assertFalse(attestedCheque.verify());
   }
 
   @Test
@@ -196,12 +201,12 @@ public class TestRedeemCheque {
     assertTrue(newCheque.verify());
     Field field = attestedCheque.getClass().getDeclaredField("attestableObject");
     field.setAccessible(true);
-    // Set validity to the past
+    // Set cheque to the new cheque, with a different secret
     field.set(attestedCheque, newCheque);
-    // Validation should fail since the cheque construction is randomized
-    assertFalse(attestedCheque.checkValidity());
-    // Verification should not fail
-    assertTrue(attestedCheque.verify());
+    // Validation should still pass
+    assertTrue(attestedCheque.checkValidity());
+    // Verification should noq fail since the secret is not correct
+    assertFalse(attestedCheque.verify());
   }
 
   @Test
@@ -238,13 +243,6 @@ public class TestRedeemCheque {
     try {
       // Wrong sender secret
       AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret.add(BigInteger.ONE));
-      fail();
-    } catch (RuntimeException e) {
-      // Expected not to be able to construct a proof for a wrong secret
-    }
-    try {
-      // Correlated secrets
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret.add(BigInteger.ONE));
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret

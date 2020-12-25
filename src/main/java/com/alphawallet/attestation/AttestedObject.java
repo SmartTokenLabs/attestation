@@ -20,7 +20,6 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.math.ec.ECPoint;
 
 public class AttestedObject<T extends Attestable> implements ASNEncodable, Verifiable {
   private final T attestableObject;
@@ -39,7 +38,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     this.userPublicKey = userKeys.getPublic();
 
     try {
-      this.pok = makeProof(att, attestationSecret, chequeSecret);
+      this.pok = makeProof(attestationSecret, chequeSecret);
       ASN1EncodableVector vec = new ASN1EncodableVector();
       vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
@@ -159,23 +158,6 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       return false;
     }
 
-    // CHECK: verify the identity of the proof and the attestation matcher
-    ASN1Sequence extensions = att.getUnsignedAttestation().getExtensions();
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1OctetString identityEnc = ASN1OctetString
-        .getInstance(ASN1Sequence.getInstance(extensions.getObjectAt(0)).getObjectAt(2));
-    if (!Arrays.equals(identityEnc.getOctets(), pok.getBase().getEncoded(false))) {
-      System.err.println("Identity used in proof and attestation does not match");
-      return false;
-    }
-
-    // CHECK: verify that the riddle of the proof and cheque matches
-    byte[] decodedRiddle = AttestationCrypto.decodePoint(getAttestableObject().getRiddle()).getEncoded(false);
-    if (!Arrays.equals(decodedRiddle, getPok().getRiddle().getEncoded(false))) {
-      System.err.println("The riddle of the proof and cheque does not match");
-      return false;
-    }
-
     // CHECK: the Ethereum address on the attestation matches receivers signing key
     // TODO
     return true;
@@ -183,25 +165,25 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    return attestableObject.verify() && att.verify() && pok.verify() && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
-  }
-
-  private ProofOfExponent makeProof(SignedAttestation att, BigInteger attestationSecret, BigInteger chequeSecret) {
-    // TODO Bob should actually verify the cheque is valid before trying to cash it to avoid wasting gas
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-    ECPoint decodedRiddle = crypto.decodePoint(attestableObject.getRiddle());
-    BigInteger x = attestationSecret.modInverse(crypto.curveOrder).multiply(chequeSecret).mod(crypto.curveOrder);
     // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
     ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
     // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    ASN1OctetString identifierEnc = ASN1OctetString.getInstance(extensions.getObjectAt(2));
-    // It now holds that identifier.multiply(x) = riddle
-    ECPoint identifier = crypto.decodePoint(identifierEnc.getOctets());
-    ProofOfExponent ex = crypto.computeProof(identifier, decodedRiddle, x);
-    if (!ex.verify()) {
+    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(attCom, attestableObject.getRiddle(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
+  }
+
+  private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret) {
+    // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
+    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
+    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
+    ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
+    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
+    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+    ProofOfExponent pok = crypto.computeEqualityProof(attCom, attestableObject.getRiddle(), attestationSecret, objectSecret);
+    if (!crypto.verifyEqualityProof(attCom, attestableObject.getRiddle(), pok)) {
       throw new RuntimeException("The redeem proof did not verify");
     }
-    return ex;
+    return pok;
   }
 
   @Override

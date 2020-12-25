@@ -41,7 +41,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    setRiddle(AttestationCrypto.makeRiddle(identity, type, secret));
+    setRiddle(AttestationCrypto.makeCommitment(identity, type, secret));
   }
 
   /**

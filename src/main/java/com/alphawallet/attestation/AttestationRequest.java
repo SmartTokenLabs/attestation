@@ -4,7 +4,6 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -20,9 +19,8 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.bouncycastle.math.ec.ECPoint;
 
-public class AttestationRequest implements ASNEncodable, Validateable, Verifiable {
+public class AttestationRequest implements ASNEncodable, Verifiable {
   private final String identity;
   private final AttestationType type;
   private final ProofOfExponent pok;
@@ -108,21 +106,11 @@ public class AttestationRequest implements ASNEncodable, Validateable, Verifiabl
   }
 
   @Override
-  public boolean checkValidity() {
-    ECPoint rehashed = AttestationCrypto.hashIdentifier(type.ordinal(), identity);
-    if (!rehashed.normalize().equals(pok.getBase().normalize())) {
-      return false;
-    }
-
-    return true;
-  }
-
-  @Override
   public boolean verify() {
     if (!SignatureUtility.verify(getUnsignedEncoding(), signature, publicKey)) {
       return false;
     }
-    if (!AttestationCrypto.verifyProof(pok)) {
+    if (!AttestationCrypto.verifyAttestationRequestProof(pok)) {
       return false;
     }
 

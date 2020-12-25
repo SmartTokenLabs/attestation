@@ -230,7 +230,7 @@ public class Demo {
       String outputDirRequest, String outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(readFile(userKeyDir));
     BigInteger secret = crypto.makeSecret();
-    ProofOfExponent pok = crypto.constructProof(receiverId, type, secret);
+    ProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
 
     if (!writeFile(outputDirRequest, DERUtility.printDER(request.getDerEncoding(), "ATTESTATION REQUEST"))) {
@@ -249,17 +249,13 @@ public class Demo {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(readFile(attestorKeyDir));
     byte[] requestBytes = DERUtility.restoreBytes(readFile(requestDir));
     AttestationRequest request = new AttestationRequest(requestBytes);
-
-    if (!request.checkValidity()) {
-      System.err.println("Could not validate attestation signing request");
-      throw new RuntimeException("Validation failed");
-    }
+    // TODO here is where it should be verified the user actually controls the mail
     if (!request.verify()) {
       System.err.println("Could not verify attestation signing request");
       throw new RuntimeException("Validation failed");
     }
-    Attestation att = new IdentifierAttestation(
-        request.getPok().getRiddle().getEncoded(false), request.getPublicKey());
+    byte[] commitment = AttestationCrypto.makeRiddle(request.getIdentity(), request.getType(), request.getPok().getRiddle());
+    Attestation att = new IdentifierAttestation(commitment, request.getPublicKey());
     att.setIssuer("CN=" + issuerName);
     att.setSerialNumber(new Random().nextLong());
     Date now = new Date();

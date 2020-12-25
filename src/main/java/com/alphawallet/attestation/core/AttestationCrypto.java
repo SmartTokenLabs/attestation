@@ -38,6 +38,10 @@ public class AttestationCrypto {
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = new BigInteger("115792089237314936872688561244471742058035595988840268584488757999429535617037");
   public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, BigInteger.ONE);
+  // Generator for message part of Pedersen commitments generated deterministically from Keccak-384(0)
+  public static final ECPoint G = curve.createPoint(new BigInteger("107117162462518405594054452179342521900934247339149646635098717559356303162804"), new BigInteger("48922287802124225508546770126190235219758248156584634373442691370966053328834"));
+  // Generator for randomness part of Pedersen commitments generated deterministically from Keccak-384(1)
+  public static final ECPoint H = curve.createPoint(new BigInteger("3486933971771672336043645216833041976604663883834059486591714978148036260499"), new BigInteger("54980028253166993077947413318390695600575097237156546674866430732226521306158"));
   private final SecureRandom rand;
 
   public AttestationCrypto(SecureRandom rand) {
@@ -80,32 +84,104 @@ public class AttestationCrypto {
     return generator.generateKeyPair();
   }
 
+
   /**
-   * Constructs a riddle based on a secret and returns a proof of knowledge of this
+   * Construct a Pedersen commitment to an identifier using a specific secret.
+   * @param identity The common identifier
+   * @param type The type of identifier
+   * @param secret The secret randomness to be used in the commitment
+   * @return
    */
-  public ProofOfExponent constructProof(String identity, AttestationType type, BigInteger secret) {
-    ECPoint hashedIdentity = hashIdentifier(type.ordinal(), identity);
-    ECPoint identifier = hashedIdentity.multiply(secret);
-    return computeProof(hashedIdentity, identifier, secret);
+  public static byte[] makeCommitment(String identity, AttestationType type, BigInteger secret) {
+    BigInteger hashedIdentity = mapToInteger(type.ordinal(), identity);
+    // Construct Pedersen commitment
+    ECPoint commitment = G.multiply(hashedIdentity).add(H.multiply(secret));
+    return commitment.getEncoded(false);
   }
 
-  public static byte[] makeRiddle(String identity, AttestationType type, BigInteger secret) {
-    ECPoint hashedIdentity = hashIdentifier(type.ordinal(), identity);
-    ECPoint res = hashedIdentity.multiply(secret).normalize();
-    return res.getEncoded(false);
+  /**
+   * Constructs a commitment to an identity based on hidden randomization supplied from a user.
+   * This is used to construct an attestation.
+   * @param identity The user's identity.
+   * @param type The type of identity.
+   * @param hiding The hiding the user has picked
+   * @return
+   */
+  public static byte[] makeRiddle(String identity, AttestationType type, ECPoint hiding) {
+    BigInteger hashedIdentity = mapToInteger(type.ordinal(), identity);
+    // Construct Pedersen commitment
+    ECPoint commitment = G.multiply(hashedIdentity).add(hiding);
+    return commitment.getEncoded(false);
   }
 
-  public ProofOfExponent computeProof(ECPoint base, ECPoint riddle, BigInteger exponent) {
+  /**
+   * Computes a proof of knowledge of a random exponent
+   * This is used to convince the attestor that the user knows a secret which the attestor will
+   * then use to construct a Pedersen commitment to the user's identifier.
+   * @param randomness The randomness used in the commitment
+   * @return
+   */
+  public ProofOfExponent computeAttestationProof(BigInteger randomness) {
+    // Compute the random part of the commitment, i.e. H^randomness
+    ECPoint riddle = H.multiply(randomness);
     BigInteger r = makeSecret();
-    ECPoint t = base.multiply(r);
-    // TODO ideally Bob's ethreum address should also be part of the challenge
-    BigInteger c = mapToInteger(makeArray(Arrays.asList(base, riddle, t))).mod(curveOrder);
-    BigInteger d = r.add(c.multiply(exponent)).mod(curveOrder);
-    return new ProofOfExponent(base, riddle, t, d);
+    ECPoint t = H.multiply(r);
+    BigInteger c = mapToInteger(makeArray(Arrays.asList(G, H, riddle, t))).mod(curveOrder);
+    BigInteger d = r.add(c.multiply(randomness)).mod(curveOrder);
+    return new ProofOfExponent(H, riddle.normalize(), t.normalize(), d);
   }
 
-  public static boolean verifyProof(ProofOfExponent pok)  {
-    BigInteger c = mapToInteger(makeArray(Arrays.asList(pok.getBase(), pok.getRiddle(), pok.getPoint()))).mod(curveOrder);
+  /**
+   * Compute a proof that commitment1 and commitment2 are Pedersen commitments to the same message and that the user
+   * knows randomness1-randomness2.
+   * NOTE: We are actually not proving that the user knows the message and randomness1 and randomness2.
+   * This is because we assume the user has already proven knowledge of his message (mail) and the
+   * randomness1 used in the attestation to the attestor. Because of this assumption it is enough to prove
+   * knowledge of randomness2 (equivalent to proving knowledge of randomness1-randomness2) and that the
+   * commitments are to the same message.
+   * The reason we do this is that this weaker proof is significantly cheaper to execute on the blockchain.
+   *
+   * In conclusion what this method actually proves is knowledge that randomness1-randomness2 is the
+   * discrete log of commitment1/commitment2.
+   * I.e. that commitment1/commitment2 =H^(randomness1-randomness2)
+   * @param commitment1 First Pedersen commitment to some message m
+   * @param commitment2 Second Pedersen commitment to some message m
+   * @param randomness1 The randomness used in commitment1
+   * @param randomness2 The randomness used in commitment2
+   * @return
+   */
+  public ProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2) {
+    ECPoint comPoint1 = decodePoint(commitment1);
+    ECPoint comPoint2 = decodePoint(commitment2);
+    // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
+    ECPoint riddle = comPoint1.subtract(comPoint2);
+    BigInteger hiding = makeSecret();
+    ECPoint t = H.multiply(hiding);
+    // TODO ideally Bob's ethreum address should also be part of the challenge
+    BigInteger c = mapToInteger(makeArray(Arrays.asList(G, H, comPoint1, comPoint2, t))).mod(curveOrder);
+    BigInteger d = hiding.add(c.multiply(randomness1.subtract(randomness2))).mod(curveOrder);
+    return new ProofOfExponent(H, riddle.normalize(), t.normalize(), d);
+  }
+
+  public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
+    BigInteger c = mapToInteger(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint()))).mod(curveOrder);
+    return verifyPok(pok, c);
+  }
+
+  public static boolean verifyEqualityProof(byte[] commitment1, byte[] commitment2, ProofOfExponent pok)  {
+    ECPoint comPoint1 = decodePoint(commitment1);
+    ECPoint comPoint2 = decodePoint(commitment2);
+    // Compute the value the riddle should have
+    ECPoint riddle = comPoint1.subtract(comPoint2);
+    // Verify the proof matches the commitments
+    if (!riddle.equals(pok.getRiddle())) {
+      return false;
+    }
+    BigInteger c = mapToInteger(makeArray(Arrays.asList(G, H, comPoint1, comPoint2, pok.getPoint()))).mod(curveOrder);
+    return verifyPok(pok, c);
+  }
+
+  private static boolean verifyPok(ProofOfExponent pok, BigInteger c) {
     ECPoint lhs = pok.getBase().multiply(pok.getChallenge());
     ECPoint rhs = pok.getRiddle().multiply(c).add(pok.getPoint());
     return lhs.equals(rhs);
@@ -119,7 +195,7 @@ public class AttestationCrypto {
     try {
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
       for (ECPoint current : points) {
-        outputStream.write(current.getEncoded(false));
+        outputStream.write(current.normalize().getEncoded(false));
       }
       byte[] res = outputStream.toByteArray();
       outputStream.close();
@@ -129,14 +205,9 @@ public class AttestationCrypto {
     }
   }
 
-   public static ECPoint hashIdentifier(int type, String identifier) {
-    // TODO check that identifier is legal in other ways
-    BigInteger idenNum = mapToInteger(type, identifier.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
-    return computePoint(idenNum);
-  }
-
   private static BigInteger mapToInteger(byte[] value) {
     try {
+      // TODO change to double hash, notify oleg
       final MessageDigest digest = MessageDigest.getInstance("Keccak-384");
       BigInteger idenNum = new BigInteger( digest.digest(value));
       return idenNum.mod(fieldSize);
@@ -145,48 +216,12 @@ public class AttestationCrypto {
     }
   }
 
-  private static BigInteger mapToInteger(int type, byte[] identity) {
-    ByteBuffer buf = ByteBuffer.allocate(4 + identity.length);
+  public static BigInteger mapToInteger(int type, String identity) {
+    byte[] identityBytes = identity.trim().toLowerCase().getBytes(StandardCharsets.UTF_8);
+    ByteBuffer buf = ByteBuffer.allocate(4 + identityBytes.length);
     buf.putInt(type);
-    buf.put(identity);
+    buf.put(identityBytes);
     return mapToInteger(buf.array());
-  }
-
-  /**
-   * Compute a specific point on the curve (generator) based on x using the try-and-increment method
-   * https://eprint.iacr.org/2009/226.pdf
-   * @param x The x-coordinate for which we will compute y
-   * @return A corresponding y coordinate for x
-   */
-  private static ECPoint computePoint(BigInteger x) {
-    x = x.mod(fieldSize);
-    BigInteger ySquare, quadraticResidue;
-    ECPoint resPoint, referencePoint;
-    do {
-      do {
-        x = x.add(BigInteger.ONE).mod(fieldSize);
-        BigInteger a = curve.getA().toBigInteger();
-        BigInteger b = curve.getB().toBigInteger();
-        ySquare = x.modPow(new BigInteger("3"), fieldSize).add(a.multiply(x)).add(b).mod(fieldSize);
-        BigInteger quadraticResidueExp = fieldSize.subtract(BigInteger.ONE).shiftRight(1);
-        quadraticResidue = ySquare.modPow(quadraticResidueExp, fieldSize);
-      } while (!quadraticResidue.equals(BigInteger.ONE));
-      // We use the Lagrange trick to compute the squareroot (since fieldSize mod 4=3)
-      BigInteger magicExp = fieldSize.add(BigInteger.ONE).shiftRight(2); // fieldSize + 1 / 4
-      BigInteger y = ySquare.modPow(magicExp, fieldSize);
-      resPoint = curve.createPoint(x, y).normalize();
-      // Ensure that we have a consistent choice of which "sign" of y we use. We always use the smallest possible value of y
-      if (resPoint.getYCoord().toBigInteger().compareTo(fieldSize.shiftRight(1)) > 0) {
-        resPoint = resPoint.negate().normalize();
-      }
-      referencePoint = resPoint.multiply(curveOrder.subtract(BigInteger.ONE)).normalize();
-      if (referencePoint.getYCoord().toBigInteger().compareTo(fieldSize.shiftRight(1)) > 0) {
-        referencePoint = referencePoint.negate().normalize();
-      }
-      // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
-      // NOTE: this is ONLY needed if we DON'T use secp256k1, so currently it is superflous but we are keeping it this check is crucial for security on most other curves!
-    } while(!resPoint.equals(referencePoint) || resPoint.isInfinity());
-    return resPoint.normalize();
   }
 
   public static ECPoint decodePoint(byte[] point) {

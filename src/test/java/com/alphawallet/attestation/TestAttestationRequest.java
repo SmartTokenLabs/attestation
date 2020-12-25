@@ -32,11 +32,10 @@ public class TestAttestationRequest {
     String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
-    ProofOfExponent pok = crypto.constructProof(id, type, secret);
+    ProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
-    assertTrue(request.getPok().verify());
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(request.getPok()));
     assertTrue(request.verify());
-    assertTrue(request.checkValidity());
   }
 
   @Test
@@ -44,12 +43,11 @@ public class TestAttestationRequest {
     String id = "foo@bar.baz";
     AttestationType type = AttestationType.EMAIL;
     BigInteger secret = new BigInteger("42424242");
-    ProofOfExponent pok = crypto.constructProof(id, type, secret);
+    ProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     AttestationRequest newRequest = new AttestationRequest(request.getDerEncoding());
-    assertTrue(newRequest.getPok().verify());
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(newRequest.getPok()));
     assertTrue(newRequest.verify());
-    assertTrue(newRequest.checkValidity());
     assertArrayEquals(request.getPok().getDerEncoding(), newRequest.getPok().getDerEncoding());
     assertArrayEquals(request.getDerEncoding(), newRequest.getDerEncoding());
     assertArrayEquals(request.getSignature(), newRequest.getSignature());
@@ -64,42 +62,11 @@ public class TestAttestationRequest {
   }
 
   @Test
-  public void testNormalizingID() {
-    AttestationType type = AttestationType.EMAIL;
-    BigInteger secret = new BigInteger("154160516004573454304564685743521");
-    ProofOfExponent pok = crypto.constructProof("foo@bar.baz", type, secret);
-    AttestationRequest request = new AttestationRequest(" foO@BAr.baz     ", type, pok, subjectKeys);
-    // The IDs should be equivalent to avoid impersonation
-    assertTrue(request.verify());
-    assertTrue(request.checkValidity());
-  }
-
-  @Test
-  public void testBadID() {
-    AttestationType type = AttestationType.EMAIL;
-    BigInteger secret = new BigInteger("42424242");
-    ProofOfExponent pok = crypto.constructProof("foo@bar.baz", type, secret);
-    AttestationRequest request = new AttestationRequest("foo@bar.bazt", type, pok, subjectKeys);
-    assertTrue(request.verify()); // Signature and proof are ok by themselves
-    assertFalse(request.checkValidity()); // However, the proof is not done over the right id
-  }
-
-  @Test
-  public void testBadType() {
-    String id = "foo@bar.baz";
-    BigInteger secret = new BigInteger("42424242");
-    ProofOfExponent pok = crypto.constructProof(id, AttestationType.EMAIL, secret);
-    AttestationRequest request = new AttestationRequest(id, AttestationType.PHONE, pok, subjectKeys);
-    assertTrue(request.verify()); // Signature and proof are ok by themselves
-    assertFalse(request.checkValidity()); // However, the proof is not done over the right type
-  }
-
-  @Test
   public void testBadSig() {
     String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
-    ProofOfExponent pok = crypto.constructProof(id, type, secret);
+    ProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     // Modify a bit of the signature
     request.getSignature()[20] ^= 1;

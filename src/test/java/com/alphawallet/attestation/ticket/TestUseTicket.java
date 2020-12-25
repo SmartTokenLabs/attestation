@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.TestHelper;
@@ -23,6 +22,9 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -103,7 +105,10 @@ public class TestUseTicket {
         ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
-    assertTrue(newAttestedTicket.getPok().verify());
+    ASN1Sequence extensions = DERSequence
+        .getInstance(newAttestedTicket.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
+    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+    assertTrue(AttestationCrypto.verifyEqualityProof(attCom, newAttestedTicket.getAttestableObject().getRiddle(), newAttestedTicket.getPok()));
 
     assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
         newAttestedTicket.getAttestableObject().getDerEncoding());
@@ -169,18 +174,21 @@ public class TestUseTicket {
   @Test
   public void testNegativeWrongProofIdentity() throws Exception {
     AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-    // Add an extra "t" in the mail address
+    ASN1Sequence extensions = DERSequence.getInstance(attestedTicket.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
+    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+    // Wrong attestation secret
     ProofOfExponent newPok = crypto
-        .constructProof("testt@test.ts", AttestationType.EMAIL, new BigInteger("42424242"));
+        .computeEqualityProof(attCom, attestedTicket.getAttestableObject().getRiddle(), new BigInteger("42424242"), TICKET_SECRET);
     Field field = attestedTicket.getClass().getDeclaredField("pok");
     field.setAccessible(true);
-    // Change the base point
+    // Change the proof
     field.set(attestedTicket, newPok);
-    // Validation should fail
-    assertFalse(attestedTicket.checkValidity());
-    // Verification should not fail
-    assertTrue(newPok.verify());
-    assertTrue(attestedTicket.verify());
+    // Validation should still pass
+    assertTrue(attestedTicket.checkValidity());
+    // Verification of the proof itself should fail
+    assertFalse(AttestationCrypto.verifyAttestationRequestProof(newPok));
+    // Verification should fail of the attested ticket
+    assertFalse(attestedTicket.verify());
   }
 
   @Test
