@@ -58,7 +58,7 @@ public class TestUseTicket {
 
   @BeforeEach
   public void makeAttestedTicket() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET);
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, ticketIssuerKeys, TICKET_SECRET);
     attestedTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET);
@@ -200,7 +200,7 @@ public class TestUseTicket {
 
   @Test
   public void testNegativeConstruction() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET);
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     // Add an extra t in the mail
     Ticket ticket = new Ticket("testt@test.ts", TICKET_ID, TICKET_CLASS, CONFERENCE_ID, subjectKeys, TICKET_SECRET);
@@ -215,7 +215,7 @@ public class TestUseTicket {
 
   @Test
   public void testNegativeConstruction2() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET);
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, subjectKeys, TICKET_SECRET);
     try {

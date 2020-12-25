@@ -140,6 +140,7 @@ public class AttestationCrypto {
 
   private static BigInteger mapToInteger(byte[] value) {
     try {
+      // TODO this should be a higher bit keccak
       final MessageDigest digest = MessageDigest.getInstance("Keccak-256");
       BigInteger idenNum = new BigInteger( digest.digest(value));
       return idenNum.mod(fieldSize);
@@ -164,7 +165,6 @@ public class AttestationCrypto {
    * @return A corresponding y coordinate for x
    */
   private static ECPoint computePoint(ECCurve params, BigInteger p, BigInteger x) {
-
     x = x.mod(p);
     BigInteger y, expected, ySquare;
     ECPoint resPoint, referencePoint;

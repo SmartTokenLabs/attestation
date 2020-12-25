@@ -52,7 +52,7 @@ public class TestRedeemCheque {
   public void makeAttestedCheque() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret);
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
@@ -208,10 +208,10 @@ public class TestRedeemCheque {
   public void testNegativeConstruction() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret);
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "something@google.com");
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
-    // Add an extra t in the mail
-    Cheque cheque = new Cheque("testt@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
+    // Wrong mail
+    Cheque cheque = new Cheque("something@else.com", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
       AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
       fail();
@@ -224,9 +224,10 @@ public class TestRedeemCheque {
   public void testNegativeConstruction2() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret);
+    String mail = "something@google.com";
+    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, mail);
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
-    Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
+    Cheque cheque = new Cheque(mail, AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
       // Wrong subject secret
       AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret);
