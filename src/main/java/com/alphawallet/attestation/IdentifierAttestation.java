@@ -22,8 +22,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     EMAIL
   }
 
-  private final AttestationCrypto crypto;
-
   /**
    * Constructs a new identifier attestation based on a secret.
    * You still need to set the optional fields, that is
@@ -31,9 +29,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
-    this.crypto = new AttestationCrypto(new SecureRandom());
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + crypto.addressFromKey(key));
+    super.setSubject("CN=" + AttestationCrypto.addressFromKey(key));
     super.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -51,9 +48,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   public IdentifierAttestation(byte[] riddle, AsymmetricKeyParameter key)  {
     super();
-    this.crypto = new AttestationCrypto(new SecureRandom());
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + crypto.addressFromKey(key));
+    super.setSubject("CN=" + AttestationCrypto.addressFromKey(key));
     super.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -67,7 +63,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
     super(derEncoding);
-    this.crypto = new AttestationCrypto(new SecureRandom());
     if (!checkValidity()) {
       throw new IllegalArgumentException("The content is not valid for an identity attestation");
     }
@@ -99,7 +94,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     try {
       AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory
           .createKey(getSubjectPublicKeyInfo());
-      String parsedSubject = "CN=" + crypto.addressFromKey(parsedSubjectKey);
+      String parsedSubject = "CN=" + AttestationCrypto.addressFromKey(parsedSubjectKey);
       if (!parsedSubject.equals(getSubject())) {
         System.err.println("The subject public key does not match the Ethereum address attested to");
         return false;

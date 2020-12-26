@@ -57,11 +57,10 @@ public class Ticket implements Attestable {
    */
   public Ticket(String mail, int devconId, BigInteger ticketId, TicketClass ticketClass,
       AsymmetricCipherKeyPair keys, BigInteger secret ) {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
     this.devconId = devconId;
-    this.riddle = crypto.makeCommitment(mail, AttestationType.EMAIL, secret);
+    this.riddle = AttestationCrypto.makeCommitment(mail, AttestationType.EMAIL, secret);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
           keys.getPublic());

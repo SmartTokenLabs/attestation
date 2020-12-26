@@ -1,13 +1,15 @@
 package com.alphawallet.attestation.demo;
 
+import com.alphawallet.attestation.core.AttestationCrypto;
 import java.io.File;
+import java.security.SecureRandom;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class TestDemo {
   private static final String PREFIX = "build/test-results/";
   @BeforeEach
-  public void cleanup() {
+  public void cleanup() throws Exception {
     String[] files = new String[]{"sender-pub.pem", "sender-priv.pem", "receiver-pub.pem",
         "receiver-priv.pem", "attestor-pub.pem", "attestor-priv.pem", "cheque.pem",
         "cheque-secret.pem", "attestation-request.pem", "attestation-secret.pem", "attestation.pem"};
@@ -16,6 +18,10 @@ public class TestDemo {
       currentKey = new File(PREFIX+current);
       currentKey.delete();
     }
+    SecureRandom rand = SecureRandom.getInstance("SHA1PRNG");
+    rand.setSeed("seed".getBytes());
+    // Set the demo to use deterministic randomness
+    Demo.crypto = new AttestationCrypto(rand);
   }
 
   @Test

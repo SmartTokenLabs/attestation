@@ -10,6 +10,8 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.demo.SmartContract;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class TestPoK {
@@ -18,9 +20,19 @@ public class TestPoK {
   public static final BigInteger SECRET2 = new BigInteger("640848948534656666878789789789484891065000");
   public static final String ID = "test@test.ts";
 
+  private static AttestationCrypto crypto;
+  private static SecureRandom rand;
+
+  @BeforeAll
+  public static void setupKeys() throws Exception {
+    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand.setSeed("seed".getBytes());
+    crypto = new AttestationCrypto(rand);
+  }
+
+
   @Test
   public void TestSunshineAttestationProof() {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
     assertTrue(crypto.verifyAttestationRequestProof(pok));
     SmartContract sc = new SmartContract();
@@ -39,7 +51,6 @@ public class TestPoK {
 
   @Test
   public void TestNegativeAttestationProof() {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
     assertTrue(crypto.verifyAttestationRequestProof(pok));
     ProofOfExponent newPok;
@@ -55,8 +66,6 @@ public class TestPoK {
 
   @Test
   public void TestSunshineEqualityProof() {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-
     byte[] com1 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET1);
     byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
     ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
@@ -77,33 +86,29 @@ public class TestPoK {
 
   @Test
   public void TestNegativeEqualityProof() {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     byte[] com1 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET1);
     byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
     ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
     ProofOfExponent newPok;
     newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
     newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
     newPok = new ProofOfExponent(pok.getBase().multiply(new BigInteger("2")), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
     newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle().multiply(new BigInteger("2")), pok.getPoint(), pok.getChallenge());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
     newPok = new ProofOfExponent(AttestationCrypto.G, pok.getRiddle(), pok.getPoint(), pok.getChallenge());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
   }
 
 
   @Test
   public void TestContract()
   {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
-
-    SecureRandom rand = new SecureRandom();
     SmartContract sc = new SmartContract();
-
+    // TODO @James B this is where we need to use verifyEqualityProof and computeEqualityProof
     for (int i = 0; i < 30; i++)
     {
       byte[] bytes = new byte[32];
