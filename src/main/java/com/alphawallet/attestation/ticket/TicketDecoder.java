@@ -38,7 +38,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     if (ticketClass == null) {
       throw new IOException("Not valid ticket class");
     }
-    int conferenceId = (ASN1Integer.getInstance(ticket.getObjectAt(2))).getValue().intValueExact();
+    int devconId = (ASN1Integer.getInstance(ticket.getObjectAt(2))).getValue().intValueExact();
     byte[] riddle = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
 
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
@@ -50,6 +50,6 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
 
     // Verify signature
     byte[] signature = DERBitString.getInstance(asn1.getObjectAt(2)).getBytes();
-    return new Ticket(ticketId, ticketClass, conferenceId, riddle, signature, publicKey);
+    return new Ticket(devconId, ticketId, ticketClass, riddle, signature, publicKey);
   }
 }
