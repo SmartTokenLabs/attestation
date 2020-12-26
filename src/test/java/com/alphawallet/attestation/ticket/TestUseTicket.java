@@ -45,6 +45,7 @@ public class TestUseTicket {
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricCipherKeyPair ticketIssuerKeys;
   private static SecureRandom rand;
+  private static AttestationCrypto crypto;
   private AttestedObject<Ticket> attestedTicket;
 
   @BeforeAll
@@ -52,7 +53,7 @@ public class TestUseTicket {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    AttestationCrypto crypto = new AttestationCrypto(rand);
+    crypto = new AttestationCrypto(rand);
     subjectKeys = crypto.constructECKeys();
     attestorKeys = crypto.constructECKeys();
     ticketIssuerKeys = crypto.constructECKeys();
@@ -63,7 +64,7 @@ public class TestUseTicket {
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    attestedTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET);
+    attestedTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
     assertTrue(attestedTicket.verify());
     assertTrue(attestedTicket.checkValidity());
   }
@@ -173,7 +174,6 @@ public class TestUseTicket {
 
   @Test
   public void testNegativeWrongProofIdentity() throws Exception {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     ASN1Sequence extensions = DERSequence.getInstance(attestedTicket.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
     byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
     // Wrong attestation secret
@@ -214,7 +214,7 @@ public class TestUseTicket {
     Ticket ticket = new Ticket("testt@test.ts", CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     try {
       AttestedObject current = new AttestedObject(ticket, signed, subjectKeys, ATTESTATION_SECRET,
-          TICKET_SECRET);
+          TICKET_SECRET, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong email
@@ -229,7 +229,7 @@ public class TestUseTicket {
     try {
       // Wrong subject secret
       AttestedObject current = new AttestedObject(ticket, signed, subjectKeys,
-          TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET);
+          TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
@@ -237,7 +237,7 @@ public class TestUseTicket {
     try {
       // Wrong attestation secret
       AttestedObject current = new AttestedObject(ticket, signed, subjectKeys, TICKET_SECRET,
-          ATTESTATION_SECRET.add(BigInteger.ONE));
+          ATTESTATION_SECRET.add(BigInteger.ONE), crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
@@ -245,7 +245,7 @@ public class TestUseTicket {
     try {
       // Correlated secrets
       AttestedObject current = new AttestedObject(ticket, signed, subjectKeys,
-          TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET.add(BigInteger.ONE));
+          TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET.add(BigInteger.ONE), crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret

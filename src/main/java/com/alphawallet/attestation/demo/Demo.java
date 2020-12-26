@@ -35,6 +35,7 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Demo {
+  static AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
     CommandLine line;
@@ -46,7 +47,7 @@ public class Demo {
         throw e;
       }
       SecureRandom rand = new SecureRandom();
-      AttestationCrypto crypto = new AttestationCrypto(rand);
+      crypto = new AttestationCrypto(rand);
       List<String> arguments = line.getArgList();
       if (arguments.size() == 0) {
         System.err.println("First argument must be either \"keys\", \"create-cheque\", \"receive-cheque\", "
@@ -209,7 +210,7 @@ public class Demo {
       throw new RuntimeException("Verification failed");
     }
 
-    AttestedObject redeem = new AttestedObject(cheque, att, userKeys, attestationSecret, chequeSecret);
+    AttestedObject redeem = new AttestedObject(cheque, att, userKeys, attestationSecret, chequeSecret, crypto);
     if (!redeem.checkValidity()) {
       System.err.println("Could not validate redeem request");
       throw new RuntimeException("Validation failed");

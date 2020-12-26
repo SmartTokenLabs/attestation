@@ -38,6 +38,7 @@ public class TestRedeemCheque {
   private static AsymmetricCipherKeyPair issuerKeys;
   private static AsymmetricCipherKeyPair senderKeys;
   private static SecureRandom rand;
+  private static AttestationCrypto crypto;
   private AttestedObject<Cheque> attestedCheque;
 
   @BeforeAll
@@ -45,7 +46,7 @@ public class TestRedeemCheque {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    AttestationCrypto crypto = new AttestationCrypto(rand);
+    crypto = new AttestationCrypto(rand);
     subjectKeys = crypto.constructECKeys();
     issuerKeys = crypto.constructECKeys();
     senderKeys = crypto.constructECKeys();
@@ -58,7 +59,7 @@ public class TestRedeemCheque {
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
-    attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
+    attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret, crypto);
     assertTrue(attestedCheque.verify());
     assertTrue(attestedCheque.checkValidity());
   }
@@ -179,7 +180,6 @@ public class TestRedeemCheque {
 
   @Test
   public void testNegativeWrongProofIdentity() throws Exception {
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     // Add an extra "t" in the mail address
     ProofOfExponent newPok = crypto.computeAttestationProof( new BigInteger("42424242"));
     Field field = attestedCheque.getClass().getDeclaredField("pok");
@@ -218,7 +218,7 @@ public class TestRedeemCheque {
     // Wrong mail
     Cheque cheque = new Cheque("something@else.com", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong email
@@ -235,14 +235,14 @@ public class TestRedeemCheque {
     Cheque cheque = new Cheque(mail, AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
       // Wrong subject secret
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
     }
     try {
       // Wrong sender secret
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret.add(BigInteger.ONE));
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret.add(BigInteger.ONE), crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret

@@ -32,13 +32,15 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private final byte[] unsignedEncoding;
   private final byte[] encoding;
 
-  public AttestedObject(T attestableObject, SignedAttestation att, AsymmetricCipherKeyPair userKeys, BigInteger attestationSecret, BigInteger chequeSecret) {
+  public AttestedObject(T attestableObject, SignedAttestation att, AsymmetricCipherKeyPair userKeys,
+      BigInteger attestationSecret, BigInteger chequeSecret,
+      AttestationCrypto crypto) {
     this.attestableObject = attestableObject;
     this.att = att;
     this.userPublicKey = userKeys.getPublic();
 
     try {
-      this.pok = makeProof(attestationSecret, chequeSecret);
+      this.pok = makeProof(attestationSecret, chequeSecret, crypto);
       ASN1EncodableVector vec = new ASN1EncodableVector();
       vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
@@ -172,9 +174,8 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(attCom, attestableObject.getRiddle(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
   }
 
-  private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret) {
+  private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
-    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
     ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
     // Index in the second DER sequence is 2 since the third object in an extension is the actual value
