@@ -27,8 +27,9 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     ASN1InputStream input = new ASN1InputStream(encoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
     ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(0))).getValue();
-    int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(1)).getValue().intValueExact();
+    int devconId = (ASN1Integer.getInstance(ticket.getObjectAt(0))).getValue().intValueExact();
+    BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
+    int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
     TicketClass ticketClass = null;
     for (TicketClass current : TicketClass.values()) {
       if (current.getValue() == ticketClassInt) {
@@ -38,7 +39,6 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     if (ticketClass == null) {
       throw new IOException("Not valid ticket class");
     }
-    int devconId = (ASN1Integer.getInstance(ticket.getObjectAt(2))).getValue().intValueExact();
     byte[] riddle = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
 
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
