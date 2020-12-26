@@ -17,9 +17,9 @@
     <namedType name="Ticket">
         <type>
             <sequence>
+                <element name="devconId" type="asnx:INTEGER"/>
                 <element name="ticketId" type="asnx:INTEGER"/>
                 <element name="ticketClass" type="asnx:INTEGER"/>
-                <element name="conferenceId" type="asnx:INTEGER"/>
                 <element name="riddle" type="asnx:OCTET-STRING">
                     <annotation>The elliptic curve point that is the riddle</annotation>
                 </element>
