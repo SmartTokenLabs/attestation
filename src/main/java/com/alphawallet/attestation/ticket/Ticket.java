@@ -109,9 +109,9 @@ public class Ticket implements Attestable {
 
   private ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
+    ticket.add(new ASN1Integer(devconId));
     ticket.add(new ASN1Integer(ticketId));
     ticket.add(new ASN1Integer(ticketClass.getValue()));
-    ticket.add(new ASN1Integer(devconId));
     ticket.add(new DEROctetString(riddle));
     return new DERSequence(ticket);
   }
