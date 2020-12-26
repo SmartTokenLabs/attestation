@@ -38,10 +38,10 @@ public class AttestationCrypto {
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = new BigInteger("115792089237314936872688561244471742058035595988840268584488757999429535617037");
   public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, BigInteger.ONE);
-  // Generator for message part of Pedersen commitments generated deterministically from Keccak-384(0)
-  public static final ECPoint G = curve.createPoint(new BigInteger("107117162462518405594054452179342521900934247339149646635098717559356303162804"), new BigInteger("48922287802124225508546770126190235219758248156584634373442691370966053328834"));
-  // Generator for randomness part of Pedersen commitments generated deterministically from Keccak-384(1)
-  public static final ECPoint H = curve.createPoint(new BigInteger("3486933971771672336043645216833041976604663883834059486591714978148036260499"), new BigInteger("54980028253166993077947413318390695600575097237156546674866430732226521306158"));
+  // Generator for message part of Pedersen commitments generated deterministically from mapToInteger queried on 0 and mapped to the curve using try-and-increment
+  public static final ECPoint G = curve.createPoint(new BigInteger("20000156897076804373511442327333074562530252705735619022974068652767906975443"), new BigInteger("16135862203487767418272788596559070291202237796623574414172670126674549722701"));
+  // Generator for randomness part of Pedersen commitments generated deterministically from  mapToInteger queried on 1 to the curve using try-and-increment
+  public static final ECPoint H = curve.createPoint(new BigInteger("85797412565613170319266654805631801108755836445783043049717719714755607913068"), new BigInteger("55241105687255465486443020367129718693309139166156194387150856583227301086165"));
   private final SecureRandom rand;
 
   public AttestationCrypto(SecureRandom rand) {
@@ -107,7 +107,7 @@ public class AttestationCrypto {
    * @param hiding The hiding the user has picked
    * @return
    */
-  public static byte[] makeRiddle(String identity, AttestationType type, ECPoint hiding) {
+  public static byte[] makeCommitment(String identity, AttestationType type, ECPoint hiding) {
     BigInteger hashedIdentity = mapToInteger(type.ordinal(), identity);
     // Construct Pedersen commitment
     ECPoint commitment = G.multiply(hashedIdentity).add(hiding);
@@ -163,11 +163,24 @@ public class AttestationCrypto {
     return new ProofOfExponent(H, riddle.normalize(), t.normalize(), d);
   }
 
+  /**
+   * Verifies a zero knowledge proof of knowledge of a riddle used in an attestation request
+   * @param pok The proof to verify
+   * @return True if the proof is OK and false otherwise
+   */
   public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
     BigInteger c = mapToInteger(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint()))).mod(curveOrder);
     return verifyPok(pok, c);
   }
 
+  /**
+   * Verifies a zero knowledge proof of knowledge of the two riddles used in two different
+   * commitments to the same message.
+   * This is used by the smart contract to verify that a request is ok where one commitment is the
+   * riddle for a cheque/ticket and the other is the riddle from an attesation.
+   * @param pok The proof to verify
+   * @return True if the proof is OK and false otherwise
+   */
   public static boolean verifyEqualityProof(byte[] commitment1, byte[] commitment2, ProofOfExponent pok)  {
     ECPoint comPoint1 = decodePoint(commitment1);
     ECPoint comPoint2 = decodePoint(commitment2);
@@ -205,17 +218,39 @@ public class AttestationCrypto {
     }
   }
 
+  /**
+   * Map a byte array into a Big Integer using an double execution of Keccak 256.
+   * @param value
+   * @return
+   */
   private static BigInteger mapToInteger(byte[] value) {
     try {
-      // TODO change to double hash, notify oleg
-      final MessageDigest digest = MessageDigest.getInstance("Keccak-384");
-      BigInteger idenNum = new BigInteger( digest.digest(value));
-      return idenNum.mod(fieldSize);
+      MessageDigest KECCAK = new Keccak.Digest256();
+      KECCAK.reset();
+      KECCAK.update((byte) 0);
+      KECCAK.update(value);
+      byte[] hash0 = KECCAK.digest();
+      KECCAK.reset();
+      KECCAK.update((byte) 1);
+      KECCAK.update(value);
+      byte[] hash1 = KECCAK.digest();
+      byte[] res = new byte[32*2];
+      System.arraycopy(hash0, 0, res, 0, hash0.length);
+      System.arraycopy(hash1, 0, res, hash0.length, hash1.length);
+      // Note that we use double hashing to get a digest that is at least fieldSize or curve order
+      // + security parameter in length to avoid any potential bias
+      return new BigInteger(res);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
+  /**
+   *
+   * @param type
+   * @param identity
+   * @return
+   */
   public static BigInteger mapToInteger(int type, String identity) {
     byte[] identityBytes = identity.trim().toLowerCase().getBytes(StandardCharsets.UTF_8);
     ByteBuffer buf = ByteBuffer.allocate(4 + identityBytes.length);

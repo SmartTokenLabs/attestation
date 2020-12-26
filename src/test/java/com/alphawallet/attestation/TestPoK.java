@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.demo.SmartContract;
 import java.math.BigInteger;
@@ -12,6 +13,10 @@ import java.security.SecureRandom;
 import org.junit.jupiter.api.Test;
 
 public class TestPoK {
+
+  public static final BigInteger SECRET1 = new BigInteger("5848910840846872525745834000448648789786746461");
+  public static final BigInteger SECRET2 = new BigInteger("640848948534656666878789789789484891065000");
+  public static final String ID = "test@test.ts";
 
   @Test
   public void TestSunshineAttestationProof() {
@@ -48,6 +53,47 @@ public class TestPoK {
     assertFalse(crypto.verifyAttestationRequestProof(newPok));
   }
 
+  @Test
+  public void TestSunshineEqualityProof() {
+    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
+
+    byte[] com1 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET1);
+    byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
+    ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+    assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
+    SmartContract sc = new SmartContract();
+    sc.testEncoding(pok);
+    ProofOfExponent newPok = new ProofOfExponent(pok.getDerEncoding());
+    assertTrue(crypto.verifyEqualityProof(com1, com2, newPok));
+    assertEquals(pok.getBase(), newPok.getBase());
+    assertEquals(pok.getRiddle(), newPok.getRiddle());
+    assertEquals(pok.getPoint(), newPok.getPoint());
+    assertEquals(pok.getChallenge(), newPok.getChallenge());
+    assertArrayEquals(pok.getDerEncoding(), newPok.getDerEncoding());
+
+    ProofOfExponent newConstructor = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    assertArrayEquals(pok.getDerEncoding(), newConstructor.getDerEncoding());
+  }
+
+  @Test
+  public void TestNegativeEqualityProof() {
+    AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
+    byte[] com1 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET1);
+    byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
+    ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+    assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
+    ProofOfExponent newPok;
+    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge());
+    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    newPok = new ProofOfExponent(pok.getBase().multiply(new BigInteger("2")), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle().multiply(new BigInteger("2")), pok.getPoint(), pok.getChallenge());
+    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    newPok = new ProofOfExponent(AttestationCrypto.G, pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+  }
 
 
   @Test

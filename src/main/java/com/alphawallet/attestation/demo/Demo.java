@@ -254,7 +254,7 @@ public class Demo {
       System.err.println("Could not verify attestation signing request");
       throw new RuntimeException("Validation failed");
     }
-    byte[] commitment = AttestationCrypto.makeRiddle(request.getIdentity(), request.getType(), request.getPok().getRiddle());
+    byte[] commitment = AttestationCrypto.makeCommitment(request.getIdentity(), request.getType(), request.getPok().getRiddle());
     Attestation att = new IdentifierAttestation(commitment, request.getPublicKey());
     att.setIssuer("CN=" + issuerName);
     att.setSerialNumber(new Random().nextLong());
