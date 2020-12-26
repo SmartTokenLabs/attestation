@@ -38,7 +38,7 @@ public class Ticket implements Attestable {
 
   private final BigInteger ticketId;
   private TicketClass ticketClass = null;
-  private final int conferenceId;
+  private final int devconId;
   private final byte[] riddle;
   private final AlgorithmIdentifier algorithm;
   private final byte[] signature;
@@ -51,16 +51,16 @@ public class Ticket implements Attestable {
    * @param mail The mail address of the recipient
    * @param ticketId The Id of the ticket
    * @param ticketClass The type of this ticket
-   * @param conferenceId The id of the conference for which the ticket should be used
+   * @param devconId The id of the conference for which the ticket should be used
    * @param keys The keys used to sign the cheque
    * @param secret the secret that must be known to cash the cheque
    */
-  public Ticket(String mail, BigInteger ticketId, TicketClass ticketClass, int conferenceId,
+  public Ticket(String mail, int devconId, BigInteger ticketId, TicketClass ticketClass,
       AsymmetricCipherKeyPair keys, BigInteger secret ) {
     AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
-    this.conferenceId = conferenceId;
+    this.devconId = devconId;
     this.riddle = crypto.makeRiddle(mail, AttestationType.EMAIL, secret);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
@@ -82,10 +82,10 @@ public class Ticket implements Attestable {
     }
   }
 
-  public Ticket(BigInteger ticketId, TicketClass ticketClass, int conferenceId, byte[] riddle, byte[] signature, AsymmetricKeyParameter publicKey) {
+  public Ticket(int devconId, BigInteger ticketId, TicketClass ticketClass, byte[] riddle, byte[] signature, AsymmetricKeyParameter publicKey) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
-    this.conferenceId = conferenceId;
+    this.devconId = devconId;
     this.riddle = riddle;
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
@@ -109,9 +109,9 @@ public class Ticket implements Attestable {
 
   private ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
+    ticket.add(new ASN1Integer(devconId));
     ticket.add(new ASN1Integer(ticketId));
     ticket.add(new ASN1Integer(ticketClass.getValue()));
-    ticket.add(new ASN1Integer(conferenceId));
     ticket.add(new DEROctetString(riddle));
     return new DERSequence(ticket);
   }
@@ -154,8 +154,8 @@ public class Ticket implements Attestable {
     return ticketClass;
   }
 
-  public int getConferenceId() {
-    return conferenceId;
+  public int getDevconId() {
+    return devconId;
   }
 
   public byte[] getRiddle() {

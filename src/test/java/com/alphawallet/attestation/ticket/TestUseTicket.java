@@ -60,7 +60,7 @@ public class TestUseTicket {
   public void makeAttestedTicket() {
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
-    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, ticketIssuerKeys, TICKET_SECRET);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     attestedTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET);
     assertTrue(attestedTicket.verify());
     assertTrue(attestedTicket.checkValidity());
@@ -185,7 +185,7 @@ public class TestUseTicket {
 
   @Test
   public void testNegativeWrongRiddle() throws Exception {
-    Ticket newTicket  = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, subjectKeys, TICKET_SECRET);
+    Ticket newTicket  = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     assertTrue(newTicket.checkValidity());
     assertTrue(newTicket.verify());
     Field field = attestedTicket.getClass().getDeclaredField("attestableObject");
@@ -203,7 +203,7 @@ public class TestUseTicket {
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     // Add an extra t in the mail
-    Ticket ticket = new Ticket("testt@test.ts", TICKET_ID, TICKET_CLASS, CONFERENCE_ID, subjectKeys, TICKET_SECRET);
+    Ticket ticket = new Ticket("testt@test.ts", CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     try {
       AttestedObject current = new AttestedObject(ticket, signed, subjectKeys, ATTESTATION_SECRET,
           TICKET_SECRET);
@@ -217,7 +217,7 @@ public class TestUseTicket {
   public void testNegativeConstruction2() {
     Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
-    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, subjectKeys, TICKET_SECRET);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     try {
       // Wrong subject secret
       AttestedObject current = new AttestedObject(ticket, signed, subjectKeys,

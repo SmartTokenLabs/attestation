@@ -71,7 +71,7 @@ public class TestURL {
     BigInteger ticketID = new BigInteger("417541561854");
     TicketClass ticketClass = TicketClass.REGULAR;
     BigInteger senderSecret = new BigInteger("45845870684");
-    Ticket ticket = new Ticket("mah@mah.com", ticketID, ticketClass, 6, senderKeys, senderSecret);
+    Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
 
     byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()).getPublicKeyData().getEncoded();
     String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
@@ -83,7 +83,7 @@ public class TestURL {
     assertArrayEquals(ticket.getDerEncoding(), newTicket.getDerEncoding());
 
     AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreKey(decoded.get(1));
-    Ticket otherConstructorTicket = new Ticket(newTicket.getTicketId(), newTicket.getTicketClass(), newTicket.getConferenceId(),
+    Ticket otherConstructorTicket = new Ticket(newTicket.getDevconId(), newTicket.getTicketId(), newTicket.getTicketClass(),
         newTicket.getRiddle(), newTicket.getSignature(), newIssuerPublicKey);
     assertArrayEquals(ticket.getDerEncoding(), otherConstructorTicket.getDerEncoding());
   }
@@ -93,7 +93,7 @@ public class TestURL {
     BigInteger ticketID = new BigInteger("14840860468475837258758376");
     TicketClass ticketClass = TicketClass.VIP;
     BigInteger senderSecret = new BigInteger("186416");
-    Ticket ticket = new Ticket("ticket@test.ts", ticketID, ticketClass, 6, senderKeys, senderSecret);
+    Ticket ticket = new Ticket("ticket@test.ts", 6, ticketID, ticketClass, senderKeys, senderSecret);
     String url = URLUtility.encodeData(ticket.getDerEncoding());
     Ticket newTicket =  (new TicketDecoder(senderKeys.getPublic())).decode(URLUtility.decodeData(url));
     String newUrl = URLUtility.encodeData(newTicket.getDerEncoding());

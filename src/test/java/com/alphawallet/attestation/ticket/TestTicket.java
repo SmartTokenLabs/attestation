@@ -39,17 +39,17 @@ public class TestTicket {
 
   @Test
   public void testFullDecoding() throws Exception {
-    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncoding();
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
     assertArrayEquals(encoded, newTicket.getDerEncoding());
 
-    Ticket otherConstructor = new Ticket(newTicket.getTicketId(), newTicket.getTicketClass(), newTicket.getConferenceId(),
+    Ticket otherConstructor = new Ticket(newTicket.getDevconId(), newTicket.getTicketId(), newTicket.getTicketClass(),
         newTicket.getRiddle(), newTicket.getSignature(), newTicket.getPublicKey());
     assertEquals(ticket.getTicketId(), otherConstructor.getTicketId());
     assertEquals(ticket.getTicketClass(), otherConstructor.getTicketClass());
-    assertEquals(ticket.getConferenceId(), otherConstructor.getConferenceId());
+    assertEquals(ticket.getDevconId(), otherConstructor.getDevconId());
     assertEquals(ticket.getAlgorithm(), otherConstructor.getAlgorithm());
     assertArrayEquals(ticket.getRiddle(), otherConstructor.getRiddle());
     assertArrayEquals(ticket.getSignature(), otherConstructor.getSignature());
@@ -63,7 +63,7 @@ public class TestTicket {
 
   @Test
   public void testIllegalKeys() throws Exception {
-    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     Field field = ticket.getClass().getDeclaredField("signature");
     field.setAccessible(true);
     // Change a bit in the signature
@@ -71,8 +71,8 @@ public class TestTicket {
     assertFalse(ticket.verify());
     // Check we cannot make a new ticket with invalid signature
     try {
-      Ticket newTicket = new Ticket(ticket.getTicketId(), ticket.getTicketClass(),
-          ticket.getConferenceId(), ticket.getRiddle(), ticket.getSignature(),
+      Ticket newTicket = new Ticket(ticket.getDevconId(), ticket.getTicketId(), ticket.getTicketClass(),
+          ticket.getRiddle(), ticket.getSignature(),
           senderKeys.getPublic());
       fail();
     } catch (IllegalArgumentException e) {
@@ -82,7 +82,7 @@ public class TestTicket {
 
   @Test
   public void testWrongKey() throws Exception {
-    Ticket ticket = new Ticket(MAIL, TICKET_ID, TICKET_CLASS, CONFERENCE_ID, senderKeys, SECRET);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoding = ticket.getDerEncoding();
     try {
       Ticket otherTicket = (new TicketDecoder(otherKeys.getPublic())).decode(encoding);

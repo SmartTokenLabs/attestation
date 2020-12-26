@@ -14,9 +14,9 @@ SignedTicket ::= SEQUENCE {
 
 
 Ticket ::= SEQUENCE {
+    devonId     INTEGER,
     ticketId         INTEGER,
     ticketClass      INTEGER,
-    conferenceId     INTEGER,
 --  (currently not specified)      --
 --  co2_token         OCTET STRING --
     riddle         OCTET STRING
