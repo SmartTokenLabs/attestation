@@ -212,7 +212,6 @@ public class TestCrypto {
     assertFalse(value.equals(AttestationCrypto.fieldSize));
     assertFalse(value.equals(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)));
     assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
-    assertTrue(value.compareTo(AttestationCrypto.curveOrder) < 0 );
 
     // Check consistency
     BigInteger value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID);
