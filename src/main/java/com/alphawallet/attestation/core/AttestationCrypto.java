@@ -34,14 +34,14 @@ public class AttestationCrypto {
   public static final String OID_SIGNATURE_ALG = "1.2.840.10045.2.1"; // OID for elliptic curve crypto
   public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(AttestationCrypto.ECDSA_CURVE);
   public static final ECDomainParameters ECDSAdomain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
-  public static final BigInteger fieldSize = new BigInteger("115792089237314936872688561244471742058375878355761205198700409522629664518163");
+  public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
-  public static final BigInteger curveOrder = new BigInteger("115792089237314936872688561244471742058035595988840268584488757999429535617037");
+  public static final BigInteger curveOrder = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
   public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, BigInteger.ONE);
   // Generator for message part of Pedersen commitments generated deterministically from mapToInteger queried on 0 and mapped to the curve using try-and-increment
-  public static final ECPoint G = curve.createPoint(new BigInteger("20000156897076804373511442327333074562530252705735619022974068652767906975443"), new BigInteger("16135862203487767418272788596559070291202237796623574414172670126674549722701"));
+  public static final ECPoint G = curve.createPoint(new BigInteger("12022136709705892117842496518378933837282529509560188557390124672992517127582"), new BigInteger("6765325636686621066142015726326349598074684595222800743368698766652936798612"));
   // Generator for randomness part of Pedersen commitments generated deterministically from  mapToInteger queried on 1 to the curve using try-and-increment
-  public static final ECPoint H = curve.createPoint(new BigInteger("85797412565613170319266654805631801108755836445783043049717719714755607913068"), new BigInteger("55241105687255465486443020367129718693309139166156194387150856583227301086165"));
+  public static final ECPoint H = curve.createPoint(new BigInteger("12263903704889727924109846582336855803381529831687633314439453294155493615168"), new BigInteger("1637819407897162978922461013726819811885734067940976901570219278871042378189"));
   private final SecureRandom rand;
 
   public AttestationCrypto(SecureRandom rand) {
