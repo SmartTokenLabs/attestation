@@ -15,13 +15,13 @@ function ticket(parameters = {}) {
     name: names.blockName || "ticket",
     value: [
       new Integer({
+        name: names.devconId || "ticket.devconId",
+      }),
+      new Integer({
         name: names.ticketId || "ticket.ticketId",
       }),
       new Integer({
         name: names.ticketClass || "ticket.ticketClass",
-      }),
-      new Integer({
-        name: names.conferenceId || "ticket.conferenceId",
       }),
       new OctetString({
         name: names.riddle || "ticket.riddle",
@@ -38,6 +38,11 @@ export default class SignedTicket {
    * @param {Object} [parameters.schema] asn1js parsed value to initialize the class from
    */
   constructor(parameters = {}) {
+    this.devconId = getParametersValue(
+      parameters,
+      "devconId",
+      SignedTicket.defaultValues("devconId")
+    );
     this.ticketId = getParametersValue(
       parameters,
       "ticketId",
@@ -47,11 +52,6 @@ export default class SignedTicket {
       parameters,
       "ticketClass",
       SignedTicket.defaultValues("ticketClass")
-    );
-    this.conferenceId = getParametersValue(
-      parameters,
-      "conferenceId",
-      SignedTicket.defaultValues("conferenceId")
     );
 	this.riddle = getParametersValue(
       parameters,
@@ -70,15 +70,15 @@ export default class SignedTicket {
    */
   static defaultValues(memberName) {
     switch (memberName) {
+      case "devconId":
+        return 1;
       case "ticket":
         return 1;
       case "ticketId":
         return 1;
       case "ticketClass":
         return 1;
-      case "conferenceId":
-        return 1;
-	  case "riddle":
+      case "riddle":
         return 1;	
       case "signatureAlgorithm":
         return new AlgorithmIdentifier();
@@ -139,9 +139,9 @@ export default class SignedTicket {
     //region Clear input data first
     clearProps(schema, [
       //   "ticket",
+      "ticket.devconId",
       "ticket.ticketId",
       "ticket.ticketClass",
-      "ticket.conferenceId",
       "ticket.riddle",
       "signatureAlgorithm",
       "signatureValue",
@@ -160,6 +160,9 @@ export default class SignedTicket {
     // noinspection JSUnresolvedVariable
     this.ticket = asn1.result.ticket.valueBeforeDecode;
 
+    if ("ticket.devconId" in asn1.result)
+		this.devconId = asn1.result["ticket.devconId"].valueBlock.valueDec;
+
     if ("ticket.ticketId" in asn1.result) {
       const hex = bufferToHexCodes(
         asn1.result["ticket.ticketId"].valueBlock._valueHex
@@ -171,9 +174,6 @@ export default class SignedTicket {
 
     if ("ticket.ticketClass" in asn1.result)
       this.ticketClass = asn1.result["ticket.ticketClass"].valueBlock.valueDec;
-
-    if ("ticket.conferenceId" in asn1.result)
-		this.conferenceId = asn1.result["ticket.conferenceId"].valueBlock.valueDec;
 
     if ("ticket.riddle" in asn1.result){
 		const hex = bufferToHexCodes(
