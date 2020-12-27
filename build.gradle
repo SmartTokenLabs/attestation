@@ -115,7 +115,7 @@ task packageAttestation(type: Jar) {
 task testJavaScript(type: NodeTask) {
     dependsOn 'test'
     dependsOn 'npmInstall'
-    script = file('src/main/javascript/SignedDevonTicketTest.js')
+    script = file('src/main/javascript/ParserSerializerTest.js')
 }
 
 build.dependsOn packageAttestation
