@@ -8,6 +8,14 @@ In short, an attestation can be likened to a token created off-chain and
 usable on-chain. An example of an attestation would be a Devcon ticket.
 See document here: http://tokenscript.org/Attestation.html
 
+## Build
+
+The version of Gradle developers use is version 6.7. Once you have gradle installed, run:
+
+$ gradle build
+
+The build script will run a few tests, resulting a few pem files created in `build/test-results/` directory.
+
 ## Try it yourself
 
 This is a walk-through to use the functionalities provided by this library through commandline: [commandline demonstration](cli-demo.md)
