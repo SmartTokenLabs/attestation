@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<asnx:module name="UseTicket" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
-    <import name="SignedTicket"
-         schemaLocation="SignedTicket.asd"/>
+<asnx:module name="UseDevconTicket" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
+    <import name="SignedDevconTicket"
+         schemaLocation="SignedDevconTicket.asd"/>
     <import name="MyAttestation"
          schemaLocation="AttestationFramework.asd"/>
-    <namedType name="UseTicket">
+    <namedType name="UseDevconTicket">
         <type>
             <sequence>
-                <element name="signedTicket" type="SignedTicket">
+                <element name="signedDevconTicket" type="SignedDevconTicket">
                     <annotation>The actual, signed, ticket object</annotation>
                 </element>
                 <element name="attestation" type="MyAttestation">

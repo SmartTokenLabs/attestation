@@ -1,4 +1,4 @@
-UseTicket
+UseDevconTicket
 
 DEFINITIONS ::=
 BEGIN
@@ -6,11 +6,11 @@ BEGIN
 IMPORTS
     MyAttestation
         FROM AttestationFramework
-    SignedTicket
-        FROM SignedTicket;
+    SignedDevconTicket
+        FROM SignedDevconTicket;
 
-UseTicket ::= SEQUENCE {
-    signedTicket         SignedTicket,
+UseDevconTicket ::= SEQUENCE {
+    signedDevconTicket         SignedDevconTicket,
     attestation          MyAttestation,
     proof                Proof,
     signatureValue       BIT STRING

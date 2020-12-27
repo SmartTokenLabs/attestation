@@ -1,4 +1,4 @@
-SignedTicket
+SignedDevconTicket
 
 DEFINITIONS ::=
 BEGIN
@@ -6,14 +6,14 @@ BEGIN
 IMPORTS
 AlgorithmIdentifier FROM AuthenticationFramework;
 
-SignedTicket ::= SEQUENCE {
-    ticket               Ticket,
+SignedDevconTicket ::= SEQUENCE {
+    ticket               DevconTicket,
     signatureAlgorithm   AlgorithmIdentifier,
     signatureValue       BIT STRING
 }
 
 
-Ticket ::= SEQUENCE {
+DevconTicket ::= SEQUENCE {
     devonId     INTEGER,
     ticketId         INTEGER,
     ticketClass      INTEGER,
