@@ -103,33 +103,4 @@ public class ProofOfKnowledgeTest {
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
   }
 
-
-  @Test
-  public void TestContract()
-  {
-    SmartContract sc = new SmartContract();
-    // TODO @James B this is where we need to use verifyEqualityProof and computeEqualityProof
-    for (int i = 0; i < 30; i++)
-    {
-      byte[] bytes = new byte[32];
-      rand.nextBytes(bytes);
-      BigInteger rVal = new BigInteger(bytes);
-      ProofOfExponent pok = crypto.computeAttestationProof(rVal);
-      assertTrue(crypto.verifyAttestationRequestProof(pok));
-      assertTrue(sc.testEncoding(pok));
-    }
-
-    //now check fail
-    for (int i = 0; i < 5; i++)
-    {
-      byte[] bytes = new byte[32];
-      rand.nextBytes(bytes);
-      BigInteger rVal = new BigInteger(bytes);
-      ProofOfExponent pok = crypto.computeAttestationProof( rVal);
-      assertTrue(crypto.verifyAttestationRequestProof(pok));
-      ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-      assertFalse(sc.testEncoding(newPok));
-    }
-  }
-
 }
