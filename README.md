@@ -1,6 +1,6 @@
 # TokenScript - Attestation
 
-This repository host the attestation stream of work under TokenScript. Discussion goes to the forum https://community.tokenscript.org/
+This repository host the attestation libraries TokenScript. Discussion goes to the forum https://community.tokenscript.org/
 
 ## What is attestation
 
@@ -8,15 +8,19 @@ In short, an attestation can be likened to a token created off-chain and
 usable on-chain. An example of an attestation would be a Devcon ticket.
 See document here: http://tokenscript.org/Attestation.html
 
-## In this Repo
+## Try it yourself
+
+This is a walk-through to use the functionalities provided by this library through commandline: [commandline demonstration](cli-demo.md)
+
+## Organisation of this repo
 
 This repository has the following content:
 
-paper
-: the paper behind the design of this project. The current version there is dated (2018) and doesn't reflect the new work in the last a few years. The current focus is the [cheque/attestation protocol](http://tokenscript.org/Cheque/send_token_by_identifier.html)
+data-modules
+:the data modules definitions used in this project
 
 src
-:the implementation of the attestation and protocols. We use a Java-Solidity model for quick prototyping - testing
+:the implementation of the attestation and protocols. We use a Java-Solidity model for quick prototyping - testing.
 
 ethereum/lib
 : lib for smart contracts which uses attestations
@@ -32,6 +36,9 @@ ethereum/experiments
 
 ethereum/example-james-squire
 : an example to be used in your projects which requires attestations
+
+paper
+: the paper behind the design of this project. The current version there is dated (2018) and doesn't reflect the new work in the last a few years. The current focus is the [cheque/attestation protocol](http://tokenscript.org/Cheque/send_token_by_identifier.html)
 
 
 # ERC publications
