@@ -11,7 +11,7 @@ import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
-import com.alphawallet.attestation.TestHelper;
+import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import java.io.IOException;
@@ -56,7 +56,7 @@ public class TestRedeemCheque {
   public void makeAttestedCheque() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret, crypto);
@@ -213,7 +213,7 @@ public class TestRedeemCheque {
   public void testNegativeConstruction() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "something@google.com");
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "something@google.com");
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     // Wrong mail
     Cheque cheque = new Cheque("something@else.com", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
@@ -230,7 +230,7 @@ public class TestRedeemCheque {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
     String mail = "something@google.com";
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, mail);
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, mail);
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     Cheque cheque = new Cheque(mail, AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {

@@ -14,7 +14,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestPoK {
+public class ProofOfKnowledgeTest {
 
   public static final BigInteger SECRET1 = new BigInteger("5848910840846872525745834000448648789786746461");
   public static final BigInteger SECRET2 = new BigInteger("640848948534656666878789789789484891065000");
