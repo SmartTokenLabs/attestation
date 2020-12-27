@@ -8,8 +8,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
+
+import java.io.File;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.security.SecureRandom;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -28,6 +31,8 @@ public class TestTicket {
   private static AsymmetricCipherKeyPair otherKeys;
   private static SecureRandom rand;
 
+  private static final String PREFIX = "build/test-results/";
+
   @BeforeAll
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
@@ -41,6 +46,9 @@ public class TestTicket {
   public void testFullDecoding() throws Exception {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncoding();
+    // write the ticket data
+    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
+
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
     assertArrayEquals(encoded, newTicket.getDerEncoding());
