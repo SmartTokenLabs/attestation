@@ -14,7 +14,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestPoK {
+public class ProofOfKnowledgeTest {
 
   public static final BigInteger SECRET1 = new BigInteger("5848910840846872525745834000448648789786746461");
   public static final BigInteger SECRET2 = new BigInteger("640848948534656666878789789789484891065000");
@@ -101,35 +101,6 @@ public class TestPoK {
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
     newPok = new ProofOfExponent(AttestationCrypto.G, pok.getRiddle(), pok.getPoint(), pok.getChallenge());
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
-  }
-
-
-  @Test
-  public void TestContract()
-  {
-    SmartContract sc = new SmartContract();
-    // TODO @James B this is where we need to use verifyEqualityProof and computeEqualityProof
-    for (int i = 0; i < 30; i++)
-    {
-      byte[] bytes = new byte[32];
-      rand.nextBytes(bytes);
-      BigInteger rVal = new BigInteger(bytes);
-      ProofOfExponent pok = crypto.computeAttestationProof(rVal);
-      assertTrue(crypto.verifyAttestationRequestProof(pok));
-      assertTrue(sc.testEncoding(pok));
-    }
-
-    //now check fail
-    for (int i = 0; i < 5; i++)
-    {
-      byte[] bytes = new byte[32];
-      rand.nextBytes(bytes);
-      BigInteger rVal = new BigInteger(bytes);
-      ProofOfExponent pok = crypto.computeAttestationProof( rVal);
-      assertTrue(crypto.verifyAttestationRequestProof(pok));
-      ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-      assertFalse(sc.testEncoding(newPok));
-    }
   }
 
 }

@@ -17,6 +17,11 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    intTestImplementation.extendsFrom implementation
+    intTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 dependencies {
     implementation 'org.apache.logging.log4j:log4j-api:2.13.0'
     implementation 'org.apache.logging.log4j:log4j-core:2.13.0'
@@ -28,7 +33,9 @@ dependencies {
     implementation('com.amazonaws:aws-lambda-java-events:2.2.6')
     implementation 'org.json:json:20200518'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    intTestImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     implementation 'org.web3j:core:4.6.0'
     implementation group: 'com.github.cliftonlabs', name: 'json-simple', version: '3.1.0'
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
@@ -50,10 +57,22 @@ sourceSets {
             exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
         }
     }
+    intTest {
+        java {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+	}
+    }
 }
 
 test {
     useJUnitPlatform()
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.intTest.output.classesDirs
+    classpath = sourceSets.intTest.runtimeClasspath
 }
 
 shadowJar {

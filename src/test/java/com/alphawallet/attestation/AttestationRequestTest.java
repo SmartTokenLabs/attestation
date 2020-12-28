@@ -14,7 +14,7 @@ import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestAttestationRequest {
+public class AttestationRequestTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AttestationCrypto crypto;
 

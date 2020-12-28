@@ -18,7 +18,7 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TestCrypto {
+public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
   private AsymmetricCipherKeyPair issuerKeys;
   private AsymmetricCipherKeyPair senderKeys;
