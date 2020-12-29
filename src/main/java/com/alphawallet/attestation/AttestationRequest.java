@@ -38,7 +38,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
       this.signature = SignatureUtility.signDeterministic(getUnsignedEncoding(), keys.getPrivate());
 
       if (!verify()) {
-        throw new IllegalArgumentException("The signature is not valid");
+        throw new IllegalArgumentException("The signature or proof is not valid");
       }
     } catch (IOException e) {
       throw new IllegalArgumentException("Could not decode public key from attestation");

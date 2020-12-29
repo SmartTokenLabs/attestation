@@ -14,6 +14,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.math.ec.ECFieldElement;
+import org.bouncycastle.math.ec.ECFieldElement.Fp;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -280,10 +282,16 @@ public class CryptoTest {
     BigInteger gVal = (BigInteger) mapToInteger.invoke(crypto, input);
     ECPoint g = computePoint(gVal);
     assertEquals(AttestationCrypto.G, g);
+    // Check order
+    assertTrue(g.multiply(AttestationCrypto.curveOrder).isInfinity());
+    assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), g.normalize().getXCoord().getEncoded());
     input[0] = 1;
     BigInteger hVal = (BigInteger) mapToInteger.invoke(crypto, input);
     ECPoint h = computePoint(hVal);
     assertEquals(AttestationCrypto.H, h);
+    // Check order
+    assertTrue(h.multiply(AttestationCrypto.curveOrder).isInfinity());
+    assertArrayEquals(h.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), h.normalize().getXCoord().getEncoded());
   }
 
   /**
@@ -320,6 +328,22 @@ public class CryptoTest {
       // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
       // NOTE: this is ONLY needed if we DON'T use secp256k1, so currently it is superflous but we are keeping it this check is crucial for security on most other curves!
     } while(!resPoint.equals(referencePoint) || resPoint.isInfinity());
-    return resPoint.normalize();
+    // Multiply with co-factor to ensure correct subgroup
+    return resPoint.multiply(AttestationCrypto.cofactor).normalize();
+  }
+
+  @Test
+  public void jamesTest() {
+    ECPoint point = AttestationCrypto.curve.createPoint(new BigInteger("12263903704889727924109846582336855803381529831687633314439453294155493615168"), new BigInteger("1637819407897162978922461013726819811885734067940976901570219278871042378189"));
+    BigInteger c = new BigInteger("4969039766099676828582209836509796032289635635464255431890251909670512734885");
+    ECPoint lhs = point.multiply(c);
+    System.out.println(lhs.getXCoord().toBigInteger());
+    ECPoint lhsn = point.multiply(c).normalize();
+    System.out.println(lhsn.getXCoord().toBigInteger());
+    ECPoint lhsneg = point.multiply(c).negate();
+    System.out.println(lhsneg.getXCoord().toBigInteger());
+    ECPoint lhsnegn = point.multiply(c).negate().normalize();
+    System.out.println(lhsnegn.getXCoord().toBigInteger());
+    boolean a = false;
   }
 }
