@@ -14,7 +14,7 @@ SignedDevconTicket ::= SEQUENCE {
 
 
 DevconTicket ::= SEQUENCE {
-    devonId     INTEGER,
+    devconId     INTEGER,
     ticketId         INTEGER,
     ticketClass      INTEGER,
 --  (currently not specified)      --
