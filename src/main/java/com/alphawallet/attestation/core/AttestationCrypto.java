@@ -37,7 +37,8 @@ public class AttestationCrypto {
   public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
-  public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, BigInteger.ONE);
+  public static final BigInteger cofactor = new BigInteger("1");
+  public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, cofactor);
   // Generator for message part of Pedersen commitments generated deterministically from mapToInteger queried on 0 and mapped to the curve using try-and-increment
   public static final ECPoint G = curve.createPoint(new BigInteger("12022136709705892117842496518378933837282529509560188557390124672992517127582"), new BigInteger("6765325636686621066142015726326349598074684595222800743368698766652936798612"));
   // Generator for randomness part of Pedersen commitments generated deterministically from  mapToInteger queried on 1 to the curve using try-and-increment
@@ -170,6 +171,10 @@ public class AttestationCrypto {
    */
   public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
     BigInteger c = mapToInteger(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint()))).mod(curveOrder);
+    // Ensure that the right base has been used in the proof
+    if (!pok.getBase().equals(H)) {
+      return false;
+    }
     return verifyPok(pok, c);
   }
 
@@ -190,7 +195,11 @@ public class AttestationCrypto {
     if (!riddle.equals(pok.getRiddle())) {
       return false;
     }
-    BigInteger c = mapToInteger(makeArray(Arrays.asList(G, H, comPoint1, comPoint2, pok.getPoint()))).mod(curveOrder);
+    // Ensure that the right base has been used in the proof
+    if (!pok.getBase().equals(H)) {
+      return false;
+    }
+    BigInteger c = mapToInteger(makeArray(Arrays.asList(G, pok.getBase(), comPoint1, comPoint2, pok.getPoint()))).mod(curveOrder);
     return verifyPok(pok, c);
   }
 
