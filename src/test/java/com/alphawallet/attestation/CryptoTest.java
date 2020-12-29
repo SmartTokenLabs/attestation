@@ -331,19 +331,4 @@ public class CryptoTest {
     // Multiply with co-factor to ensure correct subgroup
     return resPoint.multiply(AttestationCrypto.cofactor).normalize();
   }
-
-  @Test
-  public void jamesTest() {
-    ECPoint point = AttestationCrypto.curve.createPoint(new BigInteger("12263903704889727924109846582336855803381529831687633314439453294155493615168"), new BigInteger("1637819407897162978922461013726819811885734067940976901570219278871042378189"));
-    BigInteger c = new BigInteger("4969039766099676828582209836509796032289635635464255431890251909670512734885");
-    ECPoint lhs = point.multiply(c);
-    System.out.println(lhs.getXCoord().toBigInteger());
-    ECPoint lhsn = point.multiply(c).normalize();
-    System.out.println(lhsn.getXCoord().toBigInteger());
-    ECPoint lhsneg = point.multiply(c).negate();
-    System.out.println(lhsneg.getXCoord().toBigInteger());
-    ECPoint lhsnegn = point.multiply(c).negate().normalize();
-    System.out.println(lhsnegn.getXCoord().toBigInteger());
-    boolean a = false;
-  }
 }
