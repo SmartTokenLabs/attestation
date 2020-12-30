@@ -2,7 +2,7 @@
 import { readFileSync } from 'fs';
 
 // testing SignedDevconTicket
-import SignedDevconTicket from "../../main/javascript/SignedDevonTicket.js"
+import { SignedDevconTicket } from "../../main/javascript/SignedDevonTicket.js"
 const der = readFileSync('build/test-results/signed-devcon-ticket.der')
 
 /* who can tell me why not just do this?

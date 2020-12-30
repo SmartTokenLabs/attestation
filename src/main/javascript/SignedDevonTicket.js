@@ -9,7 +9,7 @@ import {
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
 
-class DevconTicket {
+export class DevconTicket {
   //**********************************************************************************
   /**
    * Constructor for Attribute class
@@ -149,7 +149,7 @@ class DevconTicket {
   }
 }
 
-export default class SignedDevconTicket {
+export class SignedDevconTicket {
   //**********************************************************************************
   /**
    * Constructor for Attribute class
@@ -258,11 +258,23 @@ export default class SignedDevconTicket {
 
     //region Get internal properties from parsed schema
     // noinspection JSUnresolvedVariable
-    this.ticket = asn1.result.ticket.valueBeforeDecode;
 
-    this.ticket = new DevconTicket(asn1.result.ticket)
-    this.signatureAlgorithm = new AlgorithmIdentifier( asn1.result.signatureAlgorithm);
-    this.signatureValue = asn1.result.signatureValue;
-    //endregion
+    this.ticket = new DevconTicket(asn1.result.ticket.valueBeforeDecode)
+
+    this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
+
+    const signatureValue = asn1.result.signatureValue;
+    this.signatureValue = signatureValue.valueBlock.valueHex;    //endregion
   }
+}
+
+function getCorrectBuffer(content)
+{
+  const arrayBuffer = new ArrayBuffer(content.length);
+  const uint8Array = new Uint8Array(arrayBuffer);
+
+  for(let i = 0; i < content.length; i++)
+    uint8Array[i] = content[i];
+
+  return arrayBuffer.slice(0);
 }
