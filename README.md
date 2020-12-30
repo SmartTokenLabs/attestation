@@ -12,11 +12,13 @@ See document here: http://tokenscript.org/Attestation.html
 
 This library can't be built with Java 8 JDK. The developers are using JDK 11 and JDK 14 so these are known to work.
 
-The version of Gradle developers use is version 6.7. It should work with other versions too.
+You need the following installed:
 
-The build assumes you have installed nodejs and version 15 is known to work.
+- JDK (version 11 and 14 is used by our devs, version 8 is known not working)
+- Gradle (version 6.7 is used by our devs)
+- node.js (version 15 is used by our devs)
 
-Once you have gradle installed, run:
+Once you have them installed, run:
 
 $ gradle build
 
