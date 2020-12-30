@@ -3,7 +3,7 @@ import { fromBER } from "asn1js";
 import { readFileSync } from 'fs';
 
 // testing SignedDevconTicket
-import SignedDevconTicket from "./SignedDevonTicket.js"
+import SignedDevconTicket from "../../main/javascript/SignedDevonTicket.js"
 const der = readFileSync('build/test-results/signed-devcon-ticket.der')
 const ans1 = fromBER(new Uint8Array(der).buffer);
 const ticket = new SignedDevconTicket({
