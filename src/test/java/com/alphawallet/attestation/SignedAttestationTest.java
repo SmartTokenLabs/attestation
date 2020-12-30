@@ -23,7 +23,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestSignedAttestation {
+public class SignedAttestationTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair issuerKeys;
   private static SecureRandom rand;
@@ -39,7 +39,7 @@ public class TestSignedAttestation {
 
   @Test
   public void testSignAttestation() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
@@ -49,7 +49,7 @@ public class TestSignedAttestation {
 
   @Test
   public void testDecoding() throws Exception {
-    Attestation att = TestHelper.makeMaximalAtt(subjectKeys.getPublic());
+    Attestation att = HelperTest.makeMaximalAtt(subjectKeys.getPublic());
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     assertTrue(SignatureUtility.verify(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
@@ -60,7 +60,7 @@ public class TestSignedAttestation {
 
   @Test
   public void testX509() throws Exception {
-    Attestation att = TestHelper.makeUnsignedx509Att(subjectKeys.getPublic());
+    Attestation att = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
     byte[] toSign = att.getPrehash();
     byte[] digestBytes = new byte[32];
     Digest digest = new SHA256Digest();

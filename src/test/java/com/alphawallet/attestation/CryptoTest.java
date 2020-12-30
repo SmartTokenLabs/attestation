@@ -14,11 +14,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.math.ec.ECFieldElement;
+import org.bouncycastle.math.ec.ECFieldElement.Fp;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TestCrypto {
+public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
   private AsymmetricCipherKeyPair issuerKeys;
   private AsymmetricCipherKeyPair senderKeys;
@@ -280,10 +282,16 @@ public class TestCrypto {
     BigInteger gVal = (BigInteger) mapToInteger.invoke(crypto, input);
     ECPoint g = computePoint(gVal);
     assertEquals(AttestationCrypto.G, g);
+    // Check order
+    assertTrue(g.multiply(AttestationCrypto.curveOrder).isInfinity());
+    assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), g.normalize().getXCoord().getEncoded());
     input[0] = 1;
     BigInteger hVal = (BigInteger) mapToInteger.invoke(crypto, input);
     ECPoint h = computePoint(hVal);
     assertEquals(AttestationCrypto.H, h);
+    // Check order
+    assertTrue(h.multiply(AttestationCrypto.curveOrder).isInfinity());
+    assertArrayEquals(h.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), h.normalize().getXCoord().getEncoded());
   }
 
   /**
@@ -320,6 +328,7 @@ public class TestCrypto {
       // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
       // NOTE: this is ONLY needed if we DON'T use secp256k1, so currently it is superflous but we are keeping it this check is crucial for security on most other curves!
     } while(!resPoint.equals(referencePoint) || resPoint.isInfinity());
-    return resPoint.normalize();
+    // Multiply with co-factor to ensure correct subgroup
+    return resPoint.multiply(AttestationCrypto.cofactor).normalize();
   }
 }

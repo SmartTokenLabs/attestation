@@ -19,7 +19,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestAttestation {
+public class AttestationTest {
 
     private static AsymmetricCipherKeyPair subjectKeys;
     private static SecureRandom rand;
@@ -64,7 +64,7 @@ public class TestAttestation {
 
     @Test
     public void testMakeUnsignedX509Attestation() throws IOException {
-        byte[] res = TestHelper.makeUnsignedx509Att(subjectKeys.getPublic()).getPrehash();
+        byte[] res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic()).getPrehash();
         assertTrue(res != null);
         Path p = Files.createTempFile("unsigned_x509", ".der");
         System.out.println("To check the unsigned X509 attestation, run this:");
@@ -74,21 +74,21 @@ public class TestAttestation {
 
     @Test
     public void testInvalid() {
-        Attestation res = TestHelper.makeMinimalAtt();
+        Attestation res = HelperTest.makeMinimalAtt();
         res.setDataObject(null);
         assertFalse(res.checkValidity());
     }
 
     @Test
     public void testInvalidx509() throws IOException {
-        Attestation res = TestHelper.makeUnsignedx509Att(subjectKeys.getPublic());
+        Attestation res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
         res.setSmartcontracts(Arrays.asList(13L));
         assertFalse(res.isValidX509());
     }
 
     @Test
     public void testExpired() throws Exception {
-        Attestation res = TestHelper.makeUnsignedx509Att(subjectKeys.getPublic());
+        Attestation res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
         assertTrue(res.checkValidity());
         assertTrue(res.isValidX509());
         Date almostNow = new Date(System.currentTimeMillis() - 1000);
@@ -98,14 +98,14 @@ public class TestAttestation {
 
     @Test
     public void testFullDecoding() throws Exception {
-        byte[] encoding = TestHelper.makeMaximalAtt(subjectKeys.getPublic()).getPrehash();
+        byte[] encoding = HelperTest.makeMaximalAtt(subjectKeys.getPublic()).getPrehash();
         Attestation newAtt = new Attestation(encoding);
         assertArrayEquals(encoding, newAtt.getPrehash());
     }
 
     @Test
     public void testMinimalDecoding() throws Exception {
-        byte[] encoding = TestHelper.makeMinimalAtt().getPrehash();
+        byte[] encoding = HelperTest.makeMinimalAtt().getPrehash();
         Attestation newAtt = new Attestation(encoding);
         assertArrayEquals(encoding, newAtt.getPrehash());
     }

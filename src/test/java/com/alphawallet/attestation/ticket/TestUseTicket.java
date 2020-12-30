@@ -10,7 +10,7 @@ import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
-import com.alphawallet.attestation.TestHelper;
+import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
@@ -61,7 +61,7 @@ public class TestUseTicket {
 
   @BeforeEach
   public void makeAttestedTicket() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     attestedTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
@@ -208,7 +208,7 @@ public class TestUseTicket {
 
   @Test
   public void testNegativeConstruction() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     // Add an extra t in the mail
     Ticket ticket = new Ticket("testt@test.ts", CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
@@ -223,7 +223,7 @@ public class TestUseTicket {
 
   @Test
   public void testNegativeConstruction2() {
-    Attestation att = TestHelper.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     try {

@@ -20,7 +20,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class TestHelper {
+public class HelperTest {
   public static final int CHARS_IN_LINE = 65;
 
 
