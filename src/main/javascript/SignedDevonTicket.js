@@ -138,13 +138,9 @@ export class DevconTicket {
     if ("ticketClass" in asn1.result)
       this.ticketClass = asn1.result["ticketClass"].valueBlock.valueDec;
 
-    if ("riddle" in asn1.result){
-      const hex = bufferToHexCodes(
-          asn1.result["riddle"].valueBlock.valueHex
-      );
+    if ("riddle" in asn1.result)
+      this.riddle = asn1.result["riddle"].valueBlock.valueHex;
 
-      this.riddle = BigInt(`0x${hex}`);
-    }
     //endregion
   }
 }
