@@ -9,6 +9,11 @@ plugins {
     id "com.github.node-gradle.node" version "3.0.0-rc5"
 }
 
+node {
+    download = true
+    version = "14.15.3"
+}
+
 apply plugin: 'com.github.johnrengelman.shadow'
 
 sourceCompatibility = "1.8"
