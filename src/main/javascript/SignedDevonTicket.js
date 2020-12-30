@@ -31,7 +31,7 @@ function ticket(parameters = {}) {
   });
 }
 
-export default class SignedTicket {
+export default class SignedDevconTicket {
   //**********************************************************************************
   /**
    * Constructor for Attribute class
@@ -50,22 +50,22 @@ export default class SignedTicket {
       this.devconId = getParametersValue(
           source,
           "devconId",
-          SignedTicket.defaultValues("devconId")
+          SignedDevconTicket.defaultValues("devconId")
       );
       this.ticketId = getParametersValue(
           source,
           "ticketId",
-          SignedTicket.defaultValues("ticketId")
+          SignedDevconTicket.defaultValues("ticketId")
       );
       this.ticketClass = getParametersValue(
           source,
           "ticketClass",
-          SignedTicket.defaultValues("ticketClass")
+          SignedDevconTicket.defaultValues("ticketClass")
       );
       this.riddle = getParametersValue(
           source,
           "riddle",
-          SignedTicket.defaultValues("riddle")
+          SignedDevconTicket.defaultValues("riddle")
       );
     }
   }
@@ -120,7 +120,7 @@ export default class SignedTicket {
     const names = getParametersValue(parameters, "names", {});
 
     return new Sequence({
-      name: names.blockName || "SignedTicket",
+      name: names.blockName || "SignedDevconTicket",
       value: [
         ticket(parameters),
         AlgorithmIdentifier.schema(
@@ -155,10 +155,10 @@ export default class SignedTicket {
     //endregion
 
     //region Check the schema is valid
-    const asn1 = compareSchema(schema, schema, SignedTicket.schema());
+    const asn1 = compareSchema(schema, schema, SignedDevconTicket.schema());
 
     if (asn1.verified === false)
-		throw new Error("Object's schema was not verified against input data for SignedTicket");
+		throw new Error("Object's schema was not verified against input data for SignedDevconTicket");
 
     //endregion
 
