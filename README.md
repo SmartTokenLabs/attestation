@@ -10,7 +10,13 @@ See document here: http://tokenscript.org/Attestation.html
 
 ## Build
 
-The version of Gradle developers use is version 6.7. Once you have gradle installed, run:
+This library can't be built with Java 8 JDK. The developers are using JDK 11 and JDK 14 so these are known to work.
+
+The version of Gradle developers use is version 6.7. It should work with other versions too.
+
+The build assumes you have installed nodejs and version 15 is known to work.
+
+Once you have gradle installed, run:
 
 $ gradle build
 
