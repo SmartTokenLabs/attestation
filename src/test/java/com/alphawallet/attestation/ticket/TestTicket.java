@@ -22,10 +22,10 @@ import org.junit.jupiter.api.Test;
 
 public class TestTicket {
   private static final String MAIL = "test@test.ts";
-  private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
+  private static final BigInteger TICKET_ID = new BigInteger("48646");
   private static final TicketClass TICKET_CLASS = TicketClass.REGULAR;
   private static final int CONFERENCE_ID = 6;
-  private static final BigInteger SECRET = new BigInteger("48646");
+  private static final BigInteger SECRET = new BigInteger("546048445646851568430134455064804806");
 
   private static AsymmetricCipherKeyPair senderKeys;
   private static AsymmetricCipherKeyPair otherKeys;
