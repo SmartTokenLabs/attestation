@@ -4,6 +4,7 @@ import {
   Integer,
   OctetString,
   Sequence,
+  fromBER
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
@@ -34,34 +35,39 @@ export default class SignedTicket {
   //**********************************************************************************
   /**
    * Constructor for Attribute class
-   * @param {Object} [parameters={}]
-   * @param {Object} [parameters.schema] asn1js parsed value to initialize the class from
+   * @param {Object} [source={}] source is an object
+   * @param {Object} [source:ArrayBuffer] source is DER encoded
+   * @param {Object} [source:String]  source is CER encoded
    */
-  constructor(parameters = {}) {
-    this.devconId = getParametersValue(
-      parameters,
-      "devconId",
-      SignedTicket.defaultValues("devconId")
-    );
-    this.ticketId = getParametersValue(
-      parameters,
-      "ticketId",
-      SignedTicket.defaultValues("ticketId")
-    );
-    this.ticketClass = getParametersValue(
-      parameters,
-      "ticketClass",
-      SignedTicket.defaultValues("ticketClass")
-    );
-	this.riddle = getParametersValue(
-      parameters,
-      "riddle",
-      SignedTicket.defaultValues("riddle")
-    );
-
-    //region If input argument array contains "schema" for this object
-    if ("schema" in parameters) this.fromSchema(parameters.schema);
-    //endregion
+  constructor(source = {}) {
+    if (typeof(source) == "string") {
+      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+    }
+    if (source instanceof ArrayBuffer) {
+      const asn1 = fromBER(source)
+      this.fromSchema(asn1.result);
+    } else {
+      this.devconId = getParametersValue(
+          source,
+          "devconId",
+          SignedTicket.defaultValues("devconId")
+      );
+      this.ticketId = getParametersValue(
+          source,
+          "ticketId",
+          SignedTicket.defaultValues("ticketId")
+      );
+      this.ticketClass = getParametersValue(
+          source,
+          "ticketClass",
+          SignedTicket.defaultValues("ticketClass")
+      );
+      this.riddle = getParametersValue(
+          source,
+          "riddle",
+          SignedTicket.defaultValues("riddle")
+      );
+    }
   }
   //**********************************************************************************
   /**
