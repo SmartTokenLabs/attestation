@@ -6,6 +6,12 @@ buildscript {
 
 plugins {
     id 'java'
+    id "com.github.node-gradle.node" version "3.0.0-rc5"
+}
+
+node {
+    download = true
+    version = "14.15.3"
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
@@ -109,6 +115,12 @@ task packageAttestation(type: Jar) {
         attributes('Implementation-Title': project.name,
                 'Implementation-Version': project.version)
     }
+}
+
+task testJavaScript(type: NodeTask) {
+    dependsOn 'test'
+    dependsOn 'npmInstall'
+    script = file('src/test/javascript/ParserSerializerTest.js')
 }
 
 build.dependsOn packageAttestation
