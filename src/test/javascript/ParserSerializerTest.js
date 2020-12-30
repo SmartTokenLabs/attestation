@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 
 // testing SignedDevconTicket
 import SignedDevconTicket from "../../main/javascript/SignedDevonTicket.js"
-const der = readFileSync('build/test-results/devcon-ticket.der')
+const der = readFileSync('build/test-results/signed-devcon-ticket.der')
 
 /* who can tell me why not just do this?
 const dataobj = new SignedDevconTicket(der.buffer);
@@ -13,9 +13,6 @@ const dataobj = new SignedDevconTicket(der.buffer);
  */
 var dataobj = new SignedDevconTicket(new Uint8Array(der).buffer);
 
-
-const { devconId, ticketClass, ticketId, riddle } = dataobj;
-const text = `devconId = ${devconId}, ticketId = ${ticketId}, ticketClass = ${ticketClass}, riddle = ${riddle}`;
 
 
 console.log(dataobj);
