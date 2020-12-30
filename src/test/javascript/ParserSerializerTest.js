@@ -1,9 +1,6 @@
 
 import { readFileSync } from 'fs';
 
-console.log(typeof(blaster))
-
-
 // testing SignedDevconTicket
 import SignedDevconTicket from "../../main/javascript/SignedDevonTicket.js"
 const der = readFileSync('build/test-results/signed-devcon-ticket.der')
