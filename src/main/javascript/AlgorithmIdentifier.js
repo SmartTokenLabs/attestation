@@ -8,37 +8,39 @@ export default class AlgorithmIdentifier {
   //**********************************************************************************
   /**
    * Constructor for AlgorithmIdentifier class
-   * @param {Object} [parameters={}]
-   * @param {Object} [parameters.schema] asn1js parsed value to initialize the class from
+   * @param {Object} [source={}]
+   * @param {Object} [source.schema] asn1js parsed value to initialize the class from
    * @property {string} [algorithmId] ObjectIdentifier for algorithm (string representation)
    */
-  constructor(parameters = {}) {
-    //region Internal properties of the object
-    /**
-     * @type {string}
-     * @desc ObjectIdentifier for algorithm (string representation)
-     */
-    this.algorithmId = getParametersValue(
-      parameters,
-      "algorithmId",
-      AlgorithmIdentifier.defaultValues("algorithmId")
-    );
-
-    if ("algorithmParams" in parameters)
+  constructor(source = {}) {
+    if (typeof(source) == "string") {
+      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+    }
+    if (source instanceof ArrayBuffer) {
+      const asn1 = fromBER(source)
+      this.fromSchema(asn1.result);
+    } else {
       /**
-       * @type {Object}
-       * @desc Any algorithm parameters
+       * @type {string}
+       * @desc ObjectIdentifier for algorithm (string representation)
        */
-      this.algorithmParams = getParametersValue(
-        parameters,
-        "algorithmParams",
-        AlgorithmIdentifier.defaultValues("algorithmParams")
+      this.algorithmId = getParametersValue(
+          source,
+          "algorithmId",
+          AlgorithmIdentifier.defaultValues("algorithmId")
       );
-    //endregion
 
-    //region If input argument array contains "schema" for this object
-    if ("schema" in parameters) this.fromSchema(parameters.schema);
-    //endregion
+      if ("algorithmParams" in source)
+        /**
+         * @type {Object}
+         * @desc Any algorithm source
+         */
+        this.algorithmParams = getParametersValue(
+            source,
+            "algorithmParams",
+            AlgorithmIdentifier.defaultValues("algorithmParams")
+        );
+    }
   }
   //**********************************************************************************
   /**

@@ -4,65 +4,50 @@ import {
   Integer,
   OctetString,
   Sequence,
+  fromBER
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
 
-function ticket(parameters = {}) {
-  const names = getParametersValue(parameters, "names", {});
-
-  return new Sequence({
-    name: names.blockName || "ticket",
-    value: [
-      new Integer({
-        name: names.devconId || "ticket.devconId",
-      }),
-      new Integer({
-        name: names.ticketId || "ticket.ticketId",
-      }),
-      new Integer({
-        name: names.ticketClass || "ticket.ticketClass",
-      }),
-      new OctetString({
-        name: names.riddle || "ticket.riddle",
-      })
-    ],
-  });
-}
-
-export default class SignedTicket {
+export class DevconTicket {
   //**********************************************************************************
   /**
    * Constructor for Attribute class
-   * @param {Object} [parameters={}]
-   * @param {Object} [parameters.schema] asn1js parsed value to initialize the class from
+   * @param {Object} [source={}] source is an object
+   * @param {Object} [source:ArrayBuffer] source is DER encoded
+   * @param {Object} [source:String]  source is CER encoded
    */
-  constructor(parameters = {}) {
-    this.devconId = getParametersValue(
-      parameters,
-      "devconId",
-      SignedTicket.defaultValues("devconId")
-    );
-    this.ticketId = getParametersValue(
-      parameters,
-      "ticketId",
-      SignedTicket.defaultValues("ticketId")
-    );
-    this.ticketClass = getParametersValue(
-      parameters,
-      "ticketClass",
-      SignedTicket.defaultValues("ticketClass")
-    );
-	this.riddle = getParametersValue(
-      parameters,
-      "riddle",
-      SignedTicket.defaultValues("riddle")
-    );
-
-    //region If input argument array contains "schema" for this object
-    if ("schema" in parameters) this.fromSchema(parameters.schema);
-    //endregion
+  constructor(source = {}) {
+    if (typeof (source) == "string") {
+      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+    }
+    if (source instanceof ArrayBuffer) {
+      const asn1 = fromBER(source)
+      this.fromSchema(asn1.result);
+    } else {
+      this.devconId = getParametersValue(
+          source,
+          "devconId",
+          DevconTicket.defaultValues("devconId")
+      );
+      this.ticketId = getParametersValue(
+          source,
+          "ticketId",
+          DevconTicket.defaultValues("ticketId")
+      );
+      this.ticketClass = getParametersValue(
+          source,
+          "ticketClass",
+          DevconTicket.defaultValues("ticketClass")
+      );
+      this.riddle = getParametersValue(
+          source,
+          "riddle",
+          DevconTicket.defaultValues("riddle")
+      );
+    }
   }
+
   //**********************************************************************************
   /**
    * Return default values for all class members
@@ -79,10 +64,125 @@ export default class SignedTicket {
       case "ticketClass":
         return 1;
       case "riddle":
-        return 1;	
+        return 1;
       case "signatureAlgorithm":
         return new AlgorithmIdentifier();
 
+      default:
+        throw new Error(
+            `Invalid member name for SignedTicket class: ${memberName}`
+        );
+    }
+  }
+
+  static schema(parameters = {}) {
+    const names = getParametersValue(parameters, "names", {});
+
+    return new Sequence({
+      name: names.blockName || "ticket",
+      value: [
+        new Integer({
+          name: names.devconId || "devconId",
+        }),
+        new Integer({
+          name: names.ticketId || "ticketId",
+        }),
+        new Integer({
+          name: names.ticketClass || "ticketClass",
+        }),
+        new OctetString({
+          name: names.riddle || "riddle",
+        })
+      ],
+    });
+  }
+
+  //**********************************************************************************
+  /**
+   * Convert parsed asn1js object into current class
+   * @param {!Object} schema
+   */
+  fromSchema(schema) {
+    //region Clear input data first
+    clearProps(schema, [
+      //   "ticket",
+      "devconId",
+      "ticketId",
+      "ticketClass",
+      "riddle",
+    ]);
+    //endregion
+
+    //region Check the schema is valid
+    const asn1 = compareSchema(schema, schema, DevconTicket.schema());
+
+    if (asn1.verified === false)
+      throw new Error("Object's schema was not verified against input data for DevconTicket");
+
+    //endregion
+
+    //region Get internal properties from parsed schema
+    // noinspection JSUnresolvedVariable
+
+    if ("devconId" in asn1.result) {
+      const devconId = asn1.result["devconId"].valueBlock._valueHex;
+      this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
+    }
+
+    if ("ticketId" in asn1.result) {
+      const ticketId = asn1.result["ticketId"].valueBlock._valueHex
+      this.ticketId = BigInt("0x" + bufferToHexCodes(ticketId));
+    }
+
+    if ("ticketClass" in asn1.result) {
+      const ticketClass = asn1.result["ticketClass"].valueBlock._valueHex;
+      this.ticketClass = BigInt("0x" + bufferToHexCodes(ticketClass));
+    }
+
+    if ("riddle" in asn1.result)
+      this.riddle = asn1.result["riddle"].valueBlock.valueHex;
+
+    //endregion
+  }
+}
+
+export class SignedDevconTicket {
+  //**********************************************************************************
+  /**
+   * Constructor for Attribute class
+   * @param {Object} [source={}] source is an object
+   * @param {Object} [source:ArrayBuffer] source is DER encoded
+   * @param {Object} [source:String]  source is CER encoded
+   */
+  constructor(source = {}) {
+    if (typeof(source) == "string") {
+      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+    }
+    if (source instanceof ArrayBuffer) {
+      const asn1 = fromBER(source)
+      this.fromSchema(asn1.result);
+    } else {
+      this.ticket = new DevconTicket(source.ticket);
+      this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
+
+      this.signatureValue = getParametersValue(
+          source,
+          "signatureValue",
+          SignedDevconTicket.defaultValues("signatureValue")
+      );
+    }
+  }
+  //**********************************************************************************
+  /**
+   * Return default values for all class members
+   * @param {string} memberName String name for a class member
+   */
+  static defaultValues(memberName) {
+    switch (memberName) {
+      case "signatureAlgorithm":
+        return new AlgorithmIdentifier();
+      case "signatureValue":
+        return new BitString();
       default:
         throw new Error(
           `Invalid member name for SignedTicket class: ${memberName}`
@@ -114,9 +214,9 @@ export default class SignedTicket {
     const names = getParametersValue(parameters, "names", {});
 
     return new Sequence({
-      name: names.blockName || "SignedTicket",
+      name: names.blockName || "SignedDevconTicket",
       value: [
-        ticket(parameters),
+        DevconTicket.schema(parameters),
         AlgorithmIdentifier.schema(
           names.signatureAlgorithm || {
             names: {
@@ -139,54 +239,39 @@ export default class SignedTicket {
     //region Clear input data first
     clearProps(schema, [
       //   "ticket",
-      "ticket.devconId",
-      "ticket.ticketId",
-      "ticket.ticketClass",
-      "ticket.riddle",
+      "ticket",
       "signatureAlgorithm",
       "signatureValue",
     ]);
     //endregion
 
     //region Check the schema is valid
-    const asn1 = compareSchema(schema, schema, SignedTicket.schema());
+    const asn1 = compareSchema(schema, schema, SignedDevconTicket.schema());
 
     if (asn1.verified === false)
-		throw new Error("Object's schema was not verified against input data for SignedTicket");
+		throw new Error("Object's schema was not verified against input data for SignedDevconTicket");
 
     //endregion
 
     //region Get internal properties from parsed schema
     // noinspection JSUnresolvedVariable
-    this.ticket = asn1.result.ticket.valueBeforeDecode;
 
-    if ("ticket.devconId" in asn1.result)
-		this.devconId = asn1.result["ticket.devconId"].valueBlock.valueDec;
+    this.ticket = new DevconTicket(asn1.result.ticket.valueBeforeDecode)
 
-    if ("ticket.ticketId" in asn1.result) {
-      const hex = bufferToHexCodes(
-        asn1.result["ticket.ticketId"].valueBlock._valueHex
-      );
-	  /* Big int does not work directly if we do not use hex conversion */
-      const ticketId = BigInt(`0x${hex}`);
-      this.ticketId = ticketId;
-    }
+    this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
 
-    if ("ticket.ticketClass" in asn1.result)
-      this.ticketClass = asn1.result["ticket.ticketClass"].valueBlock.valueDec;
-
-    if ("ticket.riddle" in asn1.result){
-		const hex = bufferToHexCodes(
-			asn1.result["ticket.riddle"].valueBlock.valueHex
-		);
-	  
-		const riddle = BigInt(`0x${hex}`);
-		this.riddle = riddle;
-	}
-    this.signatureAlgorithm = new AlgorithmIdentifier({
-      schema: asn1.result.signatureAlgorithm,
-    });
-    this.signatureValue = asn1.result.signatureValue;
-    //endregion
+    const signatureValue = asn1.result.signatureValue;
+    this.signatureValue = signatureValue.valueBlock.valueHex;    //endregion
   }
+}
+
+function getCorrectBuffer(content)
+{
+  const arrayBuffer = new ArrayBuffer(content.length);
+  const uint8Array = new Uint8Array(arrayBuffer);
+
+  for(let i = 0; i < content.length; i++)
+    uint8Array[i] = content[i];
+
+  return arrayBuffer.slice(0);
 }
