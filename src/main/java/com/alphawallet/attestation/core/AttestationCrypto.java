@@ -231,6 +231,9 @@ public class AttestationCrypto {
    * Map a byte array into a Big Integer using an double execution of Keccak 256.
    * @param value
    * @return
+   *
+   * TODO: Implement reference Barrett Reduction algorithm in Java to verify Solidity algorithm
+   *       - Then we can revert to previous adjacent hash method
    */
   private static BigInteger mapToInteger(byte[] value) {
     try {
@@ -240,15 +243,10 @@ public class AttestationCrypto {
       KECCAK.update(value);
       byte[] hash0 = KECCAK.digest();
       KECCAK.reset();
-      KECCAK.update((byte) 1);
-      KECCAK.update(value);
+      KECCAK.update((byte) 1); //probably don't need these additional inputs with the double hash
+      KECCAK.update(hash0);
       byte[] hash1 = KECCAK.digest();
-      byte[] res = new byte[32*2];
-      System.arraycopy(hash0, 0, res, 0, hash0.length);
-      System.arraycopy(hash1, 0, res, hash0.length, hash1.length);
-      // Note that we use double hashing to get a digest that is at least fieldSize or curve order
-      // + security parameter in length to avoid any potential bias
-      return new BigInteger(res);
+      return new BigInteger(hash1);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

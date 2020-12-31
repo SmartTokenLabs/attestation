@@ -103,4 +103,22 @@ public class ProofOfKnowledgeTest {
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
   }
 
+  @Test
+  public void TestContract() {
+    SmartContract sc = new SmartContract();
+
+    for (int i = 0; i < 30; i++) {
+      ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
+      assertTrue(crypto.verifyAttestationRequestProof(pok));
+      assertTrue(sc.testEncoding(pok));
+    }
+
+    //now check fail
+    for (int i = 0; i < 5; i++) {
+      ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
+      assertTrue(crypto.verifyAttestationRequestProof(pok));
+      ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+      assertFalse(sc.testEncoding(newPok));
+    }
+  }
 }

@@ -21,7 +21,7 @@ import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.http.HttpService;
 
 public class SmartContract {
-  private static final String ATTESTATION_CHECKING_CONTRACT = "0x8D653D288346921B9099E74E61e2fD8054689524";
+  private static final String ATTESTATION_CHECKING_CONTRACT = "0x86b327Fc210803B02B907112Ded82869620723aB";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
   //test contract
