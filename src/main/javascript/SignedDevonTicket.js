@@ -124,19 +124,20 @@ export class DevconTicket {
     //region Get internal properties from parsed schema
     // noinspection JSUnresolvedVariable
 
-    if ("devconId" in asn1.result)
-      this.devconId = asn1.result["devconId"].valueBlock.valueDec;
-
-    if ("ticketId" in asn1.result) {
-      const hex = bufferToHexCodes(
-          asn1.result["ticketId"].valueBlock._valueHex
-      );
-      /* Big int does not work directly if we do not use hex conversion */
-      this.ticketId = BigInt(`0x${hex}`);
+    if ("devconId" in asn1.result) {
+      const devconId = asn1.result["devconId"].valueBlock._valueHex;
+      this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
     }
 
-    if ("ticketClass" in asn1.result)
-      this.ticketClass = asn1.result["ticketClass"].valueBlock.valueDec;
+    if ("ticketId" in asn1.result) {
+      const ticketId = asn1.result["ticketId"].valueBlock._valueHex
+      this.ticketId = BigInt("0x" + bufferToHexCodes(ticketId));
+    }
+
+    if ("ticketClass" in asn1.result) {
+      const ticketClass = asn1.result["ticketClass"].valueBlock._valueHex;
+      this.ticketClass = BigInt("0x" + bufferToHexCodes(ticketClass));
+    }
 
     if ("riddle" in asn1.result)
       this.riddle = asn1.result["riddle"].valueBlock.valueHex;
