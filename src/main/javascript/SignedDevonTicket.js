@@ -27,44 +27,16 @@ export class DevconTicket {
     } else {
       this.devconId = getParametersValue(
           source,
-          "devconId",
-          DevconTicket.defaultValues("devconId")
+          "devconId"
       );
       this.ticketId = getParametersValue(
           source,
-          "ticketId",
-          DevconTicket.defaultValues("ticketId")
+          "ticketId"
       );
       this.ticketClass = getParametersValue(
           source,
-          "ticketClass",
-          DevconTicket.defaultValues("ticketClass")
+          "ticketClass"
       );
-    }
-  }
-
-  //**********************************************************************************
-  /**
-   * Return default values for all class members
-   * @param {string} memberName String name for a class member
-   */
-  static defaultValues(memberName) {
-    switch (memberName) {
-      case "devconId":
-        return 1;
-      case "ticket":
-        return 1;
-      case "ticketId":
-        return 1;
-      case "ticketClass":
-        return 1;
-      case "signatureAlgorithm":
-        return new AlgorithmIdentifier();
-
-      default:
-        throw new Error(
-            `Invalid member name for SignedTicket class: ${memberName}`
-        );
     }
   }
 
@@ -138,7 +110,7 @@ export class SignedDevconTicket {
    * Constructor for Attribute class
    * @param {Object} [source={}] source is an object
    * @param {Object} [source:ArrayBuffer] source is DER encoded
-   * @param {Object} [source:String]  source is CER encoded
+   * @param {Object} [source:String]  source is DER encoded
    */
   constructor(source = {}) {
     if (typeof(source) == "string") {
@@ -152,8 +124,7 @@ export class SignedDevconTicket {
 
       this.commitment = getParametersValue(
           source,
-          "commitment",
-          DevconTicket.defaultValues("commitment")
+          "commitment"
       );
 
       // TODO: issue #75
@@ -161,29 +132,11 @@ export class SignedDevconTicket {
 
       this.signatureValue = getParametersValue(
           source,
-          "signatureValue",
-          SignedDevconTicket.defaultValues("signatureValue")
+          "signatureValue"
       );
     }
   }
-  //**********************************************************************************
-  /**
-   * Return default values for all class members
-   * @param {string} memberName String name for a class member
-   */
-  static defaultValues(memberName) {
-    // TODO: issue #76
-    throw new Error("You shouldn't see this error - there is no default to any members of this data object.")
-    switch (memberName) {
-      case "signatureAlgorithm":
-        return new AlgorithmIdentifier();
-      case "signatureValue":
-        return new BitString();
-        throw new Error(
-          `Invalid member name for SignedTicket class: ${memberName}`
-        );
-    }
-  }
+  
   //**********************************************************************************
   /**
    * Return value of pre-defined ASN.1 schema for current class
