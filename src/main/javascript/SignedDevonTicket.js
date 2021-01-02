@@ -40,11 +40,6 @@ export class DevconTicket {
           "ticketClass",
           DevconTicket.defaultValues("ticketClass")
       );
-      this.riddle = getParametersValue(
-          source,
-          "riddle",
-          DevconTicket.defaultValues("riddle")
-      );
     }
   }
 
@@ -62,8 +57,6 @@ export class DevconTicket {
       case "ticketId":
         return 1;
       case "ticketClass":
-        return 1;
-      case "riddle":
         return 1;
       case "signatureAlgorithm":
         return new AlgorithmIdentifier();
@@ -90,9 +83,6 @@ export class DevconTicket {
         new Integer({
           name: names.ticketClass || "ticketClass",
         }),
-        new OctetString({
-          name: names.riddle || "riddle",
-        })
       ],
     });
   }
@@ -109,7 +99,6 @@ export class DevconTicket {
       "devconId",
       "ticketId",
       "ticketClass",
-      "riddle",
     ]);
     //endregion
 
@@ -139,9 +128,6 @@ export class DevconTicket {
       this.ticketClass = BigInt("0x" + bufferToHexCodes(ticketClass));
     }
 
-    if ("riddle" in asn1.result)
-      this.riddle = asn1.result["riddle"].valueBlock.valueHex;
-
     //endregion
   }
 }
@@ -156,14 +142,22 @@ export class SignedDevconTicket {
    */
   constructor(source = {}) {
     if (typeof(source) == "string") {
-      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+      throw new TypeError("Not accepting string. (If base64, convert to ArrayBuffer.)")
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source)
       this.fromSchema(asn1.result);
     } else {
       this.ticket = new DevconTicket(source.ticket);
-      this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
+
+      this.commitment = getParametersValue(
+          source,
+          "commitment",
+          DevconTicket.defaultValues("commitment")
+      );
+
+      // TODO: issue #75
+      // this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
 
       this.signatureValue = getParametersValue(
           source,
@@ -178,12 +172,13 @@ export class SignedDevconTicket {
    * @param {string} memberName String name for a class member
    */
   static defaultValues(memberName) {
+    // TODO: issue #76
+    throw new Error("You shouldn't see this error - there is no default to any members of this data object.")
     switch (memberName) {
       case "signatureAlgorithm":
         return new AlgorithmIdentifier();
       case "signatureValue":
         return new BitString();
-      default:
         throw new Error(
           `Invalid member name for SignedTicket class: ${memberName}`
         );
@@ -217,13 +212,31 @@ export class SignedDevconTicket {
       name: names.blockName || "SignedDevconTicket",
       value: [
         DevconTicket.schema(parameters),
-        AlgorithmIdentifier.schema(
-          names.signatureAlgorithm || {
-            names: {
-              blockName: "signatureAlgorithm",
-            },
-          }
-        ),
+        new OctetString({
+          name: "commitment",
+        }),
+        /* PublicKeyInfo is specified in schema here but not appearing in the constructed data object.
+         * This is because the underlying AlgorithmIdentifier isn't fully implemented and also
+         * that this data is not important for the 1st delivery deadline, won't be read by client anyway.
+         * TODO: add support for PublicKeyInfo https://github.com/TokenScript/attestation/issues/75
+         */
+        new Sequence( {
+          name: "publicKeyInfo",
+          optional: true,
+          value: [
+            AlgorithmIdentifier.schema(
+                names.signatureAlgorithm || {
+                  names: {
+                    blockName: "signatureAlgorithm",
+                  },
+                }
+            ),
+            new BitString({
+              name: "publicKey"
+            }),
+          ]
+        }),
+
         new BitString({
           name: names.signatureValue || "signatureValue",
         }),
@@ -240,7 +253,8 @@ export class SignedDevconTicket {
     clearProps(schema, [
       //   "ticket",
       "ticket",
-      "signatureAlgorithm",
+      "commitment",
+      // TODO: #75
       "signatureValue",
     ]);
     //endregion
@@ -258,20 +272,13 @@ export class SignedDevconTicket {
 
     this.ticket = new DevconTicket(asn1.result.ticket.valueBeforeDecode)
 
-    this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
+    if ("commitment" in asn1.result)
+      this.commitment = asn1.result["commitment"].valueBlock.valueHex;
+
+    // TODO: issue #75
+    // this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
 
     const signatureValue = asn1.result.signatureValue;
     this.signatureValue = signatureValue.valueBlock.valueHex;    //endregion
   }
-}
-
-function getCorrectBuffer(content)
-{
-  const arrayBuffer = new ArrayBuffer(content.length);
-  const uint8Array = new Uint8Array(arrayBuffer);
-
-  for(let i = 0; i < content.length; i++)
-    uint8Array[i] = content[i];
-
-  return arrayBuffer.slice(0);
 }
