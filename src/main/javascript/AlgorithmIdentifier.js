@@ -26,8 +26,7 @@ export default class AlgorithmIdentifier {
        */
       this.algorithmId = getParametersValue(
           source,
-          "algorithmId",
-          AlgorithmIdentifier.defaultValues("algorithmId")
+          "algorithmId"
       );
 
       if ("algorithmParams" in source)
@@ -47,10 +46,10 @@ export default class AlgorithmIdentifier {
    * Return default values for all class members
    * @param {string} memberName String name for a class member
    */
+   /* FIXME: algorithmParams is options hence not removed and we need to complete this with all parameters with their default value covered here.
+   */
   static defaultValues(memberName) {
     switch (memberName) {
-      case "algorithmId":
-        return "";
       case "algorithmParams":
         return new Any();
       default:
