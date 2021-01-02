@@ -7,15 +7,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.List;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,6 +46,42 @@ public class TestTicket {
     AttestationCrypto crypto = new AttestationCrypto(rand);
     senderKeys = crypto.constructECKeys();
     otherKeys = crypto.constructECKeys();
+  }
+
+  @Test
+  public void testTicketURLSunshine() throws IOException  {
+    BigInteger ticketID = new BigInteger("417541561854");
+    TicketClass ticketClass = TicketClass.REGULAR;
+    BigInteger senderSecret = new BigInteger("45845870684");
+    Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
+
+    byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()).getPublicKeyData().getEncoded();
+    String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
+
+    List<byte[]> decoded = URLUtility.decodeList(url);
+    Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
+    assertTrue(newTicket.verify());
+    assertTrue(newTicket.checkValidity());
+    assertArrayEquals(ticket.getDerEncoding(), newTicket.getDerEncoding());
+
+    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreKey(decoded.get(1));
+    Ticket otherConstructorTicket = new Ticket(newTicket.getDevconId(), newTicket.getTicketId(), newTicket.getTicketClass(),
+        newTicket.getCommitment(), newTicket.getSignature(), newIssuerPublicKey);
+    assertArrayEquals(ticket.getDerEncoding(), otherConstructorTicket.getDerEncoding());
+  }
+
+  @Test
+  public void testTicketURLConsistentEncoding() throws IOException {
+    BigInteger ticketID = new BigInteger("14840860468475837258758376");
+    TicketClass ticketClass = TicketClass.VIP;
+    BigInteger senderSecret = new BigInteger("186416");
+    Ticket ticket = new Ticket("ticket@test.ts", 6, ticketID, ticketClass, senderKeys, senderSecret);
+    String url = URLUtility.encodeData(ticket.getDerEncoding());
+    Ticket newTicket =  (new TicketDecoder(senderKeys.getPublic())).decode(URLUtility.decodeData(url));
+    String newUrl = URLUtility.encodeData(newTicket.getDerEncoding());
+    assertEquals(url, newUrl);
+    /*** PRINT URL ***/
+    System.out.println(url);
   }
 
   @Test
