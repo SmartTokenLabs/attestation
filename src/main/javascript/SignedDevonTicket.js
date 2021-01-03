@@ -114,10 +114,15 @@ export class SignedDevconTicket {
    */
   constructor(source = {}) {
     if (typeof(source) == "string") {
-      throw new TypeError("Unimplemented: Not accepting string yet.")
+
+      let urlBase64String = source.substring(source.indexOf('?')+1);
+      const ber = this.readFromUrlBase64String(urlBase64String).buffer;
+
+      const ans1ArrayBuffer = fromBER(ber);
+      this.fromSchema(ans1ArrayBuffer.result);
     }
     if (source instanceof ArrayBuffer) {
-      const asn1 = fromBER(source)
+      const asn1 = fromBER(source);
       this.fromSchema(asn1.result);
     } else {
       this.ticket = new DevconTicket(source.ticket);
@@ -136,7 +141,29 @@ export class SignedDevconTicket {
       );
     }
   }
-  
+
+  readFromUrlBase64String(urlBase64str) {
+    let base64str = urlBase64str
+        .split('_').join('-')
+        .split('/').join('+')
+        .split('.').join('=');
+    let unit8Array = this.base64ToUint8array(base64str);
+    return unit8Array;
+    //return Array.from(unit8Array);
+  }
+
+
+  base64ToUint8array( base64str ) {
+    let asciiStr = this.atob( base64str );
+    let byteArray = [];
+    for (let i = 0; i < asciiStr.length; i++) {
+      byteArray.push(asciiStr.charCodeAt(i));
+    }
+    return Uint8Array.from( byteArray );
+  }
+  atob(a) {
+    return new Buffer(a, 'base64').toString('binary');
+  };
   //**********************************************************************************
   /**
    * Return value of pre-defined ASN.1 schema for current class
