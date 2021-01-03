@@ -14,7 +14,7 @@ export default class AlgorithmIdentifier {
    */
   constructor(source = {}) {
     if (typeof(source) == "string") {
-      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+      throw new TypeError("Unimplemented: Not accepting string yet.")
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source)

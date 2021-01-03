@@ -13,10 +13,11 @@ const dataobj = new SignedDevconTicket(der.buffer);
  */
 var dataobj = new SignedDevconTicket(new Uint8Array(der).buffer);
 
-
-
 console.log(dataobj);
 
-// Go on and test every other Parser-Serializer
+const magiclink = readFileSync('build/test-results/mah@mah.com.url', 'utf8')
+dataobj = new SignedDevconTicket(magiclink);
+
+console.log(dataobj);
 
 

@@ -19,7 +19,7 @@ export class DevconTicket {
    */
   constructor(source = {}) {
     if (typeof (source) == "string") {
-      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+      throw new TypeError("Unimplemented: Not accepting string yet.")
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source)
@@ -114,7 +114,7 @@ export class SignedDevconTicket {
    */
   constructor(source = {}) {
     if (typeof(source) == "string") {
-      throw new TypeError("Not accepting string. (If base64, convert to ArrayBuffer.)")
+      throw new TypeError("Unimplemented: Not accepting string yet.")
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source)
