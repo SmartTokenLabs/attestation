@@ -12,9 +12,12 @@ import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -58,6 +61,11 @@ public class TestTicket {
     byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()).getPublicKeyData().getEncoded();
     String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
 
+    FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
+    PrintWriter printWriter = new PrintWriter(fileWriter);
+    printWriter.printf("https://ticket.devcon.org?%s", url);
+    printWriter.close();
+    
     List<byte[]> decoded = URLUtility.decodeList(url);
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
     assertTrue(newTicket.verify());
