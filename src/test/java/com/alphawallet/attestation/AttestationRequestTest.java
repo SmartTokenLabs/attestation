@@ -24,7 +24,7 @@ public class AttestationRequestTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @Test

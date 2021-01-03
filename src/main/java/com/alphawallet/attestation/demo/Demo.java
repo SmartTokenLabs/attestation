@@ -142,7 +142,7 @@ public class Demo {
   }
 
   private static void createKeys(AttestationCrypto crypto, String pubDir, String privDir) throws IOException {
-    AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+    AsymmetricCipherKeyPair keys = crypto.constructECKeysWithLowestYCoord();
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
         .createSubjectPublicKeyInfo(keys.getPublic());
     byte[] pub = spki.getEncoded();

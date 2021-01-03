@@ -33,8 +33,8 @@ public class SignedAttestationTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     AttestationCrypto crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    issuerKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeysWithLowestYCoord();
+    issuerKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @Test

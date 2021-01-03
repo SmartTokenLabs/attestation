@@ -14,8 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.math.ec.ECFieldElement;
-import org.bouncycastle.math.ec.ECFieldElement.Fp;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,9 +36,9 @@ public class CryptoTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    issuerKeys = crypto.constructECKeys();
-    senderKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeysWithLowestYCoord();
+    issuerKeys = crypto.constructECKeysWithLowestYCoord();
+    senderKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @Test
@@ -54,6 +53,35 @@ public class CryptoTest {
     // Negative test
     String otherKey = AttestationCrypto.addressFromKey(issuerKeys.getPublic());
     assertFalse(otherKey.equals(key));
+  }
+
+  @Test
+  public void testECKeyWithLowY() {
+    AttestationCrypto crypto = new AttestationCrypto(rand) {
+      private int counter = 0;
+      @Override
+      public AsymmetricCipherKeyPair constructECKeys() {
+        AsymmetricCipherKeyPair keys = super.constructECKeys();
+          if (counter < 10) {
+            // Ensure that the keys have a large y
+            ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
+            BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
+            BigInteger fieldModulo = ECDSAdomain.getCurve().getField().getCharacteristic();
+            if (yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0) {
+              pk = new ECPublicKeyParameters(pk.getQ().negate(), pk.getParameters());
+              keys = new AsymmetricCipherKeyPair(pk, keys.getPrivate());
+            }
+          }
+          counter++;
+          return keys;
+      }
+    };
+    AsymmetricCipherKeyPair keys = crypto.constructECKeysWithLowestYCoord();
+    ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
+    BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
+    BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
+    assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
+
   }
 
   @Test

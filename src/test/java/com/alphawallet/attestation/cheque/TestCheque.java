@@ -31,7 +31,7 @@ public class TestCheque {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     AttestationCrypto crypto = new AttestationCrypto(rand);
-    senderKeys = crypto.constructECKeys();
+    senderKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
 

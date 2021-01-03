@@ -28,8 +28,8 @@ public class IdentifierAttestationTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     AttestationCrypto crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    otherKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeysWithLowestYCoord();
+    otherKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @Test

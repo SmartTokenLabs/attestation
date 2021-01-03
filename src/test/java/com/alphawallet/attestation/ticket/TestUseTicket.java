@@ -54,9 +54,9 @@ public class TestUseTicket {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    attestorKeys = crypto.constructECKeys();
-    ticketIssuerKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeysWithLowestYCoord();
+    attestorKeys = crypto.constructECKeysWithLowestYCoord();
+    ticketIssuerKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @BeforeEach

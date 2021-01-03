@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -47,8 +46,8 @@ public class TestTicket {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     AttestationCrypto crypto = new AttestationCrypto(rand);
-    senderKeys = crypto.constructECKeys();
-    otherKeys = crypto.constructECKeys();
+    senderKeys = crypto.constructECKeysWithLowestYCoord();
+    otherKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @Test

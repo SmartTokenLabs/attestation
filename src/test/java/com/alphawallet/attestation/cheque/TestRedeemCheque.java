@@ -47,9 +47,9 @@ public class TestRedeemCheque {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    issuerKeys = crypto.constructECKeys();
-    senderKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeysWithLowestYCoord();
+    issuerKeys = crypto.constructECKeysWithLowestYCoord();
+    senderKeys = crypto.constructECKeysWithLowestYCoord();
   }
 
   @BeforeEach
