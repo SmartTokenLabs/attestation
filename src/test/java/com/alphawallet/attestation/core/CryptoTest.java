@@ -239,7 +239,7 @@ public class CryptoTest {
       byte[] com2 = AttestationCrypto.makeCommitment(ID+i, TYPE, SECRET2.multiply(BigInteger.valueOf(i)));
       ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1.add(BigInteger.valueOf(i)),  SECRET2.multiply(BigInteger.valueOf(i)));
       // Compute the c value used in the proof and for proof verification
-      BigInteger c = AttestationCrypto.mapTo256BitInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.G, pok.getBase(), AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
+      BigInteger c = AttestationCrypto.mapTo256BitInteger(AttestationCrypto.makeArray(Arrays.asList(pok.getBase(), AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
       assertTrue(c.compareTo(AttestationCrypto.curveOrder) < 0);
     }
   }
@@ -266,7 +266,6 @@ public class CryptoTest {
     assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
     // This should hold with probability at least 1-2^-30
     assertTrue(value.shiftRight(AttestationCrypto.curveOrderBitLength-30).compareTo(BigInteger.ZERO) > 0);
-
     // Check consistency
     BigInteger value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
     assertEquals(value, value2);

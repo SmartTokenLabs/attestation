@@ -12,6 +12,7 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -60,7 +61,7 @@ public class AttestationCrypto {
     // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
     // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
     if (curveOrder.compareTo(BigInteger.ONE.shiftLeft(curveOrderBitLength-1)) < 0 || curveOrder.shiftRight(curveOrderBitLength).compareTo(BigInteger.ZERO) > 0) {
-      System.err.println("Curve order is not 253 bits which is required by the current implementation");
+      System.err.println("Curve order is not 254 bits which is required by the current implementation");
       return false;
     }
     return true;
@@ -137,7 +138,7 @@ public class AttestationCrypto {
   public ProofOfExponent computeAttestationProof(BigInteger randomness) {
     // Compute the random part of the commitment, i.e. H^randomness
     ECPoint riddle = H.multiply(randomness);
-    List<ECPoint> challengeList = Arrays.asList(G, H, riddle);
+    List<ECPoint> challengeList = Arrays.asList(H, riddle);
     return constructSchnorrPOK(riddle, randomness, challengeList);
   }
 
@@ -166,7 +167,7 @@ public class AttestationCrypto {
     // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger exponent = randomness1.subtract(randomness2).mod(curveOrder);
-    List<ECPoint> challengeList = Arrays.asList(G, H, comPoint1, comPoint2);
+    List<ECPoint> challengeList = Arrays.asList(H, comPoint1, comPoint2);
     return constructSchnorrPOK(riddle, exponent, challengeList);
   }
 
@@ -197,7 +198,7 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
-    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint())));
+    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(pok.getBase(), pok.getRiddle(), pok.getPoint())));
     // Ensure that the right base has been used in the proof
     if (!pok.getBase().equals(H)) {
       return false;
@@ -226,7 +227,7 @@ public class AttestationCrypto {
     if (!pok.getBase().equals(H)) {
       return false;
     }
-    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(G, pok.getBase(), comPoint1, comPoint2, pok.getPoint())));
+    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(pok.getBase(), comPoint1, comPoint2, pok.getPoint())));
     return verifyPok(pok, c);
   }
 
