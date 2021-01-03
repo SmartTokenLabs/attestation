@@ -4,21 +4,24 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.math.ec.ECFieldElement;
-import org.bouncycastle.math.ec.ECFieldElement.Fp;
 import org.bouncycastle.math.ec.ECPoint;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
 
 public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
@@ -40,6 +43,24 @@ public class CryptoTest {
     subjectKeys = crypto.constructECKeys();
     issuerKeys = crypto.constructECKeys();
     senderKeys = crypto.constructECKeys();
+  }
+
+  @Test
+  public void tooSmallCurveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+    verifyCurveOrder.setAccessible(true);
+    // Set 2^253-1
+    BigInteger smallCurveOrder = BigInteger.ONE.shiftLeft(253).subtract(BigInteger.ONE);
+    assertFalse((boolean) verifyCurveOrder.invoke(crypto, smallCurveOrder));
+  }
+
+  @Test
+  public void tooLargeCurveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+    verifyCurveOrder.setAccessible(true);
+    // Set the final curveOrder field to 2^254
+    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(254);
+    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
   }
 
   @Test
@@ -206,25 +227,26 @@ public class CryptoTest {
 
   @Test
   public void testMapToInteger() {
-    BigInteger value = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID);
+    BigInteger value = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
     // Sanity checks
     assertFalse(value.equals(BigInteger.ZERO));
     assertFalse(value.equals(BigInteger.ONE));
-    assertFalse(value.equals(AttestationCrypto.curveOrder));
-    assertFalse(value.equals(AttestationCrypto.fieldSize));
+    assertFalse(value.compareTo(AttestationCrypto.curveOrder) >= 0);
+    assertFalse(value.compareTo(AttestationCrypto.fieldSize) >= 0);
     assertFalse(value.equals(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)));
     assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
+    assertTrue(value.shiftRight(AttestationCrypto.curveOrderBitLength-3).compareTo(BigInteger.ZERO) > 0);
 
     // Check consistency
-    BigInteger value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID);
+    BigInteger value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
     assertEquals(value, value2);
 
     // Negative tests
-    value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), "test");
+    value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, "test");
     assertNotEquals(value, value2);
-    value2 = AttestationCrypto.mapToInteger(TYPE.ordinal(), ID + "   1");
+    value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, ID + "   1");
     assertNotEquals(value, value2);
-    value2 = AttestationCrypto.mapToInteger(AttestationType.PHONE.ordinal(), ID);
+    value2 = AttestationCrypto.mapToCurveMultiplier(AttestationType.PHONE, ID);
     assertNotEquals(value, value2);
   }
 
@@ -301,6 +323,10 @@ public class CryptoTest {
    * @return A corresponding y coordinate for x
    */
   private static ECPoint computePoint(BigInteger x) {
+    // Verify that fieldSize = 3 mod 4, otherwise the crypto won't work
+    if (!AttestationCrypto.fieldSize.mod(new BigInteger("4")).equals(new BigInteger("3"))) {
+      throw new RuntimeException("The crypto will not work with this choice of curve");
+    }
     x = x.mod(AttestationCrypto.fieldSize);
     BigInteger ySquare, quadraticResidue;
     ECPoint resPoint, referencePoint;
