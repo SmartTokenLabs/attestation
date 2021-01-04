@@ -1,7 +1,10 @@
 package org.devcon.ticket;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.ticket.Ticket;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.util.io.pem.PemObject;
@@ -40,20 +43,19 @@ public class Issuer {
             int devconID = Integer.parseInt(args[2]);
             BigInteger ticketID = new BigInteger(args[3]);
             int ticketClass = Integer.parseInt(args[4]);
-            ECPrivateKey issuerKey = readPrivateKey(keyFile);
-            //Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKey, sharedSecret);
+            AsymmetricCipherKeyPair issuerKey = DERUtility.restoreBase64Keys(readFile(keyFile));
+            Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKey, sharedSecret);
         }
     }
-    static ECPrivateKey readPrivateKey(File file) throws Exception {
-        KeyFactory factory = KeyFactory.getInstance("EC");
 
-        try (FileReader keyReader = new FileReader(file);
-             PemReader pemReader = new PemReader(keyReader)) {
-
-            PemObject pemObject = pemReader.readPemObject();
-            byte[] content = pemObject.getContent();
-            PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(content);
-            return (ECPrivateKey) factory.generatePrivate(privKeySpec);
+    private static String readFile(File file) throws FileNotFoundException {
+        Scanner reader = new Scanner(file);
+        StringBuffer buf = new StringBuffer();
+        while (reader.hasNextLine()) {
+            buf.append(reader.nextLine());
+            buf.append(System.lineSeparator());
         }
+        reader.close();
+        return buf.toString();
     }
 }
