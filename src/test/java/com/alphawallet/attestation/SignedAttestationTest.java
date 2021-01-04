@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
@@ -32,9 +33,9 @@ public class SignedAttestationTest {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    AttestationCrypto crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeysWithLowestYCoord();
-    issuerKeys = crypto.constructECKeysWithLowestYCoord();
+    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    subjectKeys = crypto.constructECKeys();
+    issuerKeys = crypto.constructECKeys();
   }
 
   @Test

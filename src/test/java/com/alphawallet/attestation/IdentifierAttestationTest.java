@@ -8,6 +8,8 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
@@ -27,9 +29,9 @@ public class IdentifierAttestationTest {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    AttestationCrypto crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeysWithLowestYCoord();
-    otherKeys = crypto.constructECKeysWithLowestYCoord();
+    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    subjectKeys = crypto.constructECKeys();
+    otherKeys = crypto.constructECKeys();
   }
 
   @Test

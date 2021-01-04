@@ -12,6 +12,7 @@ import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
 import java.io.IOException;
@@ -53,10 +54,10 @@ public class TestUseTicket {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeysWithLowestYCoord();
-    attestorKeys = crypto.constructECKeysWithLowestYCoord();
-    ticketIssuerKeys = crypto.constructECKeysWithLowestYCoord();
+    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    subjectKeys = crypto.constructECKeys();
+    attestorKeys = crypto.constructECKeys();
+    ticketIssuerKeys = crypto.constructECKeys();
   }
 
   @BeforeEach

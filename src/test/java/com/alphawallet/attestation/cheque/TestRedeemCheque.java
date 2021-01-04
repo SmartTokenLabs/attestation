@@ -13,6 +13,7 @@ import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -46,10 +47,10 @@ public class TestRedeemCheque {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeysWithLowestYCoord();
-    issuerKeys = crypto.constructECKeysWithLowestYCoord();
-    senderKeys = crypto.constructECKeysWithLowestYCoord();
+    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    subjectKeys = crypto.constructECKeys();
+    issuerKeys = crypto.constructECKeys();
+    senderKeys = crypto.constructECKeys();
   }
 
   @BeforeEach

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.ticket.Ticket.TicketClass;
@@ -45,9 +46,9 @@ public class TestTicket {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    AttestationCrypto crypto = new AttestationCrypto(rand);
-    senderKeys = crypto.constructECKeysWithLowestYCoord();
-    otherKeys = crypto.constructECKeysWithLowestYCoord();
+    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    senderKeys = crypto.constructECKeys();
+    otherKeys = crypto.constructECKeys();
   }
 
   @Test

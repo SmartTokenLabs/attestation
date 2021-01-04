@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -21,7 +20,6 @@ import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -78,19 +76,6 @@ public class AttestationCrypto {
     byte[] hash = KECCAK.digest();
     //finally get only the last 20 bytes
     return "0x" + Hex.toHexString(Arrays.copyOfRange(hash,hash.length-20,hash.length)).toUpperCase();
-  }
-
-  public AsymmetricCipherKeyPair constructECKeysWithLowestYCoord() {
-    AsymmetricCipherKeyPair keys;
-    BigInteger yCoord;
-    BigInteger fieldModulo = ECDSAdomain.getCurve().getField().getCharacteristic();
-    // If the y coordinate is in the upper half of the field, then sample again until it to the lower half
-    do {
-      keys = constructECKeys();
-      ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-      yCoord = pk.getQ().getYCoord().toBigInteger();
-    } while (yCoord.compareTo(fieldModulo.shiftRight(1)) > 0);
-    return keys;
   }
 
   public AsymmetricCipherKeyPair constructECKeys() {

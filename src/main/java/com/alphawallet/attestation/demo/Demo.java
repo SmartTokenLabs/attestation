@@ -5,6 +5,7 @@ import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.cheque.Cheque;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
@@ -35,7 +36,7 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Demo {
-  static AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
+  static AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(new SecureRandom());
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
     CommandLine line;
@@ -142,7 +143,7 @@ public class Demo {
   }
 
   private static void createKeys(AttestationCrypto crypto, String pubDir, String privDir) throws IOException {
-    AsymmetricCipherKeyPair keys = crypto.constructECKeysWithLowestYCoord();
+    AsymmetricCipherKeyPair keys = crypto.constructECKeys();
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
         .createSubjectPublicKeyInfo(keys.getPublic());
     byte[] pub = spki.getEncoded();

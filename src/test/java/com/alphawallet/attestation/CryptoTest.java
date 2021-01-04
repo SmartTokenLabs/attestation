@@ -13,6 +13,8 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
@@ -36,9 +38,9 @@ public class CryptoTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeysWithLowestYCoord();
-    issuerKeys = crypto.constructECKeysWithLowestYCoord();
-    senderKeys = crypto.constructECKeysWithLowestYCoord();
+    subjectKeys = crypto.constructECKeys();
+    issuerKeys = crypto.constructECKeys();
+    senderKeys = crypto.constructECKeys();
   }
 
   @Test
@@ -57,31 +59,15 @@ public class CryptoTest {
 
   @Test
   public void testECKeyWithLowY() {
-    AttestationCrypto crypto = new AttestationCrypto(rand) {
-      private int counter = 0;
-      @Override
-      public AsymmetricCipherKeyPair constructECKeys() {
-        AsymmetricCipherKeyPair keys = super.constructECKeys();
-          if (counter < 10) {
-            // Ensure that the keys have a large y
-            ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-            BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
-            BigInteger fieldModulo = ECDSAdomain.getCurve().getField().getCharacteristic();
-            if (yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0) {
-              pk = new ECPublicKeyParameters(pk.getQ().negate(), pk.getParameters());
-              keys = new AsymmetricCipherKeyPair(pk, keys.getPrivate());
-            }
-          }
-          counter++;
-          return keys;
-      }
-    };
-    AsymmetricCipherKeyPair keys = crypto.constructECKeysWithLowestYCoord();
-    ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-    BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
-    BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
-    assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
-
+    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    for (int i=0; i<10; i++) {
+      AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+      ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
+      BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
+      System.out.println(yCoord);
+      BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
+      assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
+    }
   }
 
   @Test
