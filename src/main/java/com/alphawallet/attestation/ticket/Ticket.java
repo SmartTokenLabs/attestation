@@ -36,7 +36,7 @@ public class Ticket implements Attestable {
   }
 
   private final BigInteger ticketId;
-  private TicketClass ticketClass = null;
+  private final int ticketClass;
   private final int devconId;
   private final byte[] commitment;
   private final AlgorithmIdentifier algorithm;
@@ -54,7 +54,7 @@ public class Ticket implements Attestable {
    * @param keys The keys used to sign the cheque
    * @param secret the secret that must be known to cash the cheque
    */
-  public Ticket(String mail, int devconId, BigInteger ticketId, TicketClass ticketClass,
+  public Ticket(String mail, int devconId, BigInteger ticketId, int ticketClass,
       AsymmetricCipherKeyPair keys, BigInteger secret ) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
@@ -80,7 +80,7 @@ public class Ticket implements Attestable {
     }
   }
 
-  public Ticket(int devconId, BigInteger ticketId, TicketClass ticketClass, byte[] commitment, byte[] signature, AsymmetricKeyParameter publicKey) {
+  public Ticket(int devconId, BigInteger ticketId, int ticketClass, byte[] commitment, byte[] signature, AsymmetricKeyParameter publicKey) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
     this.devconId = devconId;
@@ -109,7 +109,7 @@ public class Ticket implements Attestable {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new ASN1Integer(devconId));
     ticket.add(new ASN1Integer(ticketId));
-    ticket.add(new ASN1Integer(ticketClass.getValue()));
+    ticket.add(new ASN1Integer(ticketClass));
     return new DERSequence(ticket);
   }
 
@@ -165,7 +165,7 @@ public class Ticket implements Attestable {
     return ticketId;
   }
 
-  public TicketClass getTicketClass() {
+  public int getTicketClass() {
     return ticketClass;
   }
 

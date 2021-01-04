@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 public class TestUseTicket {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
-  private static final TicketClass TICKET_CLASS = TicketClass.REGULAR;
+  private static final int TICKET_CLASS = TicketClass.REGULAR.getValue();
   private static final int CONFERENCE_ID = 6;
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
