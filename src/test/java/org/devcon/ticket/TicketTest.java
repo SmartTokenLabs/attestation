@@ -116,11 +116,19 @@ public class TicketTest {
   }
 
   @Test
+  public void saveDerEncoded() throws IOException {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] encoded = ticket.getDerEncoding();
+    // write the ticket data
+    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
+    encoded = ticket.getDerEncodingWithPK();
+    Files.write(new File(PREFIX + "signed-devcon-ticket-with-pk.der").toPath(), encoded);
+  }
+
+  @Test
   public void testFullDecodingWithPK() throws Exception {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncodingWithPK();
-    // write the ticket data
-    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
 
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
