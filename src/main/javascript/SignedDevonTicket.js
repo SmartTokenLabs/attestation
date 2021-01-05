@@ -8,6 +8,7 @@ import {
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
+import PublicKeyInfo from "./PublicKeyInfo.js";
 
 export class DevconTicket {
   //**********************************************************************************
@@ -141,6 +142,8 @@ export class SignedDevconTicket {
 
       // TODO: issue #75
       // this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
+	  
+	  this.publicKeyInfo = new PublicKeyInfo(source.publicKeyInfo)
 
       this.signatureValue = getParametersValue(
           source,
@@ -189,21 +192,18 @@ export class SignedDevconTicket {
           name: "publicKeyInfo",
           optional: true,
           value: [
-            AlgorithmIdentifier.schema(
-                names.signatureAlgorithm || {
+            PublicKeyInfo.schema(
+                names.publicKeyInfo || {
                   names: {
-                    blockName: "signatureAlgorithm",
+                    blockName: "publicKeyInfo",
                   },
                 }
-            ),
-            new BitString({
-              name: "publicKey"
-            }),
+            )
           ]
         }),
 
         new BitString({
-          name: names.signatureValue || "signatureValue",
+          name: "signatureValue",
         }),
       ],
     });
@@ -220,6 +220,7 @@ export class SignedDevconTicket {
       "ticket",
       "commitment",
       // TODO: #75
+	  "publicKeyInfo",
       "signatureValue",
     ]);
     //endregion
@@ -242,6 +243,9 @@ export class SignedDevconTicket {
 
     // TODO: issue #75
     // this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
+	this.publicKeyInfo = new PublicKeyInfo({
+      schema: asn1.result.publicKeyInfo,
+    });
 
     const signatureValue = asn1.result.signatureValue;
     this.signatureValue = signatureValue.valueBlock.valueHex;    //endregion

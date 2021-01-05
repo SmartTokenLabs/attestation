@@ -102,8 +102,8 @@ export default class AlgorithmIdentifier {
       name: names.blockName || "",
       optional: names.optional || false,
       value: [
-        new ObjectIdentifier({ name: names.algorithmIdentifier || "" }),
-        new Any({ name: names.algorithmParams || "", optional: true }),
+        new ObjectIdentifier({ name: names.algorithmIdentifier || "algorithm" }),
+        new Any({ name: names.algorithmParams || "parameters", optional: true }),
       ],
     });
   }
