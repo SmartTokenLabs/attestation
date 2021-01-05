@@ -1,27 +1,9 @@
-package com.alphawallet.attestation.ticket;
+package org.devcon.ticket;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import com.alphawallet.attestation.Attestation;
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.SignedAttestation;
-import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.*;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
-import org.devcon.ticket.Ticket;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -30,10 +12,19 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
-import org.devcon.ticket.TicketDecoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUseTicket {
   private static final String MAIL = "test@test.ts";
