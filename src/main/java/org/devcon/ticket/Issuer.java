@@ -2,30 +2,28 @@ package org.devcon.ticket;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.ticket.Ticket;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.util.io.pem.PemObject;
-import org.bouncycastle.util.io.pem.PemReader;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileNotFoundException;
 import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.SecureRandom;
-import java.security.interfaces.ECPrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Scanner;
 
 public class Issuer {
     static SecureRandom rand = new SecureRandom();
 
-    public static void main (String... args) throws java.lang.Exception{
+    public static void main(String... args) throws java.lang.Exception {
         int curveLength = AttestationCrypto.curveOrder.toString(2).length();
         /* secret shared between the issuer and the ticket holder */
         BigInteger sharedSecret = new BigInteger(curveLength, rand);
-        if (sharedSecret.compareTo(AttestationCrypto.curveOrder) >= 0)  {
+        if (sharedSecret.compareTo(AttestationCrypto.curveOrder) >= 0) {
             main(args);
             return;
         }
@@ -43,8 +41,17 @@ public class Issuer {
             int devconID = Integer.parseInt(args[2]);
             BigInteger ticketID = new BigInteger(args[3]);
             int ticketClass = Integer.parseInt(args[4]);
-            AsymmetricCipherKeyPair issuerKey = DERUtility.restoreBase64Keys(readFile(keyFile));
-            Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKey, sharedSecret);
+            byte[] dataCER = DERUtility.restoreBytes(readFile(keyFile));
+            ASN1InputStream asn1InputStream = new ASN1InputStream(dataCER);
+            ASN1Primitive dataASN1 = asn1InputStream.readObject();
+            asn1InputStream.close();
+            // will throw up badly if dataASN1 is not instanceof ASN1Sequence
+            AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
+            Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
+            byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeyPair.getPublic()).getPublicKeyData().getEncoded();
+            String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
+            url= "https://ticket.devcon.org?ticket=" + url + ";secret=0x" + sharedSecret.toString(16);
+            System.out.println(url);
         }
     }
 
