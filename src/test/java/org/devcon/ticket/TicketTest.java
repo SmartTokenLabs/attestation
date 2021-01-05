@@ -24,7 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestTicket {
+public class TicketTest {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("48646");
   private static final int TICKET_CLASS = 0; // Regular ticket
@@ -57,7 +57,7 @@ public class TestTicket {
 
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.printf("%s?ticket=%s;secret=0x%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString(16));
+    printWriter.printf("%s?ticket=%s;secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
     printWriter.close();
     
     List<byte[]> decoded = URLUtility.decodeList(ticketInUrl);
