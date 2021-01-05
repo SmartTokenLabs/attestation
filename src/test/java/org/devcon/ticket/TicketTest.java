@@ -24,7 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class TestTicket {
+public class TicketTest {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("48646");
   private static final int TICKET_CLASS = 0; // Regular ticket
