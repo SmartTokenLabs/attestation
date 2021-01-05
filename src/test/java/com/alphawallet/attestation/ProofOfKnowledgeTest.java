@@ -10,6 +10,9 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.demo.SmartContract;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Random;
+
+import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -69,9 +72,10 @@ public class ProofOfKnowledgeTest {
     byte[] com1 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET1);
     byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
     ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+    pok = new ProofOfExponent(pok.getDerEncoding());
     assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
     SmartContract sc = new SmartContract();
-    sc.testEncoding(pok);
+    sc.verifyEqualityProof(com1, com2, pok);
     ProofOfExponent newPok = new ProofOfExponent(pok.getDerEncoding());
     assertTrue(crypto.verifyEqualityProof(com1, com2, newPok));
     assertEquals(pok.getBase(), newPok.getBase());
@@ -103,4 +107,99 @@ public class ProofOfKnowledgeTest {
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
   }
 
+  @Test
+  public void TestContract() {
+    gen.setSeed(System.nanoTime());
+    SmartContract sc = new SmartContract();
+
+    // Equality proof soak test
+    for (int i = 0; i < 80; i++)
+    {
+      String id = generateID();
+      byte[] com1 = crypto.makeCommitment(id, AttestationType.EMAIL, SECRET1);
+      byte[] com2 = crypto.makeCommitment(id, AttestationType.EMAIL, SECRET2);
+      ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+      System.out.println(Numeric.toHexString(pok.getDerEncoding()));
+      assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
+      assertTrue(sc.verifyEqualityProof(com1, com2, pok));
+    }
+
+    // Legacy attestation request proof
+    for (int i = 0; i < 10; i++)
+    {
+      ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN.add(BigInteger.valueOf(i)));
+      assertTrue(crypto.verifyAttestationRequestProof(pok));
+      assertTrue(sc.testEncoding(pok));
+    }
+
+    // Negative tests
+    for (int i = 0; i < 10; i++)
+    {
+      String id = generateID();
+      byte[] com1 = crypto.makeCommitment(id, AttestationType.EMAIL, SECRET1);
+      byte[] com2 = crypto.makeCommitment(id, AttestationType.EMAIL, SECRET2);
+      ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+      ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+      assertFalse(sc.verifyEqualityProof(com1, com2, newPok));
+    }
+
+    for (int i = 0; i < 5; i++)
+    {
+      ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN.add(BigInteger.valueOf(i)));
+      assertTrue(crypto.verifyAttestationRequestProof(pok));
+      ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+      assertFalse(sc.testEncoding(newPok));
+    }
+  }
+
+  private final static Random gen = new Random();
+
+  //Generates a fairly random email address
+  private String generateID()
+  {
+    return names[gen.nextInt(names.length)].toLowerCase() + "@" +
+            names[gen.nextInt(names.length)].toLowerCase() +
+            suffixes[gen.nextInt(suffixes.length)];
+  }
+
+  static final String[] names = { "Violet",
+          "Marcelline",
+          "Darlleen",
+          "Adelle",
+          "Di",
+          "Merrie",
+          "Asia",
+          "Lesly",
+          "Fredericka",
+          "Anestassia",
+          "Brana",
+          "Cathie",
+          "Joelly",
+          "Christian",
+          "Elvira",
+          "Joelly",
+          "Lita",
+          "Mahalia",
+          "Judy",
+          "Marcelline",
+          "Belva",
+          "Dione",
+          "Max",
+          "Justin",
+          "Roxanne",
+          "Tom",
+          "Dick",
+          "Harry" };
+
+  static final String[] suffixes = { ".com",
+          ".co.uk",
+          ".org",
+          ".io",
+          ".com.au",
+          ".edu",
+          ".co",
+          ".cn",
+          ".jp",
+          ".xyz",
+          ".eth" };
 }
