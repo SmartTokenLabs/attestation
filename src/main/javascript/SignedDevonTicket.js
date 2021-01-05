@@ -115,11 +115,18 @@ export class SignedDevconTicket {
   constructor(source = {}) {
     if (typeof(source) == "string") {
 
-      let urlBase64String = source.substring(source.indexOf('?')+1);
-      const ber = this.readFromUrlBase64String(urlBase64String).buffer;
+      const url = new URL(source);
+      const search_params = url.searchParams;
+      const ticket = search_params.get('ticket');
 
-      const ans1ArrayBuffer = fromBER(ber);
-      this.fromSchema(ans1ArrayBuffer.result);
+      let base64str = ticket
+          .split('_').join('+')
+          .split('-').join('/')
+          .split('.').join('=');
+
+      let der = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+      const asn1 = fromBER(der);
+      this.fromSchema(asn1.result);
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source);
@@ -142,28 +149,6 @@ export class SignedDevconTicket {
     }
   }
 
-  readFromUrlBase64String(urlBase64str) {
-    let base64str = urlBase64str
-        .split('_').join('-')
-        .split('/').join('+')
-        .split('.').join('=');
-    let unit8Array = this.base64ToUint8array(base64str);
-    return unit8Array;
-    //return Array.from(unit8Array);
-  }
-
-
-  base64ToUint8array( base64str ) {
-    let asciiStr = this.atob( base64str );
-    let byteArray = [];
-    for (let i = 0; i < asciiStr.length; i++) {
-      byteArray.push(asciiStr.charCodeAt(i));
-    }
-    return Uint8Array.from( byteArray );
-  }
-  atob(a) {
-    return new Buffer(a, 'base64').toString('binary');
-  };
   //**********************************************************************************
   /**
    * Return value of pre-defined ASN.1 schema for current class
