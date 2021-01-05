@@ -28,7 +28,7 @@ public class DERUtility {
    * @param input The DER encoded input
    * @return
    */
-  public static AsymmetricCipherKeyPair restoreBase64Keys(String input) {
+  public static AsymmetricCipherKeyPair restoreBase64Keys(List<String> input) {
     try {
       ECPrivateKeyParameters priv = (ECPrivateKeyParameters)
           PrivateKeyFactory.createKey(restoreBytes(input));
@@ -40,6 +40,13 @@ public class DERUtility {
     }
   }
 
+  /**
+   * Converts ASNPrimitive data in RFC5915 format to a keypair.
+   * Ideally, in production environment keys shouldn't be in RFC5915 key distribution format,
+   * but rather in PKCS#8 format so that it can be encrypted.
+   * @param data
+   * @return
+   */
   public static AsymmetricCipherKeyPair restoreRFC5915Key(ASN1Primitive data) {
     ECPrivateKey pKey = ECPrivateKey.getInstance(data);
     BigInteger d = pKey.getKey();
@@ -84,8 +91,7 @@ public class DERUtility {
    * @param input The string containing the base64 encoding
    * @return the raw DER bytes that are encoded
    */
-  public static byte[] restoreBytes(String input) throws IOException {
-    List<String> lines = Arrays.asList(input.split("\\n").clone());
+  public static byte[] restoreBytes(List<String> lines) throws IOException {
     // skip first and last line
     List<String> arr = lines.subList(1, lines.size()-1);
     StringBuffer buf = new StringBuffer();

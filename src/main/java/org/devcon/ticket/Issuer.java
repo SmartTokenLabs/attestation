@@ -9,17 +9,17 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Scanner;
 
 public class Issuer {
     static SecureRandom rand = new SecureRandom();
 
-    public static void main(String... args) throws java.lang.Exception {
+    public static void main(String... args) throws java.io.IOException{
         int curveLength = AttestationCrypto.curveOrder.toString(2).length();
         /* secret shared between the issuer and the ticket holder */
         BigInteger sharedSecret = new BigInteger(curveLength, rand);
@@ -36,12 +36,12 @@ public class Issuer {
             System.err.println("{ticketID}\tAn integer ticket ID.");
             System.err.println("{ticketClass}\tAn integer representing the ticket class.");
         } else {
-            File keyFile = new File(args[0]);
             String mail = args[1];
             int devconID = Integer.parseInt(args[2]);
             BigInteger ticketID = new BigInteger(args[3]);
             int ticketClass = Integer.parseInt(args[4]);
-            byte[] dataCER = DERUtility.restoreBytes(readFile(keyFile));
+            Path keyFile = Paths.get(args[0]);
+            byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
             ASN1InputStream asn1InputStream = new ASN1InputStream(dataCER);
             ASN1Primitive dataASN1 = asn1InputStream.readObject();
             asn1InputStream.close();
@@ -53,16 +53,5 @@ public class Issuer {
             url= "https://ticket.devcon.org?ticket=" + url + ";secret=0x" + sharedSecret.toString(16);
             System.out.println(url);
         }
-    }
-
-    private static String readFile(File file) throws FileNotFoundException {
-        Scanner reader = new Scanner(file);
-        StringBuffer buf = new StringBuffer();
-        while (reader.hasNextLine()) {
-            buf.append(reader.nextLine());
-            buf.append(System.lineSeparator());
-        }
-        reader.close();
-        return buf.toString();
     }
 }
