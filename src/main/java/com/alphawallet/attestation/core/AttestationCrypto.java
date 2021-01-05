@@ -137,7 +137,7 @@ public class AttestationCrypto {
   public ProofOfExponent computeAttestationProof(BigInteger randomness) {
     // Compute the random part of the commitment, i.e. H^randomness
     ECPoint riddle = H.multiply(randomness);
-    List<ECPoint> challengeList = Arrays.asList(G, H, riddle);
+    List<ECPoint> challengeList = Arrays.asList(H, riddle);
     return constructSchnorrPOK(riddle, randomness, challengeList);
   }
 
@@ -166,7 +166,7 @@ public class AttestationCrypto {
     // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger exponent = randomness1.subtract(randomness2).mod(curveOrder);
-    List<ECPoint> challengeList = Arrays.asList(G, H, comPoint1, comPoint2);
+    List<ECPoint> challengeList = Arrays.asList(H, comPoint1, comPoint2);
     return constructSchnorrPOK(riddle, exponent, challengeList);
   }
 
@@ -188,7 +188,7 @@ public class AttestationCrypto {
       c = mapTo256BitInteger(makeArray(finalChallengeList));
       d = hiding.add(c.multiply(exponent)).mod(curveOrder);
     } while (c.compareTo(curveOrder) >= 0);
-    return new ProofOfExponent(H, riddle.normalize(), t.normalize(), d);
+    return new ProofOfExponent(riddle.normalize(), t.normalize(), d);
   }
 
   /**
@@ -197,11 +197,7 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
-    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint())));
-    // Ensure that the right base has been used in the proof
-    if (!pok.getBase().equals(H)) {
-      return false;
-    }
+    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(H, pok.getRiddle(), pok.getPoint())));
     return verifyPok(pok, c);
   }
 
@@ -222,16 +218,12 @@ public class AttestationCrypto {
     if (!riddle.equals(pok.getRiddle())) {
       return false;
     }
-    // Ensure that the right base has been used in the proof
-    if (!pok.getBase().equals(H)) {
-      return false;
-    }
-    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(G, pok.getBase(), comPoint1, comPoint2, pok.getPoint())));
+    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(H, comPoint1, comPoint2, pok.getPoint())));
     return verifyPok(pok, c);
   }
 
   private static boolean verifyPok(ProofOfExponent pok, BigInteger c) {
-    ECPoint lhs = pok.getBase().multiply(pok.getChallenge());
+    ECPoint lhs = H.multiply(pok.getChallenge());
     ECPoint rhs = pok.getRiddle().multiply(c).add(pok.getPoint());
     return lhs.equals(rhs);
   }

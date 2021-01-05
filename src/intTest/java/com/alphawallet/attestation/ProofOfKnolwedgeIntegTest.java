@@ -43,7 +43,8 @@ public class ProofOfKnolwedgeIntegTest {
             BigInteger rVal = new BigInteger(bytes);
             ProofOfExponent pok = crypto.computeAttestationProof(rVal);
             assertTrue(crypto.verifyAttestationRequestProof(pok));
-            ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+            ProofOfExponent newPok = new ProofOfExponent(
+                pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
             assertFalse(sc.testEncoding(newPok));
         }
     }
