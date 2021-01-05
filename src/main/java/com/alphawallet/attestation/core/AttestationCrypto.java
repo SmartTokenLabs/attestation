@@ -12,7 +12,6 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
