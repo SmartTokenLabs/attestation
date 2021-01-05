@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Date;
+
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -28,7 +30,7 @@ public class AttestationTest {
     public static void setupKeys() throws Exception {
         rand = SecureRandom.getInstance("SHA1PRNG");
         rand.setSeed("seed".getBytes());
-        AttestationCrypto crypto = new AttestationCrypto(rand);
+        AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
         subjectKeys = crypto.constructECKeys();
     }
 

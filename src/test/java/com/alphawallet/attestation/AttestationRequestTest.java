@@ -9,6 +9,8 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,7 +25,7 @@ public class AttestationRequestTest {
     SecureRandom rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCrypto(rand);
+    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     subjectKeys = crypto.constructECKeys();
   }
 

@@ -1,26 +1,9 @@
-package com.alphawallet.attestation.ticket;
+package org.devcon.ticket;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import com.alphawallet.attestation.Attestation;
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.SignedAttestation;
-import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.*;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
-import com.alphawallet.attestation.ticket.Ticket.TicketClass;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -33,10 +16,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 public class TestUseTicket {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
-  private static final TicketClass TICKET_CLASS = TicketClass.REGULAR;
+  private static final int TICKET_CLASS = 0;  // Regular ticket
   private static final int CONFERENCE_ID = 6;
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
@@ -53,7 +46,7 @@ public class TestUseTicket {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCrypto(rand);
+    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     subjectKeys = crypto.constructECKeys();
     attestorKeys = crypto.constructECKeys();
     ticketIssuerKeys = crypto.constructECKeys();

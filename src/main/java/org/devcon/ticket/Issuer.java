@@ -1,0 +1,53 @@
+package org.devcon.ticket;
+
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.URLUtility;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
+public class Issuer {
+    static SecureRandom rand = new SecureRandom();
+
+    public static void main(String... args) throws java.io.IOException{
+        int curveLength = AttestationCrypto.curveOrder.toString(2).length();
+        /* secret shared between the issuer and the ticket holder */
+        BigInteger sharedSecret = new BigInteger(curveLength, rand);
+        if (sharedSecret.compareTo(AttestationCrypto.curveOrder) >= 0) {
+            main(args);
+            return;
+        }
+
+        if (args.length != 5) {
+            System.err.println("Commandline Options:");
+            System.err.println("{key.pem}\tPath to the PEM file that contains the issuer private key.");
+            System.err.println("{mail}\tThe email address of the ticket owner.");
+            System.err.println("{devconID}\tAn integer which is 6 for Devcon 6.");
+            System.err.println("{ticketID}\tAn integer ticket ID.");
+            System.err.println("{ticketClass}\tAn integer representing the ticket class.");
+        } else {
+            String mail = args[1];
+            int devconID = Integer.parseInt(args[2]);
+            BigInteger ticketID = new BigInteger(args[3]);
+            int ticketClass = Integer.parseInt(args[4]);
+            Path keyFile = Paths.get(args[0]);
+            byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
+            ASN1InputStream asn1InputStream = new ASN1InputStream(dataCER);
+            ASN1Primitive dataASN1 = asn1InputStream.readObject();
+            asn1InputStream.close();
+            // will throw up badly if dataASN1 is not instanceof ASN1Sequence
+            AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
+            Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
+            System.out.printf("%s?ticket=%s;secret=0x%s", Ticket.magicLinkURLPrefix, ticket.getUrlEncoding(), sharedSecret.toString(16));
+        }
+    }
+}

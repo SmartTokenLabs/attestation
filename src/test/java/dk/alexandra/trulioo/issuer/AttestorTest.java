@@ -8,6 +8,8 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.util.*;
 
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -71,17 +73,12 @@ public class AttestorTest {
 
     /* obtaining resulting attestations */
     List<X509CertificateHolder> certs = attestor.constructAttestations(request, record, signature, userKeys.getPublic());
-
-    JcaX509ContentVerifierProviderBuilder builder = new JcaX509ContentVerifierProviderBuilder();
-    SubjectPublicKeyInfo issuerSpki =  SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(serverKeys.getPublic());
-    ContentVerifierProvider verifier = builder.build(issuerSpki);
     for (X509CertificateHolder cert : certs) {
-      System.out.println(
-          ASN1Util.printDER(cert.getEncoded(), "CERTIFICATE"));
-      // This is how to take a encoded certificate and convert it back to X509CertificateHolder
-      // X509CertificateHolder currentCert = new X509CertificateHolder(cert.getEncoded);
+      System.out.println(ASN1Util.printDER(cert.getEncoded(), "CERTIFICATE"));
+      byte[] TBSCert = getTBSCert(cert);
+      byte[] certSig = cert.getSignature();
+      Assertions.assertTrue(SignatureUtil.verifySha256(TBSCert, certSig, serverKeys.getPublic()));
       Assertions.assertTrue(cert.isValidOn(new Date(System.currentTimeMillis())));
-      Assertions.assertTrue(cert.isSignatureValid(verifier));
     }
 
     // TODO the code below does not work since only named ECParameters are supported in X509CertImpl
@@ -94,7 +91,14 @@ public class AttestorTest {
 //        Assert.fail();
 //      }
 //    }
+  }
 
+  private byte[] getTBSCert(X509CertificateHolder cert) throws Exception {
+    byte[] certBytes = cert.getEncoded();
+    ASN1InputStream asnCertStream = new ASN1InputStream(certBytes);
+    ASN1Sequence asnCertSeq = ASN1Sequence.getInstance(asnCertStream.readObject());
+    // The first object is TBSCert
+    return asnCertSeq.getObjectAt(0).toASN1Primitive().getEncoded();
   }
 
   public static AsymmetricCipherKeyPair constructSecp256k1Keys(SecureRandom rand) {

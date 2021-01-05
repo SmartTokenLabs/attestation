@@ -1,4 +1,4 @@
-package com.alphawallet.attestation.ticket;
+package org.devcon.ticket;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.Attestable;
@@ -6,6 +6,9 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
+
+import com.alphawallet.attestation.core.URLUtility;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -19,29 +22,13 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Ticket implements Attestable {
-
-  // TODO we need details on this
-  public enum TicketClass {
-    REGULAR(0),
-    VIP(1),
-    SPEAKER(2),
-    STAFF(3);
-    private final int value;
-
-    TicketClass(final int newValue) {
-      value = newValue;
-    }
-
-    public int getValue() { return value; }
-  }
-
   private final BigInteger ticketId;
-  private TicketClass ticketClass = null;
+  private final int ticketClass;
   private final int devconId;
   private final byte[] commitment;
   private final AlgorithmIdentifier algorithm;
   private final byte[] signature;
-
+  public static final String magicLinkURLPrefix = "https://ticket.devcon.org/";
   private final AsymmetricKeyParameter publicKey;
   private final byte[] encoded;
 
@@ -54,7 +41,7 @@ public class Ticket implements Attestable {
    * @param keys The keys used to sign the cheque
    * @param secret the secret that must be known to cash the cheque
    */
-  public Ticket(String mail, int devconId, BigInteger ticketId, TicketClass ticketClass,
+  public Ticket(String mail, int devconId, BigInteger ticketId, int ticketClass,
       AsymmetricCipherKeyPair keys, BigInteger secret ) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
@@ -80,7 +67,7 @@ public class Ticket implements Attestable {
     }
   }
 
-  public Ticket(int devconId, BigInteger ticketId, TicketClass ticketClass, byte[] commitment, byte[] signature, AsymmetricKeyParameter publicKey) {
+  public Ticket(int devconId, BigInteger ticketId, int ticketClass, byte[] commitment, byte[] signature, AsymmetricKeyParameter publicKey) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
     this.devconId = devconId;
@@ -109,7 +96,7 @@ public class Ticket implements Attestable {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new ASN1Integer(devconId));
     ticket.add(new ASN1Integer(ticketId));
-    ticket.add(new ASN1Integer(ticketClass.getValue()));
+    ticket.add(new ASN1Integer(ticketClass));
     return new DERSequence(ticket);
   }
 
@@ -144,6 +131,14 @@ public class Ticket implements Attestable {
     return encoded;
   }
 
+  /*
+   * TODO: there must be a way to not throw java.io.IOException here.
+   */
+  public String getUrlEncoding() throws java.io.IOException {
+    SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(this.publicKey);
+    return URLUtility.encodeList(Arrays.asList(this.encoded, keyInfo.getPublicKeyData().getEncoded()));
+  }
+
   @Override
   public boolean verify() {
     try {
@@ -165,7 +160,7 @@ public class Ticket implements Attestable {
     return ticketId;
   }
 
-  public TicketClass getTicketClass() {
+  public int getTicketClass() {
     return ticketClass;
   }
 
