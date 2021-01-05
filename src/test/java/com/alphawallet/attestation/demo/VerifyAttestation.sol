@@ -133,28 +133,15 @@ contract DerDecode {
         (lhs[0], lhs[1]) = extractXYFromPoint(com1);
         (rhs[0], rhs[1]) = extractXYFromPoint(com2);
         (base[0], base[1]) = extractXYFromPoint(pok.base);
-        
-        //ecVals[2] = rhs[0];
-        //ecVals[3] = rhs[1];
-        
+
         rhs = ecInv(rhs);
         
-        //ecVals[4] = rhs[0];
-        //ecVals[5] = rhs[1];
-        
         uint256[2] memory riddle = ecAdd(lhs, rhs);
-        
-        uint256[2] memory riddlePoint;
-        (riddlePoint[0], riddlePoint[1]) = extractXYFromPoint(pok.riddle);
-        
-        //ecVals[0] = riddlePoint[0];
-        //ecVals[1] = riddlePoint[1];
-        
-        //ecVals[2] = riddle[0];
-        //ecVals[3] = riddle[1];
+        uint256[2] memory checkPoint;
+        (checkPoint[0], checkPoint[1]) = extractXYFromPoint(pok.riddle);
         
         //Verify proof matches the commitments
-        if (!ecEquals(riddlePoint, riddle))
+        if (!ecEquals(checkPoint, riddle))
         {
             revert();
         }
@@ -164,33 +151,20 @@ contract DerDecode {
         {
             revert();
         }
-        
-        //Note: if needed we can hand optimise this, but the gain is small
-        //bytes memory cArray = abi.encodePacked(GPoint, pok.base, comPoint1, comPoint2, pok.tPoint); //
+
         bytes memory cArray = concat5(GPoint, pok.base, com1, com2, pok.tPoint); 
         uint256 c = mapToCurveMultiplier(cArray);
         
         lhs = ecMul(pok.challenge, base[0], base[1]);
         if (lhs[0] == 0 && lhs[1] == 0) { revert(); } //early revert to avoid spending more gas
         
-        //ECPoint riddle muliply by proof (component hash)
+        //ECPoint riddle multiply by proof (component hash)
         rhs = ecMul(c, riddle[0], riddle[1]);
         if (rhs[0] == 0 && rhs[1] == 0) { revert(); } //early revert to avoid spending more gas
         
-        //ecVals[2] = rhs[0];
-        //ecVals[3] = rhs[1];
-        //ecVals[4] = c;
-        
         //Add result of riddle.multiply(c) to point
-        uint256[2] memory tPointCoords;
-        (tPointCoords[0], tPointCoords[1]) = extractXYFromPoint(pok.tPoint);
-        rhs = ecAdd(rhs, tPointCoords);
-        
-        //ecVals[0] = lhs[0];
-        //ecVals[1] = lhs[1];
-        
-        //ecVals[2] = rhs[0];
-        //ecVals[3] = rhs[1];
+        (checkPoint[0], checkPoint[1]) = extractXYFromPoint(pok.tPoint);
+        rhs = ecAdd(rhs, checkPoint);
         
         return ecEquals(lhs, rhs);
     }
