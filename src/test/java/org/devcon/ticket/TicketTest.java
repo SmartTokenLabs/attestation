@@ -20,6 +20,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,16 +54,16 @@ public class TicketTest {
     BigInteger senderSecret = new BigInteger("45845870684");
     Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
 
-    String ticketInUrl = ticket.getUrlEncoding();
+    String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
 
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    // the full URL would look like this:
-    // printWriter.printf("%s?ticket=%s;secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
-    printWriter.print(ticketInUrl);
+    printWriter.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+    // this should also work
+    //printWriter.print(ticketInUrl);
     printWriter.close();
     
-    List<byte[]> decoded = URLUtility.decodeList(ticketInUrl);
+    List<byte[]> decoded = URLUtility.decodeList(ticket.getUrlEncoding());
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
     assertTrue(newTicket.verify());
     assertTrue(newTicket.checkValidity());
