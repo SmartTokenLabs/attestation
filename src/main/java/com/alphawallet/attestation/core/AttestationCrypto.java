@@ -10,8 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -38,8 +38,8 @@ public class AttestationCrypto {
   public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
-  // NOTE: Curve order for BN256 is 253 bit
-  public static final int curveOrderBitLength = curveOrder.bitLength() - 1; // minus 1 since the bitcount includes an extra bit for sign since BigInteger is two's complement
+  // NOTE: Curve order for BN256 is 254 bit
+  public static final int curveOrderBitLength = curveOrder.bitLength(); // minus 1 since the bitcount includes an extra bit for sign since BigInteger is two's complement
   public static final BigInteger cofactor = new BigInteger("1");
   public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, cofactor);
   // Generator for message part of Pedersen commitments generated deterministically from mapToInteger queried on 0 and mapped to the curve using try-and-increment
@@ -59,7 +59,7 @@ public class AttestationCrypto {
   private boolean verifyCurveOrder(BigInteger curveOrder) {
     // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
     // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
-    if (curveOrder.compareTo(BigInteger.ONE.shiftLeft(curveOrderBitLength)) < 0 || curveOrder.shiftRight(curveOrderBitLength+1).compareTo(BigInteger.ZERO) > 0) {
+    if (curveOrder.compareTo(BigInteger.ONE.shiftLeft(curveOrderBitLength-1)) < 0 || curveOrder.shiftRight(curveOrderBitLength).compareTo(BigInteger.ZERO) > 0) {
       System.err.println("Curve order is not 253 bits which is required by the current implementation");
       return false;
     }
@@ -137,11 +137,8 @@ public class AttestationCrypto {
   public ProofOfExponent computeAttestationProof(BigInteger randomness) {
     // Compute the random part of the commitment, i.e. H^randomness
     ECPoint riddle = H.multiply(randomness);
-    BigInteger r = makeSecret();
-    ECPoint t = H.multiply(r);
-    BigInteger c = mapToCurveMultiplier(makeArray(Arrays.asList(G, H, riddle, t)));
-    BigInteger d = r.add(c.multiply(randomness)).mod(curveOrder);
-    return new ProofOfExponent(H, riddle.normalize(), t.normalize(), d);
+    List<ECPoint> challengeList = Arrays.asList(G, H, riddle);
+    return constructSchnorrPOK(riddle, randomness, challengeList);
   }
 
   /**
@@ -168,11 +165,29 @@ public class AttestationCrypto {
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
     ECPoint riddle = comPoint1.subtract(comPoint2);
-    BigInteger hiding = makeSecret();
-    ECPoint t = H.multiply(hiding);
-    // TODO ideally Bob's ethreum address should also be part of the challenge
-    BigInteger c = mapToCurveMultiplier(makeArray(Arrays.asList(G, H, comPoint1, comPoint2, t)));
-    BigInteger d = hiding.add(c.multiply(randomness1.subtract(randomness2))).mod(curveOrder);
+    BigInteger exponent = randomness1.subtract(randomness2).mod(curveOrder);
+    List<ECPoint> challengeList = Arrays.asList(G, H, comPoint1, comPoint2);
+    return constructSchnorrPOK(riddle, exponent, challengeList);
+  }
+
+  /**
+   * Constructs a Schnorr proof of knowledge of exponent of a riddle to base H.
+   * The challenge value used (c) is computed from the challengeList and the internal t value.
+   * The method uses rejection sampling to ensure that the t value is sampled s.t. the
+   * challenge will always be less than curveOrder.
+   */
+  private ProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengeList) {
+    ECPoint t;
+    BigInteger c, d;
+    // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
+    do {
+      BigInteger hiding = makeSecret();
+      t = H.multiply(hiding);
+      List<ECPoint> finalChallengeList = new ArrayList<>(challengeList);
+      finalChallengeList.add(t);
+      c = mapTo256BitInteger(makeArray(finalChallengeList));
+      d = hiding.add(c.multiply(exponent)).mod(curveOrder);
+    } while (c.compareTo(curveOrder) >= 0);
     return new ProofOfExponent(H, riddle.normalize(), t.normalize(), d);
   }
 
@@ -182,7 +197,7 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
-    BigInteger c = mapToCurveMultiplier(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint())));
+    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(G, pok.getBase(), pok.getRiddle(), pok.getPoint())));
     // Ensure that the right base has been used in the proof
     if (!pok.getBase().equals(H)) {
       return false;
@@ -211,7 +226,7 @@ public class AttestationCrypto {
     if (!pok.getBase().equals(H)) {
       return false;
     }
-    BigInteger c = mapToCurveMultiplier(makeArray(Arrays.asList(G, pok.getBase(), comPoint1, comPoint2, pok.getPoint())));
+    BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(G, pok.getBase(), comPoint1, comPoint2, pok.getPoint())));
     return verifyPok(pok, c);
   }
 
@@ -225,7 +240,7 @@ public class AttestationCrypto {
     return new BigInteger(256+128, rand).mod(curveOrder);
   }
 
-  private static byte[] makeArray(List<ECPoint> points ) {
+  static byte[] makeArray(List<ECPoint> points ) {
     try {
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
       for (ECPoint current : points) {
@@ -240,25 +255,17 @@ public class AttestationCrypto {
   }
 
   /**
-   * Map a byte array into a Big Integer between 0 and curveOrder-1 using Keccak 256 and rejection sampling.
-   * NOTE: This method is hardcoded to curves of 256 bits
+   * Map a byte array into a uniformly random 256 bit (positive) integer, stored as a Big Integer.
    */
-  private static BigInteger mapToCurveMultiplier(byte[] value) {
+  static BigInteger mapTo256BitInteger(byte[] input) {
     try {
-      BigInteger res;
-      byte[] nextInput = value;
-      do {
-        MessageDigest KECCAK = new Keccak.Digest256();
-        KECCAK.reset();
-        // In case of failure we rehash using the old output
-        KECCAK.update(nextInput);
-        nextInput = KECCAK.digest();
-        // Construct an unsigned BigInteger from the bytes
-        res = new BigInteger(1, nextInput);
-        // Shift the result in case the curve order is less than 256 to get larger probability of success
-        res = res.shiftRight(255-curveOrderBitLength);
-      } while (res.compareTo(curveOrder) >= 0);
-      return res;
+      MessageDigest KECCAK = new Keccak.Digest256();
+      KECCAK.reset();
+      // In case of failure we rehash using the old output
+      KECCAK.update(input);
+      byte[] digest = KECCAK.digest();
+      // Construct an positive BigInteger from the bytes
+      return new BigInteger(1, digest);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -266,14 +273,19 @@ public class AttestationCrypto {
 
   /**
    * Maps and identifier of a certain type to an integer deterministic, yet sampled from
-   * the uniformly random distribution between 0 and curveOrder -1
+   * the uniformly random distribution between 0 and curveOrder -1.
+   * This is done using deterministic rejection sampling based on the input.
    */
   public static BigInteger mapToCurveMultiplier(AttestationType type, String identity) {
     byte[] identityBytes = identity.trim().toLowerCase().getBytes(StandardCharsets.UTF_8);
     ByteBuffer buf = ByteBuffer.allocate(4 + identityBytes.length);
     buf.putInt(type.ordinal());
     buf.put(identityBytes);
-    return mapToCurveMultiplier(buf.array());
+    BigInteger sampledVal = new BigInteger(1, buf.array());
+    do {
+      sampledVal = mapTo256BitInteger(sampledVal.toByteArray());
+    } while (sampledVal.compareTo(curveOrder) >= 0);
+    return sampledVal;
   }
 
   public static ECPoint decodePoint(byte[] point) {

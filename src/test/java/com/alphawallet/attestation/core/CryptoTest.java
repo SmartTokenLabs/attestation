@@ -1,4 +1,4 @@
-package com.alphawallet.attestation;
+package com.alphawallet.attestation.core;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -216,6 +217,18 @@ public class CryptoTest {
   }
 
   @Test
+  public void testRejectionSamplingInEqualityProof() {
+    for (int i = 1; i < 40; i++) {
+      byte[] com1 = AttestationCrypto.makeCommitment(ID+i, TYPE, SECRET1.add(BigInteger.valueOf(i)));
+      byte[] com2 = AttestationCrypto.makeCommitment(ID+i, TYPE, SECRET2.multiply(BigInteger.valueOf(i)));
+      ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1.add(BigInteger.valueOf(i)),  SECRET2.multiply(BigInteger.valueOf(i)));
+      // Compute the c value used in the proof and for proof verification
+      BigInteger c = AttestationCrypto.mapTo256BitInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.G, pok.getBase(), AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
+      assertTrue(c.compareTo(AttestationCrypto.curveOrder) < 0);
+    }
+  }
+
+  @Test
   public void testMakeSecret() {
     BigInteger sec = crypto.makeSecret();
     // Sanity check
@@ -226,7 +239,7 @@ public class CryptoTest {
   }
 
   @Test
-  public void testMapToInteger() {
+  public void testMapToCurveMultiplier() {
     BigInteger value = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
     // Sanity checks
     assertFalse(value.equals(BigInteger.ZERO));
@@ -235,7 +248,8 @@ public class CryptoTest {
     assertFalse(value.compareTo(AttestationCrypto.fieldSize) >= 0);
     assertFalse(value.equals(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)));
     assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
-    assertTrue(value.shiftRight(AttestationCrypto.curveOrderBitLength-3).compareTo(BigInteger.ZERO) > 0);
+    // This should hold with probability at least 1-2^-30
+    assertTrue(value.shiftRight(AttestationCrypto.curveOrderBitLength-30).compareTo(BigInteger.ZERO) > 0);
 
     // Check consistency
     BigInteger value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
@@ -248,6 +262,26 @@ public class CryptoTest {
     assertNotEquals(value, value2);
     value2 = AttestationCrypto.mapToCurveMultiplier(AttestationType.PHONE, ID);
     assertNotEquals(value, value2);
+  }
+
+  @Test
+  public void verifyLargeOutputOfMapToMultiplier() {
+    int counter = 0;
+    // Except with probability 2^-40 we should get at least one result that is curveOrderBitLength long,
+    // hence we ensure that the result of mapToCurveMultiplier is greater than 0 when shifting curveOrderBitLength to the right
+    for (int i = 0; i < 40; i++) {
+      BigInteger res = AttestationCrypto.mapToCurveMultiplier(TYPE, Integer.toString(i));
+      if (res.shiftRight(AttestationCrypto.curveOrderBitLength-1).compareTo(BigInteger.ZERO) > 0) {
+        counter++;
+      }
+      // This should hold with probability at least 1-2^-30
+      assertTrue(res.shiftRight(AttestationCrypto.curveOrderBitLength-30).compareTo(BigInteger.ZERO) > 0);
+      // Sanity check
+      assertFalse(res.equals(BigInteger.ZERO));
+      assertFalse(res.equals(BigInteger.ONE));
+      assertFalse(res.compareTo(AttestationCrypto.curveOrder) >= 0);
+    }
+    assertTrue(counter > 0);
   }
 
   @Test
