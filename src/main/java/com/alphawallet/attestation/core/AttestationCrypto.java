@@ -43,9 +43,9 @@ public class AttestationCrypto {
   public static final BigInteger cofactor = new BigInteger("1");
   public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, cofactor);
   // Generator for message part of Pedersen commitments generated deterministically from mapToInteger queried on 0 and mapped to the curve using try-and-increment
-  public static final ECPoint G = curve.createPoint(new BigInteger("12022136709705892117842496518378933837282529509560188557390124672992517127582"), new BigInteger("6765325636686621066142015726326349598074684595222800743368698766652936798612"));
+  public static final ECPoint G = curve.createPoint(new BigInteger("15729599519504045482191519010597390184315499143087863467258091083496429125073"), new BigInteger("1368880882406055711853124887741765079727455879193744504977106900552137574951"));
   // Generator for randomness part of Pedersen commitments generated deterministically from  mapToInteger queried on 1 to the curve using try-and-increment
-  public static final ECPoint H = curve.createPoint(new BigInteger("12263903704889727924109846582336855803381529831687633314439453294155493615168"), new BigInteger("1637819407897162978922461013726819811885734067940976901570219278871042378189"));
+  public static final ECPoint H = curve.createPoint(new BigInteger("10071451177251346351593122552258400731070307792115572537969044314339076126231"), new BigInteger("2894161621123416739138844080004799398680035544501805450971689609134516348045"));
   private final SecureRandom rand;
 
   public AttestationCrypto(SecureRandom rand) {

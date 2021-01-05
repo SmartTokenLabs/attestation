@@ -323,31 +323,32 @@ public class CryptoTest {
 
   /**
    * This test is here to show that we have nothing-up-our-sleeve in picking the generators
-   * @throws Exception
    */
   @Test
-  public void computeGenerators() throws Exception {
+  public void computeGenerators() {
     assertFalse(AttestationCrypto.G.add(AttestationCrypto.G).isInfinity());
     assertFalse(AttestationCrypto.H.add(AttestationCrypto.H).isInfinity());
 
-    Method mapToInteger = AttestationCrypto.class.getDeclaredMethod("mapToInteger", byte[].class);
-    mapToInteger.setAccessible(true);
-
-    byte[] input = new byte[1];
-    input[0] = 0;
-    BigInteger gVal = (BigInteger) mapToInteger.invoke(crypto, input);
+    BigInteger gVal = rejectionSample(BigInteger.ZERO);
     ECPoint g = computePoint(gVal);
     assertEquals(AttestationCrypto.G, g);
     // Check order
     assertTrue(g.multiply(AttestationCrypto.curveOrder).isInfinity());
     assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), g.normalize().getXCoord().getEncoded());
-    input[0] = 1;
-    BigInteger hVal = (BigInteger) mapToInteger.invoke(crypto, input);
+
+    BigInteger hVal = rejectionSample(BigInteger.ONE);
     ECPoint h = computePoint(hVal);
     assertEquals(AttestationCrypto.H, h);
     // Check order
     assertTrue(h.multiply(AttestationCrypto.curveOrder).isInfinity());
     assertArrayEquals(h.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), h.normalize().getXCoord().getEncoded());
+  }
+
+  private BigInteger rejectionSample(BigInteger seed) {
+    do {
+      seed = AttestationCrypto.mapTo256BitInteger(seed.toByteArray());
+    } while (seed.compareTo(AttestationCrypto.curveOrder) >= 0);
+    return seed;
   }
 
   /**
