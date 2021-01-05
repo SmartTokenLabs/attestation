@@ -20,6 +20,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,14 +54,16 @@ public class TicketTest {
     BigInteger senderSecret = new BigInteger("45845870684");
     Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
 
-    String ticketInUrl = ticket.getUrlEncoding();
+    String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
 
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.printf("%s?ticket=%s;secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+    printWriter.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+    // this should also work
+    //printWriter.print(ticketInUrl);
     printWriter.close();
     
-    List<byte[]> decoded = URLUtility.decodeList(ticketInUrl);
+    List<byte[]> decoded = URLUtility.decodeList(ticket.getUrlEncoding());
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
     assertTrue(newTicket.verify());
     assertTrue(newTicket.checkValidity());
@@ -114,11 +117,19 @@ public class TicketTest {
   }
 
   @Test
+  public void saveDerEncoded() throws IOException {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] encoded = ticket.getDerEncoding();
+    // write the ticket data
+    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
+    encoded = ticket.getDerEncodingWithPK();
+    Files.write(new File(PREFIX + "signed-devcon-ticket-with-pk.der").toPath(), encoded);
+  }
+
+  @Test
   public void testFullDecodingWithPK() throws Exception {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncodingWithPK();
-    // write the ticket data
-    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
 
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
