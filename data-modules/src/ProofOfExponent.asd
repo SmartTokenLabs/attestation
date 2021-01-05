@@ -3,9 +3,6 @@
   <namedType name="Proof">
     <type>
       <sequence>
-        <element name="base" type="asnx:OCTET-STRING">
-          <annotation>The generator</annotation>
-        </element>
         <element name="riddle" type="asnx:OCTET-STRING">
           <annotation>The value of which to prove knowledge its discrete logarithm</annotation>
         </element>
