@@ -3,7 +3,6 @@ package org.devcon.ticket;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.core.URLUtility;
-import com.alphawallet.attestation.ticket.Ticket;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;

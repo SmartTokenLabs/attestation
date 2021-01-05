@@ -1,4 +1,4 @@
-package com.alphawallet.attestation.ticket;
+package org.devcon.ticket;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.Attestable;
@@ -19,22 +19,6 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Ticket implements Attestable {
-
-  // TODO we need details on this
-  public enum TicketClass {
-    REGULAR(0),
-    VIP(1),
-    SPEAKER(2),
-    STAFF(3);
-    private final int value;
-
-    TicketClass(final int newValue) {
-      value = newValue;
-    }
-
-    public int getValue() { return value; }
-  }
-
   private final BigInteger ticketId;
   private final int ticketClass;
   private final int devconId;

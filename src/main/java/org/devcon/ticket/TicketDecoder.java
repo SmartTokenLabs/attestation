@@ -1,9 +1,7 @@
-package com.alphawallet.attestation.ticket;
+package org.devcon.ticket;
 
 import com.alphawallet.attestation.AttestableObjectDecoder;
-import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.ticket.Ticket.TicketClass;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;

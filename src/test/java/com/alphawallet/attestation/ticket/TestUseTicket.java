@@ -14,7 +14,7 @@ import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
-import com.alphawallet.attestation.ticket.Ticket.TicketClass;
+import org.devcon.ticket.Ticket;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
@@ -30,6 +30,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
+import org.devcon.ticket.TicketDecoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ import org.junit.jupiter.api.Test;
 public class TestUseTicket {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
-  private static final int TICKET_CLASS = TicketClass.REGULAR.getValue();
+  private static final int TICKET_CLASS = 0;  // Regular ticket
   private static final int CONFERENCE_ID = 6;
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
