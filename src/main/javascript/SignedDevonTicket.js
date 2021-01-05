@@ -124,7 +124,13 @@ export class SignedDevconTicket {
           .split('-').join('/')
           .split('.').join('=');
 
-      source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+      // source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+      if (typeof Buffer !== 'undefined') {
+        source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+      } else {
+        source = Uint8Array.from(atob(base64str), c => c.charCodeAt(0)).buffer;
+      }
+      
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source);
