@@ -124,9 +124,7 @@ export class SignedDevconTicket {
           .split('-').join('/')
           .split('.').join('=');
 
-      let der = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
-      const asn1 = fromBER(der);
-      this.fromSchema(asn1.result);
+      source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source);
