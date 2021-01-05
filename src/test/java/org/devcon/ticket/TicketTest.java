@@ -57,7 +57,9 @@ public class TicketTest {
 
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.printf("%s?ticket=%s;secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+    // the full URL would look like this:
+    // printWriter.printf("%s?ticket=%s;secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+    printWriter.print(ticketInUrl);
     printWriter.close();
     
     List<byte[]> decoded = URLUtility.decodeList(ticketInUrl);

@@ -116,11 +116,10 @@ export class SignedDevconTicket {
   constructor(source = {}) {
     if (typeof(source) == "string") {
 
-      const url = new URL(source);
-      const search_params = url.searchParams;
-      const ticket = search_params.get('ticket');
-
-      let base64str = ticket
+      const ticketEncoded = (source.startsWith("https://")) ?
+          (new URL(source)).searchParams.get('ticket') : source;
+      
+      let base64str = ticketEncoded
           .split('_').join('+')
           .split('-').join('/')
           .split('.').join('=');
