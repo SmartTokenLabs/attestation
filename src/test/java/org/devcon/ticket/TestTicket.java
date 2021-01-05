@@ -53,15 +53,14 @@ public class TestTicket {
     BigInteger senderSecret = new BigInteger("45845870684");
     Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
 
-    byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()).getPublicKeyData().getEncoded();
-    String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
+    String ticketInUrl = ticket.getUrlEncoding();
 
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.printf("https://ticket.devcon.org?%s", url);
+    printWriter.printf("%s?ticket=%s;secret=0x%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString(16));
     printWriter.close();
     
-    List<byte[]> decoded = URLUtility.decodeList(url);
+    List<byte[]> decoded = URLUtility.decodeList(ticketInUrl);
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
     assertTrue(newTicket.verify());
     assertTrue(newTicket.checkValidity());

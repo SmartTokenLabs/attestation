@@ -6,6 +6,9 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
+
+import com.alphawallet.attestation.core.URLUtility;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -25,7 +28,7 @@ public class Ticket implements Attestable {
   private final byte[] commitment;
   private final AlgorithmIdentifier algorithm;
   private final byte[] signature;
-
+  public static final String magicLinkURLPrefix = "https://ticket.devcon.org/";
   private final AsymmetricKeyParameter publicKey;
   private final byte[] encoded;
 
@@ -126,6 +129,14 @@ public class Ticket implements Attestable {
   @Override
   public byte[] getDerEncoding() {
     return encoded;
+  }
+
+  /*
+   * TODO: there must be a way to not throw java.io.IOException here.
+   */
+  public String getUrlEncoding() throws java.io.IOException {
+    SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(this.publicKey);
+    return URLUtility.encodeList(Arrays.asList(this.encoded, keyInfo.getPublicKeyData().getEncoded()));
   }
 
   @Override

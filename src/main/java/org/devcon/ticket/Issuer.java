@@ -47,10 +47,7 @@ public class Issuer {
             // will throw up badly if dataASN1 is not instanceof ASN1Sequence
             AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
             Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
-            byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeyPair.getPublic()).getPublicKeyData().getEncoded();
-            String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
-            url= "https://ticket.devcon.org?ticket=" + url + ";secret=0x" + sharedSecret.toString(16);
-            System.out.println(url);
+            System.out.printf("%s?ticket=%s;secret=0x%s", Ticket.magicLinkURLPrefix, ticket.getUrlEncoding(), sharedSecret.toString(16));
         }
     }
 }
