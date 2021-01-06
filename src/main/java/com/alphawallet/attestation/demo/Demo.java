@@ -221,10 +221,11 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
+    /*FullProofOfExponent newPok = new FullProofOfExponent(redeem.getDerEncoding());
     if (!sc.testEncoding(redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");
-    }
+    }*/
   }
 
   private static void requestAttest(AttestationCrypto crypto, Path pathUserKey, String receiverId, AttestationType type,
