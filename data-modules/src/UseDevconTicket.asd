@@ -4,7 +4,7 @@
          schemaLocation="AttestationFramework.asd"/>
     <import name="SignedDevconTicket"
          schemaLocation="SignedDevconTicket.asd"/>
-    <import name="Proof"
+    <import name="UsageProof"
          schemaLocation="ProofOfExponent.asd"/>
     <namedType name="UseDevconTicket">
         <type>
@@ -15,8 +15,8 @@
                 <element name="attestation" type="MyAttestation">
                     <annotation>The X509v3 certificate that is the attestation to be used for redeeming</annotation>
                 </element>
-                <element name="proof" type="Proof">
-                    <annotation>Schnorr proof of knowledge</annotation>
+                <element name="proof" type="UsageProof">
+                    <annotation>Schnorr proof of knowledge based on the commitment in the attestation and signed Devcon Ticket</annotation>
                 </element>
                 <element name="signatureValue" type="asnx:BIT-STRING">
                     <annotation>Algorithm is always ECDSA secp256k1</annotation>

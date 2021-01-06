@@ -9,4 +9,10 @@ Proof ::= SEQUENCE {
     responseValue        OCTET STRING
 }
 
+-- Proof data needed when the riddle can be determined from other data objects --
+UsageProof ::= SEQUENCE {
+    challengePoint       OCTET STRING,
+    responseValue        OCTET STRING
+}
+
 END

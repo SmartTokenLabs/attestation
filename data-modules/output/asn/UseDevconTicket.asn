@@ -8,13 +8,13 @@ IMPORTS
         FROM AttestationFramework
     SignedDevconTicket
         FROM SignedDevconTicket
-    Proof
+    UsageProof
         FROM ProofOfExponent;
 
 UseDevconTicket ::= SEQUENCE {
     signedDevconTicket         SignedDevconTicket,
     attestation          MyAttestation,
-    proof                Proof,
+    proof                UsageProof,
     signatureValue       BIT STRING
 }
 

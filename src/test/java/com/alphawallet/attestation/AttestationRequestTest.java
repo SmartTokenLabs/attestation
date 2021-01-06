@@ -34,7 +34,7 @@ public class AttestationRequestTest {
     String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(request.getPok()));
     assertTrue(request.verify());
@@ -45,7 +45,7 @@ public class AttestationRequestTest {
     String id = "foo@bar.baz";
     AttestationType type = AttestationType.EMAIL;
     BigInteger secret = new BigInteger("42424242");
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     AttestationRequest newRequest = new AttestationRequest(request.getDerEncoding());
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(newRequest.getPok()));
@@ -68,7 +68,7 @@ public class AttestationRequestTest {
     String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     // Modify a bit of the signature
     request.getSignature()[20] ^= 1;

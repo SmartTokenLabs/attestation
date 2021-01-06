@@ -1,7 +1,9 @@
 package com.alphawallet.attestation.core;
 
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
+import com.alphawallet.attestation.UsageProofOfExponent;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -134,7 +136,7 @@ public class AttestationCrypto {
    * @param randomness The randomness used in the commitment
    * @return
    */
-  public ProofOfExponent computeAttestationProof(BigInteger randomness) {
+  public FullProofOfExponent computeAttestationProof(BigInteger randomness) {
     // Compute the random part of the commitment, i.e. H^randomness
     ECPoint riddle = H.multiply(randomness);
     List<ECPoint> challengeList = Arrays.asList(H, riddle);
@@ -160,14 +162,14 @@ public class AttestationCrypto {
    * @param randomness2 The randomness used in commitment2
    * @return
    */
-  public ProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2) {
+  public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2) {
     ECPoint comPoint1 = decodePoint(commitment1);
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger exponent = randomness1.subtract(randomness2).mod(curveOrder);
     List<ECPoint> challengeList = Arrays.asList(H, comPoint1, comPoint2);
-    return constructSchnorrPOK(riddle, exponent, challengeList);
+    return constructSchnorrPOK(riddle, exponent, challengeList).getUsageProofOfExponent();
   }
 
   /**
@@ -176,7 +178,7 @@ public class AttestationCrypto {
    * The method uses rejection sampling to ensure that the t value is sampled s.t. the
    * challenge will always be less than curveOrder.
    */
-  private ProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengeList) {
+  private FullProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengeList) {
     ECPoint t;
     BigInteger c, d;
     // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
@@ -188,7 +190,7 @@ public class AttestationCrypto {
       c = mapTo256BitInteger(makeArray(finalChallengeList));
       d = hiding.add(c.multiply(exponent)).mod(curveOrder);
     } while (c.compareTo(curveOrder) >= 0);
-    return new ProofOfExponent(riddle.normalize(), t.normalize(), d);
+    return new FullProofOfExponent(riddle.normalize(), t.normalize(), d);
   }
 
   /**
@@ -196,7 +198,7 @@ public class AttestationCrypto {
    * @param pok The proof to verify
    * @return True if the proof is OK and false otherwise
    */
-  public static boolean verifyAttestationRequestProof(ProofOfExponent pok)  {
+  public static boolean verifyAttestationRequestProof(FullProofOfExponent pok)  {
     BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(H, pok.getRiddle(), pok.getPoint())));
     return verifyPok(pok, c);
   }
@@ -214,15 +216,11 @@ public class AttestationCrypto {
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute the value the riddle should have
     ECPoint riddle = comPoint1.subtract(comPoint2);
-    // Verify the proof matches the commitments
-    if (!riddle.equals(pok.getRiddle())) {
-      return false;
-    }
     BigInteger c = mapTo256BitInteger(makeArray(Arrays.asList(H, comPoint1, comPoint2, pok.getPoint())));
-    return verifyPok(pok, c);
+    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge()), c);
   }
 
-  private static boolean verifyPok(ProofOfExponent pok, BigInteger c) {
+  private static boolean verifyPok(FullProofOfExponent pok, BigInteger c) {
     ECPoint lhs = H.multiply(pok.getChallenge());
     ECPoint rhs = pok.getRiddle().multiply(c).add(pok.getPoint());
     return lhs.equals(rhs);

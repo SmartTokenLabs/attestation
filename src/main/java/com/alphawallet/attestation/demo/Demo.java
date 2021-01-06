@@ -9,11 +9,10 @@ import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteris
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.ProofOfExponent;
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.SignedAttestation;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -24,7 +23,6 @@ import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.Scanner;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -239,7 +237,7 @@ public class Demo {
       String outputDirRequest, String outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
 
     if (!writeFile(outputDirRequest, DERUtility.printDER(request.getDerEncoding(), "ATTESTATION REQUEST"))) {

@@ -87,7 +87,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
-      this.pok = new ProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
+      this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
       this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
     } catch (IOException e) {
