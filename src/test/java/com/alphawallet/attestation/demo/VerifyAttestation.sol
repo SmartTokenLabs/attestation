@@ -43,21 +43,26 @@ contract DerDecode {
     event Value(uint256 indexed val);
     event RtnStr(bytes val);
     event RtnS(string val);
-    
-    uint256[2] private G = [ 12022136709705892117842496518378933837282529509560188557390124672992517127582,
-                             6765325636686621066142015726326349598074684595222800743368698766652936798612 ];
-                        
-    uint256[2] private H = [ 12263903704889727924109846582336855803381529831687633314439453294155493615168,
-                             1637819407897162978922461013726819811885734067940976901570219278871042378189 ];
-                             
-    uint256 constant curveOrderBitLength = 253;
+
+    uint256[2] private G = [ 15729599519504045482191519010597390184315499143087863467258091083496429125073,
+    1368880882406055711853124887741765079727455879193744504977106900552137574951 ];
+
+    uint256[2] private H = [ 10071451177251346351593122552258400731070307792115572537969044314339076126231,
+    2894161621123416739138844080004799398680035544501805450971689609134516348045 ];
+
+    uint256 constant curveOrderBitLength = 254;
     uint256 constant curveOrderBitShift = 255 - curveOrderBitLength;
-                             
-    bytes constant GPoint = abi.encodePacked(uint8(0x04), uint256(12022136709705892117842496518378933837282529509560188557390124672992517127582),
-                  uint256(6765325636686621066142015726326349598074684595222800743368698766652936798612));
-                                                                        
+    uint256 constant pointLength = 65;
+
+    // We create byte arrays for these at construction time to save gas when we need to use them
+    bytes constant GPoint = abi.encodePacked(uint8(0x04), uint256(15729599519504045482191519010597390184315499143087863467258091083496429125073),
+        uint256(1368880882406055711853124887741765079727455879193744504977106900552137574951));
+
+    bytes constant HPoint = abi.encodePacked(uint8(0x04), uint256(10071451177251346351593122552258400731070307792115572537969044314339076126231),
+        uint256(2894161621123416739138844080004799398680035544501805450971689609134516348045));
+
     uint256 callCount;
-                             
+
     constructor() public
     {
         owner = msg.sender;
@@ -70,17 +75,11 @@ contract DerDecode {
     }
 
     struct Exponent {
-        bytes base;
         bytes riddle;
         bytes tPoint;
         uint256 challenge;
     }
-
-    struct OctetString {
-        uint decodeIndex;
-        bytes byteCode;
-    }
-
+    
     //Payable variant of the attestation function for testing
     function decodeAttestationPayable(bytes memory attestation) public returns(bool)
     {
@@ -91,10 +90,10 @@ contract DerDecode {
         }
         else
         {
-            return false;
+            revert();
         }
     }
-    
+
     //Payable variant of the attestation function for testing
     function verifyEqualityProofPayable(bytes memory com1, bytes memory com2, bytes memory proof) public returns(bool)
     {
@@ -105,97 +104,51 @@ contract DerDecode {
         }
         else
         {
-            return false;
+            revert();
         }
     }
-    
+
     function verifyEqualityProof(bytes memory com1, bytes memory com2, bytes memory proof) public view returns(bool)
     {
         Length memory len;
-        OctetString memory octet;
         Exponent memory pok;
-        
+        bytes memory attestationData;
+        uint256 decodeIndex = 0;
+
         len = decodeLength(proof, 1);
-        octet.decodeIndex = len.decodeIndex;
-        
-        octet = decodeOctetString(proof, octet.decodeIndex);
-        pok.base = octet.byteCode;
-        octet = decodeOctetString(proof, octet.decodeIndex);
-        pok.riddle = octet.byteCode;
-        octet = decodeOctetString(proof, octet.decodeIndex);
-        pok.challenge = bytesToUint(octet.byteCode);
-        octet = decodeOctetString(proof, octet.decodeIndex);
-        pok.tPoint = octet.byteCode;
+        decodeIndex = len.decodeIndex;
+
+        (attestationData, decodeIndex) = decodeOctetString(proof, decodeIndex);
+        pok.challenge = bytesToUint(attestationData);
+        (pok.tPoint, decodeIndex) = decodeOctetString(proof, decodeIndex);
         
         uint256[2] memory lhs;
         uint256[2] memory rhs;
-        uint256[2] memory base;
         (lhs[0], lhs[1]) = extractXYFromPoint(com1);
         (rhs[0], rhs[1]) = extractXYFromPoint(com2);
-        (base[0], base[1]) = extractXYFromPoint(pok.base);
-        
-        //ecVals[2] = rhs[0];
-        //ecVals[3] = rhs[1];
         
         rhs = ecInv(rhs);
         
-        //ecVals[4] = rhs[0];
-        //ecVals[5] = rhs[1];
-        
         uint256[2] memory riddle = ecAdd(lhs, rhs);
-        
-        uint256[2] memory riddlePoint;
-        (riddlePoint[0], riddlePoint[1]) = extractXYFromPoint(pok.riddle);
-        
-        //ecVals[0] = riddlePoint[0];
-        //ecVals[1] = riddlePoint[1];
-        
-        //ecVals[2] = riddle[0];
-        //ecVals[3] = riddle[1];
-        
-        //Verify proof matches the commitments
-        if (!ecEquals(riddlePoint, riddle))
-        {
-            revert();
-        }
-        
-        //Ensure base is correct
-        if (!ecEquals(base, H))
-        {
-            revert();
-        }
-        
-        //Note: if needed we can hand optimise this, but the gain is small
-        //bytes memory cArray = abi.encodePacked(GPoint, pok.base, comPoint1, comPoint2, pok.tPoint); //
-        bytes memory cArray = concat5(GPoint, pok.base, com1, com2, pok.tPoint); 
-        uint256 c = mapToCurveMultiplier(cArray);
-        
-        lhs = ecMul(pok.challenge, base[0], base[1]);
-        if (lhs[0] == 0 && lhs[1] == 0) { revert(); } //early revert to avoid spending more gas
-        
-        //ECPoint riddle muliply by proof (component hash)
+
+        bytes memory cArray = concat4Fixed(HPoint, com1, com2, pok.tPoint);
+        uint256 c = mapTo256BitInteger(cArray);
+
+        lhs = ecMul(pok.challenge, H[0], H[1]);
+        if (lhs[0] == 0 && lhs[1] == 0) { return false; } //early revert to avoid spending more gas
+
+        //ECPoint riddle multiply by proof (component hash)
         rhs = ecMul(c, riddle[0], riddle[1]);
-        if (rhs[0] == 0 && rhs[1] == 0) { revert(); } //early revert to avoid spending more gas
-        
-        //ecVals[2] = rhs[0];
-        //ecVals[3] = rhs[1];
-        //ecVals[4] = c;
-        
-        //Add result of riddle.multiply(c) to point
-        uint256[2] memory tPointCoords;
-        (tPointCoords[0], tPointCoords[1]) = extractXYFromPoint(pok.tPoint);
-        rhs = ecAdd(rhs, tPointCoords);
-        
-        //ecVals[0] = lhs[0];
-        //ecVals[1] = lhs[1];
-        
-        //ecVals[2] = rhs[0];
-        //ecVals[3] = rhs[1];
-        
+        if (rhs[0] == 0 && rhs[1] == 0) { return false; } //early revert to avoid spending more gas
+
+        uint256[2] memory point;
+        (point[0], point[1]) = extractXYFromPoint(pok.tPoint);
+        rhs = ecAdd(rhs, point);
+
         return ecEquals(lhs, rhs);
     }
-    
-    function ecEquals(uint256[2] memory ecPoint1, uint256[2] memory ecPoint2) private view returns(bool)
+
+    function ecEquals(uint256[2] memory ecPoint1, uint256[2] memory ecPoint2) private pure returns(bool)
     {
         return (ecPoint1[0] == ecPoint2[0] && ecPoint1[1] == ecPoint2[1]);
     }
@@ -204,72 +157,68 @@ contract DerDecode {
     {
         Length memory len;
         Exponent memory pok;
-        OctetString memory octet;
+        bytes memory attestationData;
+        uint256 decodeIndex = 0;
 
         require(attestation[0] == (CONSTRUCTED_TAG | SEQUENCE_TAG));
 
         len = decodeLength(attestation, 1);
-        octet.decodeIndex = len.decodeIndex;
+        decodeIndex = len.decodeIndex;
 
         //decode parts
-        octet = decodeOctetString(attestation, octet.decodeIndex);
-        pok.base = octet.byteCode;
-        octet = decodeOctetString(attestation, octet.decodeIndex);
-        pok.riddle = octet.byteCode;
-        octet = decodeOctetString(attestation, octet.decodeIndex);
-        pok.challenge = bytesToUint(octet.byteCode);
-        octet = decodeOctetString(attestation, octet.decodeIndex);
-        pok.tPoint = octet.byteCode;
+        (pok.riddle, decodeIndex) = decodeOctetString(attestation, decodeIndex);
+        (attestationData, decodeIndex) = decodeOctetString(attestation, decodeIndex);
+        pok.challenge = bytesToUint(attestationData);
+        (pok.tPoint, decodeIndex) = decodeOctetString(attestation, decodeIndex);
 
         //Calculate LHS ECPoint
-        (uint256 x, uint256 y) = extractXYFromPoint(pok.base);
-        uint256[2] memory lhs = ecMul(pok.challenge, x, y);
-        
+        uint256[2] memory lhs = ecMul(pok.challenge, H[0], H[1]);
+        uint256[2] memory check;
+
         if (lhs[0] == 0 && lhs[1] == 0) { return false; } //early revert to avoid spending more gas
 
         //Calculate RHS ECPoint
-        (x, y) = extractXYFromPoint(pok.riddle);
-        
+        (check[0], check[1]) = extractXYFromPoint(pok.riddle);
+
         //The hand optimised concat4 is more optimal than using abi.encodePacked (checked the gas costs of both)
-        bytes memory cArray = concat4(GPoint, pok.base, pok.riddle, pok.tPoint);
-        uint256 c = mapToCurveMultiplier(cArray);
-        
+        bytes memory cArray = concat3Fixed(HPoint, pok.riddle, pok.tPoint);
+        uint256 c = mapTo256BitInteger(cArray);
+
         //ECPoint riddle muliply by component hash
-        uint256[2] memory rhs = ecMul(c, x, y);
-        
+        uint256[2] memory rhs = ecMul(c, check[0], check[1]);
+
         if (rhs[0] == 0 && rhs[1] == 0) { return false; } //early revert to avoid spending more gas
 
         //Add result of riddle.multiply(c) to point
-        (x, y) = extractXYFromPoint(pok.tPoint);
-        uint256[2] memory tPointCoords = [x, y];
-        rhs = ecAdd(rhs, tPointCoords);
-        
+        (check[0], check[1]) = extractXYFromPoint(pok.tPoint);
+        rhs = ecAdd(rhs, check);
+
         return ecEquals(lhs, rhs);
     }
 
     function ecMul(uint256 s, uint256 x, uint256 y) public view
-        returns (uint256[2] memory retP)
+    returns (uint256[2] memory retP)
     {
         bool success;
         // With a public key (x, y), this computes p = scalar * (x, y).
         uint256[3] memory i = [x, y, s];
-        
-        assembly 
+
+        assembly
         {
-            // call ecmul precompile
-            // inputs are: x, y, scalar
+        // call ecmul precompile
+        // inputs are: x, y, scalar
             success := staticcall (not(0), 0x07, i, 0x60, retP, 0x40)
         }
-        
+
         if (!success)
         {
             retP[0] = 0;
             retP[1] = 0;
         }
     }
-  
-    function ecInv(uint256[2] memory point) private view 
-        returns (uint256[2] memory invPoint)
+
+    function ecInv(uint256[2] memory point) private pure
+    returns (uint256[2] memory invPoint)
     {
         invPoint[0] = point[0];
         int256 n = int256(fieldSize) - int256(point[1]);
@@ -277,53 +226,40 @@ contract DerDecode {
         if (n < 0) { n += int256(fieldSize); }
         invPoint[1] = uint256(n);
     }
-    
+
     function ecAdd(uint256[2] memory p1, uint256[2] memory p2) public view
-        returns (uint256[2] memory retP)
+    returns (uint256[2] memory retP)
     {
         bool success;
         uint256[4] memory i = [p1[0], p1[1], p2[0], p2[1]];
-        
-        assembly 
+
+        assembly
         {
-            // call ecadd precompile
-            // inputs are: x1, y1, x2, y2
+        // call ecadd precompile
+        // inputs are: x1, y1, x2, y2
             success := staticcall (not(0), 0x06, i, 0x80, retP, 0x40)
         }
-        
+
         if (!success)
         {
             retP[0] = 0;
             retP[1] = 0;
         }
     }
-    
+
     function extractXYFromPoint(bytes memory data) public pure returns (uint256 x, uint256 y)
     {
-        bytes32 xBytes;
-        bytes32 yBytes;
-        assembly 
+        assembly
         {
-            xBytes := mload(add(data, 0x21)) //copy from 33rd byte because first 32 bytes are array length, then 1st byte of data is the 0x04; 
-            yBytes := mload(add(data, 0x41)) //65th byte as x value is 32 bytes.
+            x := mload(add(data, 0x21)) //copy from 33rd byte because first 32 bytes are array length, then 1st byte of data is the 0x04;
+            y := mload(add(data, 0x41)) //65th byte as x value is 32 bytes.
         }
-        
-        x = uint256(xBytes);
-        y = uint256(yBytes);
     }
-    
-    function extractXYFromPoint2(bytes memory data) public pure returns (uint256 x, uint256 y)
+
+    function mapTo256BitInteger(bytes memory input) public pure returns(uint256 res)
     {
-        bytes32 xBytes;
-        bytes32 yBytes;
-        assembly 
-        {
-            xBytes := mload(add(data, 0x21)) //copy from 33rd byte because first 32 bytes are array length, then 1st byte of data is the 0x04; 
-            yBytes := mload(add(data, 0x41)) //65th byte as x value is 32 bytes.
-        }
-        
-        x = uint256(xBytes);
-        y = uint256(yBytes);
+        bytes32 idHash = keccak256(input);
+        res = uint256(idHash);
     }
 
     function mapToCurveMultiplier(bytes memory input) public pure returns(uint256 res)
@@ -333,62 +269,70 @@ contract DerDecode {
         {
             bytes32 idHash = keccak256(nextInput);
             res = uint256(idHash) >> curveOrderBitShift;
-            if (res < curveOrder) //avoid generating the next value unless necessary
+            if (res >= curveOrder)
             {
-                break;
+                nextInput = abi.encodePacked(idHash);
             }
             else
             {
-                nextInput = abi.encodePacked(idHash);
+                break;
             }
         }
         while (res >= curveOrder);
     }
 
-    //Optimised for input bytes size to be 32; so far we don't see any other byte size
-    function bytesToUint(bytes memory b) public pure returns (uint256)
+    //Truncates if input is greater than 32 bytes; we only handle 32 byte values.
+    function bytesToUint(bytes memory b) public pure returns (uint256 conv)
     {
-        if (b.length == 32) //optimised for 32 byte values
+        if (b.length < 0x20) //if b is less than 32 bytes we need to pad to get correct value
         {
-            bytes32 temp;
-            assembly 
+            bytes memory b2 = new bytes(32);
+            uint startCopy = 0x20 + 0x20 - b.length;
+            assembly
             {
-                temp := mload(add(b, 32))
+                let bcc := add(b, 0x20)
+                let bbc := add(b2, startCopy)
+                mstore(bbc, mload(bcc))
+                conv := mload(add(b2, 32))
             }
-            return uint256(temp);
         }
         else
         {
-            uint256 number = 0;
-            for(uint i = 0; i < b.length; i++)
+            assembly
             {
-                number = number + uint(uint8(b[i]))*(2**(8*(b.length-(i+1))));
+                conv := mload(add(b, 32))
             }
-            return number;
         }
     }
 
-    //Optimise the 32 byte copy. 
-    //We could optimise slightly further by assuming the Octet string is always 65 bytes and completely unroll the assembly loop. 
-    function decodeOctetString(bytes memory byteCode, uint decodeIndex) private pure returns(OctetString memory data)
+    function decodeOctetString(bytes memory byteCode, uint dIndex) public pure returns(bytes memory data, uint index)
     {
-        data.decodeIndex = decodeIndex;
         Length memory len;
+        uint256 blank = 0;
+        index = dIndex;
 
-        require (byteCode[data.decodeIndex++] == OCTET_STRING_TAG);
+        require (byteCode[index++] == OCTET_STRING_TAG);
 
-        len = decodeLength(byteCode, data.decodeIndex);
-        data.decodeIndex = len.decodeIndex;   
+        len = decodeLength(byteCode, index);
+        index = len.decodeIndex;
 
-        uint dStart = 0x20 + data.decodeIndex;
-        bytes memory tempBytes = new bytes(len.length);
+        uint dStart = 0x20 + index;
         uint cycles = len.length / 0x20;
+        uint requiredAlloc = len.length;
+
+        if (len.length % 0x20 > 0) //optimise copying the final part of the bytes - remove the looping
+        {
+            cycles++;
+            requiredAlloc += 0x20; //expand memory to allow end blank
+        }
+
+        data = new bytes(requiredAlloc);
 
         assembly {
-            let mc := add(tempBytes, 0x20) //structure offset for uint plus byte size entry
+            let mc := add(data, 0x20) //offset into bytes we're writing into
             let cycle := 0
-            
-            for 
+
+            for
             {
                 let cc := add(byteCode, dStart)
             } lt(cycle, cycles) {
@@ -399,21 +343,27 @@ contract DerDecode {
                 mstore(mc, mload(cc))
             }
         }
-        
-        data.decodeIndex += cycles * 0x20;
-        uint remainder = len.length % 0x20;
-        for (uint i = 0; i < remainder; i++)
+
+        //finally blank final bytes and shrink size
+        if (len.length % 0x20 > 0)
         {
-            tempBytes[i+cycles*0x20] = byteCode[data.decodeIndex++];
+            uint offsetStart = 0x20 + len.length;
+            uint length = len.length;
+            assembly
+            {
+                let mc := add(data, offsetStart)
+                mstore(mc, mload(add(blank, 0x20)))
+            //now shrink the memory back
+                mstore(data, length)
+            }
         }
-        
-        data.byteCode = tempBytes;
+
+        index += len.length;
     }
 
-    function decodeLength(bytes memory byteCode, uint decodeIndex) private pure returns(Length memory)
+    function decodeLength(bytes memory byteCode, uint decodeIndex) private pure returns(Length memory retVal)
     {
         uint codeLength = 1;
-        Length memory retVal;
         retVal.length = 0;
         retVal.decodeIndex = decodeIndex;
 
@@ -426,8 +376,6 @@ contract DerDecode {
         {
             retVal.length |= uint(uint8(byteCode[retVal.decodeIndex++] & 0xFF)) << ((codeLength - i - 1) * 8);
         }
-
-        return retVal;
     }
 
     function decodeIA5String(bytes memory byteCode, uint256[] memory objCodes, uint objCodeIndex, uint decodeIndex) private pure returns(Status memory)
@@ -525,9 +473,8 @@ contract DerDecode {
         }
         else revert();
     }
-    
-    //Most optimal 4 byte array variable length concatenate. If sizes of the inputs are static we can optimise this even further
-    function concat4(
+
+    function concat4Fixed(
         bytes memory _bytes1,
         bytes memory _bytes2,
         bytes memory _bytes3,
@@ -535,28 +482,19 @@ contract DerDecode {
     )
     internal
     pure
-    returns (bytes memory)
+    returns (bytes memory join)
     {
-        bytes memory tempBytes;
+        join = new bytes(pointLength*4); //in this case, we know how large the end result will be
 
         assembly {
-        // Get a location of some free memory and store it in tempBytes as
-        // Solidity does for memory variables.
-            tempBytes := mload(0x40)
-
-        // Store the length of the first bytes array at the beginning of
-        // the memory for tempBytes.
-            let length := mload(_bytes1)
-            let totalLength := length
-            mstore(tempBytes, length)
 
         // Maintain a memory counter for the current write location in the
         // temp bytes array by adding the 32 bytes for the array length to
         // the starting location.
-            let mc := add(tempBytes, 0x20)
+            let mc := add(join, 0x20)
         // Stop copying when the memory counter reaches the length of the
         // first bytes array.
-            let end := add(mc, length)
+            let end := add(mc, pointLength)
 
             for {
             // Initialize a copy counter to the start of the _bytes1 data,
@@ -572,18 +510,12 @@ contract DerDecode {
                 mstore(mc, mload(cc))
             }
 
-        // Add the length of _bytes2 to the current length of tempBytes
-        // and store it as the new length in the first 32 bytes of the
-        // tempBytes memory.
-            length := mload(_bytes2)
-            mstore(tempBytes, add(length, mload(tempBytes)))
-
         // Move the memory counter back from a multiple of 0x20 to the
         // actual end of the _bytes1 data.
             mc := end
         // Stop copying when the memory counter reaches the new combined
         // length of the arrays.
-            end := add(mc, length)
+            end := add(mc, pointLength)
 
             for {
                 let cc := add(_bytes2, 0x20)
@@ -594,19 +526,12 @@ contract DerDecode {
                 mstore(mc, mload(cc))
             }
 
-
-        // Add the length of _bytes3 to the current length of tempBytes
-        // and store it as the new length in the first 32 bytes of the
-        // tempBytes memory.
-            length := mload(_bytes3)
-            mstore(tempBytes, add(length, mload(tempBytes)))    
-
         // Move the memory counter back from a multiple of 0x20 to the
         // actual end of the _bytes1 data.
             mc := end
         // Stop copying when the memory counter reaches the new combined
         // length of the arrays.
-            end := add(mc, length)
+            end := add(mc, pointLength)
 
             for {
                 let cc := add(_bytes3, 0x20)
@@ -616,19 +541,13 @@ contract DerDecode {
             } {
                 mstore(mc, mload(cc))
             }
-            
-        // Add the length of _bytes4 to the current length of tempBytes
-        // and store it as the new length in the first 32 bytes of the
-        // tempBytes memory.
-            length := mload(_bytes4)
-            mstore(tempBytes, add(length, mload(tempBytes)))    
 
         // Move the memory counter back from a multiple of 0x20 to the
         // actual end of the _bytes1 data.
             mc := end
         // Stop copying when the memory counter reaches the new combined
         // length of the arrays.
-            end := add(mc, length)
+            end := add(mc, pointLength)
 
             for {
                 let cc := add(_bytes4, 0x20)
@@ -638,52 +557,31 @@ contract DerDecode {
             } {
                 mstore(mc, mload(cc))
             }
-
-        // Update the free-memory pointer by padding our last write location
-        // to 32 bytes: add 31 bytes to the end of tempBytes to move to the
-        // next 32 byte block, then round down to the nearest multiple of
-        // 32. If the sum of the length of the two arrays is zero then add
-        // one before rounding down to leave a blank 32 bytes (the length block with 0).
-            mstore(0x40, and(
-            add(add(end, iszero(end)), 31),
-            not(31) // Round down to the nearest 32 bytes.
-            ))
         }
-
-        return tempBytes;
     }
     
-    function concat5(
+    // Concat3 which requires the three inputs to be 65 bytes length each
+    // Doesn't perform any padding - could an EC coordinate be less than 32 bytes? If so, the mapTo256BigInteger result will be incorrect
+    function concat3Fixed(
         bytes memory _bytes1,
         bytes memory _bytes2,
-        bytes memory _bytes3,
-        bytes memory _bytes4,
-        bytes memory _bytes5
+        bytes memory _bytes3
     )
     internal
     pure
-    returns (bytes memory)
+    returns (bytes memory join)
     {
-        bytes memory tempBytes;
+        join = new bytes(pointLength*3); //in this case, we know how large the end result will be
 
         assembly {
-        // Get a location of some free memory and store it in tempBytes as
-        // Solidity does for memory variables.
-            tempBytes := mload(0x40)
-
-        // Store the length of the first bytes array at the beginning of
-        // the memory for tempBytes.
-            let length := mload(_bytes1)
-            let totalLength := length
-            mstore(tempBytes, length)
-
+            
         // Maintain a memory counter for the current write location in the
         // temp bytes array by adding the 32 bytes for the array length to
         // the starting location.
-            let mc := add(tempBytes, 0x20)
+            let mc := add(join, 0x20)
         // Stop copying when the memory counter reaches the length of the
         // first bytes array.
-            let end := add(mc, length)
+            let end := add(mc, pointLength)
 
             for {
             // Initialize a copy counter to the start of the _bytes1 data,
@@ -699,18 +597,12 @@ contract DerDecode {
                 mstore(mc, mload(cc))
             }
 
-        // Add the length of _bytes2 to the current length of tempBytes
-        // and store it as the new length in the first 32 bytes of the
-        // tempBytes memory.
-            length := mload(_bytes2)
-            mstore(tempBytes, add(length, mload(tempBytes)))
-
         // Move the memory counter back from a multiple of 0x20 to the
         // actual end of the _bytes1 data.
             mc := end
         // Stop copying when the memory counter reaches the new combined
         // length of the arrays.
-            end := add(mc, length)
+            end := add(mc, pointLength)
 
             for {
                 let cc := add(_bytes2, 0x20)
@@ -721,19 +613,12 @@ contract DerDecode {
                 mstore(mc, mload(cc))
             }
 
-
-        // Add the length of _bytes3 to the current length of tempBytes
-        // and store it as the new length in the first 32 bytes of the
-        // tempBytes memory.
-            length := mload(_bytes3)
-            mstore(tempBytes, add(length, mload(tempBytes)))    
-
         // Move the memory counter back from a multiple of 0x20 to the
         // actual end of the _bytes1 data.
             mc := end
         // Stop copying when the memory counter reaches the new combined
         // length of the arrays.
-            end := add(mc, length)
+            end := add(mc, pointLength)
 
             for {
                 let cc := add(_bytes3, 0x20)
@@ -743,51 +628,6 @@ contract DerDecode {
             } {
                 mstore(mc, mload(cc))
             }
-            
-        // bytes4
-            length := mload(_bytes4)
-            mstore(tempBytes, add(length, mload(tempBytes)))    
-
-            mc := end
-            end := add(mc, length)
-
-            for {
-                let cc := add(_bytes4, 0x20)
-            } lt(mc, end) {
-                mc := add(mc, 0x20)
-                cc := add(cc, 0x20)
-            } {
-                mstore(mc, mload(cc))
-            }
-            
-            
-        // bytes5 
-            length := mload(_bytes5)
-            mstore(tempBytes, add(length, mload(tempBytes)))    
-
-            mc := end
-            end := add(mc, length)
-
-            for {
-                let cc := add(_bytes5, 0x20)
-            } lt(mc, end) {
-                mc := add(mc, 0x20)
-                cc := add(cc, 0x20)
-            } {
-                mstore(mc, mload(cc))
-            }
-
-        // Update the free-memory pointer by padding our last write location
-        // to 32 bytes: add 31 bytes to the end of tempBytes to move to the
-        // next 32 byte block, then round down to the nearest multiple of
-        // 32. If the sum of the length of the two arrays is zero then add
-        // one before rounding down to leave a blank 32 bytes (the length block with 0).
-            mstore(0x40, and(
-            add(add(end, iszero(end)), 31),
-            not(31) // Round down to the nearest 32 bytes.
-            ))
         }
-
-        return tempBytes;
     }
 }
