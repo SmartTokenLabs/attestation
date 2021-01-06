@@ -9,7 +9,7 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 
 /*
  * One of the Ethereum design is, instead of verifying a message
- * against a known public key, a 𝑣 value is included in the signature,
+ * against a known public key, a v value is included in the signature,
  * allowing an Ethereum address to be recovered from a message. The
  * advantage of this design is that message doesn't have to carry the
  * sender's Etheruem address, yet allowing a smart contract to check
@@ -25,9 +25,9 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
  * ECDSA-Sig-Value ::= SEQUENCE { r INTEGER, s INTEGER }
 
  * In the scenario where the public key is known, a smart contract can
- * simply store the 𝑣 value together with the public key; however, in
- * other situations, to avoid attepting 𝑣 value 2 times, we can
- * selectively only use keys which result in a fixed 𝑣 value. This
+ * simply store the v value together with the public key; however, in
+ * other situations, to avoid attempting v value 2 times, we can
+ * selectively only use keys which result in a fixed v value. This
  * class replaced the constructECKeys() method just to do that.
  */
 
