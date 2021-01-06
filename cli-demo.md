@@ -2,13 +2,13 @@
 
 ## Outline
 
-This document outlines a way of using attestations on an arbitrary user-unique identifier to facilitate sending and redeeming cheques over a blockchain. Specifically, this document describes how to do this with Ethereum using the minimal proof-of-concept Demo.jar.
+This document outlines a way of using attestations on an arbitrary user-unique identifier to facilitate sending and redeeming cheques over a blockchain. Specifically, this document describes how to do this with Ethereum using the minimal proof-of-concept demo [release jar file](https://github.com/TokenScript/attestation/releases/).
 
-The document will first describe the overall intuition of the protocol and its security, followed by a minimal demonstration flow using Demo.jar.
+The document will first describe the overall intuition of the protocol and its security, followed by a minimal demonstration flow using demo jar file.
 
 For information about the underlying cryptography used in the protocol, please consult this [document](https://github.com/AlphaWallet/blockchain-attestation/blob/master/use-cases/send-ether-by-identifier-attestation.md).
 
-More specifically, this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using Demo.jar). 
+More specifically, this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using demo jar file). 
 
 Concretely we consider an issuer, Alice, who wishes to send some crypto asset to Bob, who might not have an Ethereum address. 
 
@@ -44,25 +44,25 @@ The attestation can be reused in the future and anyone sending a cheque to Bob *
 
 The protocol is secure under any composition of senders (Alices) and receivers (Bobs) based on a one-more discrete logarithm-like assumption.
 
-## Using Demo.jar
+## Using demo jar file
 
-The Demo.jar contains all methods needed to run a full demo flow.
+The demo jar file contains all methods needed to run a full demo flow.
 
-The general syntax for running a command with Demo.jar is `java -jar Demo.jar <name-of-command>` where `name-of-command` is one of the following: `keys, create-cheque, request-attest, construct-attest, receive-cheque`. 
+The general syntax for running a command with demo jar file is `java -jar attestation-all.jar <name-of-command>` where `name-of-command` is one of the following: `keys, create-cheque, request-attest, construct-attest, receive-cheque`. 
 We discuss these commands below.
 
 ### Construct keys
 
-Demo.jar can construct SECP256k1 cryptographic keys.
+The demo jar can construct SECP256k1 cryptographic keys.
 This should be run by all parties.
 
 Specifically the syntax of the command is as follows:
 
-`java -jar Demo.jar keys <public-key-name> <private-key-name>`
+`java -jar attestation-all.jar keys <public-key-name> <private-key-name>`
 
 For example:
 
-`java -jar Demo.jar keys pub.pem priv.pem` 
+`java -jar attestation-all.jar keys pub.pem priv.pem` 
 
 ### Create Cheque
 
@@ -71,7 +71,7 @@ This method should be run by Alice.
  
 Specifically the syntax of the command is as follows:
 
-`java -jar Demo.jar create-cheque <amount-as-integer> <identifier> <type-of-identifier> <validity> <private-key> <public-riddle> <cheque-secret>`
+`java -jar attestation-all.jar create-cheque <amount-as-integer> <identifier> <type-of-identifier> <validity> <private-key> <public-riddle> <cheque-secret>`
 
 - `amount-as-integer` is the amount to transfer expressed as an int, e.g. `42`.
 - `identifier` is the identifier to transfer to, e.g. an email like `test@test.ts`.
@@ -83,7 +83,7 @@ Specifically the syntax of the command is as follows:
 
 For example:
 
-`java -jar Demo.jar create-cheque 42 test@test.ts mail 3600 priv.pem cheque.pem cheque-secret.pem`
+`java -jar attestation-all.jar create-cheque 42 test@test.ts mail 3600 priv.pem cheque.pem cheque-secret.pem`
 
 ### Request Attestation
 
@@ -92,7 +92,7 @@ This method should be run by Bob.
 
 Specifically the syntax of the command is as follows:
 
-`java -jar Demo.jar request-attest <private-key> <identifier> <type-of-identifier> <public-request> <request-secret>`
+`java -jar attestation-all.jar request-attest <private-key> <identifier> <type-of-identifier> <public-request> <request-secret>`
 
 - `private-key` is the directory of the private key used to sign the attestation request, e.g. `priv.pem`.
 - `identifier` is the identifier to transfer to, e.g. an email like `test@test.ts`.
@@ -102,7 +102,7 @@ Specifically the syntax of the command is as follows:
 
 For example:
 
-`java -jar Demo.jar request-attest priv.pem test@test.ts mail request.pem request-secret.pem`
+`java -jar attestation-all.jar request-attest priv.pem test@test.ts mail request.pem request-secret.pem`
 
 ### Construct Attestation
 Constructs an attestation to a specific identifier of a certain type which is valid for a certain amount of time, signed using a private key and linked to human readable name of the attestor. The command outputs the public attestation.
@@ -110,7 +110,7 @@ This method should be run by the Attestor.
 
 Specifically the syntax of the command is as follows:
 
-`java -jar Demo.jar construct-attest <private-key> <attestor-name> <validity> <public-request> <attestation>`
+`java -jar attestation-all.jar construct-attest <private-key> <attestor-name> <validity> <public-request> <attestation>`
 
 - `private-key` is the directory of the private key used to sign the attestation, e.g. `priv.pem`.
 - `attestor-name` is the name of the Attestor, e.g. `AlphaWallet`.
@@ -120,7 +120,7 @@ Specifically the syntax of the command is as follows:
 
 For example:
 
-`java -jar Demo.jar construct-attest priv.pem AlphaWallet 3600 request.pem attestation.crt`
+`java -jar attestation-all.jar construct-attest priv.pem AlphaWallet 3600 request.pem attestation.crt`
 
 ### Redeem Cheque
 
@@ -129,7 +129,7 @@ This method should be run by Bob.
 
 Specifically the syntax of the command is as follows:
 
-`java -jar Demo.jar receive-cheque <receiver-private-key> <cheque-secret> <request-secret> <public-riddle> <attestation> <attestor-public-key>`
+`java -jar attestation-all.jar receive-cheque <receiver-private-key> <cheque-secret> <request-secret> <public-riddle> <attestation> <attestor-public-key>`
 
 - `receiver-private-key` is the directory of the private key used to sign the redeem request, e.g. `priv.pem`.
 - `cheque-secret` is the directory where the secret part of the cheque is placed, e.g. `cheque-secret.pem`.
@@ -140,22 +140,22 @@ Specifically the syntax of the command is as follows:
 
 For example:
 
-`java -jar Demo.jar receive-cheque priv.pem cheque-secret.pem request-secret.pem cheque.pem attestation.crt Attestor-pub.pem`
+`java -jar attestation-all.jar receive-cheque priv.pem cheque-secret.pem request-secret.pem cheque.pem attestation.crt Attestor-pub.pem`
 
 ### Full local execution
 
 To run the full protocol locally execute the following commands: 
 
-`java -jar Demo.jar keys Alice-pub.pem Alice-priv.pem`
+`java -jar attestation-all.jar keys Alice-pub.pem Alice-priv.pem`
 A
-`java -jar Demo.jar keys Bob-pub.pem Bob-priv.pem`
+`java -jar attestation-all.jar keys Bob-pub.pem Bob-priv.pem`
 
-`java -jar Demo.jar keys Attestor-pub.pem Attestor-priv.pem`
+`java -jar attestation-all.jar keys Attestor-pub.pem Attestor-priv.pem`
 
-`java -jar Demo.jar create-cheque 42 test@test.ts mail 3600 Alice-priv.pem cheque.pem cheque-secret.pem`
+`java -jar attestation-all.jar create-cheque 42 test@test.ts mail 3600 Alice-priv.pem cheque.pem cheque-secret.pem`
 
-`java -jar Demo.jar request-attest Bob-priv.pem test@test.ts mail request.pem request-secret.pem`
+`java -jar attestation-all.jar request-attest Bob-priv.pem test@test.ts mail request.pem request-secret.pem`
 
-`java -jar Demo.jar construct-attest Attestor-priv.pem AlphaWallet 3600 request.pem attestation.crt`
+`java -jar attestation-all.jar construct-attest Attestor-priv.pem AlphaWallet 3600 request.pem attestation.crt`
 
-`java -jar Demo.jar receive-cheque Bob-priv.pem cheque-secret.pem request-secret.pem cheque.pem attestation.crt Attestor-pub.pem`
+`java -jar attestation-all.jar receive-cheque Bob-priv.pem cheque-secret.pem request-secret.pem cheque.pem attestation.crt Attestor-pub.pem`
