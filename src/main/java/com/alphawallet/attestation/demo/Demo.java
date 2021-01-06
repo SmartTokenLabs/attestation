@@ -64,7 +64,7 @@ public class Demo {
           try {
             createKeys(crypto, arguments.get(1), arguments.get(2));
           } catch (Exception e) {
-            System.err.println("Was expecting: <output dir to public key> <output dir to private key>.");
+            System.err.println("Was expecting: <output file to public key> <output file to private key>.");
             throw e;
           }
           System.out.println("Constructed keys");
@@ -149,19 +149,19 @@ public class Demo {
     System.out.println("SUCCESS!");
   }
 
-  private static void createKeys(AttestationCrypto crypto, String pubDir, String privDir) throws IOException {
+  private static void createKeys(AttestationCrypto crypto, String pubFileName, String privateFileName) throws IOException {
     AsymmetricCipherKeyPair keys = crypto.constructECKeys();
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
         .createSubjectPublicKeyInfo(keys.getPublic());
     byte[] pub = spki.getEncoded();
-    if (!writeFile(pubDir, DERUtility.printDER(pub, "PUBLIC KEY"))) {
+    if (!writeFile(pubFileName, DERUtility.printDER(pub, "PUBLIC KEY"))) {
       System.err.println("Could not write public key");
       throw new IOException("Failed to write file");
     }
 
     PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(keys.getPrivate());
     byte[] priv = privInfo.getEncoded();
-    if (!writeFile(privDir, DERUtility.printDER(priv, "PRIVATE KEY"))) {
+    if (!writeFile(privateFileName, DERUtility.printDER(priv, "PRIVATE KEY"))) {
       System.err.println("Could not write private key");
       throw new IOException("Failed to write file");
     }
@@ -293,11 +293,11 @@ public class Demo {
     return type;
   }
 
-  private static boolean writeFile(String dir, String data) {
+  private static boolean writeFile(String file, String data) {
     try {
-      File file = new File(dir);
+      File file = new File(file);
       if (!file.createNewFile()) {
-        System.out.println("The output file \"" + dir + "\" already exists");
+        System.out.println("The output file \"" + file + "\" already exists");
         return false;
       }
       FileWriter writer = new FileWriter(file);
