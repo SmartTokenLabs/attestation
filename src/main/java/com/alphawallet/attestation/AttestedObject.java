@@ -56,7 +56,8 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature,
+      AsymmetricKeyParameter userPublicKey) {
     this.attestableObject = object;
     this.att = att;
     this.userPublicKey = userPublicKey;
@@ -79,11 +80,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
-    this.encoding = derEncoding;
+  public AttestedObject(byte[] derEncodingWithSignature, AttestableObjectDecoder<T> decoder, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+    this.encoding = derEncodingWithSignature;
     this.userPublicKey = userPublicKey;
     try {
-      ASN1InputStream input = new ASN1InputStream(derEncoding);
+      ASN1InputStream input = new ASN1InputStream(derEncodingWithSignature);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
@@ -186,9 +187,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return pok;
   }
 
+  public byte[] getDerEncodingWithSignature() { return encoding; }
+
   @Override
   public byte[] getDerEncoding() {
-    return encoding;
+    return unsignedEncoding;
   }
 
   // TODO override equals and hashcode

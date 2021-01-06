@@ -18,9 +18,11 @@
                 <element name="proof" type="UsageProof">
                     <annotation>Schnorr proof of knowledge based on the commitment in the attestation and signed Devcon Ticket</annotation>
                 </element>
-                <element name="signatureValue" type="asnx:BIT-STRING">
-                    <annotation>Algorithm is always ECDSA secp256k1</annotation>
-                </element>
+                <optional>
+                    <element name="signatureValue" type="asnx:BIT-STRING">
+                        <annotation>Algorithm is always ECDSA secp256k1</annotation>
+                    </element>
+                </optional>
             </sequence>
         </type>
     </namedType>

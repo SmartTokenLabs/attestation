@@ -15,7 +15,7 @@ UseDevconTicket ::= SEQUENCE {
     signedDevconTicket         SignedDevconTicket,
     attestation          MyAttestation,
     proof                UsageProof,
-    signatureValue       BIT STRING
+    signatureValue       BIT STRING OPTIONAL
 }
 
 END

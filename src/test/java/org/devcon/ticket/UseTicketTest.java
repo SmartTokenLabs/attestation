@@ -102,7 +102,7 @@ public class UseTicketTest {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncoding(), new TicketDecoder(
+    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncodingWithSignature(), new TicketDecoder(
         ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
@@ -118,12 +118,14 @@ public class UseTicketTest {
     assertArrayEquals(attestedTicket.getSignature(), newAttestedTicket.getSignature());
     assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
     assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
         attestedTicket.getAtt(), attestedTicket.getPok(),
-        attestedTicket.getSignature(), attestorKeys.getPublic(), subjectKeys.getPublic());
+        attestedTicket.getSignature(), subjectKeys.getPublic());
 
-    assertArrayEquals(attestedTicket.getDerEncoding(), newConstructor.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
   }
 
   @Test

@@ -85,7 +85,7 @@ public class TestRedeemCheque {
       System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
 
       System.out.println("Attested Cheque:");
-      System.out.println(DERUtility.printDER(attestedCheque.getDerEncoding(), "REDEEM"));
+      System.out.println(DERUtility.printDER(attestedCheque.getDerEncodingWithSignature(), "REDEEM"));
       System.out.println("Signed user public key (for redeem verification):");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic()));
@@ -97,7 +97,7 @@ public class TestRedeemCheque {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncoding(), new ChequeDecoder(),
+    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncodingWithSignature(), new ChequeDecoder(),
         issuerKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
@@ -112,12 +112,14 @@ public class TestRedeemCheque {
     assertArrayEquals(attestedCheque.getSignature(), newRedeem.getSignature());
     assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
     assertArrayEquals(attestedCheque.getDerEncoding(), attestedCheque.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), attestedCheque.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
         .getAtt(), attestedCheque.getPok(),
-        attestedCheque.getSignature(), issuerKeys.getPublic(), subjectKeys.getPublic());
+        attestedCheque.getSignature(), subjectKeys.getPublic());
 
     assertArrayEquals(attestedCheque.getDerEncoding(), newConstructor.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newConstructor.getDerEncodingWithSignature());
   }
 
   @Test
