@@ -10,11 +10,9 @@ See document here: http://tokenscript.org/Attestation.html
 
 ## Build
 
-This library can't be built with Java 8 JDK. The developers are using JDK 11 and JDK 14 so these are known to work.
-
 You need the following installed:
 
-- JDK (version 11 and 14 is used by our devs, version 8 is known not working)
+- JDK (version 11 or higher)
 - Gradle (version 6.7 is used by our devs)
 - node.js (version 15 is used by our devs)
 
