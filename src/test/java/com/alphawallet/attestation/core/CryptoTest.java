@@ -17,9 +17,10 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.math.ec.ECFieldElement;
-import org.bouncycastle.math.ec.ECFieldElement.Fp;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +79,19 @@ public class CryptoTest {
     // Negative test
     String otherKey = AttestationCrypto.addressFromKey(issuerKeys.getPublic());
     assertFalse(otherKey.equals(key));
+  }
+
+  @Test
+  public void testECKeyWithLowY() {
+    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
+    for (int i=0; i<10; i++) {
+      AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+      ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
+      BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
+      System.out.println(yCoord);
+      BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
+      assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
+    }
   }
 
   @Test

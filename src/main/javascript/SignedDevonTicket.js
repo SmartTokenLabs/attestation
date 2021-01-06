@@ -8,6 +8,7 @@ import {
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
+import PublicKeyInfo from "./PublicKeyInfo.js";
 
 export class DevconTicket {
   //**********************************************************************************
@@ -19,7 +20,7 @@ export class DevconTicket {
    */
   constructor(source = {}) {
     if (typeof (source) == "string") {
-      throw new TypeError("Not accepting string. For base64, convert to ArrayBuffer.")
+      throw new TypeError("Unimplemented: Not accepting string yet.")
     }
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source)
@@ -114,10 +115,25 @@ export class SignedDevconTicket {
    */
   constructor(source = {}) {
     if (typeof(source) == "string") {
-      throw new TypeError("Not accepting string. (If base64, convert to ArrayBuffer.)")
+
+      const ticketEncoded = (source.startsWith("https://")) ?
+          (new URL(source)).searchParams.get('ticket') : source;
+      
+      let base64str = ticketEncoded
+          .split('_').join('+')
+          .split('-').join('/')
+          .split('.').join('=');
+
+      // source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+      if (typeof Buffer !== 'undefined') {
+        source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+      } else {
+        source = Uint8Array.from(atob(base64str), c => c.charCodeAt(0)).buffer;
+      }
+      
     }
     if (source instanceof ArrayBuffer) {
-      const asn1 = fromBER(source)
+      const asn1 = fromBER(source);
       this.fromSchema(asn1.result);
     } else {
       this.ticket = new DevconTicket(source.ticket);
@@ -129,6 +145,8 @@ export class SignedDevconTicket {
 
       // TODO: issue #75
       // this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
+	  
+	  this.publicKeyInfo = new PublicKeyInfo(source.publicKeyInfo)
 
       this.signatureValue = getParametersValue(
           source,
@@ -136,7 +154,7 @@ export class SignedDevconTicket {
       );
     }
   }
-  
+
   //**********************************************************************************
   /**
    * Return value of pre-defined ASN.1 schema for current class
@@ -177,21 +195,18 @@ export class SignedDevconTicket {
           name: "publicKeyInfo",
           optional: true,
           value: [
-            AlgorithmIdentifier.schema(
-                names.signatureAlgorithm || {
+            PublicKeyInfo.schema(
+                names.publicKeyInfo || {
                   names: {
-                    blockName: "signatureAlgorithm",
+                    blockName: "publicKeyInfo",
                   },
                 }
-            ),
-            new BitString({
-              name: "publicKey"
-            }),
+            )
           ]
         }),
 
         new BitString({
-          name: names.signatureValue || "signatureValue",
+          name: "signatureValue",
         }),
       ],
     });
@@ -208,6 +223,7 @@ export class SignedDevconTicket {
       "ticket",
       "commitment",
       // TODO: #75
+	  "publicKeyInfo",
       "signatureValue",
     ]);
     //endregion
@@ -230,6 +246,9 @@ export class SignedDevconTicket {
 
     // TODO: issue #75
     // this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
+	this.publicKeyInfo = new PublicKeyInfo({
+      schema: asn1.result.publicKeyInfo,
+    });
 
     const signatureValue = asn1.result.signatureValue;
     this.signatureValue = signatureValue.valueBlock.valueHex;    //endregion

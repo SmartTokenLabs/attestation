@@ -5,6 +5,7 @@ import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.cheque.Cheque;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
@@ -16,6 +17,9 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +39,7 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Demo {
-  static AttestationCrypto crypto = new AttestationCrypto(new SecureRandom());
+  static AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(new SecureRandom());
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
     CommandLine line;
@@ -74,7 +78,7 @@ public class Demo {
             AttestationType type = getType(arguments.get(3));
             long validity = 1000*Long.parseLong(arguments.get(4)); // Validity in milliseconds
             createCheque(crypto, amount, receiverId, type, validity,
-                arguments.get(5), arguments.get(6), arguments.get(7));
+                Paths.get(arguments.get(5)), arguments.get(6), arguments.get(7));
 
           } catch (Exception e) {
             System.err.println("Was expecting: <integer amount to send> <identifier of the receiver> "
@@ -88,8 +92,12 @@ public class Demo {
         case "receive-cheque":
           System.out.println("Making cheque redeem request...");
           try {
-            receiveCheque(arguments.get(1), arguments.get(2), arguments.get(3), arguments.get(4),
-                arguments.get(5), arguments.get(6));
+            receiveCheque(Paths.get(arguments.get(1)),
+                    Paths.get(arguments.get(2)),
+                    Paths.get(arguments.get(3)),
+                    Paths.get(arguments.get(4)),
+                    Paths.get(arguments.get(5)),
+                    Paths.get(arguments.get(6)));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <cheque secret input dir> "
                 + "<attestation secret input dir> <cheque input dir> <attestation input dir> "
@@ -103,7 +111,7 @@ public class Demo {
           System.out.println("Constructing attestation request");
           try {
             AttestationType type = getType(arguments.get(3));
-            requestAttest(crypto, arguments.get(1), arguments.get(2), type, arguments.get(4), arguments.get(5));
+            requestAttest(crypto, Paths.get(arguments.get(1)), arguments.get(2), type, arguments.get(4), arguments.get(5));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <identifier> "
                 + "<type of ID, Either \"mail\" or \"phone\"> <attestation request output dir> <secret output dir>");
@@ -118,7 +126,7 @@ public class Demo {
           System.out.println("Signing attestation...");
           try {
             long validity = 1000*Long.parseLong(arguments.get(3)); // Validity in milliseconds
-            constructAttest(arguments.get(1), arguments.get(2), validity, arguments.get(4), arguments.get(5));
+            constructAttest(Paths.get(arguments.get(1)), arguments.get(2), validity, Paths.get(arguments.get(4)), arguments.get(5));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <issuer name> "
                 + "<validity in seconds> <attestation request input dir> "
@@ -160,8 +168,8 @@ public class Demo {
   }
 
   private static void createCheque(AttestationCrypto crypto, int amount, String receiverId, AttestationType type,
-      long validityInMilliseconds, String inputKeyDir, String outputDirCheque, String outputDirSecret) throws IOException {
-    AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(readFile(inputKeyDir));
+      long validityInMilliseconds, Path pathInputKey, String outputDirCheque, String outputDirSecret) throws IOException {
+    AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathInputKey));
 
     BigInteger secret = crypto.makeSecret();
     Cheque cheque = new Cheque(receiverId, type, amount, validityInMilliseconds, keys, secret);
@@ -178,19 +186,19 @@ public class Demo {
     }
   }
 
-  private static void receiveCheque(String userKeysDir, String chequeSecretDir,
-      String attestationSecretDir, String chequeDir, String attestationDir, String attestorKeyDir)
+  private static void receiveCheque(Path pathUserKey, Path chequeSecretDir,
+                                    Path pathAttestationSecret, Path pathCheque, Path pathAttestation, Path pathAttestationKey)
   throws IOException {
-    AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(readFile(userKeysDir));
-    byte[] chequeSecretBytes = DERUtility.restoreBytes(readFile(chequeSecretDir));
+    AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
+    byte[] chequeSecretBytes = DERUtility.restoreBytes(Files.readAllLines(chequeSecretDir));
     BigInteger chequeSecret = DERUtility.decodeSecret(chequeSecretBytes);
-    byte[] attestationSecretBytes = DERUtility.restoreBytes(readFile(attestationSecretDir));
+    byte[] attestationSecretBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestationSecret));
     BigInteger attestationSecret = DERUtility.decodeSecret(attestationSecretBytes);
-    byte[] chequeBytes = DERUtility.restoreBytes(readFile(chequeDir));
+    byte[] chequeBytes = DERUtility.restoreBytes(Files.readAllLines(pathCheque));
     Cheque cheque = (new ChequeDecoder()).decode(chequeBytes);
-    byte[] attestationBytes = DERUtility.restoreBytes(readFile(attestationDir));
+    byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
-        DERUtility.restoreBytes(readFile(attestorKeyDir)));
+        DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
     SignedAttestation att = new SignedAttestation(attestationBytes, attestationProviderKey);
 
     if (!cheque.checkValidity()) {
@@ -227,9 +235,9 @@ public class Demo {
     }
   }
 
-  private static void requestAttest(AttestationCrypto crypto, String userKeyDir, String receiverId, AttestationType type,
+  private static void requestAttest(AttestationCrypto crypto, Path pathUserKey, String receiverId, AttestationType type,
       String outputDirRequest, String outputDirSecret) throws IOException {
-    AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(readFile(userKeyDir));
+    AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
     ProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
@@ -245,10 +253,10 @@ public class Demo {
     }
   }
 
-  private static void constructAttest(String attestorKeyDir, String issuerName,
-      long validityInMilliseconds, String requestDir, String attestationDir) throws IOException {
-    AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(readFile(attestorKeyDir));
-    byte[] requestBytes = DERUtility.restoreBytes(readFile(requestDir));
+  private static void constructAttest(Path pathAttestorKey, String issuerName,
+      long validityInMilliseconds, Path pathRequest, String attestationDir) throws IOException {
+    AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathAttestorKey));
+    byte[] requestBytes = DERUtility.restoreBytes(Files.readAllLines(pathRequest));
     AttestationRequest request = new AttestationRequest(requestBytes);
     // TODO here is where it should be verified the user actually controls the mail
     if (!request.verify()) {
@@ -283,18 +291,6 @@ public class Demo {
         throw new IllegalArgumentException("Wrong type of identifier");
     }
     return type;
-  }
-
-  private static String readFile(String dir) throws FileNotFoundException {
-      File file = new File(dir);
-      Scanner reader = new Scanner(file);
-      StringBuffer buf = new StringBuffer();
-      while (reader.hasNextLine()) {
-        buf.append(reader.nextLine());
-        buf.append(System.lineSeparator());
-      }
-      reader.close();
-      return buf.toString();
   }
 
   private static boolean writeFile(String dir, String data) {

@@ -1,27 +1,9 @@
-package com.alphawallet.attestation.ticket;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+package org.devcon.ticket;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
-import com.alphawallet.attestation.ticket.Ticket.TicketClass;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.List;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -29,10 +11,24 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class TestTicket {
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class TicketTest {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("48646");
-  private static final TicketClass TICKET_CLASS = TicketClass.REGULAR;
+  private static final int TICKET_CLASS = 0; // Regular ticket
   private static final int CONFERENCE_ID = 6;
   private static final BigInteger SECRET = new BigInteger("546048445646851568430134455064804806");
 
@@ -46,7 +42,7 @@ public class TestTicket {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    AttestationCrypto crypto = new AttestationCrypto(rand);
+    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     senderKeys = crypto.constructECKeys();
     otherKeys = crypto.constructECKeys();
   }
@@ -54,19 +50,20 @@ public class TestTicket {
   @Test
   public void testTicketURLSunshine() throws IOException  {
     BigInteger ticketID = new BigInteger("417541561854");
-    TicketClass ticketClass = TicketClass.REGULAR;
+    int ticketClass = 0; // Regular Ticket
     BigInteger senderSecret = new BigInteger("45845870684");
     Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
 
-    byte[] senderPublicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()).getPublicKeyData().getEncoded();
-    String url = URLUtility.encodeList(Arrays.asList(ticket.getDerEncoding(), senderPublicKey));
+    String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
 
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
-    printWriter.printf("https://ticket.devcon.org?%s", url);
+    printWriter.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+    // this should also work
+    //printWriter.print(ticketInUrl);
     printWriter.close();
     
-    List<byte[]> decoded = URLUtility.decodeList(url);
+    List<byte[]> decoded = URLUtility.decodeList(ticket.getUrlEncoding());
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
     assertTrue(newTicket.verify());
     assertTrue(newTicket.checkValidity());
@@ -81,7 +78,7 @@ public class TestTicket {
   @Test
   public void testTicketURLConsistentEncoding() throws IOException {
     BigInteger ticketID = new BigInteger("14840860468475837258758376");
-    TicketClass ticketClass = TicketClass.VIP;
+    int ticketClass = 1; // VIP ticket
     BigInteger senderSecret = new BigInteger("186416");
     Ticket ticket = new Ticket("ticket@test.ts", 6, ticketID, ticketClass, senderKeys, senderSecret);
     String url = URLUtility.encodeData(ticket.getDerEncoding());
@@ -120,11 +117,19 @@ public class TestTicket {
   }
 
   @Test
+  public void saveDerEncoded() throws IOException {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] encoded = ticket.getDerEncoding();
+    // write the ticket data
+    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
+    encoded = ticket.getDerEncodingWithPK();
+    Files.write(new File(PREFIX + "signed-devcon-ticket-with-pk.der").toPath(), encoded);
+  }
+
+  @Test
   public void testFullDecodingWithPK() throws Exception {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncodingWithPK();
-    // write the ticket data
-    Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
 
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());

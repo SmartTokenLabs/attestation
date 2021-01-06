@@ -1,9 +1,7 @@
-package com.alphawallet.attestation.ticket;
+package org.devcon.ticket;
 
 import com.alphawallet.attestation.AttestableObjectDecoder;
-import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.ticket.Ticket.TicketClass;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -37,6 +35,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     int devconId = (ASN1Integer.getInstance(ticket.getObjectAt(0))).getValue().intValueExact();
     BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
     int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
+    /* refactored 2021-01-05 : we don't care about the ticket class set on our level
     TicketClass ticketClass = null;
     for (TicketClass current : TicketClass.values()) {
       if (current.getValue() == ticketClassInt) {
@@ -46,9 +45,11 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     if (ticketClass == null) {
       throw new IOException("Not valid ticket class");
     }
+
+     */
     byte[] commitment = (ASN1OctetString.getInstance(asn1.getObjectAt(1))).getOctets();
     byte[] signature = parsePKandSignature(asn1);
-    return new Ticket(devconId, ticketId, ticketClass, commitment, signature, publicKey);
+    return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, publicKey);
   }
 
   /**

@@ -1,23 +1,24 @@
 package com.alphawallet.attestation.core;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.sec.ECPrivateKey;
+import org.bouncycastle.asn1.x9.ECNamedCurveTable;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECKeyParameters;
+import org.bouncycastle.crypto.params.ECNamedDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Base64Encoder;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
 
 public class DERUtility {
   public static final int CHARS_IN_LINE = 65;
@@ -27,7 +28,7 @@ public class DERUtility {
    * @param input The DER encoded input
    * @return
    */
-  public static AsymmetricCipherKeyPair restoreBase64Keys(String input) {
+  public static AsymmetricCipherKeyPair restoreBase64Keys(List<String> input) {
     try {
       ECPrivateKeyParameters priv = (ECPrivateKeyParameters)
           PrivateKeyFactory.createKey(restoreBytes(input));
@@ -37,6 +38,31 @@ public class DERUtility {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * Converts ASNPrimitive data in RFC5915 format to a keypair.
+   * Ideally, in production environment keys shouldn't be in RFC5915 key distribution format,
+   * but rather in PKCS#8 format so that it can be encrypted.
+   * @param data
+   * @return
+   */
+  public static AsymmetricCipherKeyPair restoreRFC5915Key(ASN1Primitive data) {
+    ECPrivateKey pKey = ECPrivateKey.getInstance(data);
+    BigInteger d = pKey.getKey();
+    ASN1Primitive p = pKey.getParameters();
+    ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) pKey.getParameters();
+
+    X9ECParameters x9 = CustomNamedCurves.getByOID(oid);
+    if (x9 == null) {
+      x9 = ECNamedCurveTable.getByOID(oid);
+    }
+    ECNamedDomainParameters dParams = new ECNamedDomainParameters(
+            oid, x9.getCurve(), x9.getG(), x9.getN(), x9.getH(), x9.getSeed());
+    ECPrivateKeyParameters privateKey = new ECPrivateKeyParameters(d, dParams);
+    ECPoint q = privateKey.getParameters().getG().multiply(d);
+    ECKeyParameters pub = new ECPublicKeyParameters(q, privateKey.getParameters());
+    return new AsymmetricCipherKeyPair(pub, privateKey);
   }
 
   public static byte[] encodeSecret(BigInteger secret) {
@@ -65,8 +91,7 @@ public class DERUtility {
    * @param input The string containing the base64 encoding
    * @return the raw DER bytes that are encoded
    */
-  public static byte[] restoreBytes(String input) throws IOException {
-    List<String> lines = Arrays.asList(input.split("\\n").clone());
+  public static byte[] restoreBytes(List<String> lines) throws IOException {
     // skip first and last line
     List<String> arr = lines.subList(1, lines.size()-1);
     StringBuffer buf = new StringBuffer();

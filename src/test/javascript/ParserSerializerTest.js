@@ -11,12 +11,15 @@ const dataobj = new SignedDevconTicket(der.buffer);
  * at least so the asn1.js library author Yury Strozhevsky thouht. His commen:
  * https://github.com/PeculiarVentures/ASN1.js/issues/58
  */
-var dataobj = new SignedDevconTicket(new Uint8Array(der).buffer);
+let dataobj;
 
-
+dataobj = new SignedDevconTicket(new Uint8Array(der).buffer);
 
 console.log(dataobj);
 
-// Go on and test every other Parser-Serializer
+const magiclink = readFileSync('build/test-results/mah@mah.com.url', 'utf8')
+dataobj = new SignedDevconTicket(magiclink);
+
+console.log(dataobj);
 
 
