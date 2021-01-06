@@ -20,7 +20,7 @@ import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.http.HttpService;
 
 public class SmartContract {
-  private static final String ATTESTATION_CHECKING_CONTRACT = "0x864e73266A0821d690120aeC3b50a296E8eA6aD5";
+  private static final String ATTESTATION_CHECKING_CONTRACT = "0xeF3638178D7E775D1B6e5E41c52509a2302582Be";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
