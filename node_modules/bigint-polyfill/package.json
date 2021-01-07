@@ -1,0 +1,17 @@
+{
+  "name": "bigint-polyfill",
+  "version": "0.1.0",
+  "description": "Thin wrapper aroung big-integer with native BigInt support",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "author": "Paul Grau",
+  "license": "MIT",
+  "dependencies": {
+    "big-integer": "^1.6.36"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  }
+}
