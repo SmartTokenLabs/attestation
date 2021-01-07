@@ -60,6 +60,15 @@ public class CryptoTest {
   }
 
   @Test
+  public void veryLargeCurveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+    verifyCurveOrder.setAccessible(true);
+    // Set the final curveOrder field to 2^256
+    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(256);
+    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
+  }
+
+  @Test
   public void testAddressFromKey() {
     String key = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
     assertTrue(key.startsWith("0x"));
@@ -220,7 +229,7 @@ public class CryptoTest {
       byte[] com2 = AttestationCrypto.makeCommitment(ID+i, TYPE, SECRET2.multiply(BigInteger.valueOf(i)));
       ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1.add(BigInteger.valueOf(i)),  SECRET2.multiply(BigInteger.valueOf(i)));
       // Compute the c value used in the proof and for proof verification
-      BigInteger c = AttestationCrypto.mapTo256BitInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.H, AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
+      BigInteger c = AttestationCrypto.mapToInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.H, AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
       assertTrue(c.compareTo(AttestationCrypto.curveOrder) < 0);
     }
   }
@@ -341,7 +350,7 @@ public class CryptoTest {
 
   private BigInteger rejectionSample(BigInteger seed) {
     do {
-      seed = AttestationCrypto.mapTo256BitInteger(seed.toByteArray());
+      seed = AttestationCrypto.mapToInteger(seed.toByteArray());
     } while (seed.compareTo(AttestationCrypto.curveOrder) >= 0);
     return seed;
   }
