@@ -107,6 +107,7 @@ task packageLibs(type: Jar) {
     fileMode = 0755
 }
 
+// exclude bunch of com/alphawallet/… but include token/entity and Signable class
 task packageAttestation(type: Jar) {
     from compileJava
     from processResources
