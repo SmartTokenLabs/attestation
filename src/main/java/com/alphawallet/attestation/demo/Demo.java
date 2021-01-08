@@ -151,7 +151,7 @@ public class Demo {
     }
     catch( Exception e) {
       System.err.println("FAILURE!");
-      return;
+      throw new RuntimeException(e);
     }
     System.out.println("SUCCESS!");
   }
