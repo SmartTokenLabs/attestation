@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.demo.SmartContract;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
@@ -35,8 +34,6 @@ public class ProofOfKnowledgeTest {
   public void TestSunshineAttestationProof() {
     FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
     assertTrue(crypto.verifyAttestationRequestProof(pok));
-    SmartContract sc = new SmartContract();
-    sc.testEncoding(pok);
     FullProofOfExponent newPok = new FullProofOfExponent(pok.getDerEncoding());
     assertTrue(crypto.verifyAttestationRequestProof(newPok));
     assertEquals(pok.getRiddle(), newPok.getRiddle());
@@ -67,8 +64,6 @@ public class ProofOfKnowledgeTest {
     byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
     ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
-    SmartContract sc = new SmartContract();
-    sc.verifyEqualityProof(com1, com2, pok);
     UsageProofOfExponent newPok = new UsageProofOfExponent(pok.getDerEncoding());
     assertTrue(crypto.verifyEqualityProof(com1, com2, newPok));
     assertEquals(pok.getPoint(), newPok.getPoint());

@@ -29,7 +29,7 @@ public class SmartContract {
     return callFunction(function);
   }
 
-  public boolean testEncoding(FullProofOfExponent exp)
+  public boolean usageProofOfExponent(FullProofOfExponent exp)
   {
     Function function = checkEncoding(exp.getDerEncoding());
     return callFunction(function);
