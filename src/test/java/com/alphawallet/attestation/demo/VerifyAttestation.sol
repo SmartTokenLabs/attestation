@@ -74,17 +74,16 @@ contract DerDecode {
         uint length;
     }
 
-    struct Exponent {
+    struct FullProofOfExponent {
         bytes riddle;
         bytes tPoint;
         uint256 challenge;
     }
-    
+
     //Payable variant of the attestation function for testing
-    function verifyAttestationRequestProofPayable(bytes memory attestation)
-        public returns(bool)
+    function verifyAttestationRequestProofPayable(bytes memory attestation) public returns(bool)
     {
-        if (decodeAttestation(attestation))
+        if (verifyAttestationRequestProof(attestation))
         {
             callCount++;
             return true;
@@ -96,8 +95,7 @@ contract DerDecode {
     }
 
     //Payable variant of the attestation function for testing
-    function verifyEqualityProofPayable(bytes memory com1, bytes memory com2, bytes memory proof)
-        public returns(bool)
+    function verifyEqualityProofPayable(bytes memory com1, bytes memory com2, bytes memory proof) public returns(bool)
     {
         if (verifyEqualityProof(com1, com2, proof))
         {
@@ -110,11 +108,10 @@ contract DerDecode {
         }
     }
 
-    function verifyEqualityProof(bytes memory com1, bytes memory com2, bytes memory proof)
-        public view returns(bool)
+    function verifyEqualityProof(bytes memory com1, bytes memory com2, bytes memory proof) public view returns(bool)
     {
         Length memory len;
-        Exponent memory pok;
+        FullProofOfExponent memory pok;
         bytes memory attestationData;
         uint256 decodeIndex = 0;
 
@@ -124,14 +121,14 @@ contract DerDecode {
         (attestationData, decodeIndex) = decodeOctetString(proof, decodeIndex);
         pok.challenge = bytesToUint(attestationData);
         (pok.tPoint, decodeIndex) = decodeOctetString(proof, decodeIndex);
-        
+
         uint256[2] memory lhs;
         uint256[2] memory rhs;
         (lhs[0], lhs[1]) = extractXYFromPoint(com1);
         (rhs[0], rhs[1]) = extractXYFromPoint(com2);
-        
+
         rhs = ecInv(rhs);
-        
+
         uint256[2] memory riddle = ecAdd(lhs, rhs);
 
         bytes memory cArray = concat4Fixed(HPoint, com1, com2, pok.tPoint);
@@ -156,11 +153,10 @@ contract DerDecode {
         return (ecPoint1[0] == ecPoint2[0] && ecPoint1[1] == ecPoint2[1]);
     }
 
-    function verifyAttestationRequestProof(bytes memory attestation)
-        public view returns(bool)
+    function verifyAttestationRequestProof(bytes memory attestation) public view returns(bool)
     {
         Length memory len;
-        Exponent memory pok;
+        FullProofOfExponent memory pok;
         bytes memory attestationData;
         uint256 decodeIndex = 0;
 
@@ -201,7 +197,7 @@ contract DerDecode {
     }
 
     function ecMul(uint256 s, uint256 x, uint256 y) public view
-        returns (uint256[2] memory retP)
+    returns (uint256[2] memory retP)
     {
         bool success;
         // With a public key (x, y), this computes p = scalar * (x, y).
@@ -222,7 +218,7 @@ contract DerDecode {
     }
 
     function ecInv(uint256[2] memory point) private pure
-        returns (uint256[2] memory invPoint)
+    returns (uint256[2] memory invPoint)
     {
         invPoint[0] = point[0];
         int256 n = int256(fieldSize) - int256(point[1]);
@@ -232,7 +228,7 @@ contract DerDecode {
     }
 
     function ecAdd(uint256[2] memory p1, uint256[2] memory p2) public view
-        returns (uint256[2] memory retP)
+    returns (uint256[2] memory retP)
     {
         bool success;
         uint256[4] memory i = [p1[0], p1[1], p2[0], p2[1]];
@@ -266,23 +262,16 @@ contract DerDecode {
         res = uint256(idHash);
     }
 
+    // Note, this will return 0 if the shifted hash > curveOrder, which will cause the equate to fail
     function mapToCurveMultiplier(bytes memory input) public pure returns(uint256 res)
     {
         bytes memory nextInput = input;
-        do
+        bytes32 idHash = keccak256(nextInput);
+        res = uint256(idHash) >> curveOrderBitShift;
+        if (res >= curveOrder)
         {
-            bytes32 idHash = keccak256(nextInput);
-            res = uint256(idHash) >> curveOrderBitShift;
-            if (res >= curveOrder)
-            {
-                nextInput = abi.encodePacked(idHash);
-            }
-            else
-            {
-                break;
-            }
+            res = 0;
         }
-        while (res >= curveOrder);
     }
 
     //Truncates if input is greater than 32 bytes; we only handle 32 byte values.
@@ -400,8 +389,7 @@ contract DerDecode {
         uint objCodeIndex;
     }
 
-    function decodeObjectIdentifier(bytes memory byteCode, uint256[] memory objCodes, uint objCodeIndex, uint decodeIndex)
-        private pure returns(Status memory)
+    function decodeObjectIdentifier(bytes memory byteCode, uint256[] memory objCodes, uint objCodeIndex, uint decodeIndex) private pure returns(Status memory)
     {
         uint length = uint8(byteCode[decodeIndex++]);
 
@@ -564,7 +552,7 @@ contract DerDecode {
             }
         }
     }
-    
+
     // Concat3 which requires the three inputs to be 65 bytes length each
     // Doesn't perform any padding - could an EC coordinate be less than 32 bytes? If so, the mapTo256BigInteger result will be incorrect
     function concat3Fixed(
@@ -579,7 +567,7 @@ contract DerDecode {
         join = new bytes(pointLength*3); //in this case, we know how large the end result will be
 
         assembly {
-            
+
         // Maintain a memory counter for the current write location in the
         // temp bytes array by adding the 32 bytes for the array length to
         // the starting location.
