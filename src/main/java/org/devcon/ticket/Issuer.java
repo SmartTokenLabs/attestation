@@ -2,18 +2,15 @@ package org.devcon.ticket;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
-import com.alphawallet.attestation.core.URLUtility;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
 
 public class Issuer {
@@ -49,7 +46,7 @@ public class Issuer {
             AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
             Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
             String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
-            System.out.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, sharedSecret.toString());
+            System.out.printf("?ticket=%s&secret=%s", ticketInUrl, sharedSecret.toString());
         }
     }
 }
