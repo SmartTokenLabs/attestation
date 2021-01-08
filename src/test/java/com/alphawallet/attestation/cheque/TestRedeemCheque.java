@@ -71,25 +71,25 @@ public class TestRedeemCheque {
     try {
       PublicKey pk;
       System.out.println("Signed attestation:");
-      System.out.println(DERUtility.printDER(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE"));
+      System.out.println(DERUtility.toPEM(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE"));
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
       System.out.println("Attestation verification key:");
-      System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
+      System.out.println(DERUtility.toPEM(pk.getEncoded(),"PUBLIC KEY"));
 
       System.out.println("Cheque:");
-      System.out.println(DERUtility.printDER(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE"));
+      System.out.println(DERUtility.toPEM(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE"));
       System.out.println("Signed cheque verification key:");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()));
-      System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
+      System.out.println(DERUtility.toPEM(pk.getEncoded(),"PUBLIC KEY"));
 
       System.out.println("Attested Cheque:");
-      System.out.println(DERUtility.printDER(attestedCheque.getDerEncoding(), "REDEEM"));
+      System.out.println(DERUtility.toPEM(attestedCheque.getDerEncoding(), "REDEEM"));
       System.out.println("Signed user public key (for redeem verification):");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic()));
-      System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
+      System.out.println(DERUtility.toPEM(pk.getEncoded(),"PUBLIC KEY"));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

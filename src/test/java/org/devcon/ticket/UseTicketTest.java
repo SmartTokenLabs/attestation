@@ -68,26 +68,26 @@ public class UseTicketTest {
     try {
       PublicKey pk;
       System.out.println("Signed attestation:");
-      System.out.println(DERUtility.printDER(attestedTicket.getAtt().getDerEncoding(), "SIGNABLE"));
+      System.out.println(DERUtility.toPEM(attestedTicket.getAtt().getDerEncoding(), "SIGNABLE"));
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(attestorKeys.getPublic()));
       System.out.println("Attestation verification key:");
-      System.out.println(DERUtility.printDER(pk.getEncoded(), "PUBLIC KEY"));
+      System.out.println(DERUtility.toPEM(pk.getEncoded(), "PUBLIC KEY"));
 
       System.out.println("Ticket:");
       System.out.println(
-          DERUtility.printDER(attestedTicket.getAttestableObject().getDerEncoding(), "TICKET"));
+          DERUtility.toPEM(attestedTicket.getAttestableObject().getDerEncoding(), "TICKET"));
       System.out.println("Signed ticket verification key:");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(ticketIssuerKeys.getPublic()));
-      System.out.println(DERUtility.printDER(pk.getEncoded(), "PUBLIC KEY"));
+      System.out.println(DERUtility.toPEM(pk.getEncoded(), "PUBLIC KEY"));
 
       System.out.println("Attested Ticket:");
-      System.out.println(DERUtility.printDER(attestedTicket.getDerEncoding(), "ATTESTED-TICKET"));
+      System.out.println(DERUtility.toPEM(attestedTicket.getDerEncoding(), "ATTESTED-TICKET"));
       System.out.println("Signed user public key (for verification of attested ticket):");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic()));
-      System.out.println(DERUtility.printDER(pk.getEncoded(), "PUBLIC KEY"));
+      System.out.println(DERUtility.toPEM(pk.getEncoded(), "PUBLIC KEY"));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
