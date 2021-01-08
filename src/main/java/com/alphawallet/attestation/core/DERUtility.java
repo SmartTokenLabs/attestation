@@ -89,7 +89,7 @@ public class DERUtility {
 
   /**
    * Restores bytes from a base64 PEM-style DER encoding
-   * @param input The string containing the base64 encoding
+   * @param lines The string list containing the base64 encoding
    * @return the raw DER bytes that are encoded
    */
   public static byte[] restoreBytes(List<String> lines) throws IOException {
