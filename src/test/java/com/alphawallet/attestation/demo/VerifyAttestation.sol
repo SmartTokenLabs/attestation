@@ -51,7 +51,7 @@ contract DerDecode {
     2894161621123416739138844080004799398680035544501805450971689609134516348045 ];
 
     uint256 constant curveOrderBitLength = 254;
-    uint256 constant curveOrderBitShift = 255 - curveOrderBitLength;
+    uint256 constant curveOrderBitShift = 256 - curveOrderBitLength;
     uint256 constant pointLength = 65;
 
     // We create byte arrays for these at construction time to save gas when we need to use them
@@ -81,7 +81,8 @@ contract DerDecode {
     }
     
     //Payable variant of the attestation function for testing
-    function decodeAttestationPayable(bytes memory attestation) public returns(bool)
+    function verifyAttestationRequestProofPayable(bytes memory attestation)
+        public returns(bool)
     {
         if (decodeAttestation(attestation))
         {
@@ -95,7 +96,8 @@ contract DerDecode {
     }
 
     //Payable variant of the attestation function for testing
-    function verifyEqualityProofPayable(bytes memory com1, bytes memory com2, bytes memory proof) public returns(bool)
+    function verifyEqualityProofPayable(bytes memory com1, bytes memory com2, bytes memory proof)
+        public returns(bool)
     {
         if (verifyEqualityProof(com1, com2, proof))
         {
@@ -108,7 +110,8 @@ contract DerDecode {
         }
     }
 
-    function verifyEqualityProof(bytes memory com1, bytes memory com2, bytes memory proof) public view returns(bool)
+    function verifyEqualityProof(bytes memory com1, bytes memory com2, bytes memory proof)
+        public view returns(bool)
     {
         Length memory len;
         Exponent memory pok;
@@ -153,7 +156,8 @@ contract DerDecode {
         return (ecPoint1[0] == ecPoint2[0] && ecPoint1[1] == ecPoint2[1]);
     }
 
-    function decodeAttestation(bytes memory attestation) public view returns(bool)
+    function verifyAttestationRequestProof(bytes memory attestation)
+        public view returns(bool)
     {
         Length memory len;
         Exponent memory pok;
@@ -197,7 +201,7 @@ contract DerDecode {
     }
 
     function ecMul(uint256 s, uint256 x, uint256 y) public view
-    returns (uint256[2] memory retP)
+        returns (uint256[2] memory retP)
     {
         bool success;
         // With a public key (x, y), this computes p = scalar * (x, y).
@@ -218,7 +222,7 @@ contract DerDecode {
     }
 
     function ecInv(uint256[2] memory point) private pure
-    returns (uint256[2] memory invPoint)
+        returns (uint256[2] memory invPoint)
     {
         invPoint[0] = point[0];
         int256 n = int256(fieldSize) - int256(point[1]);
@@ -228,7 +232,7 @@ contract DerDecode {
     }
 
     function ecAdd(uint256[2] memory p1, uint256[2] memory p2) public view
-    returns (uint256[2] memory retP)
+        returns (uint256[2] memory retP)
     {
         bool success;
         uint256[4] memory i = [p1[0], p1[1], p2[0], p2[1]];
@@ -396,7 +400,8 @@ contract DerDecode {
         uint objCodeIndex;
     }
 
-    function decodeObjectIdentifier(bytes memory byteCode, uint256[] memory objCodes, uint objCodeIndex, uint decodeIndex) private pure returns(Status memory)
+    function decodeObjectIdentifier(bytes memory byteCode, uint256[] memory objCodes, uint objCodeIndex, uint decodeIndex)
+        private pure returns(Status memory)
     {
         uint length = uint8(byteCode[decodeIndex++]);
 

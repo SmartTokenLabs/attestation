@@ -117,7 +117,7 @@ public class SmartContractTest {
         for (int i = 0; i < 10; i++) {
             FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN.add(BigInteger.valueOf(i)));
             assertTrue(crypto.verifyAttestationRequestProof(pok));
-            assertTrue(sc.testEncoding(pok));
+            assertTrue(sc.usageProofOfExponent(pok));
         }
 
         // FullProofOfExponent negative test
@@ -125,7 +125,7 @@ public class SmartContractTest {
             FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN.add(BigInteger.valueOf(i)));
             assertTrue(crypto.verifyAttestationRequestProof(pok));
             FullProofOfExponent newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-            boolean negativeCheck = sc.testEncoding(newPok);
+            boolean negativeCheck = sc.usageProofOfExponent(newPok);
             System.out.println("-> " + (negativeCheck ? "Contract call should fail! Check Failed" : "Negative check Passed"));
             assertFalse(negativeCheck);
         }
