@@ -102,7 +102,7 @@ export default class AlgorithmIdentifier {
       name: names.blockName || "",
       optional: names.optional || false,
       value: [
-        new ObjectIdentifier({ name: names.algorithmIdentifier || "algorithm" }),
+        new ObjectIdentifier({ name: names.algorithmIdentifier || "algorithmId" }),
         new Any({ name: names.algorithmParams || "parameters", optional: true }),
       ],
     });
@@ -114,7 +114,7 @@ export default class AlgorithmIdentifier {
    */
   fromSchema(schema) {
     //region Clear input data first
-    clearProps(schema, ["algorithm", "params"]);
+    clearProps(schema, ["algorithmId", "params"]);
     //endregion
 
     //region Check the schema is valid
@@ -123,7 +123,7 @@ export default class AlgorithmIdentifier {
       schema,
       AlgorithmIdentifier.schema({
         names: {
-          algorithmIdentifier: "algorithm",
+          algorithmIdentifier: "algorithmId",
           algorithmParams: "params",
         },
       })

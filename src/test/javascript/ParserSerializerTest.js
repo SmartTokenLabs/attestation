@@ -1,5 +1,5 @@
 
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 
 // testing SignedDevconTicket
 import { SignedDevconTicket } from "../../main/javascript/SignedDevonTicket.js"
@@ -17,6 +17,21 @@ dataobj = new SignedDevconTicket(new Uint8Array(der).buffer);
 
 console.log(dataobj);
 
+//get DER from object
+let bufferToFile;
+bufferToFile = (new SignedDevconTicket(dataobj)).serialize();
+writeFileSync('build/test-results/signed-devcon-ticket-new.der',  Buffer.from(bufferToFile));
+console.log(bufferToFile);
+
+// Test if created file is correct
+/*
+const der1 = readFileSync('build/test-results/signed-devcon-ticket-new.der');
+let dataobj2;
+dataobj2 = new SignedDevconTicket(new Uint8Array(der1).buffer);
+console.log(dataobj2);
+*/
+
+// get object from magiclink
 const magiclink = readFileSync('build/test-results/mah@mah.com.url', 'utf8')
 dataobj = new SignedDevconTicket(magiclink);
 

@@ -10,6 +10,7 @@ import {
 } from "asn1js";
 import { getParametersValue, clearProps } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
+
 //**************************************************************************************
 /**
  * Class from RFC5280
@@ -108,6 +109,25 @@ export default class PublicKeyInfo {
       throw new Error(
         "Object's schema was not verified against input data for AlgorithmIdentifier"
       );
+    //endregion
+  }
+  /**
+   * Convert current object to asn1js object and set correct values
+   * @returns {Object} asn1js object
+   */
+  toSchema() {
+    //region Create array for output sequence
+    const outputArray = [];
+
+    outputArray.push(new Sequence({ value: AlgorithmIdentifier.toSchema() }));
+    outputArray.push(new BitString({ value: this.publicKey }));
+
+    //endregion
+
+    //region Construct and return new ASN.1 schema for this object
+    return new Sequence({
+      value: outputArray,
+    });
     //endregion
   }
 }
