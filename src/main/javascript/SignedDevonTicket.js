@@ -4,7 +4,7 @@ import {
   Integer,
   OctetString,
   Sequence,
-  fromBER
+  fromBER, ObjectIdentifier
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
@@ -101,6 +101,23 @@ export class DevconTicket {
       this.ticketClass = BigInt("0x" + bufferToHexCodes(ticketClass));
     }
 
+    //endregion
+  }
+
+  toSchema() {
+    //region Create array for output sequence
+    const outputArray = [];
+
+    outputArray.push({ value: this.devconId });
+    outputArray.push({ value: this.ticketId });
+    outputArray.push({ value: this.ticketClass });
+
+    //endregion
+
+    //region Construct and return new ASN.1 schema for this object
+    return new Sequence({
+      value: outputArray,
+    });
     //endregion
   }
 }
@@ -252,5 +269,30 @@ export class SignedDevconTicket {
 
     const signatureValue = asn1.result.signatureValue;
     this.signatureValue = signatureValue.valueBlock.valueHex;    //endregion
+  }
+
+  toSchema() {
+    //region Create array for output sequence
+    const outputArray = [];
+
+    outputArray.push(new Sequence({ value: new DevconTicket(this.ticket).toSchema() }));
+    outputArray.push(new OctetString({ value: this.commitment }));
+    //Add code for PublicKeyInfo
+    //if(this.publicKeyInfo)
+      //outputArray.push(new Sequence({ value: new PublicKeyInfo(this.publicKeyInfo).toSchema() }));
+    outputArray.push(new BitString({ value: this.signatureValue }));
+
+    //endregion
+
+    //region Construct and return new ASN.1 schema for this object
+    return new Sequence({
+      value: outputArray,
+    });
+    //endregion
+  }
+  serialize(){
+    let sequence = this.toSchema();
+    const signedDevconTicket = sequence.toBER(false);
+    return signedDevconTicket;
   }
 }
