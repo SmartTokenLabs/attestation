@@ -293,9 +293,9 @@ public class Demo {
     return type;
   }
 
-  private static boolean writeFile(String file, String data) {
+  private static boolean writeFile(String filePath, String data) {
     try {
-      File file = new File(file);
+      File file = new File(filePath);
       if (!file.createNewFile()) {
         System.out.println("The output file \"" + file + "\" already exists");
         return false;
