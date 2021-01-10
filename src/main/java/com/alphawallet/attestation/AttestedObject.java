@@ -161,7 +161,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
 
     // CHECK: the Ethereum address on the attestation matches receivers signing key
-    // TODO
+    String attestationEthereumAddress = getAtt().getUnsignedAttestation().getSubject().substring(3);
+    if (!attestationEthereumAddress.equals(AttestationCrypto.addressFromKey(getUserPublicKey()))) {
+      System.err.println("The attestation is not to the same Ethereum user who is sending this request");
+      return false;
+    }
     return true;
   }
 
