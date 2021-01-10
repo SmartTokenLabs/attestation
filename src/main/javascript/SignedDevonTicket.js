@@ -4,7 +4,8 @@ import {
   Integer,
   OctetString,
   Sequence,
-  fromBER, ObjectIdentifier
+  fromBER,
+  ObjectIdentifier
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import PublicKeyInfo from "./PublicKeyInfo.js";
@@ -87,33 +88,56 @@ export class DevconTicket {
 
     if ("devconId" in asn1.result) {
       const devconId = asn1.result["devconId"].valueBlock._valueHex;
-      this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
+      this.devconId = asn1.result["devconId"].valueBlock._valueHex;
+      // this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
     }
 
     if ("ticketId" in asn1.result) {
       const ticketId = asn1.result["ticketId"].valueBlock._valueHex
-      this.ticketId = BigInt("0x" + bufferToHexCodes(ticketId));
+      this.ticketId = asn1.result["ticketId"].valueBlock._valueHex;
+
+      // this.ticketId = BigInt("0x" + bufferToHexCodes(ticketId));
     }
 
     if ("ticketClass" in asn1.result) {
       const ticketClass = asn1.result["ticketClass"].valueBlock._valueHex;
-      this.ticketClass = BigInt("0x" + bufferToHexCodes(ticketClass));
+      this.ticketClass = asn1.result["ticketClass"].valueBlock._valueHex;
+
+      // this.ticketClass = BigInt("0x" + bufferToHexCodes(ticketClass));
     }
 
     //endregion
   }
 
   toSchema() {
-
     //region Construct and return new ASN.1 schema for this object
-    return (new Sequence({
-      name:"ticket",
+
+    const ticketSequence = new Sequence({
+      name: "ticket",
       value: [
-          this.devconId,
-          this.ticketId,
-          this.ticketClass
-      ]
-    }));
+        new Integer({
+          name: "devconId",
+          isHexOnly: true,
+          valueHex: this.devconId,
+        }),
+        new Integer({
+          name: "ticketId",
+          isHexOnly: true,
+          valueHex: this.ticketId,
+        }),
+        new Integer({
+          name: "ticketClass",
+          isHexOnly: true,
+          valueHex: this.ticketClass,
+        }),
+      ],
+    });
+
+    // verifying the sequence against schema
+    const result = compareSchema(ticketSequence, ticketSequence, DevconTicket.schema());
+    console.log(result.verified);
+
+    return ticketSequence;
     //endregion
   }
 }
@@ -287,14 +311,15 @@ export class SignedDevconTicket {
     }));
     //endregion
   }
-  serialize(){
+  serialize() {
     let sequence = this.toSchema();
+
+    //verify the sequence against the schema. TODO: we can through the exception in case of invalid schema
+    const result = compareSchema(sequence, sequence, SignedDevconTicket.schema());
+    console.log(result.verified);
+
     const signedDevconTicketBER = sequence.toBER(false);
-    if (typeof Buffer !== 'undefined') {
-      finalDER = new Uint8Array(signedDevconTicketBER);
-    } else {
-      finalDER = Uint8Array.from(atob(signedDevconTicketBER), c => c.charCodeAt(0)).buffer;
-    }
-    return signedDevconTicket;
+    return new Uint8Array(signedDevconTicketBER)
+
   }
 }
