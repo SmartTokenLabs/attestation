@@ -7,7 +7,6 @@ import {
   fromBER, ObjectIdentifier
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
-import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
 import PublicKeyInfo from "./PublicKeyInfo.js";
 
 export class DevconTicket {
@@ -105,19 +104,16 @@ export class DevconTicket {
   }
 
   toSchema() {
-    //region Create array for output sequence
-    const outputArray = [];
-
-    outputArray.push({ value: this.devconId });
-    outputArray.push({ value: this.ticketId });
-    outputArray.push({ value: this.ticketClass });
-
-    //endregion
 
     //region Construct and return new ASN.1 schema for this object
-    return new Sequence({
-      value: outputArray,
-    });
+    return (new Sequence({
+      name:"ticket",
+      value: [
+          this.devconId,
+          this.ticketId,
+          this.ticketClass
+      ]
+    }));
     //endregion
   }
 }
@@ -275,24 +271,30 @@ export class SignedDevconTicket {
     //region Create array for output sequence
     const outputArray = [];
 
-    outputArray.push(new Sequence({ value: new DevconTicket(this.ticket).toSchema() }));
-    outputArray.push(new OctetString({ value: this.commitment }));
+    outputArray.push(this.ticket.toSchema());
+    outputArray.push(new OctetString({ valueHex: this.commitment }));
     //Add code for PublicKeyInfo
     //if(this.publicKeyInfo)
       //outputArray.push(new Sequence({ value: new PublicKeyInfo(this.publicKeyInfo).toSchema() }));
-    outputArray.push(new BitString({ value: this.signatureValue }));
+    outputArray.push( new BitString({ valueHex: this.signatureValue } ) );
 
     //endregion
 
     //region Construct and return new ASN.1 schema for this object
-    return new Sequence({
+    return (new Sequence({
+      name:"SignedDevconTicket",
       value: outputArray,
-    });
+    }));
     //endregion
   }
   serialize(){
     let sequence = this.toSchema();
-    const signedDevconTicket = sequence.toBER(false);
+    const signedDevconTicketBER = sequence.toBER(false);
+    if (typeof Buffer !== 'undefined') {
+      finalDER = new Uint8Array(signedDevconTicketBER);
+    } else {
+      finalDER = Uint8Array.from(atob(signedDevconTicketBER), c => c.charCodeAt(0)).buffer;
+    }
     return signedDevconTicket;
   }
 }
