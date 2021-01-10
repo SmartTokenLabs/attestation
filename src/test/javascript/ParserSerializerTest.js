@@ -18,10 +18,11 @@ dataobj = new SignedDevconTicket(new Uint8Array(der).buffer);
 console.log(dataobj);
 
 //get DER from object
-let bufferToFile;
-bufferToFile = (new SignedDevconTicket(dataobj)).serialize();
-writeFileSync('build/test-results/signed-devcon-ticket-new.der',  Buffer.from(bufferToFile));
-console.log(bufferToFile);
+let filePath="build/test-results/signed-devcon-ticket-new.der";
+let finalDER;
+finalDER = (new SignedDevconTicket(dataobj)).serialize();
+writeFileSync(filePath,  finalDER);
+console.log("DER data is written to file"+filePath);
 
 // Test if created file is correct
 /*
