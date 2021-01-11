@@ -21,10 +21,12 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 
 public class DERUtility {
   public static final int CHARS_IN_LINE = 65;
+  public static final Base64.Encoder rfc1421Encoder = Base64.getMimeEncoder(64, new byte[] {'\n'});
 
   /**
    * Extact an EC keypair from the DER encoded private key
@@ -108,9 +110,9 @@ public class DERUtility {
   }
 
   public static void writePEM(byte[] input, String type, OutputStream out) throws IOException {
-      out.write(("-----BEGIN " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
-      new Base64Encoder().encode(input, 0, input.length, out);
-      out.write(("\n-----END " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
+    out.write(("-----BEGIN " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
+    out.write(rfc1421Encoder.encode(input));
+    out.write(("\n-----END " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
   }
 
   public static void writePEM(byte[] input, String type, Path file) throws IOException {
