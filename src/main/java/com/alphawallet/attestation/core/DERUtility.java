@@ -25,7 +25,6 @@ import java.util.Base64;
 import java.util.List;
 
 public class DERUtility {
-  public static final int CHARS_IN_LINE = 65;
   public static final Base64.Encoder rfc1421Encoder = Base64.getMimeEncoder(64, new byte[] {'\n'});
 
   /**
