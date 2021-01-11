@@ -16,8 +16,11 @@ import org.bouncycastle.util.encoders.Base64Encoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 public class DERUtility {
@@ -104,19 +107,15 @@ public class DERUtility {
     return outstream.toByteArray();
   }
 
-  public static byte[] toPEM(byte[] input, String type) {
-    try {
-      Base64Encoder coder = new Base64Encoder();
-      ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-      coder.encode(input, 0, input.length, outstream);
-      byte[] encodedCert = outstream.toByteArray();
-      ByteArrayOutputStream outputStream = new ByteArrayOutputStream( );
-      outputStream.write(("-----BEGIN " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
-      outputStream.write(encodedCert);
-      outputStream.write(("-----END " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
-      return outputStream.toByteArray();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public static void writePEM(byte[] input, String type, OutputStream out) throws IOException {
+      out.write(("-----BEGIN " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
+      new Base64Encoder().encode(input, 0, input.length, out);
+      out.write(("\n-----END " + type + "-----\n").getBytes(StandardCharsets.UTF_8));
+  }
+
+  public static void writePEM(byte[] input, String type, Path file) throws IOException {
+    OutputStream out = Files.newOutputStream(file);
+    writePEM(input, type, out);
+    out.close();
   }
 }

@@ -17,6 +17,7 @@ import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteris
 import com.alphawallet.attestation.core.DERUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.PublicKey;
@@ -70,26 +71,25 @@ public class TestRedeemCheque {
         // *** PRINT DER ENCODING OF OBJECTS ***
     try {
       PublicKey pk;
+      PrintStream a = System.out;
       System.out.println("Signed attestation:");
-      System.out.println(DERUtility.toPEM(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE"));
+      DERUtility.writePEM(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE", System.out);
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
       System.out.println("Attestation verification key:");
-      System.out.println(DERUtility.toPEM(pk.getEncoded(),"PUBLIC KEY"));
-
+      DERUtility.writePEM(pk.getEncoded(),"PUBLIC KEY", System.out);
       System.out.println("Cheque:");
-      System.out.println(DERUtility.toPEM(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE"));
+      DERUtility.writePEM(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE", System.out);
       System.out.println("Signed cheque verification key:");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()));
-      System.out.println(DERUtility.toPEM(pk.getEncoded(),"PUBLIC KEY"));
-
+      DERUtility.writePEM(pk.getEncoded(),"PUBLIC KEY", System.out);
       System.out.println("Attested Cheque:");
-      System.out.println(DERUtility.toPEM(attestedCheque.getDerEncoding(), "REDEEM"));
+      DERUtility.writePEM(attestedCheque.getDerEncoding(), "REDEEM", System.out);
       System.out.println("Signed user public key (for redeem verification):");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic()));
-      System.out.println(DERUtility.toPEM(pk.getEncoded(),"PUBLIC KEY"));
+      DERUtility.writePEM(pk.getEncoded(),"PUBLIC KEY", System.out);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

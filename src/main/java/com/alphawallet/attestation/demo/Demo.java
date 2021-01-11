@@ -142,9 +142,9 @@ public class Demo {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
         .createSubjectPublicKeyInfo(keys.getPublic());
     byte[] pub = spki.getEncoded();
-    Files.write(pathPubKey, DERUtility.toPEM(pub, "PUBLIC KEY"));
+    DERUtility.writePEM(pub, "PUBLIC KEY", pathPubKey);
     PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(keys.getPrivate());
-    Files.write(pathPrivKey, DERUtility.toPEM(privInfo.getEncoded(), "CHEQUE"));
+    DERUtility.writePEM(privInfo.getEncoded(), "CHEQUE", pathPrivKey);
   }
 
   private static void createCheque(AttestationCrypto crypto, int amount, String receiverId, AttestationType type,
@@ -155,8 +155,8 @@ public class Demo {
     Cheque cheque = new Cheque(receiverId, type, amount, validityInMilliseconds, keys, secret);
     byte[] encoding = cheque.getDerEncoding();
 
-    Files.write(outputDirCheque, DERUtility.toPEM(encoding, "CHEQUE"));
-    Files.write(outputDirSecret, DERUtility.toPEM(DERUtility.encodeSecret(secret), "CHEQUE SECRET"));
+    DERUtility.writePEM(encoding, "CHEQUE", outputDirCheque);
+    DERUtility.writePEM(DERUtility.encodeSecret(secret), "CHEQUE SECRET", outputDirSecret);
   }
 
   private static void receiveCheque(Path pathUserKey, Path chequeSecretDir,
@@ -215,8 +215,8 @@ public class Demo {
     ProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
 
-    Files.write(outputDirRequest, DERUtility.toPEM(request.getDerEncoding(), "ATTESTATION REQUEST"));
-    Files.write(outputDirSecret, DERUtility.toPEM(DERUtility.encodeSecret(secret), "SECRET"));
+    DERUtility.writePEM(request.getDerEncoding(), "ATTESTATION REQUEST", outputDirRequest);
+    DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
   }
 
   private static void constructAttest(Path pathAttestorKey, String issuerName,
@@ -237,7 +237,7 @@ public class Demo {
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
     SignedAttestation signed = new SignedAttestation(att, keys);
-    Files.write(attestationDir, DERUtility.toPEM(signed.getDerEncoding(), "ATTESTATION"));
+    DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
   }
 
   private static AttestationType getType(String stringType) throws IllegalArgumentException {
