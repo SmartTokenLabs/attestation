@@ -65,10 +65,6 @@ public class AttestationCrypto {
       System.err.println("Curve order is not 254 bits which is required by the current implementation");
       return false;
     }
-    // Verify the curveOrder is at most 256 bit
-    if (curveOrder.compareTo(new BigInteger("2").pow(256)) >= 0) {
-      System.err.println("Curve order is larger than 256 bits which is currently not supported by the methods in the crypto module.");
-    }
     return true;
   }
 
