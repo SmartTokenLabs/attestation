@@ -12,9 +12,7 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.encoders.Base64Encoder;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -97,15 +95,8 @@ public class DERUtility {
    */
   public static byte[] restoreBytes(List<String> lines) throws IOException {
     // skip first and last line
-    List<String> arr = lines.subList(1, lines.size()-1);
-    StringBuffer buf = new StringBuffer();
-    for (int i = 0; i < arr.size(); i++) {
-      buf.append(arr.get(i));
-    }
-    Base64Encoder coder = new Base64Encoder();
-    ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-    coder.decode(buf.toString(), outstream);
-    return outstream.toByteArray();
+    String longStr = String.join("", lines.subList(1, lines.size()-1));
+    return Base64.getDecoder().decode(longStr.getBytes(StandardCharsets.UTF_8));
   }
 
   public static void writePEM(byte[] input, String type, OutputStream out) throws IOException {
