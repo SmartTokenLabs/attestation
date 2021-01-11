@@ -234,14 +234,67 @@ export class AttestationCrypto {
      * @param randomness The randomness used in the commitment
      * @return
      */
+    // public computeAttestationProof(randomness: bigint): ProofOfExponent {
+    // // Compute the random part of the commitment, i.e. H^randomness
+    //     let riddle: Point = Pedestren_H.multiplyDA(randomness);
+    //     let r: bigint = this.makeSecret();
+    //     let t:Point = Pedestren_H.multiplyDA(r);
+    //     let c:bigint = mod(this.mapToIntegerFromUint8(this.makeArray([Pedestren_G, Pedestren_H, riddle, t])) , CURVE_BN256.n);
+    //     let d:bigint = mod(r + c * randomness, CURVE_BN256.n);
+    //     return new ProofOfExponent(Pedestren_H, riddle, t, d);
+    // }
     public computeAttestationProof(randomness: bigint): ProofOfExponent {
-    // Compute the random part of the commitment, i.e. H^randomness
+        // Compute the random part of the commitment, i.e. H^randomness
         let riddle: Point = Pedestren_H.multiplyDA(randomness);
-        let r: bigint = this.makeSecret();
-        let t:Point = Pedestren_H.multiplyDA(r);
-        let c:bigint = mod(this.mapToIntegerFromUint8(this.makeArray([Pedestren_G, Pedestren_H, riddle, t])) , CURVE_BN256.n);
-        let d:bigint = mod(r + c * randomness, CURVE_BN256.n);
-        return new ProofOfExponent(Pedestren_H, riddle, t, d);
+        let challengeList: Point[] = [Pedestren_G, Pedestren_H, riddle];
+        return this.constructSchnorrPOK(riddle, randomness, challengeList);
+    }
+    /**
+     * Compute a proof that commitment1 and commitment2 are Pedersen commitments to the same message and that the user
+     * knows randomness1-randomness2.
+     * NOTE: We are actually not proving that the user knows the message and randomness1 and randomness2.
+     * This is because we assume the user has already proven knowledge of his message (mail) and the
+     * randomness1 used in the attestation to the attestor. Because of this assumption it is enough to prove
+     * knowledge of randomness2 (equivalent to proving knowledge of randomness1-randomness2) and that the
+     * commitments are to the same message.
+     * The reason we do this is that this weaker proof is significantly cheaper to execute on the blockchain.
+     *
+     * In conclusion what this method actually proves is knowledge that randomness1-randomness2 is the
+     * discrete log of commitment1/commitment2.
+     * I.e. that commitment1/commitment2 =H^(randomness1-randomness2)
+     * @param commitment1 First Pedersen commitment to some message m
+     * @param commitment2 Second Pedersen commitment to some message m
+     * @param randomness1 The randomness used in commitment1
+     * @param randomness2 The randomness used in commitment2
+     * @return
+     */
+    public computeEqualityProof(commitment1:string, commitment2: string, randomness1:bigint, randomness2:bigint):ProofOfExponent {
+        let comPoint1: Point = Point.decodeFromHex(commitment1, CURVE_BN256);
+        let comPoint2: Point = Point.decodeFromHex(commitment2, CURVE_BN256);
+        // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
+        let riddle: Point = comPoint1.subtract(comPoint2);
+        let exponent: bigint = mod(randomness1 - randomness2, CURVE_BN256.n);
+        let challengeList: Point[] = [Pedestren_G, Pedestren_H, comPoint1, comPoint2];
+        return this.constructSchnorrPOK(riddle, exponent, challengeList);
+    }
+    /**
+     * Constructs a Schnorr proof of knowledge of exponent of a riddle to base H.
+     * The challenge value used (c) is computed from the challengeList and the internal t value.
+     * The method uses rejection sampling to ensure that the t value is sampled s.t. the
+     * challenge will always be less than curveOrder.
+     */
+    private constructSchnorrPOK(riddle: Point, exponent: bigint, challengeList: Point[]):ProofOfExponent {
+        let t: Point;
+        let c, d:bigint;
+        // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
+        do {
+            let hiding:bigint = this.makeSecret();
+            t = Pedestren_H.multiplyDA(hiding);
+            challengeList.push(t);
+            c = mod(this.mapTo256BitInteger(this.makeArray(challengeList)) , CURVE_BN256.n);
+            d = mod(hiding + c * exponent, CURVE_BN256.n);
+        } while (c >= CURVE_BN256.n);
+        return new ProofOfExponent(Pedestren_G, riddle, t, d);
     }
 
     /**
@@ -250,7 +303,8 @@ export class AttestationCrypto {
      * @return True if the proof is OK and false otherwise
      */
     public verifyAttestationRequestProof(pok: ProofOfExponent): boolean  {
-        let c:bigint = mod(this.mapToIntegerFromUint8(this.makeArray([Pedestren_G, pok.getBase(), pok.getRiddle(), pok.getPoint()])),CURVE_BN256.n);
+        // let c:bigint = mod(this.mapToIntegerFromUint8(this.makeArray([Pedestren_G, pok.getBase(), pok.getRiddle(), pok.getPoint()])),CURVE_BN256.n);
+        let c:bigint = mod(this.mapTo256BitInteger(this.makeArray([Pedestren_G, pok.getBase(), pok.getRiddle(), pok.getPoint()])),CURVE_BN256.n);
 
         // Ensure that the right base has been used in the proof
         if (!pok.getBase().equals(Pedestren_H)) {

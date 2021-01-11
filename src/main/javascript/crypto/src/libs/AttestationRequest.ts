@@ -4,6 +4,7 @@ import {hexStringToArray} from "./utils";
 import {ProofOfExponent} from "./ProofOfExponent";
 import {KeyPair} from "./KeyPair";
 import {AttestationCrypto} from "./AttestationCrypto";
+import {ATTESTATION_TYPE} from "./interfaces";
 
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
@@ -11,42 +12,10 @@ const ASN1 = require('@lapo/asn1js');
 
 let sha3 = require("js-sha3");
 
-/*
-export interface derAttestRequest {
-    0: { //unsignedEncoding
-        0: string, //identity: string
-        1: number, //type: number
-        2: {
-            0: string, // base: string
-            1: string, // riddle: string
-            2: string, // challenge: string
-            3: string, // tPoint: string
-        } //pok: string
-    },
-    1: {//pubPoint
-        0: {
-            0: number, // protocol ID 06072A8648CE3D0201
-            1: {
-                0: bigint, // 020101
-                1: {
-                    0: number, // 06072A8648CE3D0101
-                    1: number // field size
-                }, //
-                2: {
-                    0: string, // curve.a
-                    1: string  // curve.b
-                }
-                3: string, // G coords with leading 04 + (der encoded, 128 bytes)
-                4: bigint, // curveOrder
-                5: bigint  // 020101
-            }
-        },
-        1: bigint // pubPoint with leading 04 (der encoded, 128 bytes)
-    },
-    2: string //signature
-    // length: number;
+export interface attestationRequestData {
+    request?: string,
+    requestSecret?: bigint
 }
-*/
 
 export class AttestationRequest {
     public signature: string;
@@ -55,9 +24,24 @@ export class AttestationRequest {
     public pok: ProofOfExponent;
     private keys: KeyPair;
     constructor() {}
+    static fromEmail(identity: string){
+        let crypto = new AttestationCrypto();
+        let keys = KeyPair.createKeys();
+        let secret: bigint = crypto.makeSecret();
+        let pok:ProofOfExponent = crypto.computeAttestationProof(secret);
+        let request = AttestationRequest.fromData(identity, ATTESTATION_TYPE["mail"], pok, keys);
+        let output: attestationRequestData = {
+            request: request.getDerEncoding(),
+            requestSecret: secret
+        }
+        return output;
+    }
     static fromData(identity: string, type: number, pok: ProofOfExponent, keys: KeyPair): AttestationRequest {
         let me = new this();
         me.create(identity, type, pok, keys);
+        if (!me.verify()) {
+            throw new Error("The signature or proof is not valid");
+        }
         return me;
     }
     create(identity: string, type: number, pok: ProofOfExponent, keys: KeyPair){

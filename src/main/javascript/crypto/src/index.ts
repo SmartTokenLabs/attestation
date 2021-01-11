@@ -39,7 +39,8 @@ class main {
         return Cheque.createAndVerify(receiverId, type, amount, validityInMilliseconds, keys, secret);
     }
 
-    requestAttest(receiverId: string, type: string, keys: KeyPair) {
+    requestAttest(receiverId: string, type: string, keys?: KeyPair) {
+        if (!keys) keys = KeyPair.createKeys();
         let secret: bigint = this.crypto.makeSecret();
         let pok:ProofOfExponent = this.crypto.computeAttestationProof(secret);
         let request = AttestationRequest.fromData(receiverId, ATTESTATION_TYPE[type], pok, keys);
