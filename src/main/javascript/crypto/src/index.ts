@@ -8,11 +8,8 @@ import {hexStringToArray} from "./libs/utils";
 import {KeyPair} from "./libs/KeyPair";
 import {IdentifierAttestation} from "./libs/IdentifierAttestation";
 import {SignedDevconTicket} from "./asn1/SignedDevonTicket";
+import {SignedAttestation} from "./libs/SignedAttestation";
 const ASN1 = require('@lapo/asn1js');
-
-class Negotiator {
-
-}
 
 class main {
     crypto: AttestationCrypto;
@@ -131,5 +128,5 @@ class main {
 }
 (window as any).CryptoTicket = main;
 (window as any).SignedDevconTicket = SignedDevconTicket;
-// (window as any).Negotiator = Negotiator;
+(window as any).signed = SignedAttestation;
 
