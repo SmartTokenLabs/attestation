@@ -3,7 +3,7 @@ import {Null} from "asn1js";
 
 const AsnCRITICAL = false;
 
-export class AlgorithmIdentifier {
+export class AlgorithmIdentifierASN {
     @AsnProp({ type: AsnPropTypes.ObjectIdentifier }) public algorithm: AsnPropTypes.ObjectIdentifier;// OBJECT IDENTIFIER,
     //@AsnProp({ type: AsnPropTypes.Any }) public parameters = AsnCRITICAL;// ANY DEFINED BY algorithm OPTIONAL
 }

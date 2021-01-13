@@ -140,7 +140,7 @@ export class AttestationRequest {
             return false;
         }
 
-        // console.log('erifyAttestationRequestProof OK');
+        // console.log('VerifyAttestationRequestProof OK');
 
         return true;
     }

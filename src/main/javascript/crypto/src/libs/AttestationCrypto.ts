@@ -40,7 +40,7 @@ export class AttestationCrypto {
         // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
         // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
         let curveOrderBitLength: bigint = BigInt(curveOrder.toString(2).length);
-        console.log(`curve length = ${curveOrderBitLength}`);
+        // console.log(`curve length = ${curveOrderBitLength}`);
         if (curveOrder < (1n << (curveOrderBitLength-1n)) || (curveOrder >> curveOrderBitLength) > 0n) {
             console.log("Curve order is not 253 bits which is required by the current implementation");
             return false;
@@ -294,7 +294,7 @@ export class AttestationCrypto {
             c = mod(this.mapTo256BitInteger(this.makeArray(challengeList)) , CURVE_BN256.n);
             d = mod(hiding + c * exponent, CURVE_BN256.n);
         } while (c >= CURVE_BN256.n);
-        return new ProofOfExponent(Pedestren_G, riddle, t, d);
+        return new ProofOfExponent(Pedestren_H, riddle, t, d);
     }
 
     /**

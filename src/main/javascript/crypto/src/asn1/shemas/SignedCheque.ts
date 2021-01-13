@@ -1,17 +1,18 @@
 import { AsnProp, AsnPropTypes } from "@peculiar/asn1-schema";
+import {ValidityValue} from "./AuthenticationFramework";
 
 const AsnCRITICAL: boolean = false;
 
-export class Cheque {
-    @AsnProp({ type: AsnPropTypes.Integer }) public amount: string = "";
-    @AsnProp({ type: AsnPropTypes.BitString }) public validity = AsnCRITICAL;
-    @AsnProp({ type: AsnPropTypes.OctetString }) public commitment = AsnCRITICAL;
+export class ChequeASN {
+    @AsnProp({ type: AsnPropTypes.Integer }) public amount: AsnPropTypes.Integer;
+    @AsnProp({ type: ValidityValue }) public validity:ValidityValue;
+    @AsnProp({ type: AsnPropTypes.OctetString }) public commitment: AsnPropTypes.OctetString;
 }
 
 export class SignedCheque {
 
-    @AsnProp({ type: Cheque })
-    public cheque: string = "";
+    @AsnProp({ type: ChequeASN })
+    public cheque: ChequeASN;
 
     @AsnProp({ type: AsnPropTypes.BitString })
     public publicKey = AsnCRITICAL;

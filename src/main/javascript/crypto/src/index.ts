@@ -9,6 +9,8 @@ import {KeyPair} from "./libs/KeyPair";
 import {IdentifierAttestation} from "./libs/IdentifierAttestation";
 import {SignedDevconTicket} from "./asn1/SignedDevonTicket";
 import {SignedAttestation} from "./libs/SignedAttestation";
+import {Attestation} from "./libs/Attestation";
+import {ChequeDecoder} from "./libs/ChequeDecoder";
 const ASN1 = require('@lapo/asn1js');
 
 class main {
@@ -48,82 +50,66 @@ class main {
         }
     }
 
-    constructAttest( keys: KeyPair, issuerName: string, validityInMilliseconds: number, requestBytesDehHexStr: string): any {
-        // console.log("Signing attestation...");
-
-        let attestRequest = AttestationRequest.fromBytes(Uint8Array.from(hexStringToArray(requestBytesDehHexStr)));
-
-        let verify = 'Verify attestation signing request ' + ( attestRequest.verify() ? 'OK' : 'failed');
-
-        // let checkValidity = 'Validate attestation signing request ' + ( attestRequest.checkValidity() ? 'OK' : 'failed') ;
-
-        console.log('verify = ' + verify);
-
-        return {
-            verify,
-            // checkValidity
-        }
-
-        // byte[] commitment = AttestationCrypto.makeCommitment(request.getIdentity(), request.getType(), request.getPok().getRiddle());
-        // Attestation att = new IdentifierAttestation(commitment, request.getPublicKey());
-        // att.setIssuer("CN=" + issuerName);
-        // att.setSerialNumber(new Random().nextLong());
-        // Date now = new Date();
-        // att.setNotValidBefore(now);
-        // att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
-        // SignedAttestation signed = new SignedAttestation(att, keys);
-        // if (!writeFile(attestationDir, DERUtility.printDER(signed.getDerEncoding(), "ATTESTATION"))) {
-        //     System.err.println("Could not write attestation to disc");
-        //     throw new IOException("Could not write file");
-        // }
+    decodeCheque(str: string){
+        new ChequeDecoder(str);
     }
 
-    // receiveCheque(userKeysDER: string, chequeSecret: string, attestationSecret: string, cheque: string, attestation: string, attestorKey: string){
-    //     let userKeys = DERUtility.restoreBase64Keys(userKeysDER);
-        // byte[] chequeSecretBytes = DERUtility.restoreBytes(readFile(chequeSecretDir));
-        // BigInteger chequeSecret = DERUtility.decodeSecret(chequeSecretBytes);
-        // byte[] attestationSecretBytes = DERUtility.restoreBytes(readFile(attestationSecretDir));
-        // BigInteger attestationSecret = DERUtility.decodeSecret(attestationSecretBytes);
-        // byte[] chequeBytes = DERUtility.restoreBytes(readFile(chequeDir));
-        // Cheque cheque = new Cheque(chequeBytes);
-        // byte[] attestationBytes = DERUtility.restoreBytes(readFile(attestationDir));
-        // AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
-        //     DERUtility.restoreBytes(readFile(attestorKeyDir)));
-        // SignedAttestation att = new SignedAttestation(attestationBytes, attestationProviderKey);
-        //
-        // if (!cheque.checkValidity()) {
-        //     System.err.println("Could not validate cheque");
-        //     throw new RuntimeException("Validation failed");
-        // }
-        // if (!cheque.verify()) {
-        //     System.err.println("Could not verify cheque");
-        //     throw new RuntimeException("Verification failed");
-        // }
-        // if (!att.checkValidity()) {
-        //     System.err.println("Could not validate attestation");
-        //     throw new RuntimeException("Validation failed");
-        // }
-        // if (!att.verify()) {
-        //     System.err.println("Could not verify attestation");
-        //     throw new RuntimeException("Verification failed");
-        // }
-        //
-        // RedeemCheque redeem = new RedeemCheque(cheque, att, userKeys, attestationSecret, chequeSecret);
-        // if (!redeem.checkValidity()) {
-        //     System.err.println("Could not validate redeem request");
-        //     throw new RuntimeException("Validation failed");
-        // }
-        // if (!redeem.verify()) {
-        //     System.err.println("Could not verify redeem request");
-        //     throw new RuntimeException("Verification failed");
-        // }
-        // // TODO how should this actually be?
-        // SmartContract sc = new SmartContract();
-        // if (!sc.testEncoding(redeem.getPok())) {
-        //     System.err.println("Could not submit proof of knowledge to the chain");
-        //     throw new RuntimeException("Chain submission failed");
-        // }
-    // }
+    decodeAttestation(str: string){
+        new SignedAttestation(str);
+    }
+
+    // This part not needed in JS
+    constructAttest( keys: KeyPair, issuerName: string, validityInMilliseconds: number, requestBytesDehHexStr: string): any {
+        let attestRequest = AttestationRequest.fromBytes(Uint8Array.from(hexStringToArray(requestBytesDehHexStr)));
+        let verify = 'Verify attestation signing request ' + ( attestRequest.verify() ? 'OK' : 'failed');
+        return {
+            verify,
+        }
+    }
+
+    receiveCheque(userKey: KeyPair, chequeSecret: bigint,
+    attestationSecret: bigint, base64cheque: string, base64attestation: string, attestationKey: string){
+
+    // let cheque: Cheque = new ChequeDecoder(base64cheque);
+    // let cheque: Cheque = new ChequeDecoder(base64cheque);
+//     byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
+//     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
+//         DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
+//     SignedAttestation att = new SignedAttestation(attestationBytes, attestationProviderKey);
+//
+//     if (!cheque.checkValidity()) {
+//     System.err.println("Could not validate cheque");
+//     throw new RuntimeException("Validation failed");
+// }
+// if (!cheque.verify()) {
+//     System.err.println("Could not verify cheque");
+//     throw new RuntimeException("Verification failed");
+// }
+// if (!att.checkValidity()) {
+//     System.err.println("Could not validate attestation");
+//     throw new RuntimeException("Validation failed");
+// }
+// if (!att.verify()) {
+//     System.err.println("Could not verify attestation");
+//     throw new RuntimeException("Verification failed");
+// }
+//
+// AttestedObject redeem = new AttestedObject(cheque, att, userKeys, attestationSecret, chequeSecret, crypto);
+// if (!redeem.checkValidity()) {
+//     System.err.println("Could not validate redeem request");
+//     throw new RuntimeException("Validation failed");
+// }
+// if (!redeem.verify()) {
+//     System.err.println("Could not verify redeem request");
+//     throw new RuntimeException("Verification failed");
+// }
+// // TODO how should this actually be?
+// SmartContract sc = new SmartContract();
+// if (!sc.testEncoding(redeem.getPok())) {
+//     System.err.println("Could not submit proof of knowledge to the chain");
+//     throw new RuntimeException("Chain submission failed");
+// }
+ }
 
 }
 (window as any).CryptoTicket = main;

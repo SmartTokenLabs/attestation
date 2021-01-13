@@ -132,8 +132,8 @@ export class SignedDevconTicket {
 
     }
 
-    console.log('source:');
-    console.log(source);
+    // console.log('source:');
+    // console.log(source);
 
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source);

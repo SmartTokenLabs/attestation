@@ -114,12 +114,19 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
     return window.btoa( binary );
 }
 export function base64ToUint8array( base64str: string ): Uint8Array {
-    var asciiStr = window.atob( base64str );
-    let byteArray: number[] = [];
-    for (var i = 0; i < asciiStr.length; i++) {
-        byteArray.push(asciiStr.charCodeAt(i));
+    let res: Uint8Array;
+    if (typeof Buffer !== 'undefined') {
+        res = Uint8Array.from(Buffer.from(base64str, 'base64'));
+    } else {
+        res = Uint8Array.from(atob(base64str), c => c.charCodeAt(0));
     }
-    return Uint8Array.from( byteArray );
+    // var asciiStr = window.atob( base64str );
+    // let byteArray: number[] = [];
+    // for (var i = 0; i < asciiStr.length; i++) {
+    //     byteArray.push(asciiStr.charCodeAt(i));
+    // }
+    // return Uint8Array.from( byteArray );
+    return res;
 }
 
 export function stringToArray(str: string) {
