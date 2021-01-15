@@ -19,60 +19,50 @@ export class Attestation {
     private smartcontracts: any; // ASN1integers  // Optional
     private dataObject: any;
     private extensions: any;
-    constructor(private attestation: SignedInfo) {
-        this.version = attestation.version.version;
-        this.serialNumber = attestation.serialNumber;
-        this.signature = attestation.signature;
-        // TODO stuck here
-        // this.issuerSeq = ;
+    constructor(public signedInfo: Uint8Array) {
+        // console.log('signedInfo');
+        // console.log(signedInfo);
+        let decodedAttestationObj: SignedInfo = AsnParser.parse(signedInfo, SignedInfo);
 
+        // let uint8data = base64ToUint8array(asn1der);
+        // const myAttestation: MyAttestation = AsnParser.parse(uint8data, MyAttestation);
+        // (window as any).decodedAttestationObj = decodedAttestationObj;
+
+        this.version = decodedAttestationObj.version.version;
+        this.serialNumber = decodedAttestationObj.serialNumber;
+        this.signature = decodedAttestationObj.signature;
+        if (decodedAttestationObj.validity){
+            this.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
+            this.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+        }
+        this.subject = decodedAttestationObj.subject;
+        this.subjectPublicKeyInfo = decodedAttestationObj.subjectPublicKeyInfo;
+        this.issuer = decodedAttestationObj.issuer;
+        // this = attestation.issuer;
+
+        if (decodedAttestationObj.contract){
+            this.smartcontracts = decodedAttestationObj.contract;
+        }
+
+        if (decodedAttestationObj.attestsTo.extensions){
+            this.extensions = decodedAttestationObj.attestsTo.extensions;
+        } else if(decodedAttestationObj.attestsTo.dataObject) {
+            this.extensions = decodedAttestationObj.attestsTo.dataObject;
+        }
     }
     getDerEncoding(): Uint8Array{
-        let attEncoded: Uint8Array = this.getPrehash();
-        // The method returns null if the encoding is invalid
-        if (attEncoded == null) {
-            throw new Error("The attestation is not valid");
-        }
-        return attEncoded;
+        return this.signedInfo;
     }
-    getPrehash(): Uint8Array{
-        if (!this.checkValidity()) {
-            return null;
-        }
-        // ASN1EncodableVector res = new ASN1EncodableVector();
-        // res.add(new DERTaggedObject(true, 0, this.version));
-        // res.add(this.serialNumber);
-        // res.add(this.signature);
-        // res.add(this.issuer == null ? new DERSequence() : this.issuer);
-        // if (this.notValidAfter != null && this.notValidBefore != null) {
-        //     ASN1EncodableVector date = new ASN1EncodableVector();
-        //     date.add(new Time(this.notValidBefore));
-        //     date.add(new Time(this.notValidAfter));
-        //     res.add(new DERSequence(date));
-        // } else {
-        //     res.add(DERNull.INSTANCE);
-        // }
-        // res.add(this.subject == null ? new DERSequence() : this.subject);
-        // res.add(this.subjectPublicKeyInfo == null ? DERNull.INSTANCE : this.subjectPublicKeyInfo);
-        // if (this.smartcontracts != null) {
-        //     res.add(this.smartcontracts);
-        // }
-        // if (this.extensions != null) {
-        //     res.add(new DERTaggedObject(true, 3, this.extensions));
-        // } else {
-        //     res.add(new DERTaggedObject(true, 4, this.dataObject));
-        // }
-        // try {
-        //     return new DERSequence(res).getEncoded();
-        // } catch (IOException e) {
-        //     throw new RuntimeException(e);
-        // }
-    }
-    getNotValidBefore(){
 
+    getNotValidBefore(): number{
+        return this.notValidBefore;
     }
-    getNotValidAfter(){
+    getNotValidAfter(): number{
+        return this.notValidAfter;
+    }
 
+    getSubjectPublicKeyInfo(){
+        return this.subjectPublicKeyInfo;
     }
 
     checkValidity(){
@@ -80,18 +70,18 @@ export class Attestation {
             && this.dataObject == null)) {
             return false;
         }
-        if (this.getNotValidBefore() != null && this.getNotValidAfter() != null) {
-            let currentTime = Date.now();
-            let attNotBefore = this.getNotValidBefore();
-            let attNotAfter = this.getNotValidAfter();
-            if (attNotBefore != null && attNotAfter != null) {
-                // if (!(currentTime >= attNotBefore.getTime() && currentTime < attNotAfter.getTime())) {
-                //     console.log("Attestation is no longer valid");
-                //     return false;
-                // }
-            }
+        let currentTime = Date.now();
+        let attNotBefore = this.getNotValidBefore();
+        let attNotAfter = this.getNotValidAfter();
+        if ( attNotBefore && attNotAfter && !(currentTime >= attNotBefore && currentTime < attNotAfter)) {
+            console.log("Attestation is no longer valid");
+            return false;
         }
         return true;
+    }
+
+    getExtensions(){
+        return this.extensions;
     }
 
 }

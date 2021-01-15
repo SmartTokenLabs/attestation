@@ -14,74 +14,48 @@
 <div id="log"></div>
     <script type="text/javascript" src="dist/bundle.js"></script>
 <script>
+    counter = 1;
     function writeToLog(text){
         let node = document.createElement('div');
         node.innerText = counter + ". " + text;
         log.prepend(node);
         counter++;
     }
-    let counter = 1;
+
+    function uint8tohex(uint8) {
+        return Array.from(uint8).map(i => ('0' + i.toString(16)).slice(-2)).join('');
+    }
+
+    function base64ToUint8array( base64str ) {
+        if (typeof Buffer !== 'undefined') {
+            return Uint8Array.from(Buffer.from(base64str, 'base64'));
+        } else {
+            return Uint8Array.from(atob(base64str), c => c.charCodeAt(0));
+        }
+    }
+
     (async ()=>{
+        // valid:
+        // GeneralizedTime 2021-01-15 01:10:46 UTC
+        // GeneralizedTime 2021-01-19 05:10:46 UTC
+        let base64cheque = "MIH5MGoCASowIhgPMjAyMTAxMTUwMTEwNDZaGA8yMDIxMDExOTA1MTA0NloEQQQSnR7y9zi7AYpYKwwpGeGgnPyRkZXO3gUG65BMRPqkexa1hfAItIA/1qT93wvWV5Qzn7DKDOR8Boew+Db4mNAwA0IABNE5siahpFnMb/iCfYlzhJo6w1kTZi+hiDPimEPEu9j+jV57cATcJm+BYzAdHnAQB+NuiLgqbRv58F5CgxXGlnIDRwAwRAIgCcsTh0ZlLeLwEuvTJdQKPHuF92KvzeT1IQlXvmH4gFMCIB767eFUwPcPUI//9zS3ulT0WZVTPK7r+6DUO2twJdNs";
 
-        let crypto = new CryptoTicket();
+        let base64chequeSecret ="MCIEICyvhQsLNYHlCrN1isS66HcSG0zSlW7pGi0OtH6y+AGE";
 
-        let magicUrl = 'https://ticket.devcon.org/?ticket=MIGbMA0CAQYCBWE3ap3-AgEABEEEEjVknVv9Kf7F2Ftt6QVO3I02eRadiE1kJ6kvr934-TApOLZxrh5GL3jLoEz9Jv42FspPv-LHFa6M9AaOuLAvIgNHADBEAiBwLK_95NPZo0W01HDBfyZisZ2KaNrzoWuxRV-nhjGLMAIgaOP4eVVINH5xM8Cv9OVDdyOG3BxUqyPVQOuDU9PaC9o=&secret=45845870684';
-        let dataObj = new SignedDevconTicket(magicUrl);
-        console.log(dataObj);
+        let chequeSecret = BigInt('0x'+ uint8tohex(base64ToUint8array(base64chequeSecret)));
+        // let attestationSecret = BigInt('0x'+ uint8tohex(base64ToUint8array(base64attestationSecret)));
 
-        let dataArr = [48,129,153,48,11,2,1,6,2,3,0,190,6,2,1,0,4,65,4,10,253,240,226,71,76,174,155,102,22,240,75,172,221,159,118,171,88,130,219,184,57,157,63,96,161,83,97,218,215,3,15,39,190,63,88,63,228,93,233,73,95,132,244,130,55,236,43,124,113,14,179,181,210,231,165,101,45,141,86,199,24,37,111,3,71,0,48,68,2,32,56,219,33,182,181,183,198,146,218,173,162,182,46,187,137,229,163,110,58,60,206,102,30,56,83,43,201,172,200,92,52,27,2,32,112,70,115,33,143,119,178,71,181,81,171,60,61,116,225,239,143,79,126,58,224,64,29,83,84,38,101,58,170,94,194,162];
-        dataObj = new SignedDevconTicket(Uint8Array.from(dataArr).buffer);
-        console.log(dataObj);
+        writeToLog('base64cheque: ' + base64cheque);
+        writeToLog('base64chequeSecret: ' + chequeSecret);
 
-        writeToLog("Constructing key pair......");
-
-        // let keys = crypto.createKeys();
-        let alicePrivateKeyBase64 = `-----BEGIN PRIVATE KEY-----
-        MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////
-////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5
-mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0
-SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBA
-gEBBIIBVTCCAVECAQEEILF4TgnUbxtI3IcuiuL4YRo8AbjoGAciMT/5SSPm0t+loI
-HjMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////
-+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82
-y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA//
-///////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAAS5Qd31H1JNKsd
-0BBU7FJxhdobcfw/l7Lcr8LSQErxx2Wo1Z1L32qMkIuEQQeQOGcEqRcae4xsFuFbD
-CgFCqStN
------END PRIVATE KEY-----`;
-        let aliceKeys = crypto.keysFromPrivateBase64(alicePrivateKeyBase64);
-        // Alice private key 'B1784E09D46F1B48DC872E8AE2F8611A3C01B8E8180722313FF94923E6D2DFA5'
-        writeToLog("Static Alice private key(testing) = " + aliceKeys.getPrivateAsHexString());
-        writeToLog("Static Alice public key(testing) = " + aliceKeys.getPublicKeyAsHexStr());
-        let chequeSecret = crypto.crypto.makeSecret(32);
-        // let chequeSecret = 3829480313294803078649127748695605509357318743894185514764098109134112895n;
-        writeToLog("Cheque Secret generated : " + chequeSecret);
-        writeToLog("Creating cheque with params '12, test@test.com, mail , 3600, {secret}");
-        let cheque = crypto.createCheque(5, 'test@test.com', 'mail' , '3600', aliceKeys, chequeSecret);
-        writeToLog("DER(Cheque+PrivateKey+Signature) : " + cheque.chequeEncoded);
-        writeToLog("Only Cheque : " + cheque.cheque);
-        writeToLog("derSignature : " + cheque.derSignature);
-        writeToLog("derSecret : " + cheque.derSecret);
-
-        let requestAttest = crypto.requestAttest('test@test.com', 'mail', aliceKeys);
-        // console.log('requestAttest done');
-
-        writeToLog("Attest request : " + requestAttest.request);
-        writeToLog("Attest request signature : " + requestAttest.requestSignature);
-        writeToLog("Attest request derSecret : " + requestAttest.requestSecret);
-
-
-        let constructedAttest = crypto.constructAttest(aliceKeys, 'Alphawallet', 3600, requestAttest.request)
-
-        writeToLog("Request verify : " + constructedAttest.verify);
-        // writeToLog("Request checkValidity : " + constructedAttest.checkValidity);
-        writeToLog("Next step is create attestation certificate... " );
-
-        // let temp = "30820285308201001A0D7465737440746573742E636F6D0201013081EB04410432BB01B0C88C2E0C60B78A168603BC262C17B73CC35076EC11CBAEAC9CD8C42D54B30EBEACCC2E036918C763F141EBA76394BD7D8EDC16989F6F90D26CCC8E16044104AF3F4897ED1F5AA9A018D5752F892DDE914EA26B963549DFE20ECC39AF15EEF3170ABA107547DBAD1F3DDEABF1543BB1C8CFF090A5250AB23119FD8056AB7E1D04206FB79AF49A6EE1721AD2C42EFE5AC13F108B36F3C39CA2696771DAC4BE0C0EC1044104B1C9833BD017F5DF941A78BB08E1F1A8A8B8415FD7DC2D62933F46AC878C7BED6361FA92293B2FDC12513B3451011F8FC1E69CAD0B2EF9579A3A1CEB9CB90124308201333081EC06072A8648CE3D02013081E0020101302C06072A8648CE3D0101022100FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F3044042000000000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000000704410479BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8022100FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141020101034200040D20FB5768855C9B4105C59FD1F046273C0E5F62014AECA8C8BE5E33AEB05808685BF04FB9A73814DD4EA5773FDE0240BC0D6B041A93F5629C6D4935FDE1A5E503480030450221008291E365D04F6A2979FF393DC791494BB67793D07DCF5C17BFD63F32B471ADB30220367B46A884DC7E077FF10388247C3C8660240CBB1BC39E5EA9BD59EFC152292D";
-        // let constructedAttest = crypto.constructAttest(keys, 'Alphawallet', 3600, temp)
-
+        (new Authenticator()).getAuthenticationBlob({
+            ticketBlob: base64cheque,
+            ticketSecret: chequeSecret,
+            // attestationOrigin: 'https://stage.attestation.id/outlet',
+            attestationOrigin: 'attestation.id.html',
+        }, useDevconTicket => {
+            writeToLog('useDevconTicket received (in hex ): ' + useDevconTicket);
+        });
 
     })()
 

@@ -4,16 +4,21 @@ import { AttestationCrypto } from "./libs/AttestationCrypto";
 import {ATTESTATION_TYPE, keyPair} from "./libs/interfaces";
 import { Cheque } from "./libs/Cheque";
 import { ProofOfExponent } from "./libs/ProofOfExponent";
-import {hexStringToArray} from "./libs/utils";
+import {base64ToUint8array, hexStringToArray, uint8tohex} from "./libs/utils";
 import {KeyPair} from "./libs/KeyPair";
 import {IdentifierAttestation} from "./libs/IdentifierAttestation";
 import {SignedDevconTicket} from "./asn1/SignedDevonTicket";
 import {SignedAttestation} from "./libs/SignedAttestation";
 import {Attestation} from "./libs/Attestation";
 import {ChequeDecoder} from "./libs/ChequeDecoder";
+import {SignedCheque} from "./asn1/shemas/SignedCheque";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {SubjectPublicKeyInfo} from "./asn1/shemas/AttestationFramework";
+import {AttestedObject} from "./libs/AttestedObject";
+import {Authenticator, devconToken} from "./Authenticator";
 const ASN1 = require('@lapo/asn1js');
 
-class main {
+export class main {
     crypto: AttestationCrypto;
     Asn1Der: Asn1Der;
     Asn1: any;
@@ -50,14 +55,6 @@ class main {
         }
     }
 
-    decodeCheque(str: string){
-        new ChequeDecoder(str);
-    }
-
-    decodeAttestation(str: string){
-        new SignedAttestation(str);
-    }
-
     // This part not needed in JS
     constructAttest( keys: KeyPair, issuerName: string, validityInMilliseconds: number, requestBytesDehHexStr: string): any {
         let attestRequest = AttestationRequest.fromBytes(Uint8Array.from(hexStringToArray(requestBytesDehHexStr)));
@@ -67,42 +64,70 @@ class main {
         }
     }
 
-    receiveCheque(userKey: KeyPair, chequeSecret: bigint,
-    attestationSecret: bigint, base64cheque: string, base64attestation: string, attestationKey: string){
+    static getUseToken(
+        // userKey: KeyPair,
+        chequeSecret: bigint,
+        attestationSecret: bigint,
+        base64cheque: string,
+        base64attestation: string,
+        base64attestationPublicKey: string
+    )
+    {
+        // let chequeSecret: bigint = BigInt('0x'+ uint8tohex(base64ToUint8array(base64chequeSecret)));
+        // let attestationSecret: bigint = BigInt('0x'+ uint8tohex(base64ToUint8array(base64attestationSecret)));
 
-    // let cheque: Cheque = new ChequeDecoder(base64cheque);
-    // let cheque: Cheque = new ChequeDecoder(base64cheque);
-//     byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
-//     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
-//         DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
-//     SignedAttestation att = new SignedAttestation(attestationBytes, attestationProviderKey);
-//
-//     if (!cheque.checkValidity()) {
-//     System.err.println("Could not validate cheque");
-//     throw new RuntimeException("Validation failed");
-// }
-// if (!cheque.verify()) {
-//     System.err.println("Could not verify cheque");
-//     throw new RuntimeException("Verification failed");
-// }
-// if (!att.checkValidity()) {
-//     System.err.println("Could not validate attestation");
-//     throw new RuntimeException("Validation failed");
-// }
-// if (!att.verify()) {
-//     System.err.println("Could not verify attestation");
-//     throw new RuntimeException("Verification failed");
-// }
-//
-// AttestedObject redeem = new AttestedObject(cheque, att, userKeys, attestationSecret, chequeSecret, crypto);
-// if (!redeem.checkValidity()) {
-//     System.err.println("Could not validate redeem request");
-//     throw new RuntimeException("Validation failed");
-// }
-// if (!redeem.verify()) {
-//     System.err.println("Could not verify redeem request");
-//     throw new RuntimeException("Verification failed");
-// }
+        let cheque: Cheque = ChequeDecoder.fromBase64(base64cheque);
+        if (!cheque.checkValidity()) {
+            console.log("Could not validate cheque");
+            throw new Error("Validation failed");
+        }
+        if (!cheque.verify()) {
+            console.log("Could not verify cheque");
+            throw new Error("Verification failed");
+        }
+
+        let keyUint8data = base64ToUint8array(base64attestationPublicKey);
+        let key:SubjectPublicKeyInfo = AsnParser.parse(keyUint8data, SubjectPublicKeyInfo);
+
+        // console.log('user key');
+        // console.log(key.value.subjectPublicKey);
+
+        let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.subjectPublicKey)));
+
+        let att = new SignedAttestation(base64attestation, attestorKey);
+
+        if (!att.checkValidity()) {
+            console.log("Could not validate attestation");
+            throw new Error("Validation failed");
+        }
+        if (!att.verify()) {
+            console.log("Could not verify attestation");
+            throw new Error("Verification failed");
+        }
+
+
+        let redeem: AttestedObject = new AttestedObject(
+            cheque, att,
+            attestationSecret, chequeSecret);
+        // console.log("redeem.getDerEncodeProof()");
+        // console.log(redeem.getDerEncodeProof());
+
+        let proof = redeem.getDerEncodeProof();
+
+        let vec =
+            uint8tohex(base64ToUint8array(base64cheque)) +
+            uint8tohex(base64ToUint8array(base64attestation))+
+            proof;
+        return Asn1Der.encode('SEQUENCE_30', vec);
+
+        // if (!redeem.checkValidity()) {
+        //     console.log("Could not validate redeem request");
+        //     throw new Error("Validation failed");
+        // }
+        // if (!redeem.verify()) {
+        //     console.log("Could not verify redeem request");
+        //     throw new Error("Verification failed");
+        // }
 // // TODO how should this actually be?
 // SmartContract sc = new SmartContract();
 // if (!sc.testEncoding(redeem.getPok())) {
@@ -112,7 +137,5 @@ class main {
  }
 
 }
-(window as any).CryptoTicket = main;
-(window as any).SignedDevconTicket = SignedDevconTicket;
-(window as any).signed = SignedAttestation;
+(window as any).Authenticator = Authenticator;
 

@@ -1,5 +1,7 @@
 import {AttestationRequest, attestationRequestData} from "./libs/AttestationRequest";
 import {AttestedObject} from "./libs/AttestedObject";
+import {main} from "./index";
+import {base64ToUint8array, uint8tohex} from "./libs/utils";
 
 export interface attestationResult {
     attestation?: string,
@@ -12,7 +14,7 @@ declare global {
     }
 }
 
-interface devconToken {
+export interface devconToken {
     ticketBlob: string,
     ticketSecret: bigint,
     attestationOrigin: string,
@@ -23,10 +25,19 @@ export class Authenticator {
     private signedTokenSecret: bigint;
 
     private attestationBlob: string;
-    private attestationSecret: bigint;
+    private attestationSecret: string;
 
     private attestationOrigin: string;
     private authResultCallback: Function;
+
+    private iframe: any;
+
+    private base64attestorPubKey: string = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABFCuTloU0f13n4VXYke5ZAm7ZWiXsw1REDHXdNeEwGuLj/bNcXB7LLwt10eXFTLe/LEo5KItdPugI378EG0xV/E=";
+    // stage.attestaion.id public key
+    // private base64attestorPubKey: string = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABPxJAMZA6IJIETOGrIVLr11P1Y92OZ6UNyD2OndOMMtdA6s6Z8u7oY3BER4uBEffjk2UF5JI6uCMqUORlVzLfXY=";
+
+
+
     // attestRequest: string;
 
     // create crypto hiding of the secret for identifier(email) attestation
@@ -65,7 +76,7 @@ export class Authenticator {
         this.attestationOrigin = tokenObj.attestationOrigin;
         this.authResultCallback = authResultCallback;
         this.getIdentifierAttestation();
-        // const proof = this.generateIdentifierAttestationProof(identifierAttestation);
+
         // construct UseDevconTicket, see
         // https://github.com/TokenScript/attestation/blob/main/data-modules/src/UseDevconTicket.asd
 
@@ -85,28 +96,46 @@ export class Authenticator {
     getIdentifierAttestation() {
         // waitForIframeReadyToInteract disabled because
         // this.attachPostMessageListener(this.postMessageReadyListener);
-        this.attachPostMessageListener(this.postMessageAttestationListener);
+        this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
         const iframe = document.createElement('iframe');
-        iframe.setAttribute('name', 'attestor');
+        this.iframe = iframe;
+        // iframe.setAttribute('name', 'attestor');
         iframe.src = this.attestationOrigin;
+        iframe.style.display = 'none';
+        iframe.onload = ()=>{
+            const url = new URL(window.location.href);
+            iframe.contentWindow.postMessage({request: "attestation"}, url.origin);
+        };
         document.body.appendChild(iframe);
     }
     postMessageAttestationListener(event: MessageEvent){
-        if (typeof event.data.attestation === "undefined"
-            || event.origin !== this.attestationOrigin
+        if (
+            typeof event.data.attestation === "undefined"
+            || typeof event.data.secret === "undefined"
+            // || event.origin !== this.attestationOrigin
             || !event.data.attestation
+            || !event.data.secret
         ) {
             return;
         }
+        this.iframe.remove();
         this.attestationBlob = event.data.attestation;
         this.attestationSecret = event.data.secret;
 
-        this.authResultCallback(this.attestationBlob, this.attestationSecret);
-    }
-
-    generateIdentifierAttestationProof(){
-        // let useTokenBlob = AttestedObject();
-        // return useTokenBlob;
+        let attestationSecretBigInt = BigInt('0x'+ uint8tohex(base64ToUint8array(this.attestationSecret)));
+        try {
+            let useToken = main.getUseToken(
+                this.signedTokenSecret,
+                attestationSecretBigInt,
+                this.signedTokenBlob ,
+                this.attestationBlob ,
+                this.base64attestorPubKey
+            )
+            this.authResultCallback(useToken);
+        } catch (e){
+            console.log(`UseDevconTicket. Something went wrong. ${e}`);
+            this.authResultCallback(false);
+        }
     }
 
     // postMessageReadyListener(event: MessageEvent){

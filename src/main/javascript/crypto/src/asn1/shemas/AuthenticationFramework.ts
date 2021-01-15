@@ -5,7 +5,7 @@ const AsnCRITICAL = false;
 
 export class AlgorithmIdentifierASN {
     @AsnProp({ type: AsnPropTypes.ObjectIdentifier }) public algorithm: AsnPropTypes.ObjectIdentifier;// OBJECT IDENTIFIER,
-    //@AsnProp({ type: AsnPropTypes.Any }) public parameters = AsnCRITICAL;// ANY DEFINED BY algorithm OPTIONAL
+    @AsnProp({ type: AsnPropTypes.Any, optional: true }) public parameters?: AsnPropTypes.Any;// ANY DEFINED BY algorithm OPTIONAL
 }
 
 export class Version {
@@ -24,12 +24,12 @@ class Time {
     @AsnProp({ type: AsnPropTypes.UTCTime})
     public utcTime?: AsnPropTypes.UTCTime;
     @AsnProp({ type: AsnPropTypes.GeneralizedTime })
-    public generalizedTime?: AsnPropTypes.GeneralizedTime;
+    public generalizedTime?: Date;
 }
 
 export class ValidityValue {
-    @AsnProp({ type: Time }) public notBefore = AsnCRITICAL;
-    @AsnProp({ type: Time }) public notAfter = AsnCRITICAL;
+    @AsnProp({ type: Time }) public notBefore: Time;
+    @AsnProp({ type: Time }) public notAfter: Time;
 }
 
 @AsnType({ type: AsnTypeTypes.Choice })
@@ -40,8 +40,19 @@ class Validity {
     public null?: Null;
 }
 
-//
-// Extensions ::= SEQUENCE OF Extension
+export class Extension {
+    @AsnProp({ type: AsnPropTypes.ObjectIdentifier })
+    public extnId: string;
+    @AsnProp({ type: AsnPropTypes.Boolean })
+    public critical: number;
+    @AsnProp({ type: AsnPropTypes.OctetString })
+    public extnValue: number;
+}
+
+export class Extensions { //SEQUENCE OF Extension
+    @AsnProp({ type: Extension }) public extension: Extension;
+}
+
 //
 // Extension ::= SEQUENCE {
 //     extnId		EXTENSION.&id,

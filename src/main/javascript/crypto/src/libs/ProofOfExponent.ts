@@ -51,4 +51,9 @@ export class ProofOfExponent {
             Asn1Der.encode('OCTET_STRING', uint8tohex(this.tPoint.getEncoded(false)));
         return Asn1Der.encode('SEQUENCE_30', res);
     }
+
+    public getDerEncoding():string {
+        return this.encoding;
+    }
+
 }

@@ -137,6 +137,25 @@ export class Cheque {
     getDerEncoding(): Uint8Array{
         return Uint8Array.from([]);
     }
+    public checkValidity(): boolean {
+        let now: number = Date.now();
+        if ( this.notValidBefore > now ) {
+            console.log("Cheque is no longer valid");
+            return false;
+        }
+
+        if ( this.notValidAfter < now ) {
+            console.log("Cheque expired");
+            return false;
+        }
+
+        return true;
+    }
+
+    getCommitment(){
+        return this.commitment;
+    }
+
 }
 
 // TODO add timezone

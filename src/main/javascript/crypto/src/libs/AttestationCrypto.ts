@@ -331,13 +331,13 @@ export class AttestationCrypto {
         if (!riddle.equals(pok.getRiddle())) {
             return false;
         }
-        let c = mod(this.mapToIntegerFromUint8(this.makeArray([Pedestren_G, Pedestren_H, comPoint1, comPoint2, pok.getPoint()])), CURVE_BN256.n);
-
         // Ensure that the right base has been used in the proof
+
         if (!pok.getBase().equals(Pedestren_H)) {
             return false;
         }
-
+        // let c = this.mapToIntegerFromUint8(this.makeArray([Pedestren_G, Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
+        let c = this.mapTo256BitInteger(this.makeArray([Pedestren_G, pok.getBase(), comPoint1, comPoint2, pok.getPoint()]));
         return this.verifyPok(pok, c);
     }
 

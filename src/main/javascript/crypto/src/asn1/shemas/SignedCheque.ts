@@ -15,9 +15,9 @@ export class SignedCheque {
     public cheque: ChequeASN;
 
     @AsnProp({ type: AsnPropTypes.BitString })
-    public publicKey = AsnCRITICAL;
+    public publicKey: Uint8Array;
 
     @AsnProp({ type: AsnPropTypes.BitString })
-    public signatureValue = AsnCRITICAL;
+    public signatureValue: Uint8Array;
 
 }
