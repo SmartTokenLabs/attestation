@@ -8,7 +8,7 @@ import {
   ObjectIdentifier
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
-import PublicKeyInfo from "./PublicKeyInfo.js";
+import PublicKeyInfo from "./pki_src/PublicKeyInfo.js";
 
 export class DevconTicket {
   //**********************************************************************************
@@ -93,7 +93,7 @@ export class DevconTicket {
     }
 
     if ("ticketId" in asn1.result) {
-      const ticketId = asn1.result["ticketId"].valueBlock._valueHex
+      const ticketId = asn1.result["ticketId"].valueBlock._valueHex;
       this.ticketId = asn1.result["ticketId"].valueBlock._valueHex;
 
       // this.ticketId = BigInt("0x" + bufferToHexCodes(ticketId));
@@ -140,6 +140,16 @@ export class DevconTicket {
     return ticketSequence;
     //endregion
   }
+
+  toJSON() {
+    const object = {
+      devconId: this.devconId,
+      ticketId: this.ticketId,
+      ticketClass: this.ticketClass
+    };
+
+    return object;
+  }
 }
 
 export class SignedDevconTicket {
@@ -182,8 +192,15 @@ export class SignedDevconTicket {
 
       // TODO: issue #75
       // this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
-	  
-	  this.publicKeyInfo = new PublicKeyInfo(source.publicKeyInfo)
+	  if(source.publicKeyInfo){
+	   //this.publicKeyInfo = new PublicKeyInfo(source.publicKeyInfo);
+        this.publicKeyInfo = getParametersValue(
+            source,
+            "publicKeyInfo",
+            SignedDevconTicket.defaultValues("publicKeyInfo")
+          );
+	  }
+
 
       this.signatureValue = getParametersValue(
           source,
@@ -192,6 +209,14 @@ export class SignedDevconTicket {
     }
   }
 
+  static defaultValues(memberName) {
+      switch (memberName) {
+        case "publicKeyInfo":
+          return new PublicKeyInfo();
+        default:
+          throw new Error(`Invalid member name for SignedDevconTicket class: ${memberName}`);
+      }
+    }
   //**********************************************************************************
   /**
    * Return value of pre-defined ASN.1 schema for current class
@@ -228,20 +253,15 @@ export class SignedDevconTicket {
          * that this data is not important for the 1st delivery deadline, won't be read by client anyway.
          * TODO: add support for PublicKeyInfo https://github.com/TokenScript/attestation/issues/75
          */
-        new Sequence( {
-          name: "publicKeyInfo",
-          optional: true,
-          value: [
-            PublicKeyInfo.schema(
-                names.publicKeyInfo || {
-                  names: {
-                    blockName: "publicKeyInfo",
-                  },
-                }
-            )
-          ]
-        }),
 
+        PublicKeyInfo.schema(
+            names.publicKeyInfo || {
+              names: {
+                blockName: "publicKeyInfo",
+              },
+              optional: true
+            }
+        ),
         new BitString({
           name: "signatureValue",
         }),
@@ -276,13 +296,14 @@ export class SignedDevconTicket {
     //region Get internal properties from parsed schema
     // noinspection JSUnresolvedVariable
 
-    this.ticket = new DevconTicket(asn1.result.ticket.valueBeforeDecode)
+    this.ticket = new DevconTicket(asn1.result.ticket.valueBeforeDecode);
 
     if ("commitment" in asn1.result)
       this.commitment = asn1.result["commitment"].valueBlock.valueHex;
 
     // TODO: issue #75
     // this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
+    if(asn1.result.publicKeyInfo)
 	this.publicKeyInfo = new PublicKeyInfo({
       schema: asn1.result.publicKeyInfo,
     });
@@ -297,9 +318,10 @@ export class SignedDevconTicket {
 
     outputArray.push(this.ticket.toSchema());
     outputArray.push(new OctetString({ valueHex: this.commitment }));
-    //Add code for PublicKeyInfo
-    //if(this.publicKeyInfo)
-      //outputArray.push(new Sequence({ value: new PublicKeyInfo(this.publicKeyInfo).toSchema() }));
+
+    if (this.publicKeyInfo)
+        outputArray.push(new PublicKeyInfo(this.publicKeyInfo).toSchema());
+
     outputArray.push( new BitString({ valueHex: this.signatureValue } ) );
 
     //endregion
@@ -311,6 +333,20 @@ export class SignedDevconTicket {
     }));
     //endregion
   }
+  /**
+   * Convertion for the class to JSON object
+   * @returns {Object}
+   */
+  toJSON() {
+    const object = {
+      ticket: this.ticket.toJSON(),
+      commitment: this.commitment,
+      signatureValue: this.signatureValue
+    };
+
+    return object;
+  }
+
   serialize() {
     let sequence = this.toSchema();
 
