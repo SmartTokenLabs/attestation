@@ -20,12 +20,12 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 public class SignedAttestation implements ASNEncodable, Verifiable, Validateable {
   private final Attestation att;
   private final byte[] signature;
-  private final AsymmetricKeyParameter publicKey;
+  private final AsymmetricKeyParameter attestationVerificationKey;
 
-  public SignedAttestation(Attestation att, AsymmetricCipherKeyPair key) {
+  public SignedAttestation(Attestation att, AsymmetricCipherKeyPair attestationSigningkey) {
     this.att = att;
-    this.signature = SignatureUtility.signDeterministic(att.getPrehash(), key.getPrivate());
-    this.publicKey = key.getPublic();
+    this.signature = SignatureUtility.signDeterministic(att.getPrehash(), attestationSigningkey.getPrivate());
+    this.attestationVerificationKey = attestationSigningkey.getPublic();
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
     }
@@ -38,7 +38,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
     this.att = new Attestation(attestationEnc.getEncoded());
     DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
     this.signature = signatureEnc.getBytes();
-    this.publicKey = signingPublicKey;
+    this.attestationVerificationKey = signingPublicKey;
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
     }
@@ -52,7 +52,10 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
     return signature;
   }
 
-  public AsymmetricKeyParameter getPublicKey() { return publicKey; }
+  /**
+   * Returns the public key of the attestation signer
+   */
+  public AsymmetricKeyParameter getAttestationVerificationKey() { return attestationVerificationKey; }
 
   @Override
   public byte[] getDerEncoding() {
@@ -80,7 +83,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
   @Override
   public boolean verify() {
     try {
-      return SignatureUtility.verify(att.getDerEncoding(), signature, publicKey);
+      return SignatureUtility.verify(att.getDerEncoding(), signature, attestationVerificationKey);
     } catch (InvalidObjectException e) {
       return false;
     }

@@ -98,7 +98,7 @@ public class TestRedeemCheque {
   @Test
   public void testDecoding() throws InvalidObjectException {
     AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncoding(), new ChequeDecoder(),
-        issuerKeys.getPublic(), subjectKeys.getPublic());
+        issuerKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
     ASN1Sequence extensions = DERSequence.getInstance(newRedeem.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
@@ -115,7 +115,7 @@ public class TestRedeemCheque {
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
         .getAtt(), attestedCheque.getPok(),
-        attestedCheque.getSignature(), issuerKeys.getPublic(), subjectKeys.getPublic());
+        attestedCheque.getSignature());
 
     assertArrayEquals(attestedCheque.getDerEncoding(), newConstructor.getDerEncoding());
   }
@@ -170,7 +170,7 @@ public class TestRedeemCheque {
   @Test
   public void testNegativeDifferentKeys() throws Exception {
     SignedAttestation att = attestedCheque.getAtt();
-    Field field = att.getClass().getDeclaredField("publicKey");
+    Field field = att.getClass().getDeclaredField("attestationVerificationKey");
     field.setAccessible(true);
     // Change public key
     field.set(att, subjectKeys.getPublic());

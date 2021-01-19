@@ -82,21 +82,37 @@ public class AttestationCrypto {
     }
     //discard the first byte which only tells what kind of key it is //i.e. encoded/un-encoded
     pubKey = Arrays.copyOfRange(pubKey,1,pubKey.length);
-    MessageDigest KECCAK = new Keccak.Digest256();
-    KECCAK.reset();
-    KECCAK.update(pubKey);
-    byte[] hash = KECCAK.digest();
+    byte[] hash = hashWithKeccak(pubKey);
     //finally get only the last 20 bytes
     return "0x" + Hex.toHexString(Arrays.copyOfRange(hash,hash.length-20,hash.length)).toUpperCase();
   }
 
+  public static byte[] hashWithKeccak(byte[] toHash) {
+    MessageDigest KECCAK = new Keccak.Digest256();
+    KECCAK.reset();
+    KECCAK.update(toHash);
+    return KECCAK.digest();
+  }
+
+  /**
+   * Construct default keys; secp256k1
+   */
   public AsymmetricCipherKeyPair constructECKeys() {
+    return constructECKeys(ECDSAdomain);
+  }
+
+  public AsymmetricCipherKeyPair constructECKeys(String curveName) {
+    X9ECParameters ECDSACurve = SECNamedCurves.getByName(curveName);
+    ECDomainParameters domain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
+    return constructECKeys(domain);
+  }
+
+  private AsymmetricCipherKeyPair constructECKeys(ECDomainParameters domain) {
     ECKeyPairGenerator generator = new ECKeyPairGenerator();
-    ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(ECDSAdomain, rand);
+    ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(domain, rand);
     generator.init(keygenParams);
     return generator.generateKeyPair();
   }
-
 
   /**
    * Construct a Pedersen commitment to an identifier using a specific secret.
@@ -259,11 +275,7 @@ public class AttestationCrypto {
    */
   static BigInteger mapTo256BitInteger(byte[] input) {
     try {
-      MessageDigest KECCAK = new Keccak.Digest256();
-      KECCAK.reset();
-      // In case of failure we rehash using the old output
-      KECCAK.update(input);
-      byte[] digest = KECCAK.digest();
+      byte[] digest = hashWithKeccak(input);
       // Construct an positive BigInteger from the bytes
       return new BigInteger(1, digest);
     } catch (Exception e) {

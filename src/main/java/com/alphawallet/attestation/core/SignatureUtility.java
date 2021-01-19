@@ -2,6 +2,12 @@ package com.alphawallet.attestation.core;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.Security;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -20,9 +26,12 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.Keccak.Digest256;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class SignatureUtility {
     /**
@@ -30,10 +39,10 @@ public class SignatureUtility {
      * @param input
      * @return
      */
-    public static AsymmetricKeyParameter restoreKey(byte[] input) throws IOException {
+    public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
         AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(new ASN1ObjectIdentifier(
             AttestationCrypto.OID_SIGNATURE_ALG), AttestationCrypto.ECDSACurve.toASN1Primitive());
-        return restoreKey(identifierEnc, input);
+        return restoreDefaultKey(identifierEnc, input);
     }
 
     /**
@@ -41,11 +50,39 @@ public class SignatureUtility {
      * @param input
      * @return
      */
-    public static AsymmetricKeyParameter restoreKey(AlgorithmIdentifier identifier, byte[] input) throws IOException {
+    public static AsymmetricKeyParameter restoreDefaultKey(AlgorithmIdentifier identifier, byte[] input) throws IOException {
         ASN1BitString keyEnc = DERBitString.getInstance(input);
         ASN1Sequence spkiEnc = new DERSequence(new ASN1Encodable[] {identifier, keyEnc});
-        SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(spkiEnc);
+        return restoreKeyFromSPKI(spkiEnc.getEncoded());
+    }
+
+    public static AsymmetricKeyParameter restoreKeyFromSPKI(byte[] input) throws IOException {
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(input);
         return PublicKeyFactory.createKey(spki);
+    }
+
+    public static ECPrivateKey PrivateBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            KeyFactory ecKeyFac = KeyFactory.getInstance("EC", "BC");
+            byte[] encodedBCKey = PrivateKeyInfoFactory.createPrivateKeyInfo(bcKey).getEncoded();
+            PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(encodedBCKey);
+            return (ECPrivateKey) ecKeyFac.generatePrivate(pkcs8EncodedKeySpec);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ECPublicKey PublicBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            KeyFactory ecKeyFac = KeyFactory.getInstance("EC", "BC");
+            SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(bcKey);
+            X509EncodedKeySpec encodedKey = new X509EncodedKeySpec(spki.getEncoded());
+            return (ECPublicKey) ecKeyFac.generatePublic(encodedKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -69,7 +106,7 @@ public class SignatureUtility {
     }
 
     /**
-     * Constructs a DER encoded interministic (randomized) ECDSA signature based on an already hashed value.
+     * Constructs a DER encoded indeterministic (randomized) ECDSA signature based on an already hashed value.
      * Despite being randomized this is done in accordance with EIP 2 (the y-coordinate is guaranteed to be <n/2)
      * @param digest The digest to sign
      * @param key The key to use for signing.
@@ -104,7 +141,7 @@ public class SignatureUtility {
         return verifyHashed(digestBytes, signature, key);
     }
 
-    static boolean verifyHashed(byte[] digest, byte[] signature, AsymmetricKeyParameter key) {
+    public static boolean verifyHashed(byte[] digest, byte[] signature, AsymmetricKeyParameter key) {
         try {
             ASN1InputStream input = new ASN1InputStream(signature);
             ASN1Sequence seq = ASN1Sequence.getInstance(input.readObject());

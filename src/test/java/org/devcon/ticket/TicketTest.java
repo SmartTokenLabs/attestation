@@ -19,7 +19,6 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
@@ -69,7 +68,7 @@ public class TicketTest {
     assertTrue(newTicket.checkValidity());
     assertArrayEquals(ticket.getDerEncoding(), newTicket.getDerEncoding());
 
-    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreKey(decoded.get(1));
+    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreDefaultKey(decoded.get(1));
     Ticket otherConstructorTicket = new Ticket(newTicket.getDevconId(), newTicket.getTicketId(), newTicket.getTicketClass(),
         newTicket.getCommitment(), newTicket.getSignature(), newIssuerPublicKey);
     assertArrayEquals(ticket.getDerEncoding(), otherConstructorTicket.getDerEncoding());

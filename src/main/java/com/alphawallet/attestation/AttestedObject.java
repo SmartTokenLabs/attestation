@@ -56,10 +56,9 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature) {
     this.attestableObject = object;
     this.att = att;
-    this.userPublicKey = userPublicKey;
     this.pok = pok;
     this.signature = signature;
 
@@ -71,6 +70,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       this.unsignedEncoding = new DERSequence(vec).getEncoded();
       vec.add(new DERBitString(this.signature));
       this.encoding = new DERSequence(vec).getEncoded();
+      this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -79,9 +79,9 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
+      AsymmetricKeyParameter publicAttestationSigningKey) {
     this.encoding = derEncoding;
-    this.userPublicKey = userPublicKey;
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
@@ -90,6 +90,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       this.pok = new ProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
       this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
+      this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -132,6 +133,12 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
         System.err.println("The attestation is not a valid standard attestation");
         return false;
       }
+      // CHECK: the Ethereum address on the attestation matches receivers signing key
+      String address = AttestationCrypto.addressFromKey(userPublicKey);
+      if (!std.getSubject().equals("CN="+address)) {
+        System.err.println("The key which signed this request is not the key attested to.");
+        return false;
+      }
     } catch (InvalidObjectException e) {
       System.err.println("The attestation is invalid");
       return false;
@@ -159,8 +166,6 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       return false;
     }
 
-    // CHECK: the Ethereum address on the attestation matches receivers signing key
-    // TODO
     return true;
   }
 

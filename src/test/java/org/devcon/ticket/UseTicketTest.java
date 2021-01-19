@@ -1,9 +1,26 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import com.alphawallet.attestation.Attestation;
+import com.alphawallet.attestation.AttestedObject;
+import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.ProofOfExponent;
+import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -15,16 +32,6 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.util.Arrays;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class UseTicketTest {
   private static final String MAIL = "test@test.ts";
@@ -95,7 +102,7 @@ public class UseTicketTest {
   @Test
   public void testDecoding() throws InvalidObjectException {
     AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncoding(), new TicketDecoder(
-        ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), subjectKeys.getPublic());
+        ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
     ASN1Sequence extensions = DERSequence
@@ -113,7 +120,7 @@ public class UseTicketTest {
 
     AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
         attestedTicket.getAtt(), attestedTicket.getPok(),
-        attestedTicket.getSignature(), attestorKeys.getPublic(), subjectKeys.getPublic());
+        attestedTicket.getSignature());
 
     assertArrayEquals(attestedTicket.getDerEncoding(), newConstructor.getDerEncoding());
   }
@@ -155,7 +162,7 @@ public class UseTicketTest {
   @Test
   public void testNegativeDifferentKeys() throws Exception {
     SignedAttestation att = attestedTicket.getAtt();
-    Field field = att.getClass().getDeclaredField("publicKey");
+    Field field = att.getClass().getDeclaredField("attestationVerificationKey");
     field.setAccessible(true);
     // Change public key
     field.set(att, subjectKeys.getPublic());
@@ -242,5 +249,16 @@ public class UseTicketTest {
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
     }
+  }
+
+  @Test
+  public void testNonAttestedSigningKey() {
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    SignedAttestation signed = new SignedAttestation(att, attestorKeys);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    AsymmetricCipherKeyPair newKeys = crypto.constructECKeys();
+    attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    assertTrue(attestedTicket.verify());
+    assertFalse(attestedTicket.checkValidity());
   }
 }

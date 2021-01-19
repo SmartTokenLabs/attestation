@@ -4,28 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
 
 public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
@@ -44,7 +36,7 @@ public class CryptoTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
+    subjectKeys = crypto.constructECKeys("secp256k1");
     issuerKeys = crypto.constructECKeys();
     senderKeys = crypto.constructECKeys();
   }

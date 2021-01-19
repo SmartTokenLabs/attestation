@@ -50,7 +50,7 @@ public class TestCheque {
     assertTrue(newCheque.checkValidity());
     assertArrayEquals(cheque.getDerEncoding(), newCheque.getDerEncoding());
 
-    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreKey(decoded.get(1));
+    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreDefaultKey(decoded.get(1));
     Cheque otherConstructorCheque = new Cheque(newCheque.getCommitment(), newCheque.getAmount(),
         newCheque.getNotValidBefore(), newCheque.getNotValidAfter(), newCheque.getSignature(), newIssuerPublicKey);
     assertArrayEquals(cheque.getDerEncoding(), otherConstructorCheque.getDerEncoding());
