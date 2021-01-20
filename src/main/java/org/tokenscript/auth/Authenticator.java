@@ -14,10 +14,10 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.Security;
 import java.util.Base64;
 import java.util.Date;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -27,13 +27,11 @@ public class Authenticator<T extends Attestable> extends JWTCommon {
   private final AttestableObjectDecoder<T> decoder;
   private final ObjectMapper jsonMapper = new ObjectMapper();
 
-  // todo use cert as input
-  public Authenticator(AttestableObjectDecoder<T> decoder, AsymmetricKeyParameter attestorPublicKey, AsymmetricCipherKeyPair signingKeys ) {
-    this.attestorPublicKey = attestorPublicKey;
+  public Authenticator(AttestableObjectDecoder<T> decoder, PublicKey attestorPublicKey, KeyPair signingKeys ) throws Exception {
+    this.attestorPublicKey = SignatureUtility.restoreKeyFromSPKI(attestorPublicKey.getEncoded());
     this.decoder = decoder;
     Security.addProvider(new BouncyCastleProvider());
-    this.keys = new KeyPair(SignatureUtility.PublicBCKeyToJavaKey(signingKeys.getPublic()),
-        SignatureUtility.PrivateBCKeyToJavaKey(signingKeys.getPrivate()));
+    this.keys = signingKeys;
   }
 
 

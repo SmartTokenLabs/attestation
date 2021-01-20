@@ -13,6 +13,7 @@ public class Verifier extends JWTCommon {
   private final JWTVerifier verifier;
 
   public Verifier(String audience, AsymmetricKeyParameter verificationKey) {
+    // todo add cert verification
     this.verificationKey = SignatureUtility.PublicBCKeyToJavaKey(verificationKey);
     this.verifier = JWT.require(getAlgorithm(this.verificationKey, null))
         .withIssuer("org.alphawallet.auth")

@@ -3,6 +3,7 @@ package com.alphawallet.attestation.core;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.Security;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
@@ -19,6 +20,7 @@ import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -84,6 +86,12 @@ public class SignatureUtility {
             throw new RuntimeException(e);
         }
     }
+
+    public static KeyPair BCKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
+        return new KeyPair(PublicBCKeyToJavaKey(bcKeys.getPublic()), PrivateBCKeyToJavaKey(
+            bcKeys.getPrivate()));
+    }
+
 
     /**
      * Constructs a DER encoded, non-malleable deterministic ECDSA signature.

@@ -14,6 +14,8 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.devcon.ticket.Ticket;
@@ -22,8 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class AuthenticatorTest {
-  private static final byte[] okResponse = "ok".getBytes(StandardCharsets.UTF_8);
-  private static final byte[] failResponse = "fail".getBytes(StandardCharsets.UTF_8);
+  static final byte[] failResponse = "fail".getBytes(StandardCharsets.UTF_8);
   private static final String domain = "http://www.hotelbogota.com";
   private static final ObjectMapper mapper = new ObjectMapper();
   private static AsymmetricCipherKeyPair authenticatorKeys, attestorKeys, ticketKeys;
@@ -41,11 +42,13 @@ public class AuthenticatorTest {
     attestorKeys = crypto.constructECKeys("secp256k1");
     ticketKeys = crypto.constructECKeys("secp256k1");
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
-    authenticator = new Authenticator(decoder, attestorKeys.getPublic(), authenticatorKeys);
+    PublicKey javaAttestorPK = SignatureUtility.PublicBCKeyToJavaKey(attestorKeys.getPublic());
+    KeyPair javaAuthenticatorKey = SignatureUtility.BCKeysToJavaKey(authenticatorKeys);
+    authenticator = new Authenticator(decoder, javaAttestorPK, javaAuthenticatorKey);
     verifier = new Verifier(domain, authenticatorKeys.getPublic());
   }
 
-  private UseAttestableRequest makeValidRequest() {
+  static UseAttestableRequest makeValidRequest() {
     BigInteger attestationSecret = new BigInteger("238469");
     String mail = "test@test.dk";
     int conferenceID = 6;
@@ -61,6 +64,14 @@ public class AuthenticatorTest {
     byte[] signature = SignatureUtility.signDeterministic(request.getSignable(), authenticatorKeys.getPrivate());
     request.setSignature(signature);
     return request;
+  }
+
+  @Test
+  public void legalRequest() throws Exception {
+    UseAttestableRequest request = makeValidRequest();
+    byte[] requestBytes = mapper.writeValueAsBytes(request);
+    byte[] jwtResponse = authenticator.validateRequest(requestBytes);
+    assertTrue(verifier.verifyToken(jwtResponse));
   }
 
   @Test
@@ -99,14 +110,6 @@ public class AuthenticatorTest {
     request.setTimeStamp(request.getTimeStamp() + 2 * Authenticator.TIMELIMIT_IN_MS);
     byte[] requestBytes = mapper.writeValueAsBytes(request);
     assertArrayEquals(authenticator.validateRequest(requestBytes), failResponse);
-  }
-
-  @Test
-  public void legalRequest() throws Exception {
-    UseAttestableRequest request = makeValidRequest();
-    byte[] requestBytes = mapper.writeValueAsBytes(request);
-    byte[] jwtResponse = authenticator.validateRequest(requestBytes);
-    assertTrue(verifier.verifyToken(jwtResponse));
   }
 
 }
