@@ -23,11 +23,16 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class Authenticator<T extends Attestable> extends JWTCommon {
   private final AsymmetricKeyParameter attestorPublicKey;
+  private final String issuerDomain;
   private final KeyPair keys;
   private final AttestableObjectDecoder<T> decoder;
   private final ObjectMapper jsonMapper = new ObjectMapper();
 
-  public Authenticator(AttestableObjectDecoder<T> decoder, PublicKey attestorPublicKey, KeyPair signingKeys ) throws Exception {
+  public Authenticator(AttestableObjectDecoder<T> decoder, PublicKey attestorPublicKey, String issuerDomain, KeyPair signingKeys ) throws Exception {
+    if (!verifyDomain(issuerDomain)) {
+      throw new RuntimeException("Issuer domain is not a valid domain");
+    }
+    this.issuerDomain = issuerDomain;
     this.attestorPublicKey = SignatureUtility.restoreKeyFromSPKI(attestorPublicKey.getEncoded());
     this.decoder = decoder;
     Security.addProvider(new BouncyCastleProvider());

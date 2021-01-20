@@ -1,20 +1,18 @@
 package org.tokenscript.auth;
 
-import com.alphawallet.attestation.core.SignatureUtility;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
 public class Verifier extends JWTCommon {
   private final PublicKey verificationKey;
   private final JWTVerifier verifier;
 
-  public Verifier(String audience, AsymmetricKeyParameter verificationKey) {
+  public Verifier(String audience, PublicKey verificationKey) {
     // todo add cert verification
-    this.verificationKey = SignatureUtility.PublicBCKeyToJavaKey(verificationKey);
+    this.verificationKey = verificationKey;
     this.verifier = JWT.require(getAlgorithm(this.verificationKey, null))
         .withIssuer("org.alphawallet.auth")
         .acceptLeeway(TIMELIMIT_IN_MS)

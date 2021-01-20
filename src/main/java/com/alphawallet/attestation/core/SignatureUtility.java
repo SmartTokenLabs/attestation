@@ -28,6 +28,7 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -90,6 +91,16 @@ public class SignatureUtility {
     public static KeyPair BCKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
         return new KeyPair(PublicBCKeyToJavaKey(bcKeys.getPublic()), PrivateBCKeyToJavaKey(
             bcKeys.getPrivate()));
+    }
+
+    public static AsymmetricCipherKeyPair JavaToBCKeys(KeyPair keys) {
+        try {
+            AsymmetricKeyParameter pk = restoreKeyFromSPKI(keys.getPublic().getEncoded());
+            AsymmetricKeyParameter secretKey = PrivateKeyFactory.createKey(keys.getPrivate().getEncoded());
+            return new AsymmetricCipherKeyPair(pk, secretKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

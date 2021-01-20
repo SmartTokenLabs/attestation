@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 public class AuthenticatorTest {
   static final byte[] failResponse = "fail".getBytes(StandardCharsets.UTF_8);
-  private static final String domain = "http://www.hotelbogota.com";
+  private static final String verifyerDomain = "http://www.hotelbogota.com";
+  private static final String issuerDomain = "http://www.hotelbogota.com";
   private static final ObjectMapper mapper = new ObjectMapper();
   private static AsymmetricCipherKeyPair authenticatorKeys, attestorKeys, ticketKeys;
   private static SecureRandom rand;
@@ -43,9 +44,9 @@ public class AuthenticatorTest {
     ticketKeys = crypto.constructECKeys("secp256k1");
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
     PublicKey javaAttestorPK = SignatureUtility.PublicBCKeyToJavaKey(attestorKeys.getPublic());
-    KeyPair javaAuthenticatorKey = SignatureUtility.BCKeysToJavaKey(authenticatorKeys);
-    authenticator = new Authenticator(decoder, javaAttestorPK, javaAuthenticatorKey);
-    verifier = new Verifier(domain, authenticatorKeys.getPublic());
+    KeyPair javaAuthenticatorKeys = SignatureUtility.BCKeysToJavaKey(authenticatorKeys);
+    authenticator = new Authenticator(decoder, javaAttestorPK, issuerDomain, javaAuthenticatorKeys);
+    verifier = new Verifier(verifyerDomain, javaAuthenticatorKeys.getPublic());
   }
 
   static UseAttestableRequest makeValidRequest() {
@@ -60,7 +61,7 @@ public class AuthenticatorTest {
     Ticket ticket = new Ticket(mail, conferenceID, ticketID, ticketCLass, ticketKeys, ticketSecret);
     AttestedObject<Ticket> attestedTicket = new AttestedObject<Ticket>(ticket, signed,
         authenticatorKeys, attestationSecret, ticketSecret, crypto);
-    UseAttestableRequest request = new UseAttestableRequest(attestedTicket.getDerEncoding(), System.currentTimeMillis(), domain, new byte[0]);
+    UseAttestableRequest request = new UseAttestableRequest(attestedTicket.getDerEncoding(), System.currentTimeMillis(), verifyerDomain, new byte[0]);
     byte[] signature = SignatureUtility.signDeterministic(request.getSignable(), authenticatorKeys.getPrivate());
     request.setSignature(signature);
     return request;
@@ -81,7 +82,7 @@ public class AuthenticatorTest {
 
   @Test
   public void notVerifiableInput() throws Exception {
-    UseAttestableRequest request = new UseAttestableRequest(new byte[0], 0, domain, new byte[0], new byte[0]);
+    UseAttestableRequest request = new UseAttestableRequest(new byte[0], 0, verifyerDomain, new byte[0], new byte[0]);
     byte[] requestBytes = mapper.writeValueAsBytes(request);
     assertArrayEquals(authenticator.validateRequest(requestBytes), failResponse);
   }
