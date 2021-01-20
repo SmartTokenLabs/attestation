@@ -2,109 +2,132 @@ import {SignedDevconTicket} from "./asn1/SignedDevonTicket.js";
 
 export class Negotiator {
     // other code
-    constructor(filter) {
+    constructor(filter, options = {}) {
         this.filter = filter;
-        this.debug = 1;
-        this.hideIframe = 0;
-        this.attestationOrigin = "stage.attestation.id";
+        this.debug = 0;
+        this.hideTokensIframe = 0;
+        this.attestationOrigin = "http://stage.attestation.id";
+        this.tokensOrigin = "https://devcontickets.herokuapp.com/outlet/";
+        if (options.hasOwnProperty('debug')) this.debug = options.debug;
+        if (options.hasOwnProperty('attestationOrigin')) this.attestationOrigin = options.attestationOrigin;
+        if (options.hasOwnProperty('tokensOrigin')) this.tokensOrigin = options.tokensOrigin;
     }
 
     /*
      * Return token objects satisfying the current negotiator's requirements
      */
     getTokenInstances() {
-
-        // let signedDevconTicket =  new SignedDevconTicket('')
-        // some code to get the signedDevconTicket from ticket.devcon.org (through iframe)
-
-        // the first 3 attributes are "Business Attributes", obtained from SignedDevonTicket.ticket
-        // the last 3 attributes are "Operational Attributes"
-
-        return this.tokens.web;
-    }
-
-    async negotiate(callBack){
-        if (window !== window.parent) {
-            // its iframe. have to send back tokens
-            if (typeof callBack === "function") callBack(this.readTokens());
-
+        let res = [];
+        this.debug && console.log('filter:',this.filter);
+        if (
+            this.tokens.web.length
+            && typeof this.filter === "object"
+            && Object.keys(this.filter).length
+        ) {
+            let filterKeys = Object.keys(this.filter);
+            this.tokens.web.forEach(token => {
+                let fitFilter = 1;
+                this.debug && console.log('test token:',token);
+                filterKeys.forEach(key => {
+                    if (token[key].toString() != this.filter[key].toString()) fitFilter = 0;
+                })
+                if (fitFilter) {
+                    res.push(token);
+                    this.debug && console.log('token fits:',token);
+                }
+            })
+            return res;
         } else {
-            // its direct site open, just show tokens, no need to send them to parent
-            // TODO check if need to grab tokens from other site or show right here
-            const needIframe = true;
-
-            if (needIframe) {
-                let path = window.location.href;
-
-                // get current URL and remove hashtag
-                if (path.lastIndexOf("#") > -1) path = path.substring(0, path.lastIndexOf("#"));
-                // remove filename from URL
-                path = path.substring(0, path.lastIndexOf("/"));
-
-                //
-                // create path to "ticket.devcon.org"
-                this.remoteUrl = path + "/ticket.devcon.org.html";
-
-                // its iframe, we will send tokens to parent
-                if (window.addEventListener) {
-                    window.addEventListener("message", (e) => {
-                        this.parentPostMessagelistener(e,callBack);
-                    });
-                } else {
-                    // IE8
-                    window.attachEvent("onmessage", (e) => {
-                        this.parentPostMessagelistener(e,callBack);
-                    });
-                }
-
-                const iframe = document.createElement('iframe');
-                this.tokensIframe = iframe;
-                iframe.setAttribute('name', 'target');
-                if (this.hideIframe) {
-                    iframe.style.display = 'none';
-                }
-                const remoteUrl = this.remoteUrl;
-                iframe.src = remoteUrl;
-                iframe.onload = ()=>{
-                    // console.log("remoteUrl = " + remoteUrl);
-                    const url = new URL(remoteUrl);
-                    iframe.contentWindow.postMessage({filter: this.filter}, url.origin);
-                }
-                document.body.appendChild(iframe);
-            }
+            return this.tokens.web;
         }
     }
 
+    negotiate(callBack) {
+        // its iframe, we will send tokens to parent
+        if (window.addEventListener) {
+            window.addEventListener("message", (e) => {
+                this.parentPostMessagelistener(e,callBack);
+            });
+        } else {
+            // IE8
+            window.attachEvent("onmessage", (e) => {
+                this.parentPostMessagelistener(e,callBack);
+            });
+        }
+
+        const iframe = document.createElement('iframe');
+        this.tokensIframe = iframe;
+        // iframe.setAttribute('name', 'target');
+        if (this.hideTokensIframe) {
+            iframe.style.display = 'none';
+        }
+        const remoteUrl = this.tokensOrigin;
+        iframe.src = remoteUrl;
+        // iframe.onload = ()=>{
+        //     // console.log("remoteUrl = " + remoteUrl);
+        //     const url = new URL(remoteUrl);
+        //     iframe.contentWindow.postMessage({get_tokens: "tickets"}, url.origin);
+        // }
+        document.body.appendChild(iframe);
+    }
+
+    base64ToUint8array( base64str ) {
+        // decode base64url to base64. it will do nothing for base64
+        base64str = base64str.split('_').join('+')
+            .split('-').join('/')
+            .split('.').join('=');
+        let res;
+
+        if (typeof Buffer !== 'undefined') {
+            res = Uint8Array.from(Buffer.from(base64str, 'base64'));
+        } else {
+            res = Uint8Array.from(atob(base64str), c => c.charCodeAt(0));
+        }
+        return res;
+    }
+
+    decodeTokens(encodedTokens, callBack){
+        if (this.debug) {
+            console.log('decodeTokens fired');
+            console.log(encodedTokens);
+        }
+        this.tokens = {raw: [], web: []};
+        if (encodedTokens.length) {
+            encodedTokens.forEach(token=> {
+                let decodedToken = new SignedDevconTicket(this.base64ToUint8array(token.ticket).buffer);
+
+                console.log('decodedToken = ', decodedToken);
+                this.tokens.raw.push(token)
+                if (decodedToken) this.tokens.web.push(decodedToken.ticket);
+            })
+            // this.filterTokens(callBack);
+            callBack && callBack(this.getTokenInstances());
+        }
+    }
+
+
     // postMessageEvent
     parentPostMessagelistener(event, callBack ) {
-
+        // console.log('post message received');
         // ignore system postMessages, we work with postMessages with defined event.data.tokens
         if (typeof event.data.tokens === "undefined") {
             return;
         }
 
+        // console.log('tokens received');
+        // console.log(event.data.tokens);
+
         if (this.debug) {
             console.log('---parent postMessage event received, event.data.tokens:', event.data.tokens);
         }
 
-        // save received tokens
-        let encodedTokens = event.data.tokens;
         // remove iframe when data received
         this.tokensIframe.remove();
 
-        this.tokens = {raw: [], web: []};
-        if (encodedTokens.length) {
-            encodedTokens.forEach(token=> {
-                let decodedToken = new SignedDevconTicket(token);
-
-                this.tokens.raw.push(token)
-                if (decodedToken) this.tokens.web.push(this.addWebTicket(decodedToken));
-
-            })
-            callBack && callBack(this.getTokenInstances());
-        }
+        this.decodeTokens(JSON.parse(event.data.tokens), callBack);
     }
-
+// it works in outlet
+    /*
     static iframePostMessagelistener() {
 
         if (window === window.parent) {
@@ -145,7 +168,10 @@ export class Negotiator {
         }
     }
 
+     */
+
     // Get the token instances (with filter)
+    /*
     readTokens() {
 
         // TODO open ticket.devcon.org and receive list of tickets
@@ -240,4 +266,6 @@ export class Negotiator {
             attestationOrigin: this.attestationOrigin
         };
     }
+
+     */
 }

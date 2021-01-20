@@ -1,0 +1,68 @@
+<html>
+<head>
+    <style>
+        #log div {
+            margin-bottom: 5px;
+            background-color: #f5f5f5;
+            padding: 5px 10px;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .token_link {
+            background: #ddd;
+            border-radius: 3px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+            padding: 5px 10px;
+            margin: 5px;
+            display: inline-block;
+            font-family: Helvetica, Arial, sans-serif;
+            text-decoration: none;
+            text-transform: uppercase;
+            color: #000;
+
+        }
+        .token_link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+<a class="token_link" href="https://devcontickets.herokuapp.com/?ticket=MIGXMAkCAQYCAW8CAQAEQQQvZiRvuwETD_9d_eDp_4b0o0caeQ9FZ7e8hsxMi7SNsx-xkbfqtaNONRXQzQ1wO95bOVk3BRSdbQBNVLox62pCA0cAMEQCIFavePjptmgxBsVuHp7bZSDxK0ovB8d9URp2VjiGos56AiA9apKTL6Kk74Jgf2H7Mb4EZqlsdwJLXSN23sC6aoRyKg==&secret=45845870611" target="_blank">Add test ticket 1</a>
+<a class="token_link" href="https://devcontickets.herokuapp.com/?ticket=MIGZMAoCAQYCAgDeAgEBBEEEL2Ykb7sBEw__Xf3g6f-G9KNHGnkPRWe3vIbMTIu0jbMfsZG36rWjTjUV0M0NcDveWzlZNwUUnW0ATVS6MetqQgNIADBFAiEAy0hGTGFw_KWyk0EbDFI7y4x8LaplJ6PEPFDb-AQ82GUCIEKP4650eRZyvbgNbTcnjRLaRthc4oIFEn7FVS2nNJ6o&secret=45845870611" target="_blank">Add test ticket 2</a>
+<a class="token_link" href="https://devcontickets.herokuapp.com/?ticket=MIGYMAoCAQYCAgFNAgECBEEEL2Ykb7sBEw__Xf3g6f-G9KNHGnkPRWe3vIbMTIu0jbMfsZG36rWjTjUV0M0NcDveWzlZNwUUnW0ATVS6MetqQgNHADBEAiB4thME54fWjTs1eJ5XseTPk7sqOUa9JzVsDMURBwTlJwIgChH-eU6seNnC8hVDgBvLvUJPpGWviWsQ2WwWrcC7Meg=&secret=45845870611" target="_blank">Add test ticket 3</a>
+<div id="log"></div>
+    <script type="text/javascript" src="dist/negotiator.js"></script>
+<script>
+    counter = 1;
+    function writeToLog(text){
+        let node = document.createElement('div');
+        node.innerText = counter + ". " + text;
+        log.prepend(node);
+        counter++;
+    }
+
+    let tokensURL = "https://devcontickets.herokuapp.com/outlet/";
+    let filter = {'ticketClass': 1 };
+    let n = new Negotiator(filter, {
+        debug: 1,
+        tokensOrigin: tokensURL,
+        hideTokensIframe: false
+    });
+    writeToLog('Open iframe with outlet for : '+ tokensURL);
+    writeToLog('Ifame not hidden(will disappear when )');
+    writeToLog('Debug disabled');
+    // writeToLog('Filter = ' + JSON.stringify(filter));
+    n.negotiate(tokens => {
+        writeToLog('Recived tokens count: '+  tokens.length );
+        writeToLog('You can see tokens in console' );
+        console.log( tokens );
+        writeToLog( JSON.stringify(tokens,(key, value) =>
+            typeof value === 'bigint'
+                ? value.toString()
+                : value // return everything else unchanged
+        ) );
+    });
+</script>
+</body>
+</html>
