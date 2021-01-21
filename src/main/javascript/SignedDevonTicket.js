@@ -143,9 +143,9 @@ export class DevconTicket {
 
   toJSON() {
     const object = {
-      devconId: this.devconId,
-      ticketId: this.ticketId,
-      ticketClass: this.ticketClass
+      devconId: BigInt("0x" + bufferToHexCodes(this.devconId)),
+      ticketId: BigInt("0x" + bufferToHexCodes(this.ticketId)),
+      ticketClass: BigInt("0x" + bufferToHexCodes(this.ticketClass))
     };
 
     return object;
@@ -343,6 +343,8 @@ export class SignedDevconTicket {
       commitment: this.commitment,
       signatureValue: this.signatureValue
     };
+    if(this.publicKeyInfo)
+      object["publicKeyInfo"] =  this.publicKeyInfo.toJSON();
 
     return object;
   }

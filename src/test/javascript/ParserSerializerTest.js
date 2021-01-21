@@ -12,13 +12,13 @@ const dataobj = new SignedDevconTicket(der.buffer);
  * https://github.com/PeculiarVentures/ASN1.js/issues/58
  */
 let dataobj1 =  new SignedDevconTicket(new Uint8Array(der).buffer);
-console.log(dataobj1);
+console.log(dataobj1.toJSON());
 
 
 // get PublicKeyInfo
 const derpk = readFileSync('build/test-results/signed-devcon-ticket-with-pk.der');
 let dataobj2 =  new SignedDevconTicket(new Uint8Array(derpk).buffer);
-console.log(dataobj2);
+console.log(dataobj2.toJSON());
 
 
 // get object from magiclink
@@ -57,8 +57,7 @@ dataobj4 = new SignedDevconTicket({
     signatureValue: new Uint8Array([48, 68, 2, 32, 56, -37, 33, -74, -75, -73, -58, -110, -38, -83, -94, -74, 46, -69, -119, -27, -93, 110, 58, 60, -50, 102, 30, 56, 83, 43, -55, -84, -56, 92, 52, 27, 2, 32, 112, 70, 115, 33, -113, 119, -78, 71, -75, 81, -85, 60, 61, 116, -31, -17, -113, 79, 126, 58, -32, 64, 29, 83, 84, 38, 101, 58, -86, 94, -62, -94]).buffer
 
 });
-let finalDER2;
-finalDER2 = dataobj4.serialize();
+let finalDER2 = dataobj4.serialize();
 writeFileSync('build/test-results/signed-devcon-ticket-new-2.der',  finalDER2);
 
 
