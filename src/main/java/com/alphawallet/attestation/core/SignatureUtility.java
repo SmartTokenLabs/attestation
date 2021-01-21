@@ -2,6 +2,7 @@ package com.alphawallet.attestation.core;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.Security;
@@ -35,8 +36,11 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.Keccak.Digest256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.encoders.Hex;
 
 public class SignatureUtility {
+    private static final String ethereumPrefix = "\u0019Ethereum Signed Message:\n";
+
     /**
      * Extract the ECDSA SECP256K1 public key from its DER encoded BITString
      * @param input
@@ -103,6 +107,9 @@ public class SignatureUtility {
         }
     }
 
+    public static byte[] signWithWeb3(byte[] unsigned, AsymmetricKeyParameter key) {
+        return signDeterministic(addPersonalSignPrefix(unsigned), key);
+    }
 
     /**
      * Constructs a DER encoded, non-malleable deterministic ECDSA signature.
@@ -152,6 +159,16 @@ public class SignatureUtility {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static boolean verifyWeb3Signature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
+        return verify(addPersonalSignPrefix(unsigned), signature, key);
+    }
+
+    private static byte[] addPersonalSignPrefix(byte[] msgToSign) {
+        String hexMsg = "0x" + Hex.toHexString(msgToSign);
+        String ethereumMsg = ethereumPrefix + hexMsg.length() + hexMsg;
+        return ethereumMsg.getBytes(StandardCharsets.UTF_8);
     }
 
     public static boolean verify(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {

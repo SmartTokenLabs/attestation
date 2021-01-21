@@ -1,6 +1,6 @@
 package com.alphawallet.attestation.core;
 
-import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class URLUtility {
       encoder.encode(input, 0, input.length, baos);
       baos.close();
       byte[] encodedBytes = baos.toByteArray();
-      return new String(encodedBytes, US_ASCII);
+      return new String(encodedBytes, UTF_8);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
