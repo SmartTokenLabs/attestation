@@ -1,7 +1,6 @@
 package org.tokenscript.auth;
 
 import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
@@ -15,7 +14,7 @@ import java.util.Base64;
 import java.util.Date;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
-public class JWTIssuer<T extends Attestable>  extends JWTCommon {
+public class JWTIssuer extends JWTCommon {
   private final AsymmetricKeyParameter signingKey;
 
   public JWTIssuer(AsymmetricKeyParameter signingKey) {
@@ -27,22 +26,26 @@ public class JWTIssuer<T extends Attestable>  extends JWTCommon {
       throw new IllegalArgumentException("Invalid domain");
     }
     long currentTime = System.currentTimeMillis();
+    String unsignedToken = buildUnsignedToken(attestedObject, domain, currentTime);
+    return web3SignUnsignedJWT(unsignedToken);
+  }
+
+  String buildUnsignedToken(AttestedObject attestedObject, String domain, long creationTime) {
     Builder builder = JWT.create();
     // Only withAudience, withIssuedAt and withClaim(attestedObjectClaimName) are required
     String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
     builder.withClaim(attestedObjectClaimName, encodedObject);
     builder.withAudience(domain);
-    builder.withIssuedAt(new Date(currentTime));
+    builder.withIssuedAt(new Date(creationTime));
     // withNotBefore, withExpiresAt and withJWTId are OPTIONAL
-    builder.withNotBefore(new Date(currentTime));
-    builder.withExpiresAt(new Date(currentTime + TIMELIMIT_IN_MS));
-    builder.withJWTId(getJWTID(attestedObject, currentTime));
+    builder.withNotBefore(new Date(creationTime));
+    builder.withExpiresAt(new Date(creationTime + TIMELIMIT_IN_MS));
+    builder.withJWTId(getJWTID(attestedObject, creationTime));
     // Create an unsigned JWT since we need to sign it in a Ethereum compatible way
-    String unsignedTokenString = builder.sign(Algorithm.none());
-    return web3SignUnsignedJWT(unsignedTokenString);
+    return builder.sign(Algorithm.none());
   }
 
-  private String web3SignUnsignedJWT(String unsignedJwtString) {
+  String web3SignUnsignedJWT(String unsignedJwtString) {
     DecodedJWT unsignedTokenJwt = JWT.decode(unsignedJwtString);
     String base64Payload = unsignedTokenJwt.getPayload();
     // According to the JWS standard it must be base64url encoded and contain the encoded protected header concatenated with "."

@@ -1,6 +1,7 @@
 package org.tokenscript.auth;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.AttestableObjectDecoder;
@@ -12,6 +13,7 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.devcon.ticket.Ticket;
@@ -67,6 +69,11 @@ public class JWTValidatorTest {
   }
 
   @Test
+  public void nullInput() {
+    assertFalse(validator.validateRequest(null));
+  }
+
+  @Test
   public void wrongAttestedKey() {
     AsymmetricCipherKeyPair newKeys = crypto.constructECKeys();
     Attestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), ATTESTATION_SECRET, MAIL );
@@ -79,34 +86,64 @@ public class JWTValidatorTest {
   }
 
   @Test
-  public void nullInput() {
-    assertFalse(validator.validateRequest(null));
+  public void wrongSignature() {
+    AsymmetricCipherKeyPair newKeys = crypto.constructECKeys();
+    JWTIssuer newIssuer = new JWTIssuer(newKeys.getPrivate());
+    AttestedObject attestedTicket = makeAttestedTicket();
+    String token = newIssuer.makeToken(attestedTicket, validatorDomain);
+    assertFalse(validator.validateRequest(token));
   }
 
-//  @Test
-//  public void wrongSignature() throws Exception {
-//    UseAttestableRequest request = makeValidRequest();
-//    AsymmetricCipherKeyPair newKeys = crypto.constructECKeys();
-//    byte[] signature = SignatureUtility.signDeterministic(request.getSignable(), newKeys.getPrivate());
-//    request.setSignature(signature);
-//    byte[] requestBytes = mapper.writeValueAsBytes(request);
-//    assertArrayEquals(validator.validateRequest(requestBytes), failResponse);
-//  }
-//
-//  @Test
-//  public void tooOld() throws Exception {
-//    UseAttestableRequest request = makeValidRequest();
-//    request.setTimeStamp(request.getTimeStamp() - 2 * validator.TIMELIMIT_IN_MS);
-//    byte[] requestBytes = mapper.writeValueAsBytes(request);
-//    assertArrayEquals(validator.validateRequest(requestBytes), failResponse);
-//  }
-//
-//  @Test
-//  public void tooNew() throws Exception {
-//    UseAttestableRequest request = makeValidRequest();
-//    request.setTimeStamp(request.getTimeStamp() + 2 * validator.TIMELIMIT_IN_MS);
-//    byte[] requestBytes = mapper.writeValueAsBytes(request);
-//    assertArrayEquals(validator.validateRequest(requestBytes), failResponse);
-//  }
+  @Test
+  public void tooOld() {
+    AttestedObject attestedTicket = makeAttestedTicket();
+    // Make token issued at currentTime minus limit
+    long time = System.currentTimeMillis() - JWTCommon.TIMELIMIT_IN_MS - 10;
+    String token = issuer.web3SignUnsignedJWT(issuer.buildUnsignedToken(attestedTicket, validatorDomain, time));
+    assertFalse(validator.validateRequest(token));
+  }
+
+  @Test
+  public void tooNew() {
+    AttestedObject attestedTicket = makeAttestedTicket();
+    // Make token issued at currentTime plus limit and some wiggle room for max time for the test to execute
+    long time = System.currentTimeMillis() + JWTCommon.TIMELIMIT_IN_MS + 1000;
+    String token = issuer.web3SignUnsignedJWT(issuer.buildUnsignedToken(attestedTicket, validatorDomain, time));
+    assertFalse(validator.validateRequest(token));
+  }
+
+  @Test
+  public void incorrectModifiedToken() {
+    AttestedObject attestedTicket = makeAttestedTicket();
+    String token = issuer.makeToken(attestedTicket, validatorDomain);
+    byte[] tokenBytes = token.getBytes(StandardCharsets.UTF_8);
+    // Flip a bit
+    tokenBytes[40] ^= 0x01;
+    assertFalse(validator.validateRequest(new String(tokenBytes, StandardCharsets.UTF_8)));
+  }
+
+  @Test
+  public void incorrectDomain() {
+    AttestedObject attestedTicket = makeAttestedTicket();
+    // Extra a in domain
+    String token = issuer.makeToken(attestedTicket, "http://www.hotelbogotaa.com");
+    assertFalse(validator.validateRequest(token));
+  }
+
+  @Test
+  public void invalidDomainVerifier() {
+    AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
+    assertThrows( RuntimeException.class, () -> {
+      new JWTValidator(decoder, attestorKeys.getPublic(), "www.noHttpPrefix.com");
+    });
+  }
+
+  @Test
+  public void invalidDomainIssuer() {
+    assertThrows( RuntimeException.class, () -> {
+      JWTIssuer issuer = new JWTIssuer(userKeys.getPrivate());
+      issuer.makeToken(null, "www.noHttpPrefix.com");
+    });
+  }
 
 }
