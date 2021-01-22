@@ -11,7 +11,6 @@ import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -65,17 +64,15 @@ public class JWTValidatorTest {
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = issuer.makeToken(attestedTicket, validatorDomain);
     assertTrue(validator.validateRequest(token));
-    //seems to work only whne there is no _ in the signature encoding
   }
 
   @Test
-  public void wrongAttestedKey() throws Exception {
+  public void wrongAttestedKey() {
     AsymmetricCipherKeyPair newKeys = crypto.constructECKeys();
-    AttestedObject attestedTicket = makeAttestedTicket();
-
-    Field attestedKeys = SignedAttestation.class.getDeclaredField("attestationVerificationKey");
-    attestedKeys.setAccessible(true);
-    attestedKeys.set(attestedTicket.getAtt(), newKeys.getPublic());
+    Attestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    SignedAttestation signed = new SignedAttestation(att, attestorKeys);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
+    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
 
     String token = issuer.makeToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));

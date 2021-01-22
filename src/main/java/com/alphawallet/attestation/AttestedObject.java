@@ -133,12 +133,6 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
         System.err.println("The attestation is not a valid standard attestation");
         return false;
       }
-      // CHECK: the Ethereum address on the attestation matches receivers signing key
-      String address = AttestationCrypto.addressFromKey(userPublicKey);
-      if (!std.getSubject().equals("CN="+address)) {
-        System.err.println("The key which signed this request is not the key attested to.");
-        return false;
-      }
     } catch (InvalidObjectException e) {
       System.err.println("The attestation is invalid");
       return false;

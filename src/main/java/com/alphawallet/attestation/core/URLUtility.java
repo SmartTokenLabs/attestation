@@ -2,9 +2,9 @@ package com.alphawallet.attestation.core;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -13,7 +13,6 @@ import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.util.encoders.UrlBase64Encoder;
 
 public class URLUtility {
   public static String encodeList(List<byte[]> inputs) {
@@ -33,16 +32,7 @@ public class URLUtility {
   }
 
   public static String encodeData(byte[] input) {
-    try {
-      UrlBase64Encoder encoder = new UrlBase64Encoder();
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      encoder.encode(input, 0, input.length, baos);
-      baos.close();
-      byte[] encodedBytes = baos.toByteArray();
-      return new String(encodedBytes, UTF_8);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    return new String(Base64.getUrlEncoder().encode(input), UTF_8);
   }
 
   /**
@@ -60,14 +50,6 @@ public class URLUtility {
   }
 
   public static byte[] decodeData(String url) {
-    try {
-      UrlBase64Encoder encoder = new UrlBase64Encoder();
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      encoder.decode(url, baos);
-      baos.close();
-      return baos.toByteArray();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    return Base64.getUrlDecoder().decode(url.getBytes(UTF_8));
   }
 }
