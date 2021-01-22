@@ -43,9 +43,9 @@ public class JWTValidatorTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    userKeys = crypto.constructECKeys("secp384r1");
-    attestorKeys = crypto.constructECKeys("secp256k1");
-    ticketKeys = crypto.constructECKeys("secp256k1");
+    userKeys = crypto.constructECKeys();
+    attestorKeys = crypto.constructECKeys("secp384r1");
+    ticketKeys = crypto.constructECKeys("secp384r1");
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
     validator = new JWTValidator(decoder, attestorKeys.getPublic(), validatorDomain);
     issuer = new JWTIssuer(userKeys.getPrivate());
