@@ -35,7 +35,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   private ASN1Integer version = new ASN1Integer(
       18); // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
   private ASN1Integer serialNumber;
-  private AlgorithmIdentifier signature;
+  private AlgorithmIdentifier signingAlgorithm;
   private X500Name issuer;                              // Optional
   private ASN1GeneralizedTime notValidBefore;           // Optional
   private ASN1GeneralizedTime notValidAfter;            // Optional
@@ -59,7 +59,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     serialNumber = ASN1Integer.getInstance(asn1.getObjectAt(currentPos));
     currentPos++;
 
-    signature = AlgorithmIdentifier.getInstance(asn1.getObjectAt(currentPos));
+    signingAlgorithm = AlgorithmIdentifier.getInstance(asn1.getObjectAt(currentPos));
     currentPos++;
 
     ASN1Sequence issuerSeq = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos));
@@ -131,15 +131,15 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     this.serialNumber = new ASN1Integer(serialNumber);
   }
 
-  public String getSignature() {
-    return this.signature.getAlgorithm().getId();
+  public String getSigningAlgorithm() {
+    return this.signingAlgorithm.getAlgorithm().getId();
   }
 
   /**
    * Takes as input the oid of the signature scheme to be used to sign the attestation
    */
-  public void setSignature(String oid) {
-    this.signature = new AlgorithmIdentifier(new ASN1ObjectIdentifier(oid));
+  public void setSigningAlgorithm(String oid) {
+    this.signingAlgorithm = new AlgorithmIdentifier(new ASN1ObjectIdentifier(oid));
   }
 
   public String getIssuer() {
@@ -265,7 +265,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     if (dataObject != null) {
       return false;
     }
-    if (version == null || serialNumber == null || signature == null) {
+    if (version == null || serialNumber == null || signingAlgorithm == null) {
       return false;
     }
     return true;
@@ -273,7 +273,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public boolean checkValidity() {
-    if (version == null || serialNumber == null || signature == null || (extensions == null
+    if (version == null || serialNumber == null || signingAlgorithm == null || (extensions == null
         && dataObject == null)) {
       return false;
     }
@@ -313,7 +313,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     ASN1EncodableVector res = new ASN1EncodableVector();
     res.add(new DERTaggedObject(true, 0, this.version));
     res.add(this.serialNumber);
-    res.add(this.signature);
+    res.add(this.signingAlgorithm);
     res.add(this.issuer == null ? new DERSequence() : this.issuer);
     if (this.notValidAfter != null && this.notValidBefore != null) {
       ASN1EncodableVector date = new ASN1EncodableVector();

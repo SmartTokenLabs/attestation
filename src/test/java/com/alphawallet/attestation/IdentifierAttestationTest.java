@@ -64,7 +64,7 @@ public class IdentifierAttestationTest {
       // Expected
     }
     try {
-      initial.setSignature("1.0.12.151");
+      initial.setSigningAlgorithm("1.0.12.151");
       fail();
     } catch (RuntimeException e) {
       // Expected
@@ -90,7 +90,7 @@ public class IdentifierAttestationTest {
   @Test
   public void testInvalidSignature() throws Exception {
     IdentifierAttestation initial = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.TEN, mail);
-    Field field = initial.getClass().getSuperclass().getDeclaredField("signature");
+    Field field = initial.getClass().getSuperclass().getDeclaredField("signingAlgorithm");
     field.setAccessible(true);
     // Change the signature identifier
     field.set(initial, new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.0.2.313")));
