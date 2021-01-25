@@ -11,7 +11,6 @@ import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -31,7 +30,6 @@ public class JWTValidatorTest {
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
 
-  private static final ObjectMapper mapper = new ObjectMapper();
   private static AsymmetricCipherKeyPair userKeys, attestorKeys, ticketKeys;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
