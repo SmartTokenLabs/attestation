@@ -8,11 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
+import java.math.BigInteger;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Set;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +49,23 @@ public class CapabilityTest {
   public void legalRequest() throws Exception {
     String token = issuer.makeToken(receiverDomain, tasks, 31);
     assertTrue(validator.validateRequest(token, receiverDomain, tasks));
+  }
+
+  @Test
+  public void rsaKeys() throws Exception {
+    AsymmetricCipherKeyPair rsaKeys = getRsaKeys();
+    CapabilityIssuer rsaIssuer = new CapabilityIssuer(rsaKeys, verifierDomain);
+    CapabilityValidator rsaValidator = new CapabilityValidator(rsaKeys.getPublic(), verifierDomain);
+    String token = rsaIssuer.makeToken(receiverDomain, tasks, 31);
+    assertTrue(rsaValidator.validateRequest(token, receiverDomain, tasks));
+  }
+
+  private AsymmetricCipherKeyPair getRsaKeys() {
+    RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
+    generator.init(
+        new RSAKeyGenerationParameters(
+            new BigInteger("65537"), rand, 2048, 0));
+    return generator.generateKeyPair();
   }
 
   @Test
