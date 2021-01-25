@@ -3,6 +3,13 @@ package com.alphawallet.attestation.core;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.Security;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -14,6 +21,7 @@ import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -21,9 +29,12 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.Keccak.Digest256;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 
 public class SignatureUtility {
@@ -54,6 +65,35 @@ public class SignatureUtility {
     public static AsymmetricKeyParameter restoreKeyFromSPKI(byte[] input) throws IOException {
         SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(input);
         return PublicKeyFactory.createKey(spki);
+    }
+
+    public static ECPrivateKey PrivateBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            KeyFactory ecKeyFac = KeyFactory.getInstance("EC", "BC");
+            byte[] encodedBCKey = PrivateKeyInfoFactory.createPrivateKeyInfo(bcKey).getEncoded();
+            PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(encodedBCKey);
+            return (ECPrivateKey) ecKeyFac.generatePrivate(pkcs8EncodedKeySpec);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static ECPublicKey PublicBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            KeyFactory ecKeyFac = KeyFactory.getInstance("EC", "BC");
+            SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(bcKey);
+            X509EncodedKeySpec encodedKey = new X509EncodedKeySpec(spki.getEncoded());
+            return (ECPublicKey) ecKeyFac.generatePublic(encodedKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static KeyPair BCKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
+        return new KeyPair(PublicBCKeyToJavaKey(bcKeys.getPublic()), PrivateBCKeyToJavaKey(
+            bcKeys.getPrivate()));
     }
 
     public static byte[] signWithWeb3(byte[] unsigned, AsymmetricKeyParameter key) {
