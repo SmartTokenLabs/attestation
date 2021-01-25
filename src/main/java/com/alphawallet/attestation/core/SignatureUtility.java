@@ -5,9 +5,9 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.Security;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import org.bouncycastle.asn1.ASN1BitString;
@@ -26,6 +26,7 @@ import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyParameters;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
@@ -66,27 +67,37 @@ public class SignatureUtility {
         return PublicKeyFactory.createKey(spki);
     }
 
-    public static ECPrivateKey PrivateBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+    public static PrivateKey PrivateBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
         try {
             Security.addProvider(new BouncyCastleProvider());
-            KeyFactory ecKeyFac = KeyFactory.getInstance("EC", "BC");
+            KeyFactory ecKeyFac = getFactory(bcKey);
             byte[] encodedBCKey = PrivateKeyInfoFactory.createPrivateKeyInfo(bcKey).getEncoded();
             PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(encodedBCKey);
-            return (ECPrivateKey) ecKeyFac.generatePrivate(pkcs8EncodedKeySpec);
+            return ecKeyFac.generatePrivate(pkcs8EncodedKeySpec);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static ECPublicKey PublicBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+    public static PublicKey PublicBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
         try {
             Security.addProvider(new BouncyCastleProvider());
-            KeyFactory ecKeyFac = KeyFactory.getInstance("EC", "BC");
+            KeyFactory ecKeyFac = getFactory(bcKey);
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(bcKey);
             X509EncodedKeySpec encodedKey = new X509EncodedKeySpec(spki.getEncoded());
-            return (ECPublicKey) ecKeyFac.generatePublic(encodedKey);
+            return ecKeyFac.generatePublic(encodedKey);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static KeyFactory getFactory(AsymmetricKeyParameter key) throws Exception {
+        if (key instanceof ECKeyParameters) {
+            return KeyFactory.getInstance("EC", "BC");
+        } else if (key instanceof RSAKeyParameters) {
+            return KeyFactory.getInstance("RSA", "BC");
+        } else {
+            throw new IllegalArgumentException("Only ECDSA or RSA keys are supported");
         }
     }
 

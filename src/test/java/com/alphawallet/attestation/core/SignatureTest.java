@@ -39,13 +39,13 @@ public class SignatureTest {
     byte[] digest = sha256.digest();
     byte[] bcSignature = SignatureUtility.signHashedRandomized(digest, keys.getPrivate());
 
-    ECPrivateKey javaPriv = SignatureUtility.PrivateBCKeyToJavaKey(keys.getPrivate());
+    ECPrivateKey javaPriv = (ECPrivateKey) SignatureUtility.PrivateBCKeyToJavaKey(keys.getPrivate());
     Signature signer = Signature.getInstance("SHA256withECDSA");
     signer.initSign(javaPriv);
     signer.update(message);
     byte[] javaSignature = signer.sign();
 
-    ECPublicKey javaPub = SignatureUtility.PublicBCKeyToJavaKey(keys.getPublic());
+    ECPublicKey javaPub = (ECPublicKey) SignatureUtility.PublicBCKeyToJavaKey(keys.getPublic());
     Signature verifier = Signature.getInstance("SHA256withECDSA");
     verifier.initVerify(javaPub);
     verifier.update(message);

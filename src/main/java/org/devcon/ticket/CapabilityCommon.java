@@ -12,8 +12,7 @@ public class CapabilityCommon {
   public static final String TasksClaimName = "org.devcon.ticket.capability";
 
   protected Algorithm getAlgorithm(PublicKey pk, PrivateKey secretKey) {
-    // SHA 512 is always used for hashing since Auth0 will never accept a key with domain less than the digest size
-    // This means that if we are unlucky it won't even accept a 512 bit ECDSA key here if the bit representation happen to be too small
+    // SHA 512 is always used for hashing
     if (pk instanceof ECPublicKey) {
       return Algorithm.ECDSA512((ECPublicKey) pk, (ECPrivateKey) secretKey);
     } else if (pk instanceof RSAPublicKey) {
