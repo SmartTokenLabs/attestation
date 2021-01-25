@@ -1,7 +1,4 @@
-import {AttestationRequest, attestationRequestData} from "./libs/AttestationRequest";
-import {AttestedObject} from "./libs/AttestedObject";
 import {main} from "./index";
-import {base64ToUint8array, uint8tohex} from "./libs/utils";
 
 export interface attestationResult {
     attestation?: string,
@@ -25,40 +22,21 @@ export class Authenticator {
     private signedTokenSecret: bigint;
 
     private attestationBlob: string;
-    private attestationSecret: string;
+    private attestationSecret: bigint;
 
     private attestationOrigin: string;
     private authResultCallback: Function;
 
     private iframe: any;
+    private iframeWrap: any;
 
     private base64attestorPubKey: string = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABFCuTloU0f13n4VXYke5ZAm7ZWiXsw1REDHXdNeEwGuLj/bNcXB7LLwt10eXFTLe/LEo5KItdPugI378EG0xV/E=";
+
+    private base64senderPublicKey =
+        // '049EB2231992CC729EAED2BDE1C1E6AC3A076D861AFDDCAFC30AA8C2854DBC13392710C67C16359CEE1D3BA01EF8BE058F722BF86AB23BBFC20A4BB9AE203EB9F5';
+        '04950C7C0BED23C3CAC5CC31BBB9AAD9BB5532387882670AC2B1CDF0799AB0EBC764C267F704E8FDDA0796AB8397A4D2101024D24C4EFFF695B3A417F2ED0E48CD'
     // stage.attestaion.id public key
     // private base64attestorPubKey: string = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABPxJAMZA6IJIETOGrIVLr11P1Y92OZ6UNyD2OndOMMtdA6s6Z8u7oY3BER4uBEffjk2UF5JI6uCMqUORlVzLfXY=";
-
-    // attestRequest: string;
-
-    // create crypto hiding of the secret for identifier(email) attestation
-    // createIdentifierAttestationRequest(email: string):attestationRequestData {
-    //     let requestAndSecret:attestationRequestData;
-    //     try {
-    //         requestAndSecret = AttestationRequest.fromEmail(email);
-    //         if (!requestAndSecret.request || !requestAndSecret.requestSecret) throw new Error("Empty requestAttestData");
-    //     } catch (e) {
-    //         console.error(e);
-    //         return {} as attestationRequestData;
-    //     }
-    // }
-
-    // attestIdentifierRequest(request:string){
-    //     this.attestRequest = requestAndSecret.request;
-    //     this.saveAttestRequestSecret(requestAndSecret.requestSecret);
-    //     this.openAttestorIframe(Authenticator.initData.attestor);
-    // }
-
-    // saveAttestRequestSecret (secret: bigint) {
-    //     // TODO save encrypted secret to LocalStorage
-    // }
 
     getAuthenticationBlob(tokenObj: devconToken, authResultCallback: Function) {
         // TODO - what is tokenType, where can we see structure etc.
@@ -75,6 +53,80 @@ export class Authenticator {
         this.authResultCallback = authResultCallback;
         this.getIdentifierAttestation();
 
+    }
+
+    /*
+     *  - Since this token depends on identifier attestation, continue to open iframe to attestation.id who needs to provide the proof
+     */
+    getIdentifierAttestation() {
+        // attach postMessage listener and wait for attestation data
+        this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
+        const iframe = document.createElement('iframe');
+        this.iframe = iframe;
+        iframe.src = this.attestationOrigin;
+        iframe.style.width = '800px';
+        iframe.style.height = '700px';
+        iframe.style.maxWidth = '100%';
+        iframe.style.background = '#fff';
+        iframe.onload = ()=>{
+            iframe.contentWindow.postMessage({force: false}, this.attestationOrigin);
+        };
+        let iframeWrap = document.createElement('div');
+        this.iframeWrap = iframeWrap;
+        iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #fffa');
+        iframeWrap.appendChild(iframe);
+
+        document.body.appendChild(iframeWrap);
+    }
+    postMessageAttestationListener(event: MessageEvent){
+        let attestURL = new URL(this.attestationOrigin);
+        if (
+            typeof event.data.display === "undefined"
+            || typeof event.data.result === "undefined"
+            || event.origin !== attestURL.origin
+        ) {
+            return;
+        }
+
+        let attestation = event.data;
+        // console.log('parent event.data received');
+        // console.log(event);
+        if (
+            typeof event.data !== "object"
+            || !event.data.hasOwnProperty('attestation')
+            || !event.data.hasOwnProperty('requestSecret')
+            || !event.data.attestation
+            || !event.data.requestSecret
+        ) {
+            this.iframeWrap.style.display = 'flex';
+            return;
+        }
+        // attestaion received
+        console.log('attestaion received. lets validate it');
+
+        this.iframeWrap.remove();
+        this.attestationBlob = event.data.attestation.attestation;
+        this.attestationSecret = event.data.requestSecret;
+        this.base64attestorPubKey = event.data.attestation.attestorPublicKey;
+        console.log('attestation data received:');
+        console.log(this.attestationBlob);
+        console.log(this.attestationSecret);
+        console.log(this.base64attestorPubKey);
+
+        try {
+            let useToken = main.getUseTicket(
+                this.signedTokenSecret,
+                this.attestationSecret,
+                this.signedTokenBlob ,
+                this.attestationBlob ,
+                this.base64attestorPubKey,
+                this.base64senderPublicKey,
+            )
+            this.authResultCallback(useToken);
+        } catch (e){
+            console.log(`UseDevconTicket. Something went wrong. ${e}`);
+            this.authResultCallback(false);
+        }
         // construct UseDevconTicket, see
         // https://github.com/TokenScript/attestation/blob/main/data-modules/src/UseDevconTicket.asd
 
@@ -88,70 +140,11 @@ export class Authenticator {
         // return useDevconTicket.serialize();
     }
 
-    /*
-     *  - Since this token depends on identifier attestation, continue to open iframe to attestation.id who needs to provide the proof
-     */
-    getIdentifierAttestation() {
-        // waitForIframeReadyToInteract disabled because
-        // this.attachPostMessageListener(this.postMessageReadyListener);
-        this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
-        const iframe = document.createElement('iframe');
-        this.iframe = iframe;
-        // iframe.setAttribute('name', 'attestor');
-        iframe.src = this.attestationOrigin;
-        iframe.style.display = 'none';
-        iframe.onload = ()=>{
-            const url = new URL(window.location.href);
-            iframe.contentWindow.postMessage({request: "attestation"}, url.origin);
-        };
-        document.body.appendChild(iframe);
-    }
-    postMessageAttestationListener(event: MessageEvent){
-        if (
-            typeof event.data.attestation === "undefined"
-            || typeof event.data.secret === "undefined"
-            // || event.origin !== this.attestationOrigin
-            || !event.data.attestation
-            || !event.data.secret
-        ) {
-            return;
-        }
-        this.iframe.remove();
-        this.attestationBlob = event.data.attestation;
-        this.attestationSecret = event.data.secret;
-
-        let attestationSecretBigInt = BigInt('0x'+ uint8tohex(base64ToUint8array(this.attestationSecret)));
-        try {
-            let useToken = main.getUseToken(
-                this.signedTokenSecret,
-                attestationSecretBigInt,
-                this.signedTokenBlob ,
-                this.attestationBlob ,
-                this.base64attestorPubKey
-            )
-            this.authResultCallback(useToken);
-        } catch (e){
-            console.log(`UseDevconTicket. Something went wrong. ${e}`);
-            this.authResultCallback(false);
-        }
-    }
-
-    // postMessageReadyListener(event: MessageEvent){
-    //     if (typeof event.data.readyToAttest === "undefined"
-    //         || event.origin !== Authenticator.initData.attestor
-    //         || event.data.readyToAttest !== "ready"
-    //     ) {
-    //         return;
-    //     }
-    //     event.source.postMessage({request: this.attestRequest}, event.origin)
-    //     this.attachPostMessageListener(this.postMessageAttestationListener)
-    // }
-
     attachPostMessageListener(listener: Function){
         if (window.addEventListener) {
             window.addEventListener("message", (e) => {
                 listener(e);
-            });
+            }, false);
         } else {
             // IE8
             window.attachEvent("onmessage", (e: MessageEvent) => {
@@ -159,22 +152,6 @@ export class Authenticator {
             });
         }
     }
-    // attachPostMessageListenerWithCallback(listener: Function, callback: Function){
-    //     if (window.addEventListener) {
-    //         window.addEventListener("message", (e) => {
-    //             listener(e,callback);
-    //         });
-    //     } else {
-    //         // IE8
-    //         window.attachEvent("onmessage", (e: MessageEvent) => {
-    //             listener(e,callback);
-    //         });
-    //     }
-    // }
-    // TODO do we need that?
-    // assertOwnerAddress(token){
-    //
-    // }
 
     /*
      * get ticket attestation from wallet, or issuer site's local storage through iframe
@@ -184,6 +161,5 @@ export class Authenticator {
 
     // getTokenAttestation(tokenObj) {
     // }
-
 
 }

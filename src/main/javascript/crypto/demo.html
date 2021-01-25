@@ -35,24 +35,17 @@
     }
 
     (async ()=>{
-        // valid:
-        // GeneralizedTime 2021-01-15 01:10:46 UTC
-        // GeneralizedTime 2021-01-19 05:10:46 UTC
-        let base64cheque = "MIH5MGoCASowIhgPMjAyMTAxMTUwMTEwNDZaGA8yMDIxMDExOTA1MTA0NloEQQQSnR7y9zi7AYpYKwwpGeGgnPyRkZXO3gUG65BMRPqkexa1hfAItIA/1qT93wvWV5Qzn7DKDOR8Boew+Db4mNAwA0IABNE5siahpFnMb/iCfYlzhJo6w1kTZi+hiDPimEPEu9j+jV57cATcJm+BYzAdHnAQB+NuiLgqbRv58F5CgxXGlnIDRwAwRAIgCcsTh0ZlLeLwEuvTJdQKPHuF92KvzeT1IQlXvmH4gFMCIB767eFUwPcPUI//9zS3ulT0WZVTPK7r+6DUO2twJdNs";
 
-        let base64chequeSecret ="MCIEICyvhQsLNYHlCrN1isS66HcSG0zSlW7pGi0OtH6y+AGE";
+        let base64ticket = "MIGXMAkCAQYCAW8CAQAEQQQvZiRvuwETD_9d_eDp_4b0o0caeQ9FZ7e8hsxMi7SNsx-xkbfqtaNONRXQzQ1wO95bOVk3BRSdbQBNVLox62pCA0cAMEQCIFavePjptmgxBsVuHp7bZSDxK0ovB8d9URp2VjiGos56AiA9apKTL6Kk74Jgf2H7Mb4EZqlsdwJLXSN23sC6aoRyKg==";
+        let ticketSecret =45845870611;
 
-        let chequeSecret = BigInt('0x'+ uint8tohex(base64ToUint8array(base64chequeSecret)));
-        // let attestationSecret = BigInt('0x'+ uint8tohex(base64ToUint8array(base64attestationSecret)));
-
-        writeToLog('base64cheque: ' + base64cheque);
-        writeToLog('base64chequeSecret: ' + chequeSecret);
+        writeToLog('base64ticket: ' + base64ticket);
+        writeToLog('ticketSecret: ' + ticketSecret);
 
         (new Authenticator()).getAuthenticationBlob({
-            ticketBlob: base64cheque,
-            ticketSecret: chequeSecret,
-            // attestationOrigin: 'https://stage.attestation.id/outlet',
-            attestationOrigin: 'attestation.id.html',
+            ticketBlob: base64ticket,
+            ticketSecret: ticketSecret,
+            attestationOrigin: 'https://stage.attestation.id/',
         }, useDevconTicket => {
             writeToLog('useDevconTicket received (in hex ): ' + useDevconTicket);
         });

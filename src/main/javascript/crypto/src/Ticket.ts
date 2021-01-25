@@ -2,8 +2,8 @@ import {AttestationCrypto} from "./libs/AttestationCrypto";
 import {KeyPair} from "./libs/KeyPair";
 import {ATTESTATION_TYPE} from "./libs/interfaces";
 import {Asn1Der} from "./libs/DerUtility";
-import {stringToArray} from "./libs/utils";
 import {SignatureUtility} from "./libs/SignatureUtility";
+import {AttestableObject} from "./libs/AttestableObject";
 
 class TicketClass {
     list: {[index:string]: number} = {
@@ -13,30 +13,37 @@ class TicketClass {
         STAFF: 3,
     }
 
+    static decodeList: {[index:number]: string} = {
+        0: "REGULAR",
+        1: "VIP",
+        2: "SPEAKER",
+        3: "STAFF"
+    }
+
     constructor(private value: string) {
+    }
+
+    static fromInt(value: number): TicketClass {
+        return new this(TicketClass.decodeList[value]);
     }
 
     public getValue() { return this.list[this.value]; }
 }
 
-class Ticket {
+export class Ticket extends AttestableObject {
 
     private mail: string;
-    private devconId: number;
     private secret: bigint;
-    private commitment: Uint8Array;
-    private encoded: string;
-    // private publicKey: string;
     private signature: string;
-    // private algorithm: string;
 
-    private constructor(private ticketId: bigint, private ticketClass: TicketClass, private conferenceId: number, private keys: KeyPair) {}
+    private constructor(private ticketId: number, private ticketClass: TicketClass, private devconId: number, private keys: KeyPair) {
+        super();
+    }
 
-    static createWithRiddle(ticketId: bigint, ticketClass: TicketClass, conferenceId: number, commitment: Uint8Array, signature: string, keys: KeyPair): Ticket {
-        let me = new this(ticketId, ticketClass, conferenceId, keys);
+    static createWithRiddle(devconId: number, ticketId: number, ticketClass: number, commitment: Uint8Array, signature: string, keys: KeyPair): Ticket {
+        let me = new this(ticketId, TicketClass.fromInt(ticketClass), devconId, keys);
         me.commitment = commitment;
         me.signature = signature;
-        // me.algorithm = keys.getAsnDerPublic();
         me.encoded = me.encodeSignedTicket(me.makeTicket());
         if (!me.verify()) {
             throw new Error("Signature is invalid");
@@ -45,22 +52,17 @@ class Ticket {
         return me;
     }
 
-    static createWithMail(mail: string, devconId:number , ticketId: bigint, ticketClass: TicketClass, conferenceId: number, keys: KeyPair, secret: bigint): Ticket {
+    static createWithMail(mail: string, devconId:number , ticketId: number, ticketClass: TicketClass, conferenceId: number, keys: KeyPair, secret: bigint): Ticket {
         let me = new this(ticketId, ticketClass, conferenceId, keys);
         me.devconId = devconId;
         me.mail = mail;
         me.secret = secret;
         let crypto = new AttestationCrypto();
         me.commitment = crypto.makeCommitment(mail, ATTESTATION_TYPE['mail'], secret);
-
-        // let algorithm = keys.getAsnDerPublic();
-
         let asn1Tic = me.makeTicket();
 
         me.signature = SignatureUtility.sign(asn1Tic, keys);
         me.encoded = me.encodeSignedTicket(asn1Tic);
-
-        // me.publicKey = keys.getPublicKeyAsHexStr();
         if (!me.verify()) {
             throw new Error("Public and private keys are incorrect");
         }
@@ -101,28 +103,22 @@ class Ticket {
         return Asn1Der.encode('SEQUENCE_30', signedTicket);
     }
 
-    public getDerEncoding(): string {
-        return this.encoded;
-    }
-
     public verify(): boolean {
         return SignatureUtility.verify(this.makeTicket(), this.signature, this.keys);
     }
 
-    public getTicketId():bigint {
+    public checkValidity(): boolean {
+        // The ticket is always valid on its own. It depends on which conference it is used
+        // and whether it has been revoked that decides if it can be used
+        return true;
+    }
+
+    public getTicketId():number {
         return this.ticketId;
     }
 
     public getTicketClass(): TicketClass {
         return this.ticketClass;
-    }
-
-    public getConferenceId(): number {
-        return this.conferenceId;
-    }
-
-    public getСommitment(): Uint8Array {
-        return this.commitment;
     }
 
     // public getAlgorithm(): string {

@@ -1,15 +1,9 @@
-import {KeyPair} from "./KeyPair";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {ProofOfExponent} from "./ProofOfExponent";
-import {Cheque} from "./Cheque";
-import {Attestation} from "./Attestation";
 import {SignedAttestation} from "./SignedAttestation";
 import {hexStringToArray, uint8tohex} from "./utils";
-import {IdentifierAttestation} from "./IdentifierAttestation";
-import {SignatureUtility} from "./SignatureUtility";
 import {Asn1Der} from "./DerUtility";
-// import { ethers } from 'ethers';
-// import {hexToBuf} from "bigint-conversion";
+import {AttestableObject} from "./AttestableObject";
 
 declare global {
     interface Window { ethereum: any; }
@@ -21,16 +15,20 @@ export class AttestedObject {
     private unsignedEncoding: string;
     private derEncodedProof: string;
     private signature: string;
-    constructor(private attestableObject: Cheque, private att: SignedAttestation,
-                // private keys: KeyPair,
-                private attestationSecret: bigint ,private chequeSecret: bigint) {
+    constructor(
+        private attestableObject: AttestableObject,
+        private att: SignedAttestation,
+        // private keys: KeyPair,
+        private attestationSecret: bigint ,
+        private chequeSecret: bigint
+    ) {
         this.crypto = new AttestationCrypto();
         // this.userPublicKey = userKeys.getPublic();
         this.pok = this.makeProof(attestationSecret, chequeSecret, this.crypto);
         this.derEncodedProof = this.pok.getDerEncoding();
 
         let vec =
-            uint8tohex(this.attestableObject.getDerEncoding()) +
+            this.attestableObject.getDerEncoding() +
             uint8tohex(this.att.getDerEncoding())+
             this.pok.getDerEncoding();
         this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);

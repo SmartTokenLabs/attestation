@@ -14,9 +14,6 @@ export class SignatureUtility {
         return signature.toDER('hex');
     }
     static verify(str: string, signature: string, keys: KeyPair):boolean {
-        // let ecKey = ec.keyFromPublic(keys.getPublicKeyAsHexStr(), 'hex');
-        // let encodingHash = sha3.keccak256(hexStringToArray(str))
-        // return ecKey.verify(encodingHash, signature);
         return SignatureUtility.verifyArrayBuf(hexStringToArray(str), signature, keys);
     }
     static verifyArrayBuf(arr: ArrayBuffer|Uint8Array|number[], signature: string, keys: KeyPair):boolean {

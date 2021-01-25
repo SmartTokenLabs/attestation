@@ -18,12 +18,12 @@ export class SignedDevconTicket {
     public ticket: DevconTicket;
 
     @AsnProp({ type: AsnPropTypes.OctetString })
-    public commitment: AsnPropTypes.OctetString;
+    public commitment: Uint8Array;
 
     @AsnProp({ type: PublicKeyInfo, optional: true })
     public publicKeyInfo?: PublicKeyInfo;
 
     @AsnProp({ type: AsnPropTypes.BitString })
-    public signatureValue: AsnPropTypes.BitString;
+    public signatureValue: Uint8Array;
 
 }

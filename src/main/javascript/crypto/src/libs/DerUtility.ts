@@ -151,8 +151,8 @@ export class Asn1Der {
 
     readFromUrlBase64String(urlBase64str: string) {
         let base64str = urlBase64str
-            .split('_').join('-')
-            .split('/').join('+')
+            .split('_').join('/')
+            .split('-').join('+')
             .split('.').join('=');
             // .replace('.','');
         return this.readFromBase64String(base64str);

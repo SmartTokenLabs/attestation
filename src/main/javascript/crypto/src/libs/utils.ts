@@ -114,6 +114,10 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
     return window.btoa( binary );
 }
 export function base64ToUint8array( base64str: string ): Uint8Array {
+    // change base64url to base64
+    base64str = base64str.split('_').join('/')
+        .split('-').join('+')
+        .split('.').join('=');
     let res: Uint8Array;
     if (typeof Buffer !== 'undefined') {
         res = Uint8Array.from(Buffer.from(base64str, 'base64'));
