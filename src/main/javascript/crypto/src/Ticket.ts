@@ -69,13 +69,6 @@ export class Ticket extends AttestableObject {
 
         return me;
     }
-    // static derDecode(derEncoded: string, keys: KeyPair): Ticket {
-    //
-    //     let me = new this(ticketId, ticketClass, conferenceId, keys);
-    //
-    //     return me;
-    // }
-
 
     private makeTicket() {
         let ticket: string =
