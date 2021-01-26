@@ -98,27 +98,26 @@ export class AttestationCrypto {
         return this.computePoint_bn256(idenNum);
     }
 
-    // TODO change arr type
-    mapToInteger(type: number, arr: Uint8Array ):bigint {
+    injectIdentifierType(type: number, arr: Uint8Array): Uint8Array{
         // add prefix [0,0,0,1] for email type
-        let prefix = [0,0,0,type];
-        let uintArr = uint8merge([Uint8Array.from(prefix),arr]);
-        return this.mapToIntegerFromUint8(uintArr);
+        return uint8merge([Uint8Array.from([0,0,0,type]),arr]);
+    }
+
+    mapToInteger(type: number, arr: Uint8Array ):bigint {
+        return this.mapToIntegerFromUint8(this.injectIdentifierType(type, arr));
     }
 
     mapToIntegerIntString(type: number, str: string ):bigint {
         return this.mapToInteger(type, Uint8Array.from(stringToArray(str)));
     }
 
+
+
     mapToCurveMultiplier(type: number, identity: string):bigint {
 
         let identityBytes:Uint8Array = Uint8Array.from(stringToArray(identity.trim().toLowerCase() ) );
-        // ByteBuffer
-        // let buf = ByteBuffer.allocate(4 + identityBytes.length);
-        let prefix = [0,0,0,type];
-        // buf.putInt(type.ordinal());
-        // buf.put(identityBytes);
-        let uintArr:Uint8Array = uint8merge([Uint8Array.from(prefix),identityBytes]);
+
+        let uintArr:Uint8Array = this.injectIdentifierType(type, identityBytes);
         let sampledVal:bigint = uint8ToBn(uintArr);
         do {
             sampledVal = this.mapTo256BitInteger(bnToUint8(sampledVal));
