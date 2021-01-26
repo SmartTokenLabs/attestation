@@ -121,12 +121,8 @@ export class Ticket extends AttestableObject {
         return this.ticketClass;
     }
 
-    // public getAlgorithm(): string {
-    //     return algorithm;
-    // }
-
-    // public getSignature(): string {
-    //     return this.signature;
-    // }
+    public getSignature(): string {
+        return this.signature;
+    }
 
 }
