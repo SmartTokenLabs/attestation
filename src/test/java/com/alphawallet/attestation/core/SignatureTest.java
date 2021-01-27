@@ -10,6 +10,8 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class SignatureTest {
+  private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
   private AsymmetricCipherKeyPair keys;
   private SecureRandom rand;
   private AttestationCrypto crypto;
@@ -27,7 +30,7 @@ public class SignatureTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
-    keys = crypto.constructECKeys("secp384r1");
+    keys = crypto.constructECKeys(SECP364R1);
   }
 
   @Test

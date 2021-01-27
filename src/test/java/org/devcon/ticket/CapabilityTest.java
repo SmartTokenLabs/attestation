@@ -13,6 +13,8 @@ import java.net.URL;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Set;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class CapabilityTest {
+  private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
   private static final String receiverDomain = "http://www.hotelbogota.com";
   private static final String verifierDomain = "http://www.ticket.devcon.org";
 
@@ -35,7 +38,7 @@ public class CapabilityTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    ticketKeys = crypto.constructECKeys("secp384r1");
+    ticketKeys = crypto.constructECKeys(SECP364R1);
     issuer = new CapabilityIssuer(ticketKeys, verifierDomain);
     validator = new CapabilityValidator(ticketKeys.getPublic(), verifierDomain);
     tasks = new HashSet<>();
