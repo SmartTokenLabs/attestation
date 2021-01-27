@@ -35,7 +35,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
       this.pok = pok;
       this.publicKey = PublicKeyFactory
           .createKey( SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keys.getPublic()));
-      this.signature = SignatureUtility.signDeterministic(getUnsignedEncoding(), keys.getPrivate());
+      this.signature = SignatureUtility.signWithWeb3(getUnsignedEncoding(), keys.getPrivate());
 
       if (!verify()) {
         throw new IllegalArgumentException("The signature or proof is not valid");
@@ -107,7 +107,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
 
   @Override
   public boolean verify() {
-    if (!SignatureUtility.verify(getUnsignedEncoding(), signature, publicKey)) {
+    if (!SignatureUtility.verifyWeb3Signature(getUnsignedEncoding(), signature, publicKey)) {
       return false;
     }
     if (!AttestationCrypto.verifyAttestationRequestProof(pok)) {

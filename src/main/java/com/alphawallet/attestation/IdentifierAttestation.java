@@ -5,12 +5,12 @@ import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
@@ -31,7 +31,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=" + AttestationCrypto.addressFromKey(key));
-    super.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
+    super.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -50,7 +50,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=" + AttestationCrypto.addressFromKey(key));
-    super.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
+    super.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -86,8 +86,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
       return false;
     }
-    if (!getSignature().equals(AttestationCrypto.OID_SIGNATURE_ALG)) {
-      System.err.println("The signature algorithm is supposed to be " + AttestationCrypto.OID_SIGNATURE_ALG);
+    if (!getSigningAlgorithm().equals(AttestationCrypto.ALGORITHM_IDENTIFIER.getAlgorithm().getId())) {
+      System.err.println("The signature algorithm is supposed to be " + AttestationCrypto.ALGORITHM_IDENTIFIER.getAlgorithm().getId());
       return false;
     }
     // Verify that the subject public key matches the subject common name
@@ -134,7 +134,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   @Override
-  public void setSignature(String oid) {
+  public void setSigningAlgorithm(AlgorithmIdentifier oid) {
     throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
   }
 
