@@ -74,7 +74,7 @@ public class JWTValidator<T extends Attestable> extends JWTCommon {
       // According to the JWS standard it must be base64url encoded and contain the encoded protected header concatenated with "."
       String message = header + "." + base64Payload;
       byte[] decodedSignature = URLUtility.decodeData(jwt.getSignature());
-      return SignatureUtility.verifyWeb3Signature(message.getBytes(StandardCharsets.UTF_8), decodedSignature, pk);
+      return SignatureUtility.verifyEthereumSignature(message.getBytes(StandardCharsets.UTF_8), decodedSignature, pk);
     } catch (Exception e) {
       return false;
     }

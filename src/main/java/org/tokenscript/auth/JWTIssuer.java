@@ -59,7 +59,7 @@ public class JWTIssuer extends JWTCommon {
     String base64Payload = unsignedTokenJwt.getPayload();
     // According to the JWS standard it must be base64url encoded and contain the encoded protected header concatenated with "."
     String toSign = header + "." + base64Payload;
-    byte[] sig = SignatureUtility.signWithWeb3(toSign.getBytes(StandardCharsets.UTF_8), signingKey);
+    byte[] sig = SignatureUtility.signWithEthereum(toSign.getBytes(StandardCharsets.UTF_8), signingKey);
     String base64Sig = URLUtility.encodeData(sig);
     return String.format("%s.%s.%s", header, base64Payload, base64Sig);
   }
