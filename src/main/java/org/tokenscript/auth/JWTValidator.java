@@ -13,6 +13,15 @@ import java.security.Security;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+/**
+ * Class for validating JWT tokens containing a useDevconTicket object.
+ * The tokens are supposed to be issued by the user for consumption by a third party website.
+ *
+ * Thus we are abusing the "normal" three-party setting of JWTs since in our case both the
+ * issuer and the subject is the same.
+ * We furthermore also misuse the formal format of JWTs since we sign using an Ethereum key, and
+ * hence the signature with have "Ethereum Signed Message:" as prefix and use Keccak for hashing.
+ */
 public class JWTValidator<T extends Attestable> extends JWTCommon {
   private final AsymmetricKeyParameter attestorPublicKey;
   private final String domain;
@@ -65,7 +74,7 @@ public class JWTValidator<T extends Attestable> extends JWTCommon {
       // According to the JWS standard it must be base64url encoded and contain the encoded protected header concatenated with "."
       String message = header + "." + base64Payload;
       byte[] decodedSignature = URLUtility.decodeData(jwt.getSignature());
-      return SignatureUtility.verifyWeb3Signature(message.getBytes(StandardCharsets.UTF_8), decodedSignature, pk);
+      return SignatureUtility.verifyEthereumSignature(message.getBytes(StandardCharsets.UTF_8), decodedSignature, pk);
     } catch (Exception e) {
       return false;
     }

@@ -67,7 +67,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
       byte[] rawAtt = unsignedAtt.getPrehash();
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Primitive.fromByteArray(rawAtt));
-      res.add(new AlgorithmIdentifier(new ASN1ObjectIdentifier(unsignedAtt.getSignature())));
+      res.add(new AlgorithmIdentifier(new ASN1ObjectIdentifier(unsignedAtt.getSigningAlgorithm())));
       res.add(new DERBitString(signature));
       return new DERSequence(res).getEncoded();
     } catch (Exception e) {

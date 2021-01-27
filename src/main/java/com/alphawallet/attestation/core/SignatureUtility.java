@@ -47,8 +47,8 @@ public class SignatureUtility {
      * @return
      */
     public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
-        AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(new ASN1ObjectIdentifier(
-            AttestationCrypto.OID_SIGNATURE_ALG), AttestationCrypto.ECDSACurve.toASN1Primitive());
+        AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
+            AttestationCrypto.OID_SIGNATURE_ALG, AttestationCrypto.ECDSACurve.toASN1Primitive());
         return restoreDefaultKey(identifierEnc, input);
     }
 
@@ -107,7 +107,7 @@ public class SignatureUtility {
             bcKeys.getPrivate()));
     }
 
-    public static byte[] signWithWeb3(byte[] unsigned, AsymmetricKeyParameter key) {
+    public static byte[] signWithEthereum(byte[] unsigned, AsymmetricKeyParameter key) {
         return signDeterministic(addPersonalSignPrefix(unsigned), key);
     }
 
@@ -161,7 +161,7 @@ public class SignatureUtility {
         }
     }
 
-    public static boolean verifyWeb3Signature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
+    public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
         return verify(addPersonalSignPrefix(unsigned), signature, key);
     }
 

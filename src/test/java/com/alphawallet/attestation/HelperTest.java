@@ -22,7 +22,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class HelperTest {
   public static final int CHARS_IN_LINE = 65;
-
+  public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
 //  public static KeyPair constructKeys(SecureRandom rand) throws Exception {
 //    Security.addProvider(new BouncyCastleProvider());
@@ -51,7 +51,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(2); // =v3 since counting starts from 0
     att.setSerialNumber(42);
-    att.setSignature("1.2.840.10045.4.3.2"); // ECDSA with SHA256 which is needed for a proper x509
+    att.setSigningAlgorithm(ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
@@ -75,7 +75,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
+    att.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
@@ -96,7 +96,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
+    att.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
     att.setDataObject(new DERSequence(dataObject));

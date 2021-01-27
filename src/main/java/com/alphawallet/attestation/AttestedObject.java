@@ -45,7 +45,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
       this.unsignedEncoding = new DERSequence(vec).getEncoded();
-      this.signature = SignatureUtility.signDeterministic(this.unsignedEncoding, userKeys.getPrivate());
+      this.signature = SignatureUtility.signWithWeb3(this.unsignedEncoding, userKeys.getPrivate());
       vec.add(new DERBitString(this.signature));
       this.encoding = new DERSequence(vec).getEncoded();
     } catch (IOException e) {
@@ -151,7 +151,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     SubjectPublicKeyInfo spki = getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
     try {
       AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
-      if (!SignatureUtility.verify(this.unsignedEncoding, getSignature(), parsedSubjectKey)) {
+      if (!SignatureUtility.verifyWeb3Signature(this.unsignedEncoding, getSignature(), parsedSubjectKey)) {
         System.err.println("The signature on RedeemCheque is not valid");
         return false;
       }
@@ -169,7 +169,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
     // Index in the second DER sequence is 2 since the third object in an extension is the actual value
     byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(attCom, attestableObject.getCommitment(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
+    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(attCom, attestableObject.getCommitment(), pok) && SignatureUtility.verifyWeb3Signature(unsignedEncoding, signature, userPublicKey);
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {

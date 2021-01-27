@@ -11,10 +11,12 @@ import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.devcon.ticket.Ticket;
 import org.devcon.ticket.TicketDecoder;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 public class JWTValidatorTest {
   private static final String validatorDomain = "http://www.hotelbogota.com";
 
+  private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
   private static final int TICKET_CLASS = 0;  // Regular ticket
@@ -31,7 +34,6 @@ public class JWTValidatorTest {
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
 
-  private static final ObjectMapper mapper = new ObjectMapper();
   private static AsymmetricCipherKeyPair userKeys, attestorKeys, ticketKeys;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
@@ -44,8 +46,8 @@ public class JWTValidatorTest {
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     userKeys = crypto.constructECKeys();
-    attestorKeys = crypto.constructECKeys("secp384r1");
-    ticketKeys = crypto.constructECKeys("secp384r1");
+    attestorKeys = crypto.constructECKeys(SECP364R1);
+    ticketKeys = crypto.constructECKeys(SECP364R1);
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
     validator = new JWTValidator(decoder, attestorKeys.getPublic(), validatorDomain);
     issuer = new JWTIssuer(userKeys.getPrivate());

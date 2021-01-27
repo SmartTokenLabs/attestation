@@ -14,6 +14,15 @@ import java.util.Base64;
 import java.util.Date;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
+/**
+ * Class for issuing JWT tokens containing a useDevconTicket object.
+ * The tokens are supposed to be issued by the user for consumption by a third party website.
+ *
+ * Thus we are abusing the "normal" three-party setting of JWTs since in our case both the
+ * issuer and the subject is the same.
+ * We furthermore also misuse the formal format of JWTs since we sign using an Ethereum key, and
+ * hence the signature with have "Ethereum Signed Message:" as prefix and use Keccak for hashing.
+ */
 public class JWTIssuer extends JWTCommon {
   private final AsymmetricKeyParameter signingKey;
 
@@ -50,14 +59,16 @@ public class JWTIssuer extends JWTCommon {
     String base64Payload = unsignedTokenJwt.getPayload();
     // According to the JWS standard it must be base64url encoded and contain the encoded protected header concatenated with "."
     String toSign = header + "." + base64Payload;
-    byte[] sig = SignatureUtility.signWithWeb3(toSign.getBytes(StandardCharsets.UTF_8), signingKey);
+    byte[] sig = SignatureUtility.signWithEthereum(toSign.getBytes(StandardCharsets.UTF_8), signingKey);
     String base64Sig = URLUtility.encodeData(sig);
     return String.format("%s.%s.%s", header, base64Payload, base64Sig);
   }
 
   private String getJWTID(AttestedObject request, long now) {
-    ByteBuffer toHash = ByteBuffer.allocate((Long.SIZE / 8) + request.getDerEncoding().length);
+    ByteBuffer toHash = ByteBuffer.allocate((Long.SIZE / 8) + attestedObjectClaimName.length() +
+        request.getDerEncoding().length);
     toHash.putLong(now);
+    toHash.put(attestedObjectClaimName.getBytes(StandardCharsets.UTF_8));
     toHash.put(request.getDerEncoding());
     byte[] digest = AttestationCrypto.hashWithKeccak(toHash.array());
     return Base64.getEncoder().encodeToString(digest);
