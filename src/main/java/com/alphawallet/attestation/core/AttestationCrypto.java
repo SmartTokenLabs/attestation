@@ -101,8 +101,7 @@ public class AttestationCrypto {
     return constructECKeys(ECDSAdomain);
   }
 
-  public AsymmetricCipherKeyPair constructECKeys(String curveName) {
-    X9ECParameters ECDSACurve = SECNamedCurves.getByName(curveName);
+  public AsymmetricCipherKeyPair constructECKeys(X9ECParameters ECDSACurve) {
     ECDomainParameters domain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
     return constructECKeys(domain);
   }
