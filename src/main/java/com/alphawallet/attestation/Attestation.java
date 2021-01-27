@@ -35,6 +35,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   private ASN1Integer version = new ASN1Integer(
       18); // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
   private ASN1Integer serialNumber;
+
   private AlgorithmIdentifier signingAlgorithm;
   private X500Name issuer;                              // Optional
   private ASN1GeneralizedTime notValidBefore;           // Optional
@@ -136,10 +137,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   /**
-   * Takes as input the oid of the signature scheme to be used to sign the attestation
+   * The signingAlgorithm is to be usd in the signature section of the attestation
+   * as well as appearing in the TBS (To be signed) data
    */
-  public void setSigningAlgorithm(String oid) {
-    this.signingAlgorithm = new AlgorithmIdentifier(new ASN1ObjectIdentifier(oid));
+  public void setSigningAlgorithm(AlgorithmIdentifier signingAlgorithm) {
+    this.signingAlgorithm = signingAlgorithm;
   }
 
   public String getIssuer() {

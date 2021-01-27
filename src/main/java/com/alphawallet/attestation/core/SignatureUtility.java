@@ -35,8 +35,8 @@ public class SignatureUtility {
      * @return
      */
     public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
-        AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(new ASN1ObjectIdentifier(
-            AttestationCrypto.OID_SIGNATURE_ALG), AttestationCrypto.ECDSACurve.toASN1Primitive());
+        AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
+            AttestationCrypto.OID_SIGNATURE_ALG, AttestationCrypto.ECDSACurve.toASN1Primitive());
         return restoreDefaultKey(identifierEnc, input);
     }
 

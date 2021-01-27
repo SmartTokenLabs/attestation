@@ -64,12 +64,6 @@ public class IdentifierAttestationTest {
       // Expected
     }
     try {
-      initial.setSigningAlgorithm("1.0.12.151");
-      fail();
-    } catch (RuntimeException e) {
-      // Expected
-    }
-    try {
       initial.setVersion(2);
       fail();
     } catch (RuntimeException e) {
