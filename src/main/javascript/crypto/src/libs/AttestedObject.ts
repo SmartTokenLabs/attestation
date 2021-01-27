@@ -18,18 +18,16 @@ export class AttestedObject {
     constructor(
         private attestableObject: AttestableObject,
         private att: SignedAttestation,
-        // private keys: KeyPair,
         private attestationSecret: bigint ,
-        private chequeSecret: bigint
+        private objectSecret: bigint
     ) {
         this.crypto = new AttestationCrypto();
-        // this.userPublicKey = userKeys.getPublic();
-        this.pok = this.makeProof(attestationSecret, chequeSecret, this.crypto);
+        this.pok = this.makeProof(attestationSecret, objectSecret, this.crypto);
         this.derEncodedProof = this.pok.getDerEncoding();
 
         let vec =
             this.attestableObject.getDerEncoding() +
-            uint8tohex(this.att.getDerEncoding())+
+            this.att.getDerEncoding() +
             this.pok.getDerEncoding();
         this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);
     }
@@ -106,49 +104,6 @@ export class AttestedObject {
         }
         return pok;
     }
-/*
-    checkValidity(){
-        // CHECK: that it is an identity attestation otherwise not all the checks of validity needed gets carried out
-        try {
-            // let attEncoded: Uint8Array = this.att.getUnsignedAttestation().getDerEncoding();
-            // TODO validate attestation
-            // let std: IdentifierAttestation = new IdentifierAttestation(this.attEncoded);
-            // CHECK: perform the needed checks of an identity attestation
-            // if (!std.checkValidity()) {
-            //     System.err.println("The attestation is not a valid standard attestation");
-            //     return false;
-            // }
-        } catch (e) {
-            console.log("The attestation is invalid");
-            return false;
-        }
-
-        // CHECK: that the cheque is still valid
-        if (!this.getAttestableObject().checkValidity()) {
-            console.error("Cheque is not valid");
-            return false;
-        }
-
-        // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
-        // let spki = this.getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-
-        // try {
-        //     let parsedSubjectKey = spki.value.subjectPublicKey;
-        //     if (!SignatureUtility.verify(this.unsignedEncoding, this.getSignature(), uint8tohex(new Uint8Array(parsedSubjectKey)))) {
-        //         console.error("The signature on RedeemCheque is not valid");
-        //         return false;
-        //     }
-        // } catch (e) {
-        //     console.error("The attestation SubjectPublicKey cannot be parsed");
-        //     return false;
-        // }
-
-        // CHECK: the Ethereum address on the attestation matches receivers signing key
-        // TODO
-        return true;
-    }
-
- */
 
     getAttestableObject(){
         return this.attestableObject;

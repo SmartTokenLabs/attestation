@@ -1,7 +1,7 @@
 import {AsnParser} from "@peculiar/asn1-schema";
 import {MyAttestation} from "./../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
-import {base64ToUint8array, uint8tohex} from "./utils";
+import {base64ToUint8array, hexStringToArray, uint8tohex} from "./utils";
 import {SignatureUtility} from "./SignatureUtility";
 import {Attestation} from "./Attestation";
 
@@ -28,7 +28,7 @@ export class SignedAttestation {
 
     verify(){
         try {
-            return SignatureUtility.verifyArrayBuf(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKey);
+            return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKey);
         } catch (e) {
             return false;
         }
@@ -42,7 +42,7 @@ export class SignedAttestation {
         return this.att;
     }
 
-    getDerEncoding(): Uint8Array{
-        return this.uint8data;
+    getDerEncoding(): string{
+        return uint8tohex(new Uint8Array(this.uint8data));
     }
 }

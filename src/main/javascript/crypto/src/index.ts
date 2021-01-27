@@ -37,7 +37,7 @@ export class main {
             throw new Error("Validation failed");
         }
         if (!ticket.verify()) {
-            console.log("Could not verify cheque");
+            console.log("Could not verify ticket");
             throw new Error("Verification failed");
         }
         console.log('ticked valid (signature OK)');
@@ -59,13 +59,11 @@ export class main {
             throw new Error("Verification failed");
         }
         console.log('attestaion valid');
-        console.log(typeof  attestationSecret);
-        console.log(typeof  ticketSecret);
 
         let redeem: AttestedObject = new AttestedObject(
             ticket, att,
             BigInt(attestationSecret), BigInt(ticketSecret));
-        console.log("redeem.getDerEncodeProof()");
+        console.log("redeem.getDerEncodeProof(): ");
         console.log(redeem.getDerEncodeProof());
 
         return redeem.getDerEncodeProof();

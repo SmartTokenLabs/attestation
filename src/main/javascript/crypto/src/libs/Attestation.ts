@@ -1,4 +1,4 @@
-import {base64ToUint8array} from "./utils";
+import {base64ToUint8array, uint8tohex} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {MyAttestation, SignedInfo, SubjectPublicKeyInfo} from "../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
@@ -50,8 +50,8 @@ export class Attestation {
             this.extensions = decodedAttestationObj.attestsTo.dataObject;
         }
     }
-    getDerEncoding(): Uint8Array{
-        return this.signedInfo;
+    getDerEncoding(): string{
+        return uint8tohex(new Uint8Array(this.signedInfo));
     }
 
     getNotValidBefore(): number{

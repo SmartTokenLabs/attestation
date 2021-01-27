@@ -198,14 +198,7 @@ export class AttestationCrypto {
             }
             // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
             // NOTE: this is ONLY needed if we DON'T use secp256k1, so currently it is superflous but we are keeping it this check is crucial for security on most other curves!
-            // console.log('resPoint.equals(referencePoint) = ' + resPoint.equals(referencePoint) );
-            // console.log('resPoint.x = ' + resPoint.x.toString(16) );
-            // console.log('referencePoint.x = ' + referencePoint.x.toString(16) );
         } while (!resPoint.equals(referencePoint) || resPoint.isInfinity())
-        // console.log("resPoint = ",resPoint);
-        // console.log("resPointY = ",resPoint.y.toString(16));
-        // console.log("referencePoint = ",referencePoint);
-        // console.log("referencePointY = ",referencePoint.y.toString(16));
         return resPoint;
     }
 
@@ -221,7 +214,6 @@ export class AttestationCrypto {
     }
     constructProof(identity: string, type: number, secret: bigint){
         const hashedIdentity: Point = this.hashIdentifier(type, identity);
-        // console.log(`hashedIdentity = (${hashedIdentity.x}, ${hashedIdentity.y})`);
         const identifier = hashedIdentity.multiplyDA(secret);
         return this.computeProof(hashedIdentity, identifier, secret);
     }
