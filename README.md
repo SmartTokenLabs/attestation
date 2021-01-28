@@ -18,13 +18,21 @@ You need the following installed:
 
 Once you have them installed, run:
 
-$ gradle build
+    $ gradle build
 
 The build script will run a few tests, resulting a few pem files created in `build/test-results/` directory.
 
 ## Try it yourself
 
-This is a walk-through to use the functionalities provided by this library through commandline: [commandline demonstration](cli-demo.md)
+To create a jar file for running the demo, run:
+
+    $ gradle shadowJar
+
+Which will create a jar file that you can run in the commandline
+
+    build/libs/attestation-all.jar
+
+There is a walk-through to use the functionalities provided by this library through commandline: [commandline demonstration](cli-demo.md)
 
 ## Organisation of this repo
 
