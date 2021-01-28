@@ -31,7 +31,7 @@ public class ProofOfKnolwedgeIntegTest {
             byte[] bytes = new byte[32];
             rand.nextBytes(bytes);
             BigInteger rVal = new BigInteger(bytes);
-            ProofOfExponent pok = crypto.computeAttestationProof(rVal);
+            FullProofOfExponent pok = crypto.computeAttestationProof(rVal);
             assertTrue(crypto.verifyAttestationRequestProof(pok));
             assertTrue(sc.testEncoding(pok));
         }
@@ -41,9 +41,10 @@ public class ProofOfKnolwedgeIntegTest {
             byte[] bytes = new byte[32];
             rand.nextBytes(bytes);
             BigInteger rVal = new BigInteger(bytes);
-            ProofOfExponent pok = crypto.computeAttestationProof(rVal);
+            FullProofOfExponent pok = crypto.computeAttestationProof(rVal);
             assertTrue(crypto.verifyAttestationRequestProof(pok));
-            ProofOfExponent newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+            FullProofOfExponent newPok = new FullProofOfExponent(
+                pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
             assertFalse(sc.testEncoding(newPok));
         }
     }

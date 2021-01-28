@@ -4,33 +4,26 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import java.lang.reflect.Field;
+import com.alphawallet.attestation.UsageProofOfExponent;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
 
 public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
   private AsymmetricCipherKeyPair issuerKeys;
-  private AsymmetricCipherKeyPair senderKeys;
   private SecureRandom rand;
   private AttestationCrypto crypto;
   private static final String ID = "test@test.ts";
@@ -46,7 +39,6 @@ public class CryptoTest {
     crypto = new AttestationCrypto(rand);
     subjectKeys = crypto.constructECKeys();
     issuerKeys = crypto.constructECKeys();
-    senderKeys = crypto.constructECKeys();
   }
 
   @Test
@@ -64,6 +56,15 @@ public class CryptoTest {
     verifyCurveOrder.setAccessible(true);
     // Set the final curveOrder field to 2^254
     BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(254);
+    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
+  }
+
+  @Test
+  public void veryLargeCurveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+    verifyCurveOrder.setAccessible(true);
+    // Set the final curveOrder field to 2^256
+    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(256);
     assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
   }
 
@@ -145,14 +146,13 @@ public class CryptoTest {
 
   @Test
   public void testAttestationRequestProof() {
-    ProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
     // Test with other randomness
-    ProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
+    FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok2));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallenge(), pok2.getChallenge());
-    assertEquals(pok.getBase(), pok2.getBase());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other secret
@@ -161,16 +161,14 @@ public class CryptoTest {
 
     // Negative tests
     pok = crypto.computeAttestationProof(SECRET1);
-    pok2 = new ProofOfExponent(pok.getBase().add(pok.getBase()), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+
+    pok2 = new FullProofOfExponent(pok.getRiddle().add(AttestationCrypto.H), pok.getPoint(), pok.getChallenge());
     assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle().add(pok.getBase()), pok.getPoint(), pok.getChallenge());
+    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
     assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().add(pok.getBase()), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
-
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
     assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
   }
 
@@ -188,8 +186,6 @@ public class CryptoTest {
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallenge(), pok2.getChallenge());
-    assertEquals(pok.getBase(), pok2.getBase());
-    assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other commitment
     BigInteger otherSec = new BigInteger("45864684786789758065458745212314458");
@@ -219,16 +215,10 @@ public class CryptoTest {
     pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok));
 
-    pok2 = new ProofOfExponent(pok.getBase().add(pok.getBase()), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    pok2 = new UsageProofOfExponent(pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle().add(pok.getBase()), pok.getPoint(), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
-
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().add(pok.getBase()), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
-
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    pok2 = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
   }
 
@@ -239,7 +229,7 @@ public class CryptoTest {
       byte[] com2 = AttestationCrypto.makeCommitment(ID+i, TYPE, SECRET2.multiply(BigInteger.valueOf(i)));
       ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1.add(BigInteger.valueOf(i)),  SECRET2.multiply(BigInteger.valueOf(i)));
       // Compute the c value used in the proof and for proof verification
-      BigInteger c = AttestationCrypto.mapTo256BitInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.G, pok.getBase(), AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
+      BigInteger c = AttestationCrypto.mapToInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.H, AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
       assertTrue(c.compareTo(AttestationCrypto.curveOrder) < 0);
     }
   }
@@ -266,7 +256,6 @@ public class CryptoTest {
     assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
     // This should hold with probability at least 1-2^-30
     assertTrue(value.shiftRight(AttestationCrypto.curveOrderBitLength-30).compareTo(BigInteger.ZERO) > 0);
-
     // Check consistency
     BigInteger value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
     assertEquals(value, value2);
@@ -305,15 +294,14 @@ public class CryptoTest {
     SecureRandom rand2 = SecureRandom.getInstance("SHA1PRNG");
     rand2.setSeed("otherseed".getBytes());
     AttestationCrypto crypt2 = new AttestationCrypto(rand2);
-    ProofOfExponent pok = crypt2.computeAttestationProof(SECRET1);
+    FullProofOfExponent pok = crypt2.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
 
     // Check consistency
     rand2 = SecureRandom.getInstance("SHA1PRNG");
     rand2.setSeed("otherseed".getBytes());
     crypt2 = new AttestationCrypto(rand2);
-    ProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET1);
-    assertEquals(pok.getBase(), pok2.getBase());
+    FullProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET1);
     assertEquals(pok.getPoint(), pok2.getPoint());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
     assertEquals(pok.getChallenge(), pok2.getChallenge());
@@ -362,7 +350,7 @@ public class CryptoTest {
 
   private BigInteger rejectionSample(BigInteger seed) {
     do {
-      seed = AttestationCrypto.mapTo256BitInteger(seed.toByteArray());
+      seed = AttestationCrypto.mapToInteger(seed.toByteArray());
     } while (seed.compareTo(AttestationCrypto.curveOrder) >= 0);
     return seed;
   }
