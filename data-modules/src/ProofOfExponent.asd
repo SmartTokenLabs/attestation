@@ -3,9 +3,6 @@
   <namedType name="Proof">
     <type>
       <sequence>
-        <element name="base" type="asnx:OCTET-STRING">
-          <annotation>The generator</annotation>
-        </element>
         <element name="riddle" type="asnx:OCTET-STRING">
           <annotation>The value of which to prove knowledge its discrete logarithm</annotation>
         </element>
@@ -18,4 +15,16 @@
       </sequence>
     </type>
   </namedType>
+  <namedType name="UsageProof">
+      <type>
+        <sequence>
+          <element name="challengePoint" type="asnx:OCTET-STRING">
+            <annotation>The random challenge which is the hash digest of the parameters</annotation>
+          </element>
+          <element name="responseValue" type="asnx:OCTET-STRING">
+            <annotation>The response to the challenge based on the secret exponent</annotation>
+          </element>
+        </sequence>
+      </type>
+    </namedType>
 </asnx:module>

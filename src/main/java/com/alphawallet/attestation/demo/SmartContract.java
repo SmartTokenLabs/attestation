@@ -2,8 +2,10 @@ package com.alphawallet.attestation.demo;
 
 import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
 
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.ProofOfExponent;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -11,21 +13,29 @@ import okhttp3.OkHttpClient;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.Bool;
-import org.web3j.abi.datatypes.DynamicBytes;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.*;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.http.HttpService;
 
 public class SmartContract {
-  private static final String ATTESTATION_CHECKING_CONTRACT = "0x8D653D288346921B9099E74E61e2fD8054689524";
+  private static final String ATTESTATION_CHECKING_CONTRACT = "0xeF3638178D7E775D1B6e5E41c52509a2302582Be";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-  //test contract
-  public boolean testEncoding(ProofOfExponent exp)
+  public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
+  {
+    Function function = verifyEncoding(com1, com2, pok.getDerEncoding());
+    return callFunction(function);
+  }
+
+  public boolean usageProofOfExponent(FullProofOfExponent exp)
+  {
+    Function function = checkEncoding(exp.getDerEncoding());
+    return callFunction(function);
+  }
+
+  private boolean callFunction(Function function)
   {
     Web3j web3j = getWeb3j();
 
@@ -33,7 +43,6 @@ public class SmartContract {
 
     try
     {
-      Function function = checkEncoding(exp.getDerEncoding());
       String responseValue = callSmartContractFunction(web3j, function, ATTESTATION_CHECKING_CONTRACT);
       List<Type> responseValues = FunctionReturnDecoder.decode(responseValue, function.getOutputParameters());
 
@@ -87,6 +96,13 @@ public class SmartContract {
         "decodeAttestation",
         Collections.singletonList(new DynamicBytes(encoding)),
         Collections.singletonList(new TypeReference<Bool>() {}));
+  }
+
+  private static Function verifyEncoding(byte[] com1, byte[] com2, byte[] encoding) {
+    return new Function(
+            "verifyEqualityProof",
+            Arrays.asList(new DynamicBytes(com1), new DynamicBytes(com2), new DynamicBytes(encoding)),
+            Collections.singletonList(new TypeReference<Bool>() {}));
   }
 
 

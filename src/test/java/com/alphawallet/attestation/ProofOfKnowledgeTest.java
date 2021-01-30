@@ -7,10 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.demo.SmartContract;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -33,54 +32,45 @@ public class ProofOfKnowledgeTest {
 
   @Test
   public void TestSunshineAttestationProof() {
-    ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
+    FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
     assertTrue(crypto.verifyAttestationRequestProof(pok));
-    SmartContract sc = new SmartContract();
-    sc.testEncoding(pok);
-    ProofOfExponent newPok = new ProofOfExponent(pok.getDerEncoding());
+    FullProofOfExponent newPok = new FullProofOfExponent(pok.getDerEncoding());
     assertTrue(crypto.verifyAttestationRequestProof(newPok));
-    assertEquals(pok.getBase(), newPok.getBase());
     assertEquals(pok.getRiddle(), newPok.getRiddle());
     assertEquals(pok.getPoint(), newPok.getPoint());
     assertEquals(pok.getChallenge(), newPok.getChallenge());
     assertArrayEquals(pok.getDerEncoding(), newPok.getDerEncoding());
 
-    ProofOfExponent newConstructor = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    FullProofOfExponent newConstructor = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge());
     assertArrayEquals(pok.getDerEncoding(), newConstructor.getDerEncoding());
   }
 
   @Test
   public void TestNegativeAttestationProof() {
-    ProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
+    FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
     assertTrue(crypto.verifyAttestationRequestProof(pok));
-    ProofOfExponent newPok;
-    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    FullProofOfExponent newPok;
+    newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
     assertFalse(crypto.verifyAttestationRequestProof(newPok));
-    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge());
+    newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge());
     assertFalse(crypto.verifyAttestationRequestProof(newPok));
-    newPok = new ProofOfExponent(pok.getBase().multiply(new BigInteger("2")), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
-    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle().multiply(new BigInteger("2")), pok.getPoint(), pok.getChallenge());
+    newPok = new FullProofOfExponent(pok.getRiddle().multiply(new BigInteger("2")), pok.getPoint(), pok.getChallenge());
     assertFalse(crypto.verifyAttestationRequestProof(newPok));
   }
 
   @Test
-  public void TestSunshineEqualityProof() {
+  public void TestSunshineEqualityProof() throws Exception {
     byte[] com1 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET1);
     byte[] com2 = crypto.makeCommitment(ID, AttestationType.EMAIL, SECRET2);
     ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
-    SmartContract sc = new SmartContract();
-    sc.testEncoding(pok);
-    ProofOfExponent newPok = new ProofOfExponent(pok.getDerEncoding());
+    UsageProofOfExponent newPok = new UsageProofOfExponent(pok.getDerEncoding());
     assertTrue(crypto.verifyEqualityProof(com1, com2, newPok));
-    assertEquals(pok.getBase(), newPok.getBase());
-    assertEquals(pok.getRiddle(), newPok.getRiddle());
     assertEquals(pok.getPoint(), newPok.getPoint());
     assertEquals(pok.getChallenge(), newPok.getChallenge());
     assertArrayEquals(pok.getDerEncoding(), newPok.getDerEncoding());
 
-    ProofOfExponent newConstructor = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    ProofOfExponent newConstructor = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge());
     assertArrayEquals(pok.getDerEncoding(), newConstructor.getDerEncoding());
   }
 
@@ -91,16 +81,9 @@ public class ProofOfKnowledgeTest {
     ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
     ProofOfExponent newPok;
-    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    newPok = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
-    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge());
-    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
-    newPok = new ProofOfExponent(pok.getBase().multiply(new BigInteger("2")), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
-    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
-    newPok = new ProofOfExponent(pok.getBase(), pok.getRiddle().multiply(new BigInteger("2")), pok.getPoint(), pok.getChallenge());
-    assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
-    newPok = new ProofOfExponent(AttestationCrypto.G, pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    newPok = new UsageProofOfExponent(pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge());
     assertFalse(crypto.verifyEqualityProof(com1, com2, newPok));
   }
-
 }

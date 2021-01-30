@@ -8,15 +8,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.SignedAttestation;
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.PublicKey;
@@ -70,26 +71,25 @@ public class TestRedeemCheque {
         // *** PRINT DER ENCODING OF OBJECTS ***
     try {
       PublicKey pk;
+      PrintStream a = System.out;
       System.out.println("Signed attestation:");
-      System.out.println(DERUtility.printDER(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE"));
+      DERUtility.writePEM(attestedCheque.getAtt().getDerEncoding(), "SIGNEABLE", System.out);
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
       System.out.println("Attestation verification key:");
-      System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
-
+      DERUtility.writePEM(pk.getEncoded(),"PUBLIC KEY", System.out);
       System.out.println("Cheque:");
-      System.out.println(DERUtility.printDER(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE"));
+      DERUtility.writePEM(attestedCheque.getAttestableObject().getDerEncoding(), "CHEQUE", System.out);
       System.out.println("Signed cheque verification key:");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic()));
-      System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
-
+      DERUtility.writePEM(pk.getEncoded(),"PUBLIC KEY", System.out);
       System.out.println("Attested Cheque:");
-      System.out.println(DERUtility.printDER(attestedCheque.getDerEncoding(), "REDEEM"));
+      DERUtility.writePEM(attestedCheque.getDerEncoding(), "REDEEM", System.out);
       System.out.println("Signed user public key (for redeem verification):");
       pk = new EC().generatePublic(
           SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic()));
-      System.out.println(DERUtility.printDER(pk.getEncoded(),"PUBLIC KEY"));
+      DERUtility.writePEM(pk.getEncoded(),"PUBLIC KEY", System.out);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -97,7 +97,7 @@ public class TestRedeemCheque {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncoding(), new ChequeDecoder(),
+    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncodingWithSignature(), new ChequeDecoder(),
         issuerKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
@@ -112,12 +112,14 @@ public class TestRedeemCheque {
     assertArrayEquals(attestedCheque.getSignature(), newRedeem.getSignature());
     assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
     assertArrayEquals(attestedCheque.getDerEncoding(), attestedCheque.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), attestedCheque.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
         .getAtt(), attestedCheque.getPok(),
-        attestedCheque.getSignature(), issuerKeys.getPublic(), subjectKeys.getPublic());
+        attestedCheque.getSignature(), subjectKeys.getPublic());
 
     assertArrayEquals(attestedCheque.getDerEncoding(), newConstructor.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newConstructor.getDerEncodingWithSignature());
   }
 
   @Test
@@ -182,7 +184,7 @@ public class TestRedeemCheque {
   @Test
   public void testNegativeWrongProofIdentity() throws Exception {
     // Add an extra "t" in the mail address
-    ProofOfExponent newPok = crypto.computeAttestationProof( new BigInteger("42424242"));
+    FullProofOfExponent newPok = crypto.computeAttestationProof( new BigInteger("42424242"));
     Field field = attestedCheque.getClass().getDeclaredField("pok");
     field.setAccessible(true);
     // Change the proof

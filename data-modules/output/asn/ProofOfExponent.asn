@@ -4,8 +4,13 @@ DEFINITIONS ::=
 BEGIN
 
 Proof ::= SEQUENCE {
-    base                 OCTET STRING,
     riddle               OCTET STRING,
+    challengePoint       OCTET STRING,
+    responseValue        OCTET STRING
+}
+
+-- Proof data needed when the riddle can be determined from other data objects --
+UsageProof ::= SEQUENCE {
     challengePoint       OCTET STRING,
     responseValue        OCTET STRING
 }

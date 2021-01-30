@@ -23,12 +23,12 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 public class AttestationRequest implements ASNEncodable, Verifiable {
   private final String identity;
   private final AttestationType type;
-  private final ProofOfExponent pok;
+  private final FullProofOfExponent pok;
 
   private final AsymmetricKeyParameter publicKey;
   private final byte[] signature;
 
-  public AttestationRequest(String identity, AttestationType type, ProofOfExponent pok, AsymmetricCipherKeyPair keys) {
+  public AttestationRequest(String identity, AttestationType type, FullProofOfExponent pok, AsymmetricCipherKeyPair keys) {
     try {
       this.identity = identity;
       this.type = type;
@@ -53,7 +53,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
       this.identity = DERVisibleString.getInstance(unsigned.getObjectAt(0)).getString();
       this.type = AttestationType.values()[
           ASN1Integer.getInstance(unsigned.getObjectAt(1)).getValue().intValueExact()];
-      this.pok = new ProofOfExponent(
+      this.pok = new FullProofOfExponent(
           ASN1Sequence.getInstance(unsigned.getObjectAt(2)).getEncoded());
       this.publicKey = PublicKeyFactory
           .createKey(SubjectPublicKeyInfo.getInstance(asn1.getObjectAt(1)));
@@ -71,7 +71,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
 
   public AttestationType getType() { return type; }
 
-  public ProofOfExponent getPok() { return pok; }
+  public FullProofOfExponent getPok() { return pok; }
 
   public byte[] getSignature() {
     return signature;
