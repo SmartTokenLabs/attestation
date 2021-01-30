@@ -190,8 +190,6 @@ export class SignedDevconTicket {
           "commitment"
       );
 
-      // TODO: issue #75
-      // this.signatureAlgorithm = new AlgorithmIdentifier(source.signatureAlgorithm);
 	  if(source.publicKeyInfo){
 	   //this.publicKeyInfo = new PublicKeyInfo(source.publicKeyInfo);
         this.publicKeyInfo = getParametersValue(
@@ -248,11 +246,6 @@ export class SignedDevconTicket {
         new OctetString({
           name: "commitment",
         }),
-        /* PublicKeyInfo is specified in schema here but not appearing in the constructed data object.
-         * This is because the underlying AlgorithmIdentifier isn't fully implemented and also
-         * that this data is not important for the 1st delivery deadline, won't be read by client anyway.
-         * TODO: add support for PublicKeyInfo https://github.com/TokenScript/attestation/issues/75
-         */
 
         PublicKeyInfo.schema(
             names.publicKeyInfo || {
@@ -279,7 +272,6 @@ export class SignedDevconTicket {
       //   "ticket",
       "ticket",
       "commitment",
-      // TODO: #75
 	  "publicKeyInfo",
       "signatureValue",
     ]);
@@ -301,8 +293,6 @@ export class SignedDevconTicket {
     if ("commitment" in asn1.result)
       this.commitment = asn1.result["commitment"].valueBlock.valueHex;
 
-    // TODO: issue #75
-    // this.signatureAlgorithm = new AlgorithmIdentifier(asn1.result.signatureAlgorithm);
     if(asn1.result.publicKeyInfo)
 	this.publicKeyInfo = new PublicKeyInfo({
       schema: asn1.result.publicKeyInfo,
