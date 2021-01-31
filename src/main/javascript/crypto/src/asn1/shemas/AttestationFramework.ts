@@ -34,17 +34,12 @@ export class SmartContract {
 
 export class SignedInfo {
     @AsnProp({ type: Version }) public version: Version; // [0]  EXPLICIT Version,
-    // @AsnProp({ type: AsnPropTypes.Any }) public serialNumber: any; // CertificateSerialNumber,
     @AsnProp({ type: AsnPropTypes.Integer }) public serialNumber: number; // CertificateSerialNumber,
     @AsnProp({ type: AlgorithmIdentifierASN }) public signature: AlgorithmIdentifierASN; // AlgorithmIdentifier,
-    // @AsnProp({ type: AsnPropTypes.Any }) public signature: any; // AlgorithmIdentifier,
-    // @AsnProp({ type: AsnPropTypes.Any }) public issuer: AsnPropTypes.Any; // Name,
     @AsnProp({ type: Name }) public issuer:Name; // Name,
     @AsnProp({ type: ValidityValue }) public validity:ValidityValue; // Validity,
-    // @AsnProp({ type: AsnPropTypes.Any }) public subject = false; //  Name,
     @AsnProp({ type: Name }) public subject: Name; //  Name,
     @AsnProp({ type: SubjectPublicKeyInfo }) public subjectPublicKeyInfo: SubjectPublicKeyInfo; // SubjectPublicKeyInfo,
-    // TODO handle optional field
     @AsnProp({ type: SmartContract, optional: true }) public contract?: SmartContract; // contract             SEQUENCE OF SmartContract OPTIONAL,
     @AsnProp({ type: AttestsTo }) public attestsTo: AttestsTo; //attestsTo
 }

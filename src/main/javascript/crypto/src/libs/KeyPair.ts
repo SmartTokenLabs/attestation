@@ -2,6 +2,8 @@ import {base64ToUint8array, hexStringToArray, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {CURVE_SECP256k1, Point} from "./Point";
 
+let sha3 = require("js-sha3");
+
 const ASN1 = require('@lapo/asn1js');
 
 // G x, y values taken from official secp256k1 document
@@ -35,10 +37,6 @@ export class KeyPair {
             throw new Error('Wrong public hex length');
         }
         let me = new this();
-        // console.log(publicHex);
-        // console.log(typeof publicHex);
-        // console.log(publicHex.padStart(130, '0'));
-        // console.log("publicHex.padStart(130, '0')");
         me.publicInHex = publicHex.padStart(130, '0');
         return me;
     }
@@ -121,5 +119,12 @@ export class KeyPair {
             pubPointTypeDescrDER +
             Asn1Der.encode('BIT_STRING', pubPoint)
         );
+    }
+
+    getAddress(): string {
+        var pubPoint = this.getPublicKeyAsHexStr();
+        pubPoint = pubPoint.substr(2);
+        let hash = sha3.keccak256(pubPoint);
+        return "0x" + hash.substr(-20);
     }
 }
