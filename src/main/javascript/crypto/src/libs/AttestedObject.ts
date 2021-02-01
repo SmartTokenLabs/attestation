@@ -1,20 +1,23 @@
 import {AttestationCrypto} from "./AttestationCrypto";
-import {ProofOfExponent} from "./ProofOfExponent";
 import {SignedAttestation} from "./SignedAttestation";
-import {hexStringToArray, uint8tohex} from "./utils";
+import {uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {AttestableObject} from "./AttestableObject";
+import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 
 declare global {
     interface Window { ethereum: any; }
 }
 
+// TODO public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature,
+//       AsymmetricKeyParameter userPublicKey) {
 export class AttestedObject {
     private crypto: AttestationCrypto;
-    private pok: ProofOfExponent;
+    private pok: ProofOfExponentInterface;
     private unsignedEncoding: string;
     private derEncodedProof: string;
     private signature: string;
+    private encoding: string;
     constructor(
         private attestableObject: AttestableObject,
         private att: SignedAttestation,
@@ -24,6 +27,9 @@ export class AttestedObject {
         this.crypto = new AttestationCrypto();
         this.pok = this.makeProof(attestationSecret, objectSecret, this.crypto);
         this.derEncodedProof = this.pok.getDerEncoding();
+
+        console.log('this.attestableObject');
+        console.log(this.attestableObject);
 
         let vec =
             this.attestableObject.getDerEncoding() +
@@ -90,16 +96,23 @@ export class AttestedObject {
         // }
     }
 */
-    private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponent {
+    private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponentInterface {
+        console.log('make proof');
+        console.log(attestationSecret);
+        console.log(objectSecret);
+
+
         // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
         // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
         let extensions = this.att.getUnsignedAttestation().getExtensions();//.getObjectAt(0));
+
         // Index in the second DER sequence is 2 since the third object in an extension is the actual value
         // let attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
         let attCom: Uint8Array = new Uint8Array(extensions.extension.extnValue);
         let objCom: Uint8Array = this.attestableObject.getCommitment();
-        let pok: ProofOfExponent = crypto.computeEqualityProof(uint8tohex(attCom), uint8tohex(objCom), attestationSecret, objectSecret);
-        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
+        let pok: ProofOfExponentInterface = crypto.computeEqualityProof(uint8tohex(attCom), uint8tohex(objCom), attestationSecret, objectSecret);
+
+        if (!crypto.verifyEqualityProof(uint8tohex(attCom), uint8tohex(objCom), pok)) {
             throw new Error("The redeem proof did not verify");
         }
         return pok;
@@ -115,5 +128,12 @@ export class AttestedObject {
 
     getDerEncodeProof(){
         return this.derEncodedProof;
+    }
+
+    public getDerEncodingWithSignature() { return this.encoding; }
+
+    // TODO type it
+    public getDerEncoding() {
+        return this.unsignedEncoding;
     }
 }

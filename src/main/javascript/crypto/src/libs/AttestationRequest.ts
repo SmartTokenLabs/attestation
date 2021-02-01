@@ -1,10 +1,13 @@
 import { Point } from "./Point";
 import { Asn1Der } from "./DerUtility";
-import {hexStringToArray} from "./utils";
-import {ProofOfExponent} from "./ProofOfExponent";
+import {hexStringToArray, uint8ToBn, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {ATTESTATION_TYPE} from "./interfaces";
+import {FullProofOfExponent} from "./FullProofOfExponent";
+import {SignatureUtility} from "./SignatureUtility";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {Identity} from "../asn1/shemas/AttestationRequest";
 
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
@@ -21,14 +24,14 @@ export class AttestationRequest {
     public signature: string;
     private identity: string;
     private type: number;
-    public pok: ProofOfExponent;
+    public pok: FullProofOfExponent;
     private keys: KeyPair;
     constructor() {}
     static fromEmail(identity: string){
         let crypto = new AttestationCrypto();
         let keys = KeyPair.createKeys();
         let secret: bigint = crypto.makeSecret();
-        let pok:ProofOfExponent = crypto.computeAttestationProof(secret);
+        let pok:FullProofOfExponent = crypto.computeAttestationProof(secret);
         let request = AttestationRequest.fromData(identity, ATTESTATION_TYPE["mail"], pok, keys);
         let output: attestationRequestData = {
             request: request.getDerEncoding(),
@@ -36,7 +39,7 @@ export class AttestationRequest {
         }
         return output;
     }
-    static fromData(identity: string, type: number, pok: ProofOfExponent, keys: KeyPair): AttestationRequest {
+    static fromData(identity: string, type: number, pok: FullProofOfExponent, keys: KeyPair): AttestationRequest {
         let me = new this();
         me.create(identity, type, pok, keys);
         if (!me.verify()) {
@@ -44,7 +47,7 @@ export class AttestationRequest {
         }
         return me;
     }
-    create(identity: string, type: number, pok: ProofOfExponent, keys: KeyPair){
+    create(identity: string, type: number, pok: FullProofOfExponent, keys: KeyPair){
         this.identity = identity;
         this.type = type;
         this.pok = pok;
@@ -80,41 +83,29 @@ export class AttestationRequest {
     static fromBytes(asn1: Uint8Array): AttestationRequest {
         let me = new this();
 
-        let mainSequence = ASN1.decode(asn1);
-        if (mainSequence.typeName() != "SEQUENCE" || mainSequence.sub.length != 3) {
-            throw new Error('Wrong attestation format');
-        }
+        let identity: Identity = AsnParser.parse( asn1, Identity);
 
-        let UnsignedEncodingSequence = mainSequence.sub[0];
-        if (UnsignedEncodingSequence.typeName() != "SEQUENCE" || UnsignedEncodingSequence.sub.length != 3) {
-            throw new Error('Wrong attestation format(UnsignedEncodingSequence)');
-        }
-        me.identity = UnsignedEncodingSequence.sub[0].content() as string;
-        me.type = UnsignedEncodingSequence.sub[1].content();
+        // let riddleEnc: Uint8Array = new Uint8Array(proof.riddle);
+        // me.riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
+        me.identity = identity.unsignedIdentity.identifier;
+        me.type = identity.unsignedIdentity.type;
 
-        let pokSequence = UnsignedEncodingSequence.sub[2];
-        if (pokSequence.typeName() != "SEQUENCE" || pokSequence.sub.length != 4) {
-            throw new Error('Wrong attestation format(pokSequence)');
-        }
-        let baseEnc = pokSequence.sub[0].content().replace(/\(.+\)\s+/,'');
-        let riddleEnc = pokSequence.sub[1].content().replace(/\(.+\)\s+/,'');
-        let challengeEnc = pokSequence.sub[2].content().replace(/\(.+\)\s+/,'');
-        let tPointEnc = pokSequence.sub[3].content().replace(/\(.+\)\s+/,'');
+        let riddleEnc = new Uint8Array(identity.unsignedIdentity.proof.riddle);
+        let challengeEnc = new Uint8Array(identity.unsignedIdentity.proof.challengePoint);
+        let tPointEnc = new Uint8Array(identity.unsignedIdentity.proof.responseValue);
 
-        me.pok = ProofOfExponent.fromArray(baseEnc,riddleEnc,challengeEnc,tPointEnc)
+        let riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
+        let challenge = uint8ToBn(challengeEnc);
+        let tPoint = Point.decodeFromHex(uint8tohex(tPointEnc) );
 
-        let pubKeySequence = mainSequence.sub[1];
-        if (pubKeySequence.typeName() != "SEQUENCE" || pubKeySequence.sub.length != 2) {
-            throw new Error('Wrong attestation format(pubKeySequence)');
-        }
+        me.pok = FullProofOfExponent.fromData(riddle, tPoint, challenge);
 
-        let publicKeyDerHex = pubKeySequence.sub[1].toHexString();
-        let publicKey = (new Asn1Der()).decode(Uint8Array.from(hexStringToArray(publicKeyDerHex)));
-        me.keys = KeyPair.fromPublicHex(publicKey.toString(16));
+        let publicKey = new Uint8Array(identity.publicKey.value.subjectPublicKey);
 
-        let signatureDerHex = mainSequence.sub[2].toHexString();
-        let signatureAsBigInt = (new Asn1Der()).decode(Uint8Array.from(hexStringToArray(signatureDerHex)));
-        me.signature = signatureAsBigInt.toString(16);
+        me.keys = KeyPair.fromPublicHex(uint8tohex(publicKey));
+
+        let signature = new Uint8Array(identity.signatureValue);
+        me.signature = uint8tohex(signature);
 
         if (!me.verify()) {
             throw new Error("The signature is not valid");
@@ -123,11 +114,11 @@ export class AttestationRequest {
         return me;
     }
     verify():boolean {
-        let ecKey = ec.keyFromPublic(this.keys.getPublicKeyAsHexStr(), 'hex');
-        let encodingHash = sha3.keccak256(hexStringToArray(this.getUnsignedEncoding()))
-        let signatureVerify = ecKey.verify(encodingHash, this.signature);
+        // let signatureVerify = ecKey.verify(encodingHash, this.signature);
+        // let ecKey = ec.keyFromPublic(this.keys.getPublicKeyAsHexStr(), 'hex');
 
-        if (!signatureVerify) {
+        let encodingHash = sha3.keccak256(hexStringToArray(this.getUnsignedEncoding()))
+        if (!SignatureUtility.verify(encodingHash, this.signature, this.keys)) {
             return false;
         }
         // console.log('signatureVerify OK');
@@ -144,16 +135,8 @@ export class AttestationRequest {
 
         return true;
     }
-    checkValidity(): boolean {
-        let crypto = new AttestationCrypto();
-        let rehashed:Point = crypto.hashIdentifier(this.type, this.identity);
-        if (!rehashed.equals(this.pok.getBase())) {
-            return false;
-        }
-        return true;
-    }
 
-    getPok(): ProofOfExponent{
+    getPok(): FullProofOfExponent{
         return this.pok;
     }
     getIdentity(): string{

@@ -113,7 +113,30 @@ export class Authenticator {
         }
         this.iframeWrap.remove();
         this.attestationBlob = event.data.attestation;
+        // this.attestationBlob = "MIICdjCCAh2gAwIBEgIIQebpgDCvmAAwCQYHKoZIzj0CATAWMRQwEgYDVQQDDAtB" +
+        //     "bHBoYVdhbGxldDAiGA8yMDIxMDIwMTAwNDcyMloYDzIwMjEwMjAxMDE0NzIyWjA1" +
+        //     "MTMwMQYDVQQDDCoweDMyRDlCOTM2MEIyRDczODAyNjM5Q0E4QTYyQkE2OTU0NDAz" +
+        //     "M0VFNEUwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD/////////" +
+        //     "///////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+        //     "AAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcE" +
+        //     "QQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4R" +
+        //     "CKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9Je" +
+        //     "jNA2QUECAQEDQgAE11WeT70GQ3pxayB3MM0J9Jtwa0Lb7lm8DPEtKlucnuI207a/" +
+        //     "wYq5lghXdlxjMbu+UkTGJoaEXJyT6woIzmGM6KNXMFUwUwYLKwYBBAGLOnN5ASgB" +
+        //     "Af8EQQQVzCsl2M8EzynLS2XwnKJtm1T5djndo4Zp4cOpXG2drBSeXnKejcy3FGSj" +
+        //     "QudLBNlmEpJ1taXIftk3vdSadzNnMAkGByqGSM49AgEDSAAwRQIhAPwCo6NyW0hB" +
+        //     "kJ6v2XSj7gHgE7qmTycCTkf0Cry26pzzAiAb0WU67Nadw9PnqXAmwpsKERcx+E5e" +
+        //     "v0VCDh4xheZDiQ==";
         this.attestationSecret = event.data.requestSecret;
+        // this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICBw8j/S6Cs6t/NakecTLVSmHlzvqDIr5vqJbbOpTdq5"));
+
+        // this.base64attestorPubKey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA////////////////" +
+        //     "/////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+        //     "AAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5m" +
+        //     "fvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0" +
+        //     "SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFB" +
+        //     "AgEBA0IABL9fgFkHbEdmPJYyYSfMWBdtZWyRMDJ7YfKyP1ZwEAOJ9MKWKPZ/hGGF" +
+        //     "bVpDpCkO8U+ymmF17ybMcyT4SJ8GTII=";
 
         console.log('attestation data received:');
         console.log(this.attestationBlob);

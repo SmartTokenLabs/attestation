@@ -64,7 +64,6 @@ export class Cheque {
         // this.riddle = crypto.makeRiddle(this.identifier, ATTESTATION_TYPE[this.type], this.secret);
         me.commitment = crypto.makeCommitment(me.identifier, ATTESTATION_TYPE[me.type], me.secret);
 
-        // me.publicKey = me.keys.getPublicKeyAsHexStr();
         let current =  new Date().getTime() ;
         me.notValidBefore = current - (current % 1000); // Round down to nearest second
         me.notValidAfter = me.notValidBefore + me.validity * 1000;
@@ -74,15 +73,7 @@ export class Cheque {
         let chequeHash = sha3.keccak256(hexStringToArray(cheque));
         var signature = ecKey.sign( chequeHash );
 
-        // console.log("signature.toDER() = " + bufToBn(signature.toDER()).toString(16) );
-        // let signatureSequence = Asn1Der.encode('SEQUENCE_30',
-        //     Asn1Der.encode('INTEGER',signature.r) +
-        //     Asn1Der.encode('INTEGER',signature.s)
-        // );
-
-        // let signatureHexDerDitString = Asn1Der.encode('BIT_STRING', bufToBn(signature.toDER()).toString(16));
         let signatureHexDerDitString = Asn1Der.encode('BIT_STRING', signature.toDER('hex'));
-        // console.log("signatureHexDerDitString = " + signatureHexDerDitString);
 
         me.encoded = me.encodeSignedCheque(
             cheque,
@@ -90,7 +81,6 @@ export class Cheque {
         );
 
         let verify = ecKey.verify(chequeHash, signature);
-        // console.log('verify = ' + verify);
 
         if (!verify) {
             throw new Error("Public and private keys are incorrect");
@@ -125,11 +115,6 @@ export class Cheque {
 
     verify(): boolean{
         let cheque = this.makeCheque();
-
-        // let ecKey = ec.keyFromPublic(this.keys.getPrivateAsHexString(), 'hex');
-        // let chequeHash = sha3.keccak256(hexStringToArray(cheque));
-        // return ecKey.verify(chequeHash, this.signature);
-
         return SignatureUtility.verify(cheque, uint8tohex(this.signature), this.keys);
     }
 
