@@ -197,7 +197,7 @@ contract DerDecode {
     }
 
     function ecMul(uint256 s, uint256 x, uint256 y) public view
-    returns (uint256[2] memory retP)
+        returns (uint256[2] memory retP)
     {
         bool success;
         // With a public key (x, y), this computes p = scalar * (x, y).
@@ -218,7 +218,7 @@ contract DerDecode {
     }
 
     function ecInv(uint256[2] memory point) private pure
-    returns (uint256[2] memory invPoint)
+        returns (uint256[2] memory invPoint)
     {
         invPoint[0] = point[0];
         int256 n = int256(fieldSize) - int256(point[1]);
@@ -228,7 +228,7 @@ contract DerDecode {
     }
 
     function ecAdd(uint256[2] memory p1, uint256[2] memory p2) public view
-    returns (uint256[2] memory retP)
+        returns (uint256[2] memory retP)
     {
         bool success;
         uint256[4] memory i = [p1[0], p1[1], p2[0], p2[1]];
@@ -472,10 +472,7 @@ contract DerDecode {
         bytes memory _bytes2,
         bytes memory _bytes3,
         bytes memory _bytes4
-    )
-    internal
-    pure
-    returns (bytes memory join)
+    ) internal pure returns (bytes memory join)
     {
         join = new bytes(pointLength*4); //in this case, we know how large the end result will be
 
@@ -559,10 +556,7 @@ contract DerDecode {
         bytes memory _bytes1,
         bytes memory _bytes2,
         bytes memory _bytes3
-    )
-    internal
-    pure
-    returns (bytes memory join)
+    ) internal pure returns (bytes memory join)
     {
         join = new bytes(pointLength*3); //in this case, we know how large the end result will be
 
