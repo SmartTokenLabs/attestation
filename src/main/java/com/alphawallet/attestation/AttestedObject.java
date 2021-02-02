@@ -11,7 +11,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
@@ -171,21 +170,13 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
-    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(attCom, attestableObject.getCommitment(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
+    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
-    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    ProofOfExponent pok = crypto.computeEqualityProof(attCom, attestableObject.getCommitment(), attestationSecret, objectSecret);
-    if (!crypto.verifyEqualityProof(attCom, attestableObject.getCommitment(), pok)) {
+    ProofOfExponent pok = crypto.computeEqualityProof(att.getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
+    if (!crypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok)) {
       throw new RuntimeException("The redeem proof did not verify");
     }
     return pok;

@@ -2,7 +2,6 @@ package com.alphawallet.attestation.demo;
 
 import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
 
-import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.ProofOfExponent;
 import java.io.IOException;
 import java.util.Arrays;
@@ -13,7 +12,10 @@ import okhttp3.OkHttpClient;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.*;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthCall;
@@ -26,12 +28,6 @@ public class SmartContract {
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
   {
     Function function = verifyEncoding(com1, com2, pok.getDerEncoding());
-    return callFunction(function);
-  }
-
-  public boolean usageProofOfExponent(FullProofOfExponent exp)
-  {
-    Function function = checkEncoding(exp.getDerEncoding());
     return callFunction(function);
   }
 
@@ -89,13 +85,6 @@ public class SmartContract {
       e.printStackTrace();
       return null;
     }
-  }
-
-  private static Function checkEncoding(byte[] encoding) {
-    return new Function(
-        "decodeAttestation",
-        Collections.singletonList(new DynamicBytes(encoding)),
-        Collections.singletonList(new TypeReference<Bool>() {}));
   }
 
   private static Function verifyEncoding(byte[] com1, byte[] com2, byte[] encoding) {
