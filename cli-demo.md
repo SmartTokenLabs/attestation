@@ -147,7 +147,7 @@ For example:
 To run the full protocol locally execute the following commands: 
 
 `java -jar attestation-all.jar keys Alice-pub.pem Alice-priv.pem`
-A
+
 `java -jar attestation-all.jar keys Bob-pub.pem Bob-priv.pem`
 
 `java -jar attestation-all.jar keys Attestor-pub.pem Attestor-priv.pem`
