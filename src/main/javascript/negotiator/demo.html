@@ -44,20 +44,21 @@
 
     let tokensURL = "https://devcontickets.herokuapp.com/outlet/";
     let filter = {'ticketClass': 1 };
-    let n = new Negotiator(filter, {
-        debug: 1,
-        tokensOrigin: tokensURL,
-        hideTokensIframe: false
-    });
+    // let filter = { };
+    let n = new Negotiator(filter
+        // "https://devcontickets.herokuapp.com/outlet/" hardcoded as default value, we can change it if needed
+        // , {tokensOrigin: tokensURL}
+        );
+    writeToLog('to start outlet on tokenOrigin site just include negotiator.js and add "<script>let negotiator = new Negotiator();<script>"');
     writeToLog('Open iframe with outlet for : '+ tokensURL);
     writeToLog('Ifame not hidden(will disappear when )');
     writeToLog('Debug disabled');
     // writeToLog('Filter = ' + JSON.stringify(filter));
-    n.negotiate(tokens => {
-        writeToLog('Recived tokens count: '+  tokens.length );
+    n.negotiate(tokensOutput => {
+        writeToLog('Recived tokens count: '+  tokensOutput.tokens.length );
         writeToLog('You can see tokens in console' );
-        console.log( tokens );
-        writeToLog( JSON.stringify(tokens,(key, value) =>
+        console.log( tokensOutput );
+        writeToLog( JSON.stringify(tokensOutput,(key, value) =>
             typeof value === 'bigint'
                 ? value.toString()
                 : value // return everything else unchanged

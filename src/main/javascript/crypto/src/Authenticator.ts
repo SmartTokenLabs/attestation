@@ -127,7 +127,27 @@ export class Authenticator {
         //     "QudLBNlmEpJ1taXIftk3vdSadzNnMAkGByqGSM49AgEDSAAwRQIhAPwCo6NyW0hB" +
         //     "kJ6v2XSj7gHgE7qmTycCTkf0Cry26pzzAiAb0WU67Nadw9PnqXAmwpsKERcx+E5e" +
         //     "v0VCDh4xheZDiQ==";
+
+        // java tests
+        this.attestationBlob = "MIICdTCCAh2gAwIBEgIIu4l57Za+3AkwCQYHKoZIzj0CATAWMRQwEgYDVQQDDAtB" +
+            "bHBoYVdhbGxldDAiGA8yMDIxMDIwMTE4NDU0MVoYDzIwMjEwMjAxMTk0NTQxWjA1" +
+            "MTMwMQYDVQQDDCoweEE1NDlBMDkyNDc0RUEyMUYyMEZGOUNEMDkzMEEyREZCQ0Iy" +
+            "MzVGOTMwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD/////////" +
+            "///////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcE" +
+            "QQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4R" +
+            "CKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9Je" +
+            "jNA2QUECAQEDQgAEwb6ZDhVgasYdboqTYYPKEFk1HVo7QF1BEp6dQDEFAFqeQSu3" +
+            "DYXl1ke4F77vQEfviNv+de3vUk8YeN54DNoxZ6NXMFUwUwYLKwYBBAGLOnN5ASgB" +
+            "Af8EQQQF4gbd6WxrbhAFuLn0BffcVCNwx8kgEjzFp44Hq9NZ6ABQkFcRCpqZ/ihj" +
+            "knJ00QRRK06CqrRSJGJC0gLdCYPoMAkGByqGSM49AgEDRwAwRAIgYl8qEjoqOmqj" +
+            "mvo2fSa2Ii3f1TsPmM7HnK3nWKDV+Q4CIHRcUrcVx7tVnw7LnL+skddSfqa1OEcS" +
+            "CXAxUEoUhKBa";
         this.attestationSecret = event.data.requestSecret;
+        // this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICBw8j/S6Cs6t/NakecTLVSmHlzvqDIr5vqJbbOpTdq5"));
+
+        // java test
+        this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICGKh6fA6abFqcBmtnpMZR5mjg/aeS+VfyElbhIfLZGC"));
         // this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICBw8j/S6Cs6t/NakecTLVSmHlzvqDIr5vqJbbOpTdq5"));
 
         // this.base64attestorPubKey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA////////////////" +
@@ -137,6 +157,15 @@ export class Authenticator {
         //     "SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFB" +
         //     "AgEBA0IABL9fgFkHbEdmPJYyYSfMWBdtZWyRMDJ7YfKyP1ZwEAOJ9MKWKPZ/hGGF" +
         //     "bVpDpCkO8U+ymmF17ybMcyT4SJ8GTII=";
+
+        // java test
+        this.base64attestorPubKey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA////////////////" +
+            "/////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5m" +
+            "fvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0" +
+            "SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFB" +
+            "AgEBA0IABLsPpWixMZ5gU2CQRzWZKbx4/PWFPPee/TKlVE0kYbC7h9EfwYAXhlOV" +
+            "c05P411mQp/opMel5fZQaT+UhriGevs=";
 
         console.log('attestation data received:');
         console.log(this.attestationBlob);

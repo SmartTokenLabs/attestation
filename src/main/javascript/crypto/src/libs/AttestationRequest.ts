@@ -114,8 +114,6 @@ export class AttestationRequest {
         return me;
     }
     verify():boolean {
-        // let signatureVerify = ecKey.verify(encodingHash, this.signature);
-        // let ecKey = ec.keyFromPublic(this.keys.getPublicKeyAsHexStr(), 'hex');
 
         let encodingHash = sha3.keccak256(hexStringToArray(this.getUnsignedEncoding()))
         if (!SignatureUtility.verify(encodingHash, this.signature, this.keys)) {
@@ -124,9 +122,7 @@ export class AttestationRequest {
         // console.log('signatureVerify OK');
 
         let AttestationCryptoInstance = new AttestationCrypto();
-        // if (!AttestationCryptoInstance.verifyProof(this.pok)) {
-        //     return false;
-        // }
+
         if (!AttestationCryptoInstance.verifyAttestationRequestProof(this.pok)) {
             return false;
         }
