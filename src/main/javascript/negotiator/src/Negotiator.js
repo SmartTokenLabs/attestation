@@ -100,19 +100,22 @@ export class Negotiator {
     /*
      * Return token objects satisfying the current negotiator's requirements
      */
-    filterTokens(decodedTokens) {
+    filterTokens(decodedTokens, filter = {}) {
+        if (Object.keys(filter).length == 0) {
+            filter = this.filter;
+        }
         let res = [];
         if (
             decodedTokens.length
-            && typeof this.filter === "object"
-            && Object.keys(this.filter).length
+            && typeof filter === "object"
+            && Object.keys(filter).length
         ) {
-            let filterKeys = Object.keys(this.filter);
+            let filterKeys = Object.keys(filter);
             decodedTokens.forEach(token => {
                 let fitFilter = 1;
                 this.debug && console.log('test token:',token);
                 filterKeys.forEach(key => {
-                    if (token[key].toString() != this.filter[key].toString()) fitFilter = 0;
+                    if (token[key].toString() != filter[key].toString()) fitFilter = 0;
                 })
                 if (fitFilter) {
                     res.push(token);
@@ -135,8 +138,19 @@ export class Negotiator {
                 // Build new list of tickets from current and query ticket { ticket, secret }
                 tokens = JSON.parse(storageTickets);
                 if (tokens.length !== 0) {
+
+                    // output.tokens = tokens;
+                    tokens.forEach(item => {
+                        if (item.token && item.secret) {
+                            output.tokens.push({
+                                token: item.token,
+                                secret: item.secret
+                            })
+                        }
+                    })
+                }
+                if (output.tokens.length) {
                     output.noTokens = false;
-                    output.tokens = tokens;
                 }
             }
         } catch (e) {
@@ -148,6 +162,45 @@ export class Negotiator {
         return output;
     }
 
+    getRawToken(unsignedToken){
+        let tokensOutput = this.readTokens();
+        if (tokensOutput.success && !tokensOutput.noTokens) {
+            let decodedTokens = this.decodeTokens(tokensOutput.tokens);
+            return this.filterTokens(decodedTokens, unsignedToken);
+        }
+    }
+
+    signToken(unsignedToken){
+        // open iframe and request tokens
+        let tokensOriginURL = new URL(this.tokensOrigin);
+        this.attachPostMessageListener(event => {
+
+            if (event.origin !== tokensOriginURL.origin) {
+                return;
+            }
+
+            if (typeof event.data.tokensOutput === "undefined") {
+                return;
+            }
+            let tokensOutput = event.data.tokensOutput;
+            this.tokensIframe.remove();
+
+            if (tokensOutput.success && !tokensOutput.noTokens) {
+                let filteredTokens = this.filterTokens(tokensOutput.tokens);
+                tokensOutput.tokens = filteredTokens;
+            }
+            this.negotiateCallback(tokensOutput);
+
+        });
+
+        const iframe = document.createElement('iframe');
+        this.tokenSignIframe = iframe;
+        if (this.hideTokensIframe) {
+            iframe.style.display = 'none';
+        }
+        iframe.src = this.tokensOrigin;
+        document.body.appendChild(iframe);
+    }
 
     negotiate(callBack) {
         // callback function required
