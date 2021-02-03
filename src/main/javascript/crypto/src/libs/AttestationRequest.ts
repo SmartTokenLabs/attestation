@@ -85,8 +85,6 @@ export class AttestationRequest {
 
         let identity: Identity = AsnParser.parse( asn1, Identity);
 
-        // let riddleEnc: Uint8Array = new Uint8Array(proof.riddle);
-        // me.riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
         me.identity = identity.unsignedIdentity.identifier;
         me.type = identity.unsignedIdentity.type;
 

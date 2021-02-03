@@ -97,11 +97,6 @@ export class AttestedObject {
     }
 */
     private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponentInterface {
-        console.log('make proof');
-        console.log(attestationSecret);
-        console.log(objectSecret);
-
-
         // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
         // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
         let extensions = this.att.getUnsignedAttestation().getExtensions();//.getObjectAt(0));

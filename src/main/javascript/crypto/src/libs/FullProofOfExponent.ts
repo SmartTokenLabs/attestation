@@ -1,4 +1,3 @@
-// public class FullProofOfExponent implements ProofOfExponent {
 import {Point} from "./Point";
 import {Proof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";

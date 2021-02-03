@@ -2,7 +2,6 @@ import {hexStringToArray} from "./utils";
 import {KeyPair} from "./KeyPair";
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
-// const ASN1 = require('@lapo/asn1js');
 
 let sha3 = require("js-sha3");
 

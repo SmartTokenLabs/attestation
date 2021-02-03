@@ -4,7 +4,7 @@ import {
     mod,
     uint8merge,
     stringToArray,
-    BnPowMod, hexStringToArray, uint8tohex, bnToBuf, bnToUint8, uint8ToBn
+    BnPowMod, hexStringToArray, bnToUint8, uint8ToBn
 } from "./utils";
 import {KeyPair} from "./KeyPair";
 import {FullProofOfExponent} from "./FullProofOfExponent";

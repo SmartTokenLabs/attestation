@@ -35,7 +35,7 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
     }
 
     makeEncoding(tPoint: Point, challenge: bigint) {
-        let res: string = Asn1Der.encode('OCTET_STRING', bnToUint8(this.challenge)) +
+        let res: string = Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(this.challenge))) +
             Asn1Der.encode('OCTET_STRING', uint8tohex(this.tPoint.getEncoded(false)));
         return Asn1Der.encode('SEQUENCE_30', res);
     }

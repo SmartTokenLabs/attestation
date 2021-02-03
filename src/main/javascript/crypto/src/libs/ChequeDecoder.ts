@@ -1,5 +1,4 @@
 import {base64ToUint8array, uint8tohex} from "./utils";
-import {MyAttestation} from "../asn1/shemas/AttestationFramework";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedCheque} from "../asn1/shemas/SignedCheque";
 import {KeyPair} from "./KeyPair";

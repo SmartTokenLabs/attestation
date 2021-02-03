@@ -1,7 +1,7 @@
-import {ATTESTATION_TYPE, keyPair} from "./interfaces";
+import {ATTESTATION_TYPE} from "./interfaces";
 import {Asn1Der} from "./DerUtility";
 import { AttestationCrypto } from "./AttestationCrypto";
-import {bufToBn, hexStringToArray, uint8tohex} from "./utils";
+import {hexStringToArray, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
 
@@ -61,7 +61,6 @@ export class Cheque {
         me.secret = secret;
 
         let crypto = new AttestationCrypto();
-        // this.riddle = crypto.makeRiddle(this.identifier, ATTESTATION_TYPE[this.type], this.secret);
         me.commitment = crypto.makeCommitment(me.identifier, ATTESTATION_TYPE[me.type], me.secret);
 
         let current =  new Date().getTime() ;
@@ -85,7 +84,6 @@ export class Cheque {
         if (!verify) {
             throw new Error("Public and private keys are incorrect");
         }
-        // console.log(Asn1Der.encode('OCTET_STRING', this.secret.toString(16)));
         return {
             cheque,
             chequeEncoded: me.encoded,
@@ -99,12 +97,10 @@ export class Cheque {
         return Asn1Der.encode('SEQUENCE_30', fullSequence);
     }
 
-    // makeCheque(notValidBefore: number, notValidAfter: number){
     makeCheque(){
         let timeList =
             Asn1Der.encode('GENERALIZED_TIME', formatGeneralizedDateTime(this.notValidBefore)) +
             Asn1Der.encode('GENERALIZED_TIME', formatGeneralizedDateTime(this.notValidAfter));
-        // console.log('timeList = ' + timeList);
         let fullSequence =
             Asn1Der.encode('INTEGER', this.amount) +
             Asn1Der.encode('SEQUENCE_30', timeList) +

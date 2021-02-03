@@ -68,23 +68,6 @@ export class main {
 
         return redeem.getDerEncodeProof();
 
-        // let proof = redeem.getDerEncodeProof();
-        //
-        // let vec =
-        //     uint8tohex(base64ToUint8array(base64cheque)) +
-        //     uint8tohex(base64ToUint8array(base64attestation))+
-        //     proof;
-        // return Asn1Der.encode('SEQUENCE_30', vec);
-
-        // if (!redeem.checkValidity()) {
-        //     console.log("Could not validate redeem request");
-        //     throw new Error("Validation failed");
-        // }
-        // if (!redeem.verify()) {
-        //     console.log("Could not verify redeem request");
-        //     throw new Error("Verification failed");
-        // }
-
  }
 
 }

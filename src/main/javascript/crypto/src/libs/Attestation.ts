@@ -1,9 +1,6 @@
-import {base64ToUint8array, uint8tohex} from "./utils";
+import {uint8tohex} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {MyAttestation, SignedInfo, SubjectPublicKeyInfo} from "../asn1/shemas/AttestationFramework";
-import {KeyPair} from "./KeyPair";
-import {SignatureUtility} from "./SignatureUtility";
-import {getUTCDate} from "pvutils";
+import {SignedInfo, SubjectPublicKeyInfo} from "../asn1/shemas/AttestationFramework";
 import {Name} from "../asn1/shemas/InformationFramework";
 import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
 
