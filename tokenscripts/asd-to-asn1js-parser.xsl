@@ -76,6 +76,19 @@ export class <xsl:value-of select="@name"/> {
 	<!-- generate function schema -->
 	<xsl:call-template name="schema"/>
 	
+	<!-- generate function fromSchema -->
+	<xsl:call-template name="fromSchema"/>
+	
+	<!-- generate function toSchema -->
+	<xsl:call-template name="toSchema"/>
+	
+	<!-- generate function toJSON -->
+	<xsl:call-template name="toJSON"/>
+	
+	<!-- generate function serialize -->
+	<xsl:call-template name="serialize"/>
+	
+	
   }		
 }
 	</xsl:template>
@@ -138,6 +151,133 @@ export class <xsl:value-of select="@name"/> {
     }
 	</xsl:template>
 	
+	<xsl:template name="fromSchema">
+	fromSchema(schema) {
+    //region Clear input data first
+    clearProps(schema, [
+	<xsl:for-each select="type/sequence//element">
+	  "<xsl:value-of select="@name"/>",
+	</xsl:for-each>
+    ]);
+    //endregion
+
+    //region Check the schema is valid
+    const asn1 = compareSchema(schema, schema, <xsl:value-of select="@name"/>.schema());
+
+    if (asn1.verified === false)
+		throw new Error("Object's schema was not verified against input data for <xsl:value-of select="@name"/>");
+
+    //endregion
+
+    //region Get internal properties from parsed schema
+    // noinspection JSUnresolvedVariable
+	<xsl:for-each select="type/sequence/*">
+	  <xsl:choose>
+		<xsl:when test="starts-with(@type, 'asnx:') or parent::optional">
+			<xsl:if test="@type = ('asnx:OCTET-STRING', 'asnx:BIT-STRING')">
+				const <xsl:value-of select="@name"/> = asn1.result.<xsl:value-of select="@name"/>;
+				this.<xsl:value-of select="@name"/> = <xsl:value-of select="@name"/>.valueBlock.valueHex;
+			</xsl:if>	
+		</xsl:when>
+		<xsl:when test="self::optional">
+			<xsl:for-each select="element">
+			if(asn1.result.<xsl:value-of select="@name"/>)
+				this.<xsl:value-of select="@name"/> = new <xsl:value-of select="@type"/>({
+				  schema: asn1.result.<xsl:value-of select="@name"/>,
+				});
+			</xsl:for-each>
+		</xsl:when>
+		<xsl:otherwise>
+			this.<xsl:value-of select="@name"/> = new <xsl:value-of select="@type"/>(asn1.result.<xsl:value-of select="@name"/>.valueBeforeDecode);
+		</xsl:otherwise>
+	  </xsl:choose>
+	</xsl:for-each>
+    }
+	</xsl:template>
+	<xsl:template name="toSchema">
+	toSchema() {
+    //region Create array for output sequence
+    const outputArray = [];
+	
+	<xsl:for-each select="type/sequence/*">
+	  <xsl:choose>
+		<xsl:when test="starts-with(@type, 'asnx:')">
+			<xsl:if test="@type = ('asnx:OCTET-STRING', 'asnx:BIT-STRING')">
+				outputArray.push(new <xsl:value-of select="f:asd2asn1js-data-type(substring-after(@type, 'asnx:'))"/>({ valueHex: this.<xsl:value-of select="@name"/> }));
+			</xsl:if>	
+		</xsl:when>
+		<xsl:when test="self::optional">
+			<xsl:for-each select="element">
+			if (this.<xsl:value-of select="@name"/>)
+				outputArray.push(new <xsl:value-of select="@type"/>(this.<xsl:value-of select="@name"/>).toSchema());
+			</xsl:for-each>
+		</xsl:when>
+		<xsl:otherwise>
+			outputArray.push(this.<xsl:value-of select="@name"/>.toSchema());
+		</xsl:otherwise>
+	  </xsl:choose>
+	</xsl:for-each>
+    //region Construct and return new ASN.1 schema for this object
+    return (new Sequence({
+      name:"<xsl:value-of select="@name"/>",
+      value: outputArray,
+    }));
+    //endregion
+  }
+	</xsl:template>
+	<xsl:template name="toJSON">
+	toJSON() {
+    const object = {
+	
+	<xsl:for-each select="type/sequence/element">
+	  <xsl:choose>
+		<xsl:when test="starts-with(@type, 'asnx:')">
+			<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>,	
+		</xsl:when>
+		<xsl:when test="self::optional">
+			<xsl:for-each select="element">
+			if (this.<xsl:value-of select="@name"/>)
+				outputArray.push(new <xsl:value-of select="@type"/>(this.<xsl:value-of select="@name"/>).toSchema());
+			</xsl:for-each>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>.toJSON(),
+		</xsl:otherwise>
+	  </xsl:choose>
+	</xsl:for-each>
+    };
+	<xsl:for-each select="type/sequence/optional/element">
+	  <xsl:choose>
+		<xsl:when test="starts-with(@type, 'asnx:')">
+			if(this.<xsl:value-of select="@name"/>)
+			<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>,	
+		</xsl:when>
+		<xsl:when test="self::optional">
+		if(this.<xsl:value-of select="@name"/>)
+			object["<xsl:value-of select="@name"/>"] =  this.<xsl:value-of select="@name"/>.toJSON();
+		</xsl:when>
+		<xsl:otherwise>
+			if(this.<xsl:value-of select="@name"/>)
+			<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>.toJSON(),
+		</xsl:otherwise>
+	  </xsl:choose>
+	</xsl:for-each>
+    return object;
+  }
+	</xsl:template>
+	
+	<xsl:template name="serialize">
+	serialize() {
+		let sequence = this.toSchema();
+
+		const result = compareSchema(sequence, sequence, <xsl:value-of select="@name"/>.schema());
+		console.log(result.verified);
+
+		const <xsl:value-of select="@name"/>BER = sequence.toBER(false);
+		return new Uint8Array(<xsl:value-of select="@name"/>BER)
+
+	}
+	</xsl:template>
 	
 	<xsl:function name="f:asd2asn1js-data-type">
 		<xsl:param name="input"/>
