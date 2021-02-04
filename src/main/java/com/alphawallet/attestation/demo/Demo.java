@@ -1,28 +1,17 @@
 package com.alphawallet.attestation.demo;
 
-import com.alphawallet.attestation.*;
+import com.alphawallet.attestation.Attestation;
+import com.alphawallet.attestation.AttestationRequest;
+import com.alphawallet.attestation.AttestedObject;
+import com.alphawallet.attestation.FullProofOfExponent;
+import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
-import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.FullProofOfExponent;
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.SignedAttestation;
-import java.io.File;
-import java.io.FileWriter;
-import org.apache.commons.cli.*;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -149,7 +138,7 @@ public class Demo {
           throw new IllegalArgumentException("Unknown role");
       }
     }
-    catch( Exception e) {
+    catch(Exception e) {
       System.err.println("FAILURE!");
       throw new RuntimeException(e);
     }
@@ -180,7 +169,7 @@ public class Demo {
 
   private static void receiveCheque(Path pathUserKey, Path chequeSecretDir,
                                     Path pathAttestationSecret, Path pathCheque, Path pathAttestation, Path pathAttestationKey)
-  throws IOException {
+  throws Exception {
     AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     byte[] chequeSecretBytes = DERUtility.restoreBytes(Files.readAllLines(chequeSecretDir));
     BigInteger chequeSecret = DERUtility.decodeSecret(chequeSecretBytes);
@@ -221,8 +210,7 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
-    FullProofOfExponent newPok = new FullProofOfExponent(redeem.getDerEncoding());
-    if (!sc.usageProofOfExponent(newPok)) {
+    if (!sc.verifyEqualityProof(redeem.getAtt().getCommitment(), redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");
     }

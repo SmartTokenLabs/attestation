@@ -44,22 +44,22 @@ contract DerDecode {
     event RtnStr(bytes val);
     event RtnS(string val);
 
-    uint256[2] private G = [ 15729599519504045482191519010597390184315499143087863467258091083496429125073,
-    1368880882406055711853124887741765079727455879193744504977106900552137574951 ];
+    uint256[2] private G = [ 21282764439311451829394129092047993080259557426320933158672611067687630484067,
+    3813889942691430704369624600187664845713336792511424430006907067499686345744 ];
 
-    uint256[2] private H = [ 10071451177251346351593122552258400731070307792115572537969044314339076126231,
-    2894161621123416739138844080004799398680035544501805450971689609134516348045 ];
+    uint256[2] private H = [ 10844896013696871595893151490650636250667003995871483372134187278207473369077,
+    9393217696329481319187854592386054938412168121447413803797200472841959383227 ];
 
     uint256 constant curveOrderBitLength = 254;
     uint256 constant curveOrderBitShift = 256 - curveOrderBitLength;
     uint256 constant pointLength = 65;
 
     // We create byte arrays for these at construction time to save gas when we need to use them
-    bytes constant GPoint = abi.encodePacked(uint8(0x04), uint256(15729599519504045482191519010597390184315499143087863467258091083496429125073),
-        uint256(1368880882406055711853124887741765079727455879193744504977106900552137574951));
+    bytes constant GPoint = abi.encodePacked(uint8(0x04), uint256(21282764439311451829394129092047993080259557426320933158672611067687630484067),
+        uint256(3813889942691430704369624600187664845713336792511424430006907067499686345744));
 
-    bytes constant HPoint = abi.encodePacked(uint8(0x04), uint256(10071451177251346351593122552258400731070307792115572537969044314339076126231),
-        uint256(2894161621123416739138844080004799398680035544501805450971689609134516348045));
+    bytes constant HPoint = abi.encodePacked(uint8(0x04), uint256(10844896013696871595893151490650636250667003995871483372134187278207473369077),
+        uint256(9393217696329481319187854592386054938412168121447413803797200472841959383227));
 
     uint256 callCount;
 
@@ -132,7 +132,7 @@ contract DerDecode {
         uint256[2] memory riddle = ecAdd(lhs, rhs);
 
         bytes memory cArray = concat4Fixed(HPoint, com1, com2, pok.tPoint);
-        uint256 c = mapTo256BitInteger(cArray);
+        uint256 c = mapToCurveMultiplier(cArray);
 
         lhs = ecMul(pok.challenge, H[0], H[1]);
         if (lhs[0] == 0 && lhs[1] == 0) { return false; } //early revert to avoid spending more gas
@@ -182,7 +182,7 @@ contract DerDecode {
 
         //The hand optimised concat4 is more optimal than using abi.encodePacked (checked the gas costs of both)
         bytes memory cArray = concat3Fixed(HPoint, pok.riddle, pok.tPoint);
-        uint256 c = mapTo256BitInteger(cArray);
+        uint256 c = mapToCurveMultiplier(cArray);
 
         //ECPoint riddle muliply by component hash
         uint256[2] memory rhs = ecMul(c, check[0], check[1]);
@@ -197,7 +197,7 @@ contract DerDecode {
     }
 
     function ecMul(uint256 s, uint256 x, uint256 y) public view
-    returns (uint256[2] memory retP)
+        returns (uint256[2] memory retP)
     {
         bool success;
         // With a public key (x, y), this computes p = scalar * (x, y).
@@ -218,7 +218,7 @@ contract DerDecode {
     }
 
     function ecInv(uint256[2] memory point) private pure
-    returns (uint256[2] memory invPoint)
+        returns (uint256[2] memory invPoint)
     {
         invPoint[0] = point[0];
         int256 n = int256(fieldSize) - int256(point[1]);
@@ -228,7 +228,7 @@ contract DerDecode {
     }
 
     function ecAdd(uint256[2] memory p1, uint256[2] memory p2) public view
-    returns (uint256[2] memory retP)
+        returns (uint256[2] memory retP)
     {
         bool success;
         uint256[4] memory i = [p1[0], p1[1], p2[0], p2[1]];

@@ -24,9 +24,6 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -101,9 +98,7 @@ public class TestRedeemCheque {
         issuerKeys.getPublic(), subjectKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
-    ASN1Sequence extensions = DERSequence.getInstance(newRedeem.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    assertTrue(AttestationCrypto.verifyEqualityProof(attCom, newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
+    assertTrue(AttestationCrypto.verifyEqualityProof(newRedeem.getAtt().getCommitment(), newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
 
     assertArrayEquals(
         attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());

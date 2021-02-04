@@ -113,19 +113,23 @@ public class SmartContractTest {
             assertFalse(negativeCheck);
         }
 
-        // FullProofOfExponent attestation request proof
+        // ProofOfExponent request proof
         for (int i = 0; i < 10; i++) {
-            FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN.add(BigInteger.valueOf(i)));
-            assertTrue(crypto.verifyAttestationRequestProof(pok));
-            assertTrue(sc.usageProofOfExponent(pok));
+            byte[] com1 = crypto.makeCommitment(generateID(), AttestationType.EMAIL, BigInteger.valueOf(500+i));
+            byte[] com2 = crypto.makeCommitment(generateID(), AttestationType.EMAIL, BigInteger.valueOf(1000*i));
+            UsageProofOfExponent pok = crypto.computeEqualityProof(com1, com2, BigInteger.valueOf(500+i), BigInteger.valueOf(1000*i));
+            assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
+            assertTrue(sc.verifyEqualityProof(com1, com2, pok));
         }
 
-        // FullProofOfExponent negative test
+        // ProofOfExponent negative test
         for (int i = 0; i < 5; i++) {
-            FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN.add(BigInteger.valueOf(i)));
-            assertTrue(crypto.verifyAttestationRequestProof(pok));
-            FullProofOfExponent newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-            boolean negativeCheck = sc.usageProofOfExponent(newPok);
+            byte[] com1 = crypto.makeCommitment(generateID(), AttestationType.EMAIL, BigInteger.valueOf(500+i));
+            byte[] com2 = crypto.makeCommitment(generateID(), AttestationType.EMAIL, BigInteger.valueOf(1000*i));
+            UsageProofOfExponent pok = crypto.computeEqualityProof(com1, com2, BigInteger.valueOf(500+i), BigInteger.valueOf(1000*i));
+            assertTrue(crypto.verifyEqualityProof(com1, com2, pok));
+            UsageProofOfExponent newPok = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+            boolean negativeCheck = sc.verifyEqualityProof(com1, com2, newPok);
             System.out.println("-> " + (negativeCheck ? "Contract call should fail! Check Failed" : "Negative check Passed"));
             assertFalse(negativeCheck);
         }
