@@ -31,9 +31,11 @@
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 		</xsl:text>
 		<!-- FIXME: handle other imports -->
+		
+		<xsl:apply-templates select="namedType[@name = current()//*/@type]"/>
 		<xsl:apply-templates select="namedType[not(@name = current()//*/@type)]"/>
-
 	</xsl:template>
+	
 	<xsl:template match="namedType[not(@name = /asnx:module//*/@type)]">
 export class <xsl:value-of select="@name"/> {
 	constructor(source = {}) {
@@ -73,7 +75,7 @@ export class <xsl:value-of select="@name"/> {
       }
     }
 	
-	<!-- generate function schema -->
+	<!-- generate function schema --> 
 	<xsl:call-template name="schema"/>
 	
 	<!-- generate function fromSchema -->
@@ -88,6 +90,46 @@ export class <xsl:value-of select="@name"/> {
 	<!-- generate function serialize -->
 	<xsl:call-template name="serialize"/>
 	
+	
+  }		
+}
+	</xsl:template>
+	
+	<xsl:template match="namedType[@name = /asnx:module//*/@type]">
+export class <xsl:value-of select="@name"/> {
+	constructor(source = {}) {
+    if (typeof (source) == "string") {
+      throw new TypeError("Unimplemented: Not accepting string yet.")
+    }
+    if (source instanceof ArrayBuffer) {
+      const asn1 = fromBER(source);
+      this.fromSchema(asn1.result);
+    } else {
+	<xsl:for-each select="type/sequence/*">
+		<xsl:call-template name="default-constructor-set-obj"/>	
+	</xsl:for-each>	
+    static defaultValues(memberName) {
+      switch (memberName) {
+		<xsl:for-each select="type/sequence/optional">
+		case "<xsl:value-of select="element/@name"/>":
+			return new <xsl:value-of select="element/@name"/>();
+		</xsl:for-each>	  
+        default:
+          throw new Error(`Invalid member name for <xsl:value-of select="@name"/> class: ${memberName}`);
+      }
+    }
+	
+	<!-- generate function schema --> 
+	<xsl:call-template name="schema"/>
+	
+	<!-- generate function fromSchema -->
+	<xsl:call-template name="fromSchema"/>
+	
+	<!-- generate function toSchema -->
+	<xsl:call-template name="toSchema"/>
+	
+	<!-- generate function toJSON -->
+	<xsl:call-template name="toJSON"/>
 	
   }		
 }
