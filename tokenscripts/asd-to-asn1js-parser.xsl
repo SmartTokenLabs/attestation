@@ -165,13 +165,13 @@ export class <xsl:value-of select="@name"/> {
     const names = getParametersValue(parameters, "names", {});
 
     return new Sequence({
-      name: names.blockName || "<xsl:value-of select="@name"/>",
+      name: names.blockName || "<xsl:value-of select="(/*//element[@type = current()/@name]/@name, @name)"/>",
       value: [
 		<xsl:for-each select="type/sequence//element">
 		<xsl:choose>
 			<xsl:when test="starts-with(@type, 'asnx:')">
 			new <xsl:value-of select="f:asd2asn1js-data-type(substring-after(@type, 'asnx:'))"/>({
-				name: "<xsl:value-of select="@name"/>",
+				name: names.<xsl:value-of select="@name"/> || "<xsl:value-of select="@name"/>",
 			})
 			</xsl:when>
 			<xsl:when test="parent::optional">
@@ -213,8 +213,15 @@ export class <xsl:value-of select="@name"/> {
 
     //region Get internal properties from parsed schema
     // noinspection JSUnresolvedVariable
+	<xsl:message>1-<xsl:sequence select="."/></xsl:message>
 	<xsl:for-each select="type/sequence/*">
 	  <xsl:choose>
+		<xsl:when test="@type = ('asnx:INTEGER')">
+		if ("<xsl:value-of select="@name"/>" in asn1.result) {
+		  const <xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex;
+		  this.<xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex;
+		}
+		</xsl:when>
 		<xsl:when test="starts-with(@type, 'asnx:') or parent::optional">
 			<xsl:if test="@type = ('asnx:OCTET-STRING', 'asnx:BIT-STRING')">
 				const <xsl:value-of select="@name"/> = asn1.result.<xsl:value-of select="@name"/>;
