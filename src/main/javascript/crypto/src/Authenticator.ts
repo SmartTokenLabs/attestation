@@ -1,8 +1,17 @@
-import {main} from "./index";
+import {SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
+import {Ticket} from "./Ticket";
+import {TicketDecoder} from "./TicketDecoder";
+import {KeyPair} from "./libs/KeyPair";
+import {base64ToUint8array, uint8ToBn, uint8tohex} from "./libs/utils";
+import {SubjectPublicKeyInfo} from "./asn1/shemas/AttestationFramework";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {SignedAttestation} from "./libs/SignedAttestation";
+import {AttestedObject} from "./libs/AttestedObject";
 
 declare global {
     interface Window {
         attachEvent: any;
+        detachEvent: any;
     }
 }
 
@@ -24,12 +33,31 @@ export class Authenticator {
 
     private iframe: any;
     private iframeWrap: any;
+    private base64senderPublicKey: string;
+    private base64attestorPubKey: string;
 
-    private base64attestorPubKey: string =
-        // stage.attestation.id public key
-        "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABL+y43T1OJFScEep69/yTqpqnV/jzONz9Sp4TEHyAJ7IPN9+GHweCX1hT4OFxt152sBN3jJc1s0Ymzd8pNGZNoQ=";
+    constructor(private negotiator: any = false) {
+        let XMLconfig = {
+            attestationOrigin: "http://stage.attestation.id",
+            tokensOrigin: "https://devcontickets.herokuapp.com/outlet/",
+            tokenUrlName: 'ticket',
+            tokenSecretName: 'secret',
+            unsignedTokenDataName: 'ticket',
+            // tokenParserUrl: '',
+            tokenParser: SignedDevconTicket,
+            localStorageItemName: 'dcTokens',
+            base64senderPublicKey: '04950C7C0BED23C3CAC5CC31BBB9AAD9BB5532387882670AC2B1CDF0799AB0EBC764C267F704E8FDDA0796AB8397A4D2101024D24C4EFFF695B3A417F2ED0E48CD',
 
-    private base64senderPublicKey = '04950C7C0BED23C3CAC5CC31BBB9AAD9BB5532387882670AC2B1CDF0799AB0EBC764C267F704E8FDDA0796AB8397A4D2101024D24C4EFFF695B3A417F2ED0E48CD'
+            base64attestorPubKey:
+                // stage.attestation.id public key
+                "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABL+y43T1OJFScEep69/yTqpqnV/jzONz9Sp4TEHyAJ7IPN9+GHweCX1hT4OFxt152sBN3jJc1s0Ymzd8pNGZNoQ="
+        };
+
+        // this.negotiator = negotiator;
+
+        this.base64senderPublicKey = XMLconfig.base64senderPublicKey;
+        this.base64attestorPubKey = XMLconfig.base64attestorPubKey;
+    }
 
     getAuthenticationBlob(tokenObj: devconToken, authResultCallback: Function) {
         // TODO - what is tokenType, where can we see structure etc.
@@ -44,6 +72,7 @@ export class Authenticator {
         this.signedTokenSecret = tokenObj.ticketSecret;
         this.attestationOrigin = tokenObj.attestationOrigin;
         this.authResultCallback = authResultCallback;
+        // TODO temporary disable, while stage.attestaion.id broken
         this.getIdentifierAttestation();
 
     }
@@ -52,6 +81,7 @@ export class Authenticator {
      *  - Since this token depends on identifier attestation, continue to open iframe to attestation.id who needs to provide the proof
      */
     getIdentifierAttestation() {
+        console.log('getIdentifierAttestation. create iframe.')
         // attach postMessage listener and wait for attestation data
         this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
         const iframe = document.createElement('iframe');
@@ -61,9 +91,6 @@ export class Authenticator {
         iframe.style.height = '700px';
         iframe.style.maxWidth = '100%';
         iframe.style.background = '#fff';
-        // iframe.onload = ()=>{
-        //     iframe.contentWindow.postMessage({force: false}, this.attestationOrigin);
-        // };
         let iframeWrap = document.createElement('div');
         this.iframeWrap = iframeWrap;
         iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #fffa');
@@ -71,6 +98,58 @@ export class Authenticator {
 
         document.body.appendChild(iframeWrap);
     }
+
+    getUseTicket(
+        // userKey: KeyPair,
+        ticketSecret: bigint,
+        attestationSecret: bigint,
+        base64ticket: string,
+        base64attestation: string,
+        base64attestationPublicKey: string,
+        base64senderPublicKey: string
+    )
+    {
+
+        let ticket: Ticket = TicketDecoder.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
+        if (!ticket.checkValidity()) {
+            console.log("Could not validate cheque");
+            throw new Error("Validation failed");
+        }
+        if (!ticket.verify()) {
+            console.log("Could not verify ticket");
+            throw new Error("Verification failed");
+        }
+        console.log('ticked valid (signature OK)');
+
+        let keyUint8data = base64ToUint8array(base64attestationPublicKey);
+        let key:SubjectPublicKeyInfo = AsnParser.parse(keyUint8data, SubjectPublicKeyInfo);
+
+        let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.subjectPublicKey)));
+
+        console.log('lets test attestaion:');
+        let att = new SignedAttestation(base64attestation, attestorKey);
+
+        if (!att.checkValidity()) {
+            console.log("Could not validate attestation");
+            throw new Error("Validation failed");
+        }
+        if (!att.verify()) {
+            console.log("Could not verify attestation");
+            throw new Error("Verification failed");
+        }
+        console.log('attestaion valid');
+
+        let redeem: AttestedObject = new AttestedObject(
+            ticket, att,
+            BigInt(attestationSecret), BigInt(ticketSecret));
+
+        // console.log("redeem.getDerEncodeProof(): ");
+        // console.log(redeem.getDerEncodeProof());
+
+        return redeem.getDerEncodeProof();
+
+    }
+
     postMessageAttestationListener(event: MessageEvent){
         let attestURL = new URL(this.attestationOrigin);
 
@@ -78,6 +157,7 @@ export class Authenticator {
             return;
         }
 
+        console.log('postMessageAttestationListener event');
         console.log(event)
 
         if (
@@ -94,8 +174,10 @@ export class Authenticator {
         ) {
             if (event.data.display === true) {
                 this.iframeWrap.style.display = 'flex';
+                this.negotiator && this.negotiator.commandDisplayIframe();
             } else {
                 this.iframeWrap.style.display = 'none';
+                this.negotiator && this.negotiator.commandHideIframe();
             }
         }
 
@@ -107,67 +189,15 @@ export class Authenticator {
         }
         this.iframeWrap.remove();
         this.attestationBlob = event.data.attestation;
-        // this.attestationBlob = "MIICdjCCAh2gAwIBEgIIQebpgDCvmAAwCQYHKoZIzj0CATAWMRQwEgYDVQQDDAtB" +
-        //     "bHBoYVdhbGxldDAiGA8yMDIxMDIwMTAwNDcyMloYDzIwMjEwMjAxMDE0NzIyWjA1" +
-        //     "MTMwMQYDVQQDDCoweDMyRDlCOTM2MEIyRDczODAyNjM5Q0E4QTYyQkE2OTU0NDAz" +
-        //     "M0VFNEUwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD/////////" +
-        //     "///////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-        //     "AAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcE" +
-        //     "QQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4R" +
-        //     "CKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9Je" +
-        //     "jNA2QUECAQEDQgAE11WeT70GQ3pxayB3MM0J9Jtwa0Lb7lm8DPEtKlucnuI207a/" +
-        //     "wYq5lghXdlxjMbu+UkTGJoaEXJyT6woIzmGM6KNXMFUwUwYLKwYBBAGLOnN5ASgB" +
-        //     "Af8EQQQVzCsl2M8EzynLS2XwnKJtm1T5djndo4Zp4cOpXG2drBSeXnKejcy3FGSj" +
-        //     "QudLBNlmEpJ1taXIftk3vdSadzNnMAkGByqGSM49AgEDSAAwRQIhAPwCo6NyW0hB" +
-        //     "kJ6v2XSj7gHgE7qmTycCTkf0Cry26pzzAiAb0WU67Nadw9PnqXAmwpsKERcx+E5e" +
-        //     "v0VCDh4xheZDiQ==";
-
-        // java tests
-        // this.attestationBlob = "MIICdTCCAh2gAwIBEgIIu4l57Za+3AkwCQYHKoZIzj0CATAWMRQwEgYDVQQDDAtB" +
-        //     "bHBoYVdhbGxldDAiGA8yMDIxMDIwMTE4NDU0MVoYDzIwMjEwMjAxMTk0NTQxWjA1" +
-        //     "MTMwMQYDVQQDDCoweEE1NDlBMDkyNDc0RUEyMUYyMEZGOUNEMDkzMEEyREZCQ0Iy" +
-        //     "MzVGOTMwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD/////////" +
-        //     "///////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-        //     "AAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcE" +
-        //     "QQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4R" +
-        //     "CKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9Je" +
-        //     "jNA2QUECAQEDQgAEwb6ZDhVgasYdboqTYYPKEFk1HVo7QF1BEp6dQDEFAFqeQSu3" +
-        //     "DYXl1ke4F77vQEfviNv+de3vUk8YeN54DNoxZ6NXMFUwUwYLKwYBBAGLOnN5ASgB" +
-        //     "Af8EQQQF4gbd6WxrbhAFuLn0BffcVCNwx8kgEjzFp44Hq9NZ6ABQkFcRCpqZ/ihj" +
-        //     "knJ00QRRK06CqrRSJGJC0gLdCYPoMAkGByqGSM49AgEDRwAwRAIgYl8qEjoqOmqj" +
-        //     "mvo2fSa2Ii3f1TsPmM7HnK3nWKDV+Q4CIHRcUrcVx7tVnw7LnL+skddSfqa1OEcS" +
-        //     "CXAxUEoUhKBa";
         this.attestationSecret = event.data.requestSecret;
-        // this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICBw8j/S6Cs6t/NakecTLVSmHlzvqDIr5vqJbbOpTdq5"));
 
-        // java test
-        // this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICGKh6fA6abFqcBmtnpMZR5mjg/aeS+VfyElbhIfLZGC"));
-        // this.attestationSecret = uint8ToBn(base64ToUint8array("MCIEICBw8j/S6Cs6t/NakecTLVSmHlzvqDIr5vqJbbOpTdq5"));
-
-        // this.base64attestorPubKey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA////////////////" +
-        //     "/////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-        //     "AAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5m" +
-        //     "fvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0" +
-        //     "SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFB" +
-        //     "AgEBA0IABL9fgFkHbEdmPJYyYSfMWBdtZWyRMDJ7YfKyP1ZwEAOJ9MKWKPZ/hGGF" +
-        //     "bVpDpCkO8U+ymmF17ybMcyT4SJ8GTII=";
-
-        // java test
-        // this.base64attestorPubKey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA////////////////" +
-        //     "/////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-        //     "AAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5m" +
-        //     "fvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0" +
-        //     "SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFB" +
-        //     "AgEBA0IABLsPpWixMZ5gU2CQRzWZKbx4/PWFPPee/TKlVE0kYbC7h9EfwYAXhlOV" +
-        //     "c05P411mQp/opMel5fZQaT+UhriGevs=";
-
-        console.log('attestation data received:');
-        console.log(this.attestationBlob);
-        console.log(this.attestationSecret);
-        console.log(this.base64attestorPubKey);
+        console.log('attestation data received.');
+        // console.log(this.attestationBlob);
+        // console.log(this.attestationSecret);
+        // console.log(this.base64attestorPubKey);
 
         try {
-            let useToken = main.getUseTicket(
+            let useToken = this.getUseTicket(
                 this.signedTokenSecret,
                 this.attestationSecret,
                 this.signedTokenBlob ,
@@ -175,6 +205,8 @@ export class Authenticator {
                 this.base64attestorPubKey,
                 this.base64senderPublicKey,
             )
+
+            console.log('this.authResultCallback(useToken)');
             this.authResultCallback(useToken);
         } catch (e){
             console.log(`UseDevconTicket. Something went wrong. ${e}`);
@@ -205,7 +237,6 @@ export class Authenticator {
             });
         }
     }
-
 
 
     /*

@@ -327,9 +327,9 @@ export class AttestationCrypto {
     //     return lhs.equals(rhs);
     // }
 
-    addressFromKey(key: KeyPair){
-        let pubKey = key.getPublicKeyAsHexStr();
-        let pubKeyHash = sha3.keccak256(hexStringToArray(pubKey));
-        return '0x' + pubKeyHash.slice(-40).toUpperCase();
-    }
+    // addressFromKey(key: KeyPair){
+    //     let pubKey = key.getPublicKeyAsHexStr();
+    //     let pubKeyHash = sha3.keccak256(hexStringToArray(pubKey));
+    //     return '0x' + pubKeyHash.slice(-40).toUpperCase();
+    // }
 }

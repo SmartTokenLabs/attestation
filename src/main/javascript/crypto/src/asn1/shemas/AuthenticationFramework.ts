@@ -44,9 +44,9 @@ export class Extension {
     @AsnProp({ type: AsnPropTypes.ObjectIdentifier })
     public extnId: string;
     @AsnProp({ type: AsnPropTypes.Boolean })
-    public critical: number;
+    public critical: boolean;
     @AsnProp({ type: AsnPropTypes.OctetString })
-    public extnValue: number;
+    public extnValue: Uint8Array;
 }
 
 export class Extensions { //SEQUENCE OF Extension

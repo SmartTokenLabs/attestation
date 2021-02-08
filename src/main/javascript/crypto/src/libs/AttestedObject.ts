@@ -28,9 +28,6 @@ export class AttestedObject {
         this.pok = this.makeProof(attestationSecret, objectSecret, this.crypto);
         this.derEncodedProof = this.pok.getDerEncoding();
 
-        console.log('this.attestableObject');
-        console.log(this.attestableObject);
-
         let vec =
             this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
@@ -99,11 +96,14 @@ export class AttestedObject {
     private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponentInterface {
         // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
         // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-        let extensions = this.att.getUnsignedAttestation().getExtensions();//.getObjectAt(0));
+        // TODO we dont parse that value, because its already parsed to this.riddle
+        // let extensions = this.att.getUnsignedAttestation().getExtensions();//.getObjectAt(0));
 
         // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-        // let attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-        let attCom: Uint8Array = new Uint8Array(extensions.extension.extnValue);
+
+        // TODO we dont parse that value, because its already parsed to this.riddle
+        // let attCom: Uint8Array = new Uint8Array(extensions.extension.extnValue);
+        let attCom: Uint8Array = this.att.getUnsignedAttestation().getRiddle();
         let objCom: Uint8Array = this.attestableObject.getCommitment();
         let pok: ProofOfExponentInterface = crypto.computeEqualityProof(uint8tohex(attCom), uint8tohex(objCom), attestationSecret, objectSecret);
 

@@ -10,6 +10,7 @@ export class SignedAttestation {
     publicKey: any;
     att: Attestation;
     uint8data: Uint8Array;
+    commitment: Uint8Array;
     // constructor(asn1der: string, private keys: KeyPair) {
     constructor(
         private asn1der: string,
@@ -30,6 +31,10 @@ export class SignedAttestation {
         } catch (e) {
             return false;
         }
+    }
+
+    getCommitment() {
+        return this.att.getRiddle();
     }
 
     checkValidity(){

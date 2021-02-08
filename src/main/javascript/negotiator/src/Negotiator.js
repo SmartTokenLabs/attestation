@@ -1,10 +1,11 @@
 import {SignedDevconTicket} from "../../SignedDevconTicket";
+// import {Authenticator} from "../../crypto/src/Authenticator";
 
 export class Negotiator {
     // other code
     constructor(filter = {}, options = {}) {
         let XMLconfig = {
-            attestationOrigin: "http://stage.attestation.id",
+            attestationOrigin: "https://stage.attestation.id",
             tokensOrigin: "https://devcontickets.herokuapp.com/outlet/",
             tokenUrlName: 'ticket',
             tokenSecretName: 'secret',
@@ -13,6 +14,8 @@ export class Negotiator {
             tokenParser: SignedDevconTicket,
             localStorageItemName: 'dcTokens'
         };
+        this.queuedCommand = false;
+
         this.filter = filter;
         this.debug = 0;
         this.hideTokensIframe = 1;
@@ -36,6 +39,7 @@ export class Negotiator {
             let tokensOriginURL = new URL(this.tokensOrigin);
 
             if (currentURL.origin === tokensOriginURL.origin) {
+                console.log('this is tokenOrigin. fire listener and read params');
                 // its tokens website, where tokens saved in localStorage
                 // lets chech url params and save token data to the local storage
                 this.isTokenOriginWebsite = true;
@@ -43,11 +47,87 @@ export class Negotiator {
             }
         }
 
+        // do we inside iframe?
         if (window !== window.parent){
             this.debug && console.log('negotiator: its iframe, lets return tokens to the parent');
-            // its iframe, just return all tokens by config
-            this.returnTokensToParent();
+
+            // its iframe, listen for requests
+            this.attachPostMessageListener(this.listenForParentMessages.bind(this))
+
+            // send ready message to start interaction
+            let referrer = new URL(document.referrer);
+            window.parent.postMessage({iframeCommand: "iframeReady", iframeData: ''}, referrer.origin);
         }
+    }
+
+    listenForParentMessages(event){
+
+        // listen only parent
+        let referrer = new URL(document.referrer);
+        if (event.origin !== referrer.origin) {
+            return;
+        }
+
+        // console.log('iframe: event = ', event.data);
+
+        // parentCommand+parentData required for interaction
+        if (
+            typeof event.data.parentCommand === "undefined"
+            || typeof event.data.parentData === "undefined"
+        ) {
+            return;
+        }
+
+        // parentCommand contain command code
+        let command = event.data.parentCommand;
+
+        // parentData contains command content (token to sign or empty object)
+        let data = event.data.parentData;
+
+        console.log('iframe: command, data = ', command, data);
+
+        switch (command) {
+            case "signToken":
+                console.log('let Auth data:', data);
+                if (typeof window.Authenticator === "undefined"){
+                    console.log('Authenticator not defined.');
+                    return;
+                }
+
+                let rawTokenData = this.getRawToken(data);
+
+                // console.log('rawTokenData: ',rawTokenData);
+
+                let base64ticket = rawTokenData.token;
+                let ticketSecret = rawTokenData.secret;
+                this.authenticator = new Authenticator(this);
+                this.authenticator.getAuthenticationBlob({
+                    ticketBlob: base64ticket,
+                    ticketSecret: ticketSecret,
+                    attestationOrigin: this.attestationOrigin,
+                }, res => {
+                    console.log('sign result:',res);
+                    window.parent.postMessage({iframeCommand: "useTokenData", iframeData: {useToken: res, message: '', success: !!res}}, referrer.origin);
+                });
+                break;
+            case "tokensList":
+                // TODO update
+                console.log('let return tokens');
+                this.returnTokensToParent();
+                break;
+
+            default:
+        }
+    }
+
+    commandDisplayIframe(){
+        let referrer = new URL(document.referrer);
+        window.parent.postMessage({iframeCommand: "iframeWrap", iframeData: 'show'}, referrer.origin);
+    }
+
+    commandHideIframe(){
+        let referrer = new URL(document.referrer);
+        window.parent.postMessage({iframeCommand: "iframeWrap", iframeData: 'hide'}, referrer.origin);
     }
 
     returnTokensToParent(){
@@ -58,7 +138,7 @@ export class Negotiator {
             tokensOutput.tokens = filteredTokens;
         }
         let referrer = new URL(document.referrer);
-        window.parent.postMessage({tokensOutput}, referrer.origin);
+        window.parent.postMessage({iframeCommand: "tokensData", iframeData: tokensOutput}, referrer.origin);
     }
 
     readMagicUrl() {
@@ -79,13 +159,13 @@ export class Negotiator {
         if (!tokensOutput.noTokens) {
             // Build new list of tickets from current and query ticket { ticket, secret }
             tokens = tokensOutput.tokens;
-            if (!tokenFromQuery || !secretFromQuery){
-                tokens.map(tokenData => {
-                    if (tokenData.token === tokenFromQuery) {
-                        isNewQueryTicket = false;
-                    }
-                });
-            }
+
+            tokens.map(tokenData => {
+                if (tokenData.token === tokenFromQuery) {
+                    isNewQueryTicket = false;
+                }
+            });
+
         }
 
         // Add ticket if new
@@ -128,6 +208,24 @@ export class Negotiator {
         }
     }
 
+    compareObjects(o1, o2){
+        for(var p in o1){
+            if(o1.hasOwnProperty(p)){
+                if(o1[p].toString() !== o2[p].toString()){
+                    return false;
+                }
+            }
+        }
+        for(var p in o2){
+            if(o2.hasOwnProperty(p)){
+                if(o1[p].toString() !== o2[p].toString()){
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
     // read tokens from local storage and return as object {tokens: [], noTokens: boolean, success: boolean}
     readTokens(){
         const storageTickets = localStorage.getItem(this.localStorageItemName);
@@ -165,41 +263,112 @@ export class Negotiator {
     getRawToken(unsignedToken){
         let tokensOutput = this.readTokens();
         if (tokensOutput.success && !tokensOutput.noTokens) {
-            let decodedTokens = this.decodeTokens(tokensOutput.tokens);
-            return this.filterTokens(decodedTokens, unsignedToken);
+            let rawTokens = tokensOutput.tokens;
+
+            let token = false;
+
+            if (rawTokens.length) {
+                rawTokens.forEach(tokenData=> {
+                    if (tokenData.token){
+                        let decodedToken = new this.tokenParser(this.base64ToUint8array(tokenData.token).buffer);
+                        if (decodedToken && decodedToken[this.unsignedTokenDataName]) {
+                            let decodedTokenData = decodedToken[this.unsignedTokenDataName];
+
+                            if (this.compareObjects(decodedTokenData, unsignedToken)){
+                                token = tokenData;
+                            }
+
+                        }
+                    } else {
+                        console.log('empty token data received');
+                    }
+
+                })
+            }
+
+            return token;
         }
     }
 
-    signToken(unsignedToken){
-        // open iframe and request tokens
+    listenForIframeMessages(event){
+
         let tokensOriginURL = new URL(this.tokensOrigin);
-        this.attachPostMessageListener(event => {
 
-            if (event.origin !== tokensOriginURL.origin) {
-                return;
-            }
-
-            if (typeof event.data.tokensOutput === "undefined") {
-                return;
-            }
-            let tokensOutput = event.data.tokensOutput;
-            this.tokensIframe.remove();
-
-            if (tokensOutput.success && !tokensOutput.noTokens) {
-                let filteredTokens = this.filterTokens(tokensOutput.tokens);
-                tokensOutput.tokens = filteredTokens;
-            }
-            this.negotiateCallback(tokensOutput);
-
-        });
-
-        const iframe = document.createElement('iframe');
-        this.tokenSignIframe = iframe;
-        if (this.hideTokensIframe) {
-            iframe.style.display = 'none';
+        // listen only tokensOriginURL
+        if (event.origin !== tokensOriginURL.origin) {
+            return;
         }
-        iframe.src = this.tokensOrigin;
-        document.body.appendChild(iframe);
+
+        // console.log('parent: event = ', event.data);
+
+        // iframeCommand required for interaction
+        if (
+            typeof event.data.iframeCommand === "undefined"
+            || typeof event.data.iframeData === "undefined"
+        ) {
+            return;
+        }
+
+        // iframeCommand contain command code
+
+        let command = event.data.iframeCommand;
+
+        // iframeData contains command content (tokens data, useToken , hide/display iframe)
+        let data = event.data.iframeData;
+
+        console.log('parent: command, data = ', command, data);
+
+        switch (command) {
+            case "iframeWrap":
+                if (data == "show") {
+                    this.tokenIframeWrap.style.display = 'block';
+                } else if (data == "hide"){
+                    this.tokenIframeWrap.style.display = 'none';
+                }
+                break;
+            case "tokensData":
+                // tokens received, disable listener
+                this.detachPostMessageListener(this.listenForIframeMessages);
+                // TODO remove iframeWraper
+                this.tokenIframeWrap.remove();
+
+                if (data.success && !data.noTokens) {
+                    data.tokens = this.filterTokens(data.tokens);
+                }
+                this.negotiateCallback(data);
+                break;
+
+            case "useTokenData":
+
+                this.tokenIframeWrap.remove();
+
+                // if (data.success) {
+                //     console.log('useTokenData: ' + data.useToken)
+                // } else {
+                //     console.log('useTokenData error message: ' + data.message)
+                // }
+                console.log('this.signCallback(data)');
+                this.signCallback && this.signCallback(data);
+                this.signCallback = false;
+                break;
+
+            case "iframeReady":
+                event.source.postMessage(this.queuedCommand, event.origin);
+                this.queuedCommand = '';
+                break;
+
+            default:
+
+        }
+
+
+    }
+
+    signToken(unsignedToken, signCallback){
+        this.signCallback = signCallback;
+        // open iframe and request tokens
+        this.queuedCommand = {parentCommand: 'signToken',parentData: unsignedToken};
+        this.createIframe();
     }
 
     negotiate(callBack) {
@@ -208,10 +377,15 @@ export class Negotiator {
             return false;
         }
 
+        console.log('negotiateCallback added;');
+
         this.negotiateCallback = callBack;
 
+        console.log('attestationOrigin = '+this.attestationOrigin);
         if (this.attestationOrigin) {
-            if (this.isTokenOriginWebsite) {
+
+            if (window.location.href === this.tokensOrigin) {
+                // just read an return tokens
                 let tokensOutput = this.readTokens();
                 if (tokensOutput.success && !tokensOutput.noTokens) {
                     let decodedTokens = this.decodeTokens(tokensOutput.tokens);
@@ -220,40 +394,32 @@ export class Negotiator {
                     this.negotiateCallback(tokensOutput);
                 }
             } else {
-                // open iframe and request tokens
-                let tokensOriginURL = new URL(this.tokensOrigin);
-                this.attachPostMessageListener(event => {
-
-                    if (event.origin !== tokensOriginURL.origin) {
-                        return;
-                    }
-
-                    if (typeof event.data.tokensOutput === "undefined") {
-                        return;
-                    }
-                    let tokensOutput = event.data.tokensOutput;
-                    this.tokensIframe.remove();
-
-                    if (tokensOutput.success && !tokensOutput.noTokens) {
-                        let filteredTokens = this.filterTokens(tokensOutput.tokens);
-                        tokensOutput.tokens = filteredTokens;
-                    }
-                    this.negotiateCallback(tokensOutput);
-
-                });
-
-                const iframe = document.createElement('iframe');
-                this.tokensIframe = iframe;
-                if (this.hideTokensIframe) {
-                    iframe.style.display = 'none';
-                }
-                iframe.src = this.tokensOrigin;
-                document.body.appendChild(iframe);
+                this.queuedCommand = {parentCommand: 'tokensList',parentData: ''};
+                this.createIframe()
             }
         } else {
             console.log('no attestationOrigin...');
             // TODO test token against blockchain and show tokens as usual view
         }
+    }
+
+    createIframe(){
+        console.log('open iframe');
+        // open iframe and request tokens
+        this.attachPostMessageListener(this.listenForIframeMessages.bind(this));
+
+        const iframe = document.createElement('iframe');
+        this.iframe = iframe;
+        iframe.src = this.tokensOrigin;
+        iframe.style.width = '800px';
+        iframe.style.height = '700px';
+        iframe.style.maxWidth = '100%';
+        iframe.style.background = '#fff';
+        let iframeWrap = document.createElement('div');
+        this.tokenIframeWrap = iframeWrap;
+        iframeWrap.setAttribute('style', 'width:100%; min-height: 100vh; position: fixed; align-items: center; justify-content: center; display: none; top: 0; left: 0; background: #fffa');
+        iframeWrap.appendChild(iframe);
+        document.body.appendChild(iframeWrap);
     }
 
     base64ToUint8array( base64str ) {
@@ -279,8 +445,13 @@ export class Negotiator {
         let decodedTokens = [];
         if (rawTokens.length) {
             rawTokens.forEach(tokenData=> {
-                let decodedToken = new this.tokenParser(this.base64ToUint8array(tokenData.token).buffer);
-                if (decodedToken && decodedToken[this.unsignedTokenDataName]) decodedTokens.push(decodedToken[this.unsignedTokenDataName]);
+                if (tokenData.token){
+                    let decodedToken = new this.tokenParser(this.base64ToUint8array(tokenData.token).buffer);
+                    if (decodedToken && decodedToken[this.unsignedTokenDataName]) decodedTokens.push(decodedToken[this.unsignedTokenDataName]);
+                } else {
+                    console.log('empty token data received');
+                }
+
             })
         }
         return decodedTokens;
@@ -288,13 +459,18 @@ export class Negotiator {
 
     attachPostMessageListener(listener){
         if (window.addEventListener) {
-            window.addEventListener("message", e =>
-                listener(e), false);
+            window.addEventListener("message", listener, false);
         } else {
             // IE8
-            window.attachEvent("onmessage", (e) => {
-                listener(e);
-            });
+            window.attachEvent("onmessage", listener);
+        }
+    }
+    detachPostMessageListener(listener){
+        if (window.addEventListener) {
+            window.removeEventListener("message", listener, false);
+        } else {
+            // IE8
+            window.detachEvent("onmessage", listener);
         }
     }
 }
