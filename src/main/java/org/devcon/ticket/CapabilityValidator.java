@@ -26,7 +26,7 @@ public class CapabilityValidator extends CapabilityCommon{
   private final Verification verification;
 
   public CapabilityValidator(AsymmetricKeyParameter verifyingKey, String verifierDomain) throws MalformedURLException {
-    this.verifyingKey = SignatureUtility.PublicBCKeyToJavaKey(verifyingKey);
+    this.verifyingKey = SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(verifyingKey);
     this.verifierDomain = new URL(verifierDomain);
     this.verification = JWT.require(getAlgorithm(this.verifyingKey, null))
         .withAudience(this.verifierDomain.toString())

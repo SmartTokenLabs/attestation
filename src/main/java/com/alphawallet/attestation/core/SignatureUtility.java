@@ -67,7 +67,7 @@ public class SignatureUtility {
         return PublicKeyFactory.createKey(spki);
     }
 
-    public static PrivateKey PrivateBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+    public static PrivateKey convertPrivateBouncyCastleKeyToJavaKey(AsymmetricKeyParameter bcKey) {
         try {
             Security.addProvider(new BouncyCastleProvider());
             KeyFactory ecKeyFac = getFactory(bcKey);
@@ -79,7 +79,7 @@ public class SignatureUtility {
         }
     }
 
-    public static PublicKey PublicBCKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+    public static PublicKey convertPublicBouncyCastleKeyToJavaKey(AsymmetricKeyParameter bcKey) {
         try {
             Security.addProvider(new BouncyCastleProvider());
             KeyFactory ecKeyFac = getFactory(bcKey);
@@ -102,7 +102,7 @@ public class SignatureUtility {
     }
 
     public static KeyPair BCKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
-        return new KeyPair(PublicBCKeyToJavaKey(bcKeys.getPublic()), PrivateBCKeyToJavaKey(
+        return new KeyPair(convertPublicBouncyCastleKeyToJavaKey(bcKeys.getPublic()), convertPrivateBouncyCastleKeyToJavaKey(
             bcKeys.getPrivate()));
     }
 
