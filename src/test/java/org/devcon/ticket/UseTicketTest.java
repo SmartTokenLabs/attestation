@@ -22,9 +22,6 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -105,10 +102,7 @@ public class UseTicketTest {
         ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
-    ASN1Sequence extensions = DERSequence
-        .getInstance(newAttestedTicket.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    assertTrue(AttestationCrypto.verifyEqualityProof(attCom, newAttestedTicket.getAttestableObject().getCommitment(), newAttestedTicket.getPok()));
+    assertTrue(AttestationCrypto.verifyEqualityProof(newAttestedTicket.getAtt().getCommitment(), newAttestedTicket.getAttestableObject().getCommitment(), newAttestedTicket.getPok()));
 
     assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
         newAttestedTicket.getAttestableObject().getDerEncoding());
@@ -117,12 +111,14 @@ public class UseTicketTest {
     assertArrayEquals(attestedTicket.getSignature(), newAttestedTicket.getSignature());
     assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
     assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
         attestedTicket.getAtt(), attestedTicket.getPok(),
         attestedTicket.getSignature());
 
-    assertArrayEquals(attestedTicket.getDerEncoding(), newConstructor.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
   }
 
   @Test
@@ -173,11 +169,9 @@ public class UseTicketTest {
 
   @Test
   public void testNegativeWrongProofIdentity() throws Exception {
-    ASN1Sequence extensions = DERSequence.getInstance(attestedTicket.getAtt().getUnsignedAttestation().getExtensions().getObjectAt(0));
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
     // Wrong attestation secret
     ProofOfExponent newPok = crypto
-        .computeEqualityProof(attCom, attestedTicket.getAttestableObject().getCommitment(), new BigInteger("42424242"), TICKET_SECRET);
+        .computeEqualityProof(attestedTicket.getAtt().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), new BigInteger("42424242"), TICKET_SECRET);
     Field field = attestedTicket.getClass().getDeclaredField("pok");
     field.setAccessible(true);
     // Change the proof
@@ -185,7 +179,7 @@ public class UseTicketTest {
     // Validation should still pass
     assertTrue(attestedTicket.checkValidity());
     // Verification of the proof itself should fail
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(newPok));
+    assertFalse(AttestationCrypto.verifyEqualityProof(attestedTicket.getAtt().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), newPok));
     // Verification should fail of the attested ticket
     assertFalse(attestedTicket.verify());
   }

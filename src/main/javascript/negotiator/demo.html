@@ -1,0 +1,95 @@
+<html>
+<head>
+    <style>
+        #log div {
+            margin-bottom: 5px;
+            background-color: #f5f5f5;
+            padding: 5px 10px;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .token_link {
+            background: #ddd;
+            border-radius: 3px;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+            padding: 5px 10px;
+            margin: 5px;
+            display: inline-block;
+            font-family: Helvetica, Arial, sans-serif;
+            text-decoration: none;
+            text-transform: uppercase;
+            color: #000;
+
+        }
+        .token_link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<a class="token_link" data-ticket="MIGbMA0CAQYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNHADBEAiBwLK_95NPZo0W01HDBfyZisZ2KaNrzoWuxRV-nhjGLMAIgaOP4eVVINH5xM8Cv9OVDdyOG3BxUqyPVQOuDU9PaC9o="
+   data-secret="45845870684" target="_blank">Add test ticket 0</a>
+
+
+<div id="log"></div>
+    <script type="text/javascript" src="dist/negotiator.js"></script>
+<script>
+    counter = 1;
+    function writeToLog(text){
+        let node = document.createElement('div');
+        node.innerText = counter + ". " + text;
+        log.prepend(node);
+        counter++;
+    }
+
+    function bnToStringExtension(key, value) {
+        return typeof value === 'bigint'
+            ? value.toString()
+            : value // return everything else unchanged
+    }
+
+    let tokensURL = "https://devcontickets.herokuapp.com/outlet/";
+    // let tokensURL = "https://alladev.com/outlet/";
+
+    let buttons = document.querySelectorAll('.token_link');
+    if (buttons && buttons.length){
+        buttons.forEach(item => {
+            item.href = tokensURL + '?ticket=' + item.dataset.ticket + "&secret=" + item.dataset.secret;
+        })
+    }
+
+    let filter = {'devconId': 6 };
+    // let filter = { };
+    let n = new Negotiator(filter
+        // "https://devcontickets.herokuapp.com/outlet/" hardcoded as default value, we can change it if needed
+        , {tokensOrigin: tokensURL}
+        );
+    writeToLog('to start outlet on tokenOrigin site just include negotiator.js and add "<script>let negotiator = new Negotiator();<script>"');
+    writeToLog('Open iframe with outlet for : '+ tokensURL);
+    writeToLog('Debug disabled');
+    // writeToLog('Filter = ' + JSON.stringify(filter));
+    n.negotiate(tokensOutput => {
+        writeToLog('Recived tokens count: '+  tokensOutput.tokens.length );
+        writeToLog('You can see tokens in console' );
+        console.log( tokensOutput );
+        writeToLog( JSON.stringify(tokensOutput, bnToStringExtension) );
+
+        if (tokensOutput.noTokens) {
+            writeToLog('No tokens added. Please click buttons at the top of current page' );
+        }
+
+        if (tokensOutput.tokens.length) {
+            console.log(tokensOutput.tokens[0]);
+            console.log(JSON.stringify(tokensOutput.tokens[0], bnToStringExtension));
+            writeToLog('Found token: ' + JSON.stringify(tokensOutput.tokens[0], bnToStringExtension) );
+            n.signToken(tokensOutput.tokens[0], res => {
+                writeToLog('signToken result received. check it in console also. RES=' + JSON.stringify(res, bnToStringExtension) );
+                console.log('res', res);
+            });
+        }
+    });
+</script>
+</body>
+</html>

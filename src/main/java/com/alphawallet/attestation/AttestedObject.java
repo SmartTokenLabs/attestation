@@ -11,7 +11,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
@@ -83,11 +82,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       AsymmetricKeyParameter publicAttestationSigningKey) {
     this.encoding = derEncoding;
     try {
-      ASN1InputStream input = new ASN1InputStream(derEncoding);
+      ASN1InputStream input = new ASN1InputStream(derEncodingWithSignature);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
-      this.pok = new ProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
+      this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
       this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
@@ -165,29 +164,23 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
-    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(attCom, attestableObject.getCommitment(), pok) && SignatureUtility.verifyEthereumSignature(unsignedEncoding, signature, userPublicKey);
+    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1Sequence extensions = DERSequence.getInstance(att.getUnsignedAttestation().getExtensions().getObjectAt(0));
-    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    byte[] attCom = ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-    ProofOfExponent pok = crypto.computeEqualityProof(attCom, attestableObject.getCommitment(), attestationSecret, objectSecret);
-    if (!crypto.verifyEqualityProof(attCom, attestableObject.getCommitment(), pok)) {
+    ProofOfExponent pok = crypto.computeEqualityProof(att.getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
+    if (!crypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok)) {
       throw new RuntimeException("The redeem proof did not verify");
     }
     return pok;
   }
 
+  public byte[] getDerEncodingWithSignature() { return encoding; }
+
   @Override
   public byte[] getDerEncoding() {
-    return encoding;
+    return unsignedEncoding;
   }
 
   // TODO override equals and hashcode

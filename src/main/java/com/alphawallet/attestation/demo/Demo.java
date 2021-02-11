@@ -3,9 +3,9 @@ package com.alphawallet.attestation.demo;
 import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.AttestedObject;
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
@@ -137,9 +137,9 @@ public class Demo {
           throw new IllegalArgumentException("Unknown role");
       }
     }
-    catch( Exception e) {
+    catch(Exception e) {
       System.err.println("FAILURE!");
-      return;
+      throw new RuntimeException(e);
     }
     System.out.println("SUCCESS!");
   }
@@ -168,7 +168,7 @@ public class Demo {
 
   private static void receiveCheque(Path pathUserKey, Path chequeSecretDir,
                                     Path pathAttestationSecret, Path pathCheque, Path pathAttestation, Path pathAttestationKey)
-  throws IOException {
+  throws Exception {
     AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     byte[] chequeSecretBytes = DERUtility.restoreBytes(Files.readAllLines(chequeSecretDir));
     BigInteger chequeSecret = DERUtility.decodeSecret(chequeSecretBytes);
@@ -209,7 +209,7 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
-    if (!sc.testEncoding(redeem.getPok())) {
+    if (!sc.verifyEqualityProof(redeem.getAtt().getCommitment(), redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");
     }
@@ -219,7 +219,7 @@ public class Demo {
       Path outputDirRequest, Path outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
 
     DERUtility.writePEM(request.getDerEncoding(), "ATTESTATION REQUEST", outputDirRequest);
