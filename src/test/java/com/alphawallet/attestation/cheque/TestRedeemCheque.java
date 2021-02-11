@@ -94,7 +94,7 @@ public class TestRedeemCheque {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncoding(), new ChequeDecoder(),
+    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncodingWithSignature(), new ChequeDecoder(),
         issuerKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
@@ -106,8 +106,8 @@ public class TestRedeemCheque {
     assertArrayEquals(attestedCheque.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
     assertArrayEquals(attestedCheque.getSignature(), newRedeem.getSignature());
     assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
-    assertArrayEquals(attestedCheque.getDerEncoding(), attestedCheque.getDerEncoding());
-    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), attestedCheque.getDerEncodingWithSignature());
+    assertArrayEquals(attestedCheque.getDerEncoding(), newRedeem.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newRedeem.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
         .getAtt(), attestedCheque.getPok(),

@@ -3,6 +3,7 @@ package org.devcon.ticket;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -97,8 +98,28 @@ public class UseTicketTest {
   }
 
   @Test
+  public void testWithoutSig() throws InvalidObjectException {
+    AttestedObject attestedTicketWithoutSig = new AttestedObject(attestedTicket.getDerEncoding(), new TicketDecoder(
+        ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
+    assertTrue(attestedTicketWithoutSig.verify());
+    assertTrue(attestedTicketWithoutSig.checkValidity());
+    assertTrue(attestedTicketWithoutSig.getAttestableObject().verify());
+    assertTrue(attestedTicketWithoutSig.getAtt().verify());
+    assertTrue(AttestationCrypto.verifyEqualityProof(attestedTicketWithoutSig.getAtt().getCommitment(), attestedTicketWithoutSig.getAttestableObject().getCommitment(), attestedTicketWithoutSig.getPok()));
+
+    assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
+        attestedTicketWithoutSig.getAttestableObject().getDerEncoding());
+    assertArrayEquals(attestedTicket.getAtt().getDerEncoding(), attestedTicketWithoutSig.getAtt().getDerEncoding());
+    assertArrayEquals(attestedTicket.getPok().getDerEncoding(), attestedTicketWithoutSig.getPok().getDerEncoding());
+    assertNull(attestedTicketWithoutSig.getSignature());
+    assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
+    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicketWithoutSig.getDerEncoding());
+    assertFalse(Arrays.equals(attestedTicket.getDerEncodingWithSignature(), attestedTicketWithoutSig.getDerEncodingWithSignature()));
+  }
+
+  @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncoding(), new TicketDecoder(
+    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncodingWithSignature(), new TicketDecoder(
         ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
@@ -110,15 +131,15 @@ public class UseTicketTest {
     assertArrayEquals(attestedTicket.getPok().getDerEncoding(), newAttestedTicket.getPok().getDerEncoding());
     assertArrayEquals(attestedTicket.getSignature(), newAttestedTicket.getSignature());
     assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
-    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
-    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
+    assertArrayEquals(attestedTicket.getDerEncoding(), newAttestedTicket.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), newAttestedTicket.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
         attestedTicket.getAtt(), attestedTicket.getPok(),
         attestedTicket.getSignature());
 
-    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
-    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
+    assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(newConstructor.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
   }
 
   @Test

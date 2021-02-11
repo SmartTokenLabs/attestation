@@ -42,7 +42,6 @@ public class CryptoTest {
     crypto = new AttestationCrypto(rand);
     subjectKeys = SignatureUtility.constructECKeys(SECP256K1, rand);
     issuerKeys = SignatureUtility.constructECKeys(rand);
-    senderKeys = SignatureUtility.constructECKeys(rand);
   }
 
   @Test

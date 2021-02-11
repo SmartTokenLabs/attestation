@@ -109,7 +109,7 @@ public class EIP712AuthenticationTest {
   @Test
   public void wrongAttestedKey() {
     AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    Attestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    Attestation att = HelperTest.makeUnsignedStandardAtt(newKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
     AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);

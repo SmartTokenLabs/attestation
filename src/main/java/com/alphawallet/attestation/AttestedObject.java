@@ -80,15 +80,20 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
       AsymmetricKeyParameter publicAttestationSigningKey) {
-    this.encoding = derEncoding;
     try {
-      ASN1InputStream input = new ASN1InputStream(derEncodingWithSignature);
+      ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
       this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
-      this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
+      if (asn1.size() > 3) {
+        this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
+        this.encoding = derEncoding;
+      } else{
+        this.signature = null;
+        this.encoding = unsignedEncoding;
+      }
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -146,17 +151,27 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       return false;
     }
 
+    // CHECK: the Ethereum address on the attestation matches receivers signing key
+    String attestationEthereumAddress = getAtt().getUnsignedAttestation().getSubject().substring(3);
+    if (!attestationEthereumAddress.equals(SignatureUtility.addressFromKey(getUserPublicKey()))) {
+      System.err.println("The attestation is not to the same Ethereum user who is sending this request");
+      return false;
+    }
+
     // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
-    SubjectPublicKeyInfo spki = getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-    try {
-      AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
-      if (!SignatureUtility.verifyEthereumSignature(this.unsignedEncoding, getSignature(), parsedSubjectKey)) {
-        System.err.println("The signature on RedeemCheque is not valid");
+    if (signature != null) {
+      SubjectPublicKeyInfo spki = getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
+      try {
+        AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
+        if (!SignatureUtility
+            .verifyEthereumSignature(this.unsignedEncoding, this.signature, parsedSubjectKey)) {
+          System.err.println("The signature on RedeemCheque is not valid");
+          return false;
+        }
+      } catch (IOException e) {
+        System.err.println("The attestation SubjectPublicKey cannot be parsed");
         return false;
       }
-    } catch (IOException e) {
-      System.err.println("The attestation SubjectPublicKey cannot be parsed");
-      return false;
     }
 
     return true;
@@ -164,7 +179,13 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    return attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok) && SignatureUtility.verify(unsignedEncoding, signature, userPublicKey);
+    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok);
+    if (signature != null) {
+      return result && SignatureUtility
+          .verifyEthereumSignature(unsignedEncoding, signature, userPublicKey);
+    } else {
+      return result;
+    }
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
