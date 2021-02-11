@@ -2,6 +2,7 @@ package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.Validateable;
+import com.alphawallet.token.entity.SignMessageType;
 import com.alphawallet.token.entity.Signable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -16,7 +17,6 @@ import org.bouncycastle.asn1.ASN1GeneralizedTime;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Null;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERNull;
@@ -355,6 +355,12 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   @Override
   public String getMessage() {
     throw new RuntimeException("Not allowed");
+  }
+
+  @Override
+  public SignMessageType getMessageType()
+  {
+    return SignMessageType.ATTESTATION;
   }
 
   @Override

@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -75,7 +75,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
@@ -96,7 +96,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
     att.setDataObject(new DERSequence(dataObject));

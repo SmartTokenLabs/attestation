@@ -1,6 +1,7 @@
 package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -30,34 +31,34 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + AttestationCrypto.addressFromKey(key));
-    super.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
+    super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
+    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    setRiddle(AttestationCrypto.makeCommitment(identity, type, secret));
+    setCommitment(AttestationCrypto.makeCommitment(identity, type, secret));
   }
 
   /**
-   * Restores an attestation based on an already existing riddle
+   * Restores an attestation based on an already existing commitment
    * You still need to set the optional fields, that is
    * issuer, notValidBefore, notValidAfter, smartcontracts
    */
-  public IdentifierAttestation(byte[] riddle, AsymmetricKeyParameter key)  {
+  public IdentifierAttestation(byte[] commitment, AsymmetricKeyParameter key)  {
     super();
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + AttestationCrypto.addressFromKey(key));
-    super.setSigningAlgorithm(AttestationCrypto.ALGORITHM_IDENTIFIER);
+    super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
+    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    setRiddle(riddle);
+    setCommitment(commitment);
   }
 
 
@@ -86,15 +87,15 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
       return false;
     }
-    if (!getSigningAlgorithm().equals(AttestationCrypto.ALGORITHM_IDENTIFIER.getAlgorithm().getId())) {
-      System.err.println("The signature algorithm is supposed to be " + AttestationCrypto.ALGORITHM_IDENTIFIER.getAlgorithm().getId());
+    if (!getSigningAlgorithm().equals(SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId())) {
+      System.err.println("The signature algorithm is supposed to be " + SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId());
       return false;
     }
     // Verify that the subject public key matches the subject common name
     try {
       AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory
           .createKey(getSubjectPublicKeyInfo());
-      String parsedSubject = "CN=" + AttestationCrypto.addressFromKey(parsedSubjectKey);
+      String parsedSubject = "CN=" + SignatureUtility.addressFromKey(parsedSubjectKey);
       if (!parsedSubject.equals(getSubject())) {
         System.err.println("The subject public key does not match the Ethereum address attested to");
         return false;
@@ -106,10 +107,10 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   /**
-   * Set a riddle and sets it as an Attribute on the Attestation/
+   * Set a commitment and sets it as an Attribute on the Attestation/
    * @return A proof of knowledge of the riddle
    */
-  private void setRiddle(byte[] encodedRiddle) {
+  private void setCommitment(byte[] encodedRiddle) {
     ASN1EncodableVector extensions = new ASN1EncodableVector();
     extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
     extensions.add(ASN1Boolean.TRUE);

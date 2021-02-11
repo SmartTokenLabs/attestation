@@ -35,7 +35,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
       this.pok = pok;
       this.publicKey = PublicKeyFactory
           .createKey( SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keys.getPublic()));
-      this.signature = SignatureUtility.signWithEthereum(getUnsignedEncoding(), keys.getPrivate());
+      this.signature = SignatureUtility.signWithEthereum(getUnsignedEncoding(), keys);
 
       if (!verify()) {
         throw new IllegalArgumentException("The signature or proof is not valid");

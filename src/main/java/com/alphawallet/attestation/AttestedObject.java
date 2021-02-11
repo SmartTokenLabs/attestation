@@ -45,7 +45,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
       this.unsignedEncoding = new DERSequence(vec).getEncoded();
-      this.signature = SignatureUtility.signWithEthereum(this.unsignedEncoding, userKeys.getPrivate());
+      this.signature = SignatureUtility.signWithEthereum(this.unsignedEncoding, userKeys);
       vec.add(new DERBitString(this.signature));
       this.encoding = new DERSequence(vec).getEncoded();
     } catch (IOException e) {

@@ -13,33 +13,13 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECCurve.Fp;
 import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.encoders.Hex;
-import sun.security.x509.AlgorithmId;
 
 public class AttestationCrypto {
-  public static final String ECDSA_CURVE = "secp256k1";
-  public static final String MAC_ALGO = "HmacSHA256";
-  public static final ASN1ObjectIdentifier OID_SIGNATURE_ALG = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for elliptic curve crypto ecPublicKey
-  public static final AlgorithmIdentifier ALGORITHM_IDENTIFIER = new AlgorithmIdentifier(OID_SIGNATURE_ALG);
-  public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(AttestationCrypto.ECDSA_CURVE);
-  public static final ECDomainParameters ECDSAdomain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
   public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
@@ -51,7 +31,7 @@ public class AttestationCrypto {
   public static final ECPoint G = curve.createPoint(new BigInteger("15729599519504045482191519010597390184315499143087863467258091083496429125073"), new BigInteger("1368880882406055711853124887741765079727455879193744504977106900552137574951"));
   // Generator for randomness part of Pedersen commitments generated deterministically from  mapToInteger queried on 1 to the curve using try-and-increment
   public static final ECPoint H = curve.createPoint(new BigInteger("10071451177251346351593122552258400731070307792115572537969044314339076126231"), new BigInteger("2894161621123416739138844080004799398680035544501805450971689609134516348045"));
-  private final SecureRandom rand;
+  protected final SecureRandom rand;
 
   public AttestationCrypto(SecureRandom rand) {
     Security.addProvider(new BouncyCastleProvider());
@@ -71,51 +51,11 @@ public class AttestationCrypto {
     return true;
   }
 
-  /**
-   * Code shamelessly stolen from https://medium.com/@fixone/ecc-for-ethereum-on-android-7e35dc6624c9
-   * @param key
-   * @return
-   */
-  public static String addressFromKey(AsymmetricKeyParameter key) {
-    // Todo should be verified that is works as intended, are there any reference values?
-    byte[] pubKey;
-    try {
-      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-      pubKey = spki.getPublicKeyData().getEncoded();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    //discard the first byte which only tells what kind of key it is //i.e. encoded/un-encoded
-    pubKey = Arrays.copyOfRange(pubKey,1,pubKey.length);
-    byte[] hash = hashWithKeccak(pubKey);
-    //finally get only the last 20 bytes
-    return "0x" + Hex.toHexString(Arrays.copyOfRange(hash,hash.length-20,hash.length)).toUpperCase();
-  }
-
   public static byte[] hashWithKeccak(byte[] toHash) {
     MessageDigest KECCAK = new Keccak.Digest256();
     KECCAK.reset();
     KECCAK.update(toHash);
     return KECCAK.digest();
-  }
-
-  /**
-   * Construct default keys; secp256k1
-   */
-  public AsymmetricCipherKeyPair constructECKeys() {
-    return constructECKeys(ECDSAdomain);
-  }
-
-  public AsymmetricCipherKeyPair constructECKeys(X9ECParameters ECDSACurve) {
-    ECDomainParameters domain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
-    return constructECKeys(domain);
-  }
-
-  private AsymmetricCipherKeyPair constructECKeys(ECDomainParameters domain) {
-    ECKeyPairGenerator generator = new ECKeyPairGenerator();
-    ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(domain, rand);
-    generator.init(keygenParams);
-    return generator.generateKeyPair();
   }
 
   /**

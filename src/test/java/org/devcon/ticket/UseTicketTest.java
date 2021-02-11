@@ -12,8 +12,8 @@ import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
@@ -53,10 +53,10 @@ public class UseTicketTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    subjectKeys = crypto.constructECKeys();
-    attestorKeys = crypto.constructECKeys();
-    ticketIssuerKeys = crypto.constructECKeys();
+    crypto = new AttestationCrypto(rand);
+    subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    attestorKeys = SignatureUtility.constructECKeys(rand);
+    ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
   @BeforeEach
@@ -256,7 +256,7 @@ public class UseTicketTest {
     Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    AsymmetricCipherKeyPair newKeys = crypto.constructECKeys();
+    AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
     assertTrue(attestedTicket.verify());
     assertFalse(attestedTicket.checkValidity());

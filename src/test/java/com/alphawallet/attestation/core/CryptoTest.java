@@ -40,9 +40,9 @@ public class CryptoTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys(SECP256K1);
-    issuerKeys = crypto.constructECKeys();
-    senderKeys = crypto.constructECKeys();
+    subjectKeys = SignatureUtility.constructECKeys(SECP256K1, rand);
+    issuerKeys = SignatureUtility.constructECKeys(rand);
+    senderKeys = SignatureUtility.constructECKeys(rand);
   }
 
   @Test
@@ -65,27 +65,26 @@ public class CryptoTest {
 
   @Test
   public void testAddressFromKey() {
-    String key = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
+    String key = SignatureUtility.addressFromKey(subjectKeys.getPublic());
     assertTrue(key.startsWith("0x"));
     assertEquals(key.length(), 2+2*20); // prefix 0x and two chars per byte
     // Assert consistency
-    String keyAgain = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
+    String keyAgain = SignatureUtility.addressFromKey(subjectKeys.getPublic());
     assertTrue(keyAgain.equals(key));
 
     // Negative test
-    String otherKey = AttestationCrypto.addressFromKey(issuerKeys.getPublic());
+    String otherKey = SignatureUtility.addressFromKey(issuerKeys.getPublic());
     assertFalse(otherKey.equals(key));
   }
 
   @Test
   public void testECKeyWithLowY() {
-    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     for (int i=0; i<10; i++) {
-      AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+      AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
       ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
       BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
       System.out.println(yCoord);
-      BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
+      BigInteger fieldModulo = SignatureUtility.ECDSAdomain.getCurve().getField().getCharacteristic();
       assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
     }
   }
