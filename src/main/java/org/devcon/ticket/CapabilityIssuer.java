@@ -26,7 +26,7 @@ public class CapabilityIssuer extends CapabilityCommon {
   private final URL verifierDomain;
 
   public CapabilityIssuer(AsymmetricCipherKeyPair signingKeys, String verifierDomain) throws MalformedURLException {
-    this.signingKeys = SignatureUtility.BCKeysToJavaKey(signingKeys);
+    this.signingKeys = SignatureUtility.convertBouncyCastleKeysToJavaKey(signingKeys);
     this.verifierDomain = new URL(verifierDomain);
   }
 

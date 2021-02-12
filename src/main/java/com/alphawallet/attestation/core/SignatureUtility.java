@@ -86,7 +86,7 @@ public class SignatureUtility {
         do {
             keys = constructECKeys(rand);
             ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-            yCoord = pk.getQ().getYCoord().toBigInteger();
+            yCoord = pk.getQ().getAffineYCoord().toBigInteger();
         } while (yCoord.compareTo(fieldModulo.shiftRight(1)) > 0);
         return keys;
     }
@@ -171,7 +171,7 @@ public class SignatureUtility {
         }
     }
 
-    public static KeyPair BCKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
+    public static KeyPair convertBouncyCastleKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
         return new KeyPair(convertPublicBouncyCastleKeyToJavaKey(bcKeys.getPublic()), convertPrivateBouncyCastleKeyToJavaKey(
             bcKeys.getPrivate()));
     }
