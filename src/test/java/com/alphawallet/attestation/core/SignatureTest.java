@@ -1,7 +1,9 @@
 package com.alphawallet.attestation.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -13,23 +15,13 @@ import java.security.interfaces.ECPublicKey;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.jcajce.provider.digest.SHA256;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.Security;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,16 +29,16 @@ import org.junit.jupiter.api.Test;
 public class SignatureTest {
   private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
   private AsymmetricCipherKeyPair keys;
+  private AsymmetricCipherKeyPair userKeys;
   private SecureRandom rand;
-  private AttestationCrypto crypto;
 
   @BeforeEach
   public void setupCrypto() throws NoSuchAlgorithmException {
     Security.addProvider(new BouncyCastleProvider());
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    crypto = new AttestationCrypto(rand);
-    keys = crypto.constructECKeys(SECP364R1);
+    keys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
   @Test

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.SecureRandom;
@@ -37,8 +37,8 @@ public class CapabilityTest {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    ticketKeys = crypto.constructECKeys(SECP364R1);
+    crypto = new AttestationCrypto(rand);
+    ticketKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
     issuer = new CapabilityIssuer(ticketKeys, verifierDomain);
     validator = new CapabilityValidator(ticketKeys.getPublic(), verifierDomain);
     tasks = new HashSet<>();
