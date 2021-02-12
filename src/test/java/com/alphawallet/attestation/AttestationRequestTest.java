@@ -7,10 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,8 +25,8 @@ public class AttestationRequestTest {
     SecureRandom rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    subjectKeys = crypto.constructECKeys();
+    crypto = new AttestationCrypto(rand);
+    subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
   @Test
@@ -34,7 +34,7 @@ public class AttestationRequestTest {
     String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(request.getPok()));
     assertTrue(request.verify());
@@ -45,7 +45,7 @@ public class AttestationRequestTest {
     String id = "foo@bar.baz";
     AttestationType type = AttestationType.EMAIL;
     BigInteger secret = new BigInteger("42424242");
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     AttestationRequest newRequest = new AttestationRequest(request.getDerEncoding());
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(newRequest.getPok()));
@@ -68,7 +68,7 @@ public class AttestationRequestTest {
     String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(id, type, pok, subjectKeys);
     // Modify a bit of the signature
     request.getSignature()[20] ^= 1;

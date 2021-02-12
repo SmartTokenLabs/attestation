@@ -120,8 +120,8 @@ export class SignedDevconTicket {
           (new URL(source)).searchParams.get('ticket') : source;
       
       let base64str = ticketEncoded
-          .split('_').join('+')
-          .split('-').join('/')
+          .split('_').join('/')
+          .split('-').join('+')
           .split('.').join('=');
 
       // source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;

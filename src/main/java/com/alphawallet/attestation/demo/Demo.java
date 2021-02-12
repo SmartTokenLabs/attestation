@@ -1,21 +1,17 @@
 package com.alphawallet.attestation.demo;
 
-import com.alphawallet.attestation.*;
+import com.alphawallet.attestation.Attestation;
+import com.alphawallet.attestation.AttestationRequest;
+import com.alphawallet.attestation.AttestedObject;
+import com.alphawallet.attestation.FullProofOfExponent;
+import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
-import org.apache.commons.cli.*;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -25,9 +21,22 @@ import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Demo {
-  static AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(new SecureRandom());
+  static SecureRandom rand = new SecureRandom();
+  static AttestationCrypto crypto = new AttestationCrypto(rand);
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
     CommandLine line;
@@ -38,8 +47,6 @@ public class Demo {
         System.err.println("Could not parse commandline arguments");
         throw e;
       }
-      SecureRandom rand = new SecureRandom();
-      crypto = new AttestationCrypto(rand);
       List<String> arguments = line.getArgList();
       if (arguments.size() == 0) {
         System.err.println("First argument must be either \"keys\", \"create-cheque\", \"receive-cheque\", "
@@ -50,7 +57,7 @@ public class Demo {
         case "keys":
           System.out.println("Constructing key pair...");
           try {
-            createKeys(crypto, Paths.get(arguments.get(1)), Paths.get(arguments.get(2)));
+            createKeys(Paths.get(arguments.get(1)), Paths.get(arguments.get(2)));
           } catch (Exception e) {
             System.err.println("Was expecting: <output file to public key> <output file to private key>.");
             throw e;
@@ -130,15 +137,15 @@ public class Demo {
           throw new IllegalArgumentException("Unknown role");
       }
     }
-    catch( Exception e) {
+    catch(Exception e) {
       System.err.println("FAILURE!");
-      return;
+      throw new RuntimeException(e);
     }
     System.out.println("SUCCESS!");
   }
 
-  private static void createKeys(AttestationCrypto crypto, Path pathPubKey, Path pathPrivKey) throws IOException {
-    AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+  private static void createKeys(Path pathPubKey, Path pathPrivKey) throws IOException {
+    AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
         .createSubjectPublicKeyInfo(keys.getPublic());
     byte[] pub = spki.getEncoded();
@@ -161,7 +168,7 @@ public class Demo {
 
   private static void receiveCheque(Path pathUserKey, Path chequeSecretDir,
                                     Path pathAttestationSecret, Path pathCheque, Path pathAttestation, Path pathAttestationKey)
-  throws IOException {
+  throws Exception {
     AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     byte[] chequeSecretBytes = DERUtility.restoreBytes(Files.readAllLines(chequeSecretDir));
     BigInteger chequeSecret = DERUtility.decodeSecret(chequeSecretBytes);
@@ -202,7 +209,7 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
-    if (!sc.testEncoding(redeem.getPok())) {
+    if (!sc.verifyEqualityProof(redeem.getAtt().getCommitment(), redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");
     }
@@ -212,7 +219,7 @@ public class Demo {
       Path outputDirRequest, Path outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
 
     DERUtility.writePEM(request.getDerEncoding(), "ATTESTATION REQUEST", outputDirRequest);

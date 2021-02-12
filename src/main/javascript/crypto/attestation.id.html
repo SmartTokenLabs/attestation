@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<script>
+    // valid:
+    // GeneralizedTime 2021-01-15 01:10:46 UTC
+    // GeneralizedTime 2021-01-19 05:10:46 UTC
+    let base64attestationSecret = "MCIEIA8hkzlFaPlOBtRrD5d0KMiVB7Tj2436uaTTNAWABqCe";
+    let base64attestation = "MIICdTCCAh2gAwIBEgIIVWwImY/wnSUwCQYHKoZIzj0CATAWMRQwEgYDVQQDDAtBbHBoYVdhbGxldDAiGA8yMDIxMDExNTAxMTA0NloYDzIwMjEwMTE5MDUxMDQ2WjA1MTMwMQYDVQQDDCoweDA2MEIyOTBFMjE5NEIzMzE1MTY2NTcxQzVEQzY3QTFGNkZGMzA5RjQwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQEDQgAEWUR83JygfPa4s1ZTEDKfBhK+GKDXqOIbFALqmCQKrOxsDCOMO9RFQu6M8nseD6HVhZYwyovirmZsOByEItzS9aNXMFUwUwYLKwYBBAGLOnN5ASgBAf8EQQQroMZPzjDqUsP100izGK1XkTXKUSvTf/zNUMQKpJod5SzRVLsTfqrVyFHrmwqrUvPMMIe9e8sXa8eywaVb6FuyMAkGByqGSM49AgEDRwAwRAIgYckYrnJp5eUGp+ohQKqlFfqbt9I7Zdr3F6etTCZ148QCIC3iyuma3RwVzs0W3xDWDuB9E2XLDlEpGxXlx2Q/WsHR";
+    function listener(event) {
+        this.debug = 1;
+
+        if ("undefined" === typeof event.data.request) {
+            return;
+        }
+        const request = event.data.request;
+
+        if (this.debug) {
+            console.log('iframe postMessage event received:', request);
+        }
+
+        const source = event.source;
+
+        source.postMessage({
+            attestation: base64attestation,
+            secret: base64attestationSecret,
+        }, event.origin)
+    }
+    if (window.addEventListener) {
+        window.addEventListener("message", listener);
+    } else {
+        // IE8
+        window.attachEvent("onmessage", listener);
+    }
+</script>
+
+</body>
+</html>
