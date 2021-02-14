@@ -13,8 +13,8 @@ import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.PrintStream;
@@ -45,10 +45,10 @@ public class TestRedeemCheque {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    subjectKeys = crypto.constructECKeys();
-    issuerKeys = crypto.constructECKeys();
-    senderKeys = crypto.constructECKeys();
+    crypto = new AttestationCrypto(rand);
+    subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    issuerKeys = SignatureUtility.constructECKeys(rand);
+    senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
   @BeforeEach
@@ -95,7 +95,7 @@ public class TestRedeemCheque {
   @Test
   public void testDecoding() throws InvalidObjectException {
     AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncodingWithSignature(), new ChequeDecoder(),
-        issuerKeys.getPublic(), subjectKeys.getPublic());
+        issuerKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
     assertTrue(AttestationCrypto.verifyEqualityProof(newRedeem.getAtt().getCommitment(), newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
@@ -106,12 +106,12 @@ public class TestRedeemCheque {
     assertArrayEquals(attestedCheque.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
     assertArrayEquals(attestedCheque.getSignature(), newRedeem.getSignature());
     assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
-    assertArrayEquals(attestedCheque.getDerEncoding(), attestedCheque.getDerEncoding());
-    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), attestedCheque.getDerEncodingWithSignature());
+    assertArrayEquals(attestedCheque.getDerEncoding(), newRedeem.getDerEncoding());
+    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newRedeem.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
         .getAtt(), attestedCheque.getPok(),
-        attestedCheque.getSignature(), subjectKeys.getPublic());
+        attestedCheque.getSignature());
 
     assertArrayEquals(attestedCheque.getDerEncoding(), newConstructor.getDerEncoding());
     assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newConstructor.getDerEncodingWithSignature());
@@ -167,7 +167,7 @@ public class TestRedeemCheque {
   @Test
   public void testNegativeDifferentKeys() throws Exception {
     SignedAttestation att = attestedCheque.getAtt();
-    Field field = att.getClass().getDeclaredField("publicKey");
+    Field field = att.getClass().getDeclaredField("attestationVerificationKey");
     field.setAccessible(true);
     // Change public key
     field.set(att, subjectKeys.getPublic());

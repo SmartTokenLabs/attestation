@@ -15,6 +15,8 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
@@ -26,6 +28,7 @@ public class CryptoTest {
   private AsymmetricCipherKeyPair issuerKeys;
   private SecureRandom rand;
   private AttestationCrypto crypto;
+  private static final X9ECParameters SECP256K1 = SECNamedCurves.getByName("secp256k1");
   private static final String ID = "test@test.ts";
   private static final AttestationType TYPE = AttestationType.EMAIL;
   private static final BigInteger SECRET1 = new BigInteger("684084084843542003217847860141382018669978641584584765489");
@@ -37,8 +40,8 @@ public class CryptoTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    issuerKeys = crypto.constructECKeys();
+    subjectKeys = SignatureUtility.constructECKeys(SECP256K1, rand);
+    issuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
   @Test
@@ -70,27 +73,26 @@ public class CryptoTest {
 
   @Test
   public void testAddressFromKey() {
-    String key = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
+    String key = SignatureUtility.addressFromKey(subjectKeys.getPublic());
     assertTrue(key.startsWith("0x"));
     assertEquals(key.length(), 2+2*20); // prefix 0x and two chars per byte
     // Assert consistency
-    String keyAgain = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
+    String keyAgain = SignatureUtility.addressFromKey(subjectKeys.getPublic());
     assertTrue(keyAgain.equals(key));
 
     // Negative test
-    String otherKey = AttestationCrypto.addressFromKey(issuerKeys.getPublic());
+    String otherKey = SignatureUtility.addressFromKey(issuerKeys.getPublic());
     assertFalse(otherKey.equals(key));
   }
 
   @Test
   public void testECKeyWithLowY() {
-    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     for (int i=0; i<10; i++) {
-      AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+      AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
       ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
       BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
       System.out.println(yCoord);
-      BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
+      BigInteger fieldModulo = SignatureUtility.ECDSAdomain.getCurve().getField().getCharacteristic();
       assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
     }
   }

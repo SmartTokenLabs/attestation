@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import java.io.IOException;
@@ -31,8 +29,7 @@ public class TestCheque {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    senderKeys = crypto.constructECKeys();
+    senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
 
@@ -50,7 +47,7 @@ public class TestCheque {
     assertTrue(newCheque.checkValidity());
     assertArrayEquals(cheque.getDerEncoding(), newCheque.getDerEncoding());
 
-    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreKey(decoded.get(1));
+    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreDefaultKey(decoded.get(1));
     Cheque otherConstructorCheque = new Cheque(newCheque.getCommitment(), newCheque.getAmount(),
         newCheque.getNotValidBefore(), newCheque.getNotValidAfter(), newCheque.getSignature(), newIssuerPublicKey);
     assertArrayEquals(cheque.getDerEncoding(), otherConstructorCheque.getDerEncoding());

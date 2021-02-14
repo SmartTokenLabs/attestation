@@ -3,6 +3,7 @@ package org.devcon.ticket;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -12,8 +13,8 @@ import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
 import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
@@ -50,10 +51,10 @@ public class UseTicketTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
 
-    crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    subjectKeys = crypto.constructECKeys();
-    attestorKeys = crypto.constructECKeys();
-    ticketIssuerKeys = crypto.constructECKeys();
+    crypto = new AttestationCrypto(rand);
+    subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    attestorKeys = SignatureUtility.constructECKeys(rand);
+    ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
   @BeforeEach
@@ -97,9 +98,29 @@ public class UseTicketTest {
   }
 
   @Test
+  public void testWithoutSig() throws InvalidObjectException {
+    AttestedObject attestedTicketWithoutSig = new AttestedObject(attestedTicket.getDerEncoding(), new TicketDecoder(
+        ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
+    assertTrue(attestedTicketWithoutSig.verify());
+    assertTrue(attestedTicketWithoutSig.checkValidity());
+    assertTrue(attestedTicketWithoutSig.getAttestableObject().verify());
+    assertTrue(attestedTicketWithoutSig.getAtt().verify());
+    assertTrue(AttestationCrypto.verifyEqualityProof(attestedTicketWithoutSig.getAtt().getCommitment(), attestedTicketWithoutSig.getAttestableObject().getCommitment(), attestedTicketWithoutSig.getPok()));
+
+    assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
+        attestedTicketWithoutSig.getAttestableObject().getDerEncoding());
+    assertArrayEquals(attestedTicket.getAtt().getDerEncoding(), attestedTicketWithoutSig.getAtt().getDerEncoding());
+    assertArrayEquals(attestedTicket.getPok().getDerEncoding(), attestedTicketWithoutSig.getPok().getDerEncoding());
+    assertNull(attestedTicketWithoutSig.getSignature());
+    assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
+    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicketWithoutSig.getDerEncoding());
+    assertFalse(Arrays.equals(attestedTicket.getDerEncodingWithSignature(), attestedTicketWithoutSig.getDerEncodingWithSignature()));
+  }
+
+  @Test
   public void testDecoding() throws InvalidObjectException {
     AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncodingWithSignature(), new TicketDecoder(
-        ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), subjectKeys.getPublic());
+        ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
     assertTrue(AttestationCrypto.verifyEqualityProof(newAttestedTicket.getAtt().getCommitment(), newAttestedTicket.getAttestableObject().getCommitment(), newAttestedTicket.getPok()));
@@ -110,15 +131,15 @@ public class UseTicketTest {
     assertArrayEquals(attestedTicket.getPok().getDerEncoding(), newAttestedTicket.getPok().getDerEncoding());
     assertArrayEquals(attestedTicket.getSignature(), newAttestedTicket.getSignature());
     assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
-    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
-    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
+    assertArrayEquals(attestedTicket.getDerEncoding(), newAttestedTicket.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), newAttestedTicket.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
         attestedTicket.getAtt(), attestedTicket.getPok(),
-        attestedTicket.getSignature(), subjectKeys.getPublic());
+        attestedTicket.getSignature());
 
-    assertArrayEquals(attestedTicket.getDerEncoding(), attestedTicket.getDerEncoding());
-    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
+    assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(newConstructor.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
   }
 
   @Test
@@ -158,7 +179,7 @@ public class UseTicketTest {
   @Test
   public void testNegativeDifferentKeys() throws Exception {
     SignedAttestation att = attestedTicket.getAtt();
-    Field field = att.getClass().getDeclaredField("publicKey");
+    Field field = att.getClass().getDeclaredField("attestationVerificationKey");
     field.setAccessible(true);
     // Change public key
     field.set(att, subjectKeys.getPublic());
@@ -243,5 +264,16 @@ public class UseTicketTest {
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
     }
+  }
+
+  @Test
+  public void testNonAttestedSigningKey() {
+    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    SignedAttestation signed = new SignedAttestation(att, attestorKeys);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    assertTrue(attestedTicket.verify());
+    assertFalse(attestedTicket.checkValidity());
   }
 }

@@ -76,7 +76,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
   private void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo) throws IOException, IllegalArgumentException {
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(publicKeyInfo.getObjectAt(0));
     byte[] publicKeyBytes = DERBitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
-    AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreKey(algorithm, publicKeyBytes);
+    AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreDefaultKey(algorithm, publicKeyBytes);
       SubjectPublicKeyInfo decodedSpki = SubjectPublicKeyInfoFactory
           .createSubjectPublicKeyInfo(decodedPublicKey);
     // Ensure that the right type of public key is given

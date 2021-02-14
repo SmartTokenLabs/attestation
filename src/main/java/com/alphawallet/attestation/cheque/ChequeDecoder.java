@@ -35,7 +35,7 @@ public class ChequeDecoder implements AttestableObjectDecoder<Cheque> {
 
     byte[] commitment = (ASN1OctetString.getInstance(cheque.getObjectAt(2))).getOctets();
 
-    AsymmetricKeyParameter publicKey = SignatureUtility.restoreKey(DERBitString.getInstance(asn1.getObjectAt(1)).getEncoded());
+    AsymmetricKeyParameter publicKey = SignatureUtility.restoreDefaultKey(DERBitString.getInstance(asn1.getObjectAt(1)).getEncoded());
 
     // Verify signature
     byte[] signature = DERBitString.getInstance(asn1.getObjectAt(2)).getBytes();

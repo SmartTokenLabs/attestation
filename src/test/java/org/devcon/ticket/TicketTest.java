@@ -1,16 +1,13 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,11 +16,14 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class TicketTest {
   private static final String MAIL = "test@test.ts";
@@ -42,9 +42,8 @@ public class TicketTest {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
-    senderKeys = crypto.constructECKeys();
-    otherKeys = crypto.constructECKeys();
+    senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    otherKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
   @Test
@@ -69,7 +68,7 @@ public class TicketTest {
     assertTrue(newTicket.checkValidity());
     assertArrayEquals(ticket.getDerEncoding(), newTicket.getDerEncoding());
 
-    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreKey(decoded.get(1));
+    AsymmetricKeyParameter newIssuerPublicKey = SignatureUtility.restoreDefaultKey(decoded.get(1));
     Ticket otherConstructorTicket = new Ticket(newTicket.getDevconId(), newTicket.getTicketId(), newTicket.getTicketClass(),
         newTicket.getCommitment(), newTicket.getSignature(), newIssuerPublicKey);
     assertArrayEquals(ticket.getDerEncoding(), otherConstructorTicket.getDerEncoding());
