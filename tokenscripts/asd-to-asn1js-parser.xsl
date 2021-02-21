@@ -12,7 +12,8 @@
 	<xsl:param name="delim" select="','" />
 	<xsl:param name="quote" select="'&quot;'" />
 	<xsl:param name="break" select="'&#xA;'" />
-  
+	<!-- FIXME: Ideally we can get it as a run time parameter once we have clear idea -->
+	<xsl:param name="externallyImported" select="('PublicKeyInfo')" />
   
 	<xsl:template match="@*|node()">
 		<xsl:apply-templates select="@*|node()"/>
@@ -30,45 +31,49 @@
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 		</xsl:text>
+<xsl:for-each select="//namedType/@name[. = $externallyImported]">
+	import <xsl:value-of select="."/> from "./pki_src/<xsl:value-of select="."/>.js";
+</xsl:for-each>		
 		<!-- FIXME: handle other imports -->
-		
-		<xsl:apply-templates select="namedType[@name = current()//*/@type]"/>
+		<xsl:apply-templates select="namedType[@name = current()//*/@type][not(@name = $externallyImported)]"/>
 		<xsl:apply-templates select="namedType[not(@name = current()//*/@type)]"/>
 	</xsl:template>
 	
 	<xsl:template match="namedType[not(@name = /asnx:module//*/@type)]">
 export class <xsl:value-of select="@name"/> {
 	constructor(source = {}) {
-    if (typeof(source) == "string") {
-	<!-- FIXME: variable names and URL parameters should be dynamic too -->	
-      const ticketEncoded = (source.startsWith("https://")) ?
-          (new URL(source)).searchParams.get('ticket') : source;
-      
-      let base64str = ticketEncoded
-          .split('_').join('+')
-          .split('-').join('/')
-          .split('.').join('=');
+		if (typeof(source) == "string") {
+		<!-- FIXME: variable names and URL parameters should be dynamic too -->	
+		  const ticketEncoded = (source.startsWith("https://")) ?
+			  (new URL(source)).searchParams.get('ticket') : source;
+		  
+		  let base64str = ticketEncoded
+			  .split('_').join('+')
+			  .split('-').join('/')
+			  .split('.').join('=');
 
-      // source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
-      if (typeof Buffer !== 'undefined') {
-        source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
-      } else {
-        source = Uint8Array.from(atob(base64str), c => c.charCodeAt(0)).buffer;
-      }
-      
-    }
-    if (source instanceof ArrayBuffer) {
-      const asn1 = fromBER(source);
-      this.fromSchema(asn1.result);
-    } else {
-	<xsl:for-each select="type/sequence/*">
-		<xsl:call-template name="default-constructor-set-obj"/>	
-	</xsl:for-each>	
+		  // source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+		  if (typeof Buffer !== 'undefined') {
+			source = Uint8Array.from(Buffer.from(base64str, 'base64')).buffer;
+		  } else {
+			source = Uint8Array.from(atob(base64str), c => c.charCodeAt(0)).buffer;
+		  }
+		  
+		}
+		if (source instanceof ArrayBuffer) {
+		  const asn1 = fromBER(source);
+		  this.fromSchema(asn1.result);
+		} else {
+		<xsl:for-each select="type/sequence/*">
+			<xsl:call-template name="default-constructor-set-obj"/>	
+		</xsl:for-each>	
+		}
+	}	
     static defaultValues(memberName) {
       switch (memberName) {
 		<xsl:for-each select="type/sequence/optional">
 		case "<xsl:value-of select="element/@name"/>":
-			return new <xsl:value-of select="element/@name"/>();
+			return new <xsl:value-of select="if(element/@type = $externallyImported) then element/@type else element/@name"/>();
 		</xsl:for-each>	  
         default:
           throw new Error(`Invalid member name for <xsl:value-of select="@name"/> class: ${memberName}`);
@@ -90,24 +95,25 @@ export class <xsl:value-of select="@name"/> {
 	<!-- generate function serialize -->
 	<xsl:call-template name="serialize"/>
 	
-	
-  }		
+		 
 }
 	</xsl:template>
 	
 	<xsl:template match="namedType[@name = /asnx:module//*/@type]">
 export class <xsl:value-of select="@name"/> {
 	constructor(source = {}) {
-    if (typeof (source) == "string") {
-      throw new TypeError("Unimplemented: Not accepting string yet.")
+		if (typeof (source) == "string") {
+		  throw new TypeError("Unimplemented: Not accepting string yet.")
+		}
+		if (source instanceof ArrayBuffer) {
+		  const asn1 = fromBER(source);
+		  this.fromSchema(asn1.result);
+		} else {
+		<xsl:for-each select="type/sequence/*">
+			<xsl:call-template name="default-constructor-set-obj"/>	
+		</xsl:for-each>			
+		}		
     }
-    if (source instanceof ArrayBuffer) {
-      const asn1 = fromBER(source);
-      this.fromSchema(asn1.result);
-    } else {
-	<xsl:for-each select="type/sequence/*">
-		<xsl:call-template name="default-constructor-set-obj"/>	
-	</xsl:for-each>	
     static defaultValues(memberName) {
       switch (memberName) {
 		<xsl:for-each select="type/sequence/optional">
@@ -126,12 +132,12 @@ export class <xsl:value-of select="@name"/> {
 	<xsl:call-template name="fromSchema"/>
 	
 	<!-- generate function toSchema -->
-	<xsl:call-template name="toSchema"/>
+	<xsl:call-template name="toSchema">
+		
+	</xsl:call-template>
 	
 	<!-- generate function toJSON -->
 	<xsl:call-template name="toJSON"/>
-	
-  }		
 }
 	</xsl:template>
 	<xsl:template name="default-constructor-set-obj">
@@ -165,7 +171,7 @@ export class <xsl:value-of select="@name"/> {
     const names = getParametersValue(parameters, "names", {});
 
     return new Sequence({
-      name: names.blockName || "<xsl:value-of select="(/*//element[@type = current()/@name]/@name, @name)"/>",
+      name: names.blockName || "<xsl:value-of select="(/*//element[@type = current()/@name]/@name, @name)[1]"/>",
       value: [
 		<xsl:for-each select="type/sequence//element">
 		<xsl:choose>
@@ -189,7 +195,8 @@ export class <xsl:value-of select="@name"/> {
 			</xsl:otherwise>
 		</xsl:choose><xsl:if test="position() != last()">,</xsl:if>
 		</xsl:for-each>	
-		}
+		 ],
+    });
     }
 	</xsl:template>
 	
@@ -213,7 +220,6 @@ export class <xsl:value-of select="@name"/> {
 
     //region Get internal properties from parsed schema
     // noinspection JSUnresolvedVariable
-	<xsl:message>1-<xsl:sequence select="."/></xsl:message>
 	<xsl:for-each select="type/sequence/*">
 	  <xsl:choose>
 		<xsl:when test="@type = ('asnx:INTEGER')">
@@ -244,10 +250,37 @@ export class <xsl:value-of select="@name"/> {
     }
 	</xsl:template>
 	<xsl:template name="toSchema">
+	
+	<xsl:variable name="notAllPremetive" select="not(type/sequence//element[not(starts-with(@type, 'asnx:'))])"/>
+	<xsl:variable name="sequenceName" select="concat(@name, 'Sequence')"/>
+	<xsl:variable name="elementName" select="//element[@type = current()/@name]/@name"/>
+	<xsl:message>1-<xsl:sequence select="."/></xsl:message>
 	toSchema() {
     //region Create array for output sequence
     const outputArray = [];
 	
+	<xsl:choose>
+		<xsl:when test="$notAllPremetive">
+	const <xsl:value-of select="$sequenceName"/> = new Sequence({
+      name: "<xsl:value-of select="$elementName"/>",
+      value: [
+	  <xsl:for-each select="type/sequence/element">
+		new Integer({
+          name: "<xsl:value-of select="@name"/>",
+          isHexOnly: true,
+          valueHex: this.<xsl:value-of select="@name"/>,
+        }),</xsl:for-each>
+      ],
+    });
+
+    // verifying the sequence against schema
+    const result = compareSchema(<xsl:value-of select="$sequenceName"/>, <xsl:value-of select="$sequenceName"/>, <xsl:value-of select="@name"/>.schema());
+    console.log(result.verified);
+
+    return <xsl:value-of select="$sequenceName"/>;
+		</xsl:when>
+		<xsl:otherwise>
+		
 	<xsl:for-each select="type/sequence/*">
 	  <xsl:choose>
 		<xsl:when test="starts-with(@type, 'asnx:')">
@@ -271,17 +304,28 @@ export class <xsl:value-of select="@name"/> {
       name:"<xsl:value-of select="@name"/>",
       value: outputArray,
     }));
-    //endregion
+    //endregion	
+		</xsl:otherwise>
+	</xsl:choose>
+	
   }
 	</xsl:template>
 	<xsl:template name="toJSON">
+	
 	toJSON() {
-    const object = {
+		const object = {
 	
 	<xsl:for-each select="type/sequence/element">
 	  <xsl:choose>
 		<xsl:when test="starts-with(@type, 'asnx:')">
-			<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>,	
+			<xsl:choose>
+				<xsl:when test="contains(@type, 'INTEGER')">
+					<xsl:value-of select="@name"/>: BigInt("0x" + bufferToHexCodes(this.<xsl:value-of select="@name"/>)),
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>,
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:when>
 		<xsl:when test="self::optional">
 			<xsl:for-each select="element">
@@ -301,7 +345,7 @@ export class <xsl:value-of select="@name"/> {
 			if(this.<xsl:value-of select="@name"/>)
 			<xsl:value-of select="@name"/>: this.<xsl:value-of select="@name"/>,	
 		</xsl:when>
-		<xsl:when test="self::optional">
+		<xsl:when test="parent::optional">
 		if(this.<xsl:value-of select="@name"/>)
 			object["<xsl:value-of select="@name"/>"] =  this.<xsl:value-of select="@name"/>.toJSON();
 		</xsl:when>
