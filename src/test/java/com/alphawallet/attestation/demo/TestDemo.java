@@ -22,6 +22,7 @@ public class TestDemo {
     rand.setSeed("seed".getBytes());
     // Set the demo to use deterministic randomness
     Demo.crypto = new AttestationCrypto(rand);
+    Demo.rand = rand;
   }
 
   @Test

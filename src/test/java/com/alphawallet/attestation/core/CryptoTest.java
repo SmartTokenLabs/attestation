@@ -10,16 +10,20 @@ import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.UsageProofOfExponent;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -83,6 +87,18 @@ public class CryptoTest {
     // Negative test
     String otherKey = SignatureUtility.addressFromKey(issuerKeys.getPublic());
     assertFalse(otherKey.equals(key));
+  }
+
+  /**
+   * Reference key found here https://medium.com/@tunatore/how-to-generate-ethereum-addresses-technical-address-generation-explanation-and-online-course-9a56359f139e
+   */
+  @Test
+  public void testAddressWithReferenceKey() throws IOException {
+    String hexKey = "048e66b3e549818ea2cb354fb70749f6c8de8fa484f7530fc447d5fe80a1c424e4f5ae648d648c980ae7095d1efad87161d83886ca4b6c498ac22a93da5099014a";
+    DERBitString derPk = new DERBitString(Hex.decode(hexKey));
+    AsymmetricKeyParameter pk = SignatureUtility.restoreDefaultKey(derPk.getEncoded());
+    String address = SignatureUtility.addressFromKey(pk);
+    assertEquals("0x00B54E93EE2EBA3086A55F4249873E291D1AB06C", address);
   }
 
   @Test

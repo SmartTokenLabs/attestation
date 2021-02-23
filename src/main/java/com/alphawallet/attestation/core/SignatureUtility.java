@@ -129,6 +129,7 @@ public class SignatureUtility {
 
     /**
      * Code shamelessly stolen from https://medium.com/@fixone/ecc-for-ethereum-on-android-7e35dc6624c9
+     * But then fixed due to a bug in that code.
      * @param key
      * @return
      */
@@ -136,7 +137,7 @@ public class SignatureUtility {
         byte[] pubKey;
         try {
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-            pubKey = spki.getPublicKeyData().getEncoded();
+            pubKey = spki.getPublicKeyData().getOctets();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
