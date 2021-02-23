@@ -4,12 +4,13 @@ import {
     mod,
     uint8merge,
     stringToArray,
-    BnPowMod, hexStringToArray, bnToUint8, uint8ToBn
+    BnPowMod,  bnToUint8, uint8ToBn
 } from "./utils";
-import {KeyPair} from "./KeyPair";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
+
+const crypto = require('crypto');
 
 let sha3 = require("js-sha3");
 
@@ -190,14 +191,25 @@ export class AttestationCrypto {
     }
 
     makeSecret(bytes = 48): bigint{
-        var array = new Uint8Array(bytes);
-        window.crypto.getRandomValues(array);
+
+        return mod(BigInt(AttestationCrypto.generateRandomHexString(bytes)), CURVE_BN256.n);
+    }
+
+    static generateRandomHexString(len: number): string {
+        var array = new Uint8Array(len);
+
+        if (window && window.crypto){
+            window.crypto.getRandomValues(array);
+        } else {
+            array = new Uint8Array(crypto.randomBytes(len));
+        }
 
         let output = '0x';
         for (var i = 0; i < array.length; i++) {
-            output += array[i].toString(16);
+            output += array[i].toString(16).padStart(2,'0');
         }
-        return mod(BigInt(output), CURVE_BN256.n);
+
+        return output;
     }
 
 
@@ -290,6 +302,15 @@ export class AttestationCrypto {
         return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallenge()), c);
     }
 
+    public verifyEqualityProofUint8(commitment1: Uint8Array, commitment2: Uint8Array, pok: ProofOfExponentInterface): boolean  {
+        let comPoint1: Point = Point.decodeFromUint8(commitment1, CURVE_BN256);
+        let comPoint2: Point = Point.decodeFromUint8(commitment2, CURVE_BN256);
+        // Compute the value the riddle should have
+        let riddle: Point = comPoint1.subtract(comPoint2);
+        let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
+        return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallenge()), c);
+    }
+
     private verifyPok(pok: FullProofOfExponent, c: bigint): boolean {
         // Check that the c has been sampled correctly using rejection sampling
         if (c >= CURVE_BN256.n) {
@@ -327,9 +348,4 @@ export class AttestationCrypto {
     //     return lhs.equals(rhs);
     // }
 
-    // addressFromKey(key: KeyPair){
-    //     let pubKey = key.getPublicKeyAsHexStr();
-    //     let pubKeyHash = sha3.keccak256(hexStringToArray(pubKey));
-    //     return '0x' + pubKeyHash.slice(-40).toUpperCase();
-    // }
 }

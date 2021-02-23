@@ -1,6 +1,16 @@
-import {base64ToUint8array, hexStringToArray, uint8tohex} from "./utils";
+import {base64ToUint8array, hexStringToArray, stringToArray, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {CURVE_SECP256k1, Point} from "./Point";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {
+    PrivateKeyData,
+    PrivateKeyInfo,
+    SubjectPublicKeyInfo
+} from "../asn1/shemas/AttestationFramework";
+import {ethers} from "ethers";
+
+let EC = require("elliptic");
+let ec = new EC.ec('secp256k1');
 
 let sha3 = require("js-sha3");
 
@@ -12,24 +22,21 @@ const G = new Point(550662630222773436695787188951685343262506034537775941755001
 
 export class KeyPair {
     private constructor() {}
-    private privateInHex: string;
-    private publicInHex: string;
+    private privKey: Uint8Array;
+    private pubKey: Uint8Array;
+    private ethereumPrefix: string = "\u0019Ethereum Signed Message:\n";
     getPrivateAsHexString(): string{
-        return this.privateInHex;
+        return uint8tohex(this.privKey);
     }
     getPrivateAsBigInt(): bigint{
-        return BigInt('0x' + this.privateInHex);
+        return uint8ToBn(this.privKey);
     }
     static privateFromBigInt(priv: bigint): KeyPair {
         let me = new this();
-        me.privateInHex = priv.toString(16).padStart(64, '0');
+        me.privKey = new Uint8Array(hexStringToArray(priv.toString(16).padStart(64, '0')));
         return me;
     }
-    static privateFromHex(priv: string): KeyPair {
-        let me = new this();
-        me.privateInHex = priv.padStart(64, '0');
-        return me;
-    }
+
     // hex string 129-130 symbols with leading 04 (it means uncompressed)
     // TODO test if correct input string
     static fromPublicHex(publicHex: string){
@@ -37,17 +44,53 @@ export class KeyPair {
             throw new Error('Wrong public hex length');
         }
         let me = new this();
-        me.publicInHex = publicHex.padStart(130, '0');
+        me.pubKey = new Uint8Array(hexStringToArray(publicHex));
         return me;
     }
+
+    static publicFromBase64(base64: string): KeyPair {
+        let me = new this();
+
+        let publicUint8 = base64ToUint8array(base64);
+
+        let pub: SubjectPublicKeyInfo = AsnParser.parse( uint8toBuffer(publicUint8), SubjectPublicKeyInfo);
+
+        me.pubKey = pub.value.subjectPublicKey;
+        return me;
+    }
+
+    static publicFromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): KeyPair {
+        let me = new this();
+        me.pubKey = spki.value.subjectPublicKey;
+        return me;
+    }
+
+    static publicFromUint(key: Uint8Array): KeyPair {
+        let me = new this();
+
+        if (key.byteLength != 65) {
+            console.error('Wrong public key length');
+            throw new Error('Wrong public key length');
+        }
+        me.pubKey = new Uint8Array(key);
+        return me;
+    }
+
+    static privateFromKeyInfo(spki: PrivateKeyInfo): KeyPair {
+        let me = new this();
+
+        let privateKeyObj: PrivateKeyData = AsnParser.parse( spki.keysData, PrivateKeyData);
+
+        me.privKey = new Uint8Array(privateKeyObj.privateKey);
+        return me;
+    }
+
+    /*
     static privateFromAsn1base64(base64: string): KeyPair {
         let me = new this();
-        let base64StrArray = base64.split(/\r?\n/);
-        if (base64.slice(0,3) === "---") {
-            base64StrArray.shift();
-            base64StrArray.pop();
-        }
-        let privateUint8 = base64ToUint8array(base64StrArray.join(''));
+
+        let privateUint8 = base64ToUint8array(base64);
+
         let mainSequence = ASN1.decode(privateUint8);
         if (mainSequence.typeName() != "SEQUENCE" || mainSequence.sub.length != 3) {
             throw new Error('Wrong Private Key format(mainSequence)');
@@ -70,6 +113,8 @@ export class KeyPair {
         me.privateInHex = asn1.decode(Uint8Array.from(hexStringToArray(privateKeyOctetString)));
         return me;
     }
+     */
+
     // Generate a private key
     static async generateKeyAsync(): Promise<KeyPair> {
         // using subtlecrypto to generate a key. note that we are using an AES key
@@ -101,15 +146,14 @@ export class KeyPair {
     }
 
     getPublicKeyAsHexStr(): string {
-        if (this.publicInHex) {
-            return this.publicInHex;
+        if (this.pubKey) {
+            return uint8tohex(this.pubKey);
         } else {
             let pubPoint = G.multiplyDA(this.getPrivateAsBigInt());
             // prefix 04 means it is uncompressed key
             return '04' + pubPoint.x.toString(16).padStart(64, '0') + pubPoint.y.toString(16).padStart(64, '0')
         }
     }
-
 
     getAsnDerPublic():string {
         var pubPoint = this.getPublicKeyAsHexStr();
@@ -126,5 +170,51 @@ export class KeyPair {
         pubPoint = pubPoint.substr(2);
         let hash = sha3.keccak256(pubPoint);
         return "0x" + hash.substr(-20);
+    }
+
+    signMessage(message: string){
+        // TODO
+    }
+    signBytes(bytes: number[]): string{
+        let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
+        let encodingHash = sha3.keccak256(bytes)
+        let signature = ecKey.sign(encodingHash);
+        return signature.toDER('hex');
+    }
+
+    signStringWithEthereum(message: string): string{
+        let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
+        let finalMsg = this.ethereumPrefix + message.length + message;
+        let encodingHash = sha3.keccak256(stringToArray(finalMsg));
+        let signature = ecKey.sign(encodingHash);
+        return signature.toDER('hex');
+    }
+
+    signHexStringWithEthereum(message: string): string{
+        return this.signStringWithEthereum('0x' + message);
+    }
+
+    signBytesWithEthereum(bytes: number[]): string{
+        let message = '0x' + uint8tohex(new Uint8Array(bytes));
+        return this.signStringWithEthereum(message);
+    }
+
+    verifyHexStringWithEthereum(message: string, signature: string): boolean{
+        let finalMsg = '0x' + message;
+        let encodingHash = sha3.keccak256(stringToArray(this.ethereumPrefix + finalMsg.length + finalMsg));
+
+        let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
+        var m = signature.match(/([a-f\d]{64})/gi);
+
+        let sign = {
+            r: m[0],
+            s: m[1]
+        };
+
+        // let s = {
+        //   r: '5170cdcfb680fa5d7dcb15fa0465be7bc3e75105c986c37ebbab7b1e269b9f41',
+        //   s: '5a52405154b46d1b6a5593e45e4b5dbe40a22a713dcc3b43783ff4aaa465886a'
+        // };
+        return ecKey.verify(encodingHash, sign);
     }
 }

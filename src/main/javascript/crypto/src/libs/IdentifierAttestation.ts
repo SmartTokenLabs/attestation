@@ -3,24 +3,36 @@ import {AttestationCrypto} from "./AttestationCrypto";
 import {Asn1Der} from "./DerUtility";
 import {uint8tohex} from "./utils";
 import {Attestation} from "./Attestation";
+import {Validateable} from "./Validateable";
 
-export class IdentifierAttestation extends Attestation {
+export class IdentifierAttestation extends Attestation implements Validateable{
     private crypto: AttestationCrypto;
     static OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
-    constructor(riddle: Uint8Array, private keys: KeyPair) {
+    private keys: KeyPair;
+    constructor() {
         super();
+    }
+
+    fromCommitment(commitment: Uint8Array, keys: KeyPair){
+        this.keys = keys;
         this.setVersion(18); // Our initial version
         this.setSubject("CN=" + this.keys.getAddress());
         this.setSignature(AttestationCrypto.OID_SIGNATURE_ALG);
 
         this.setSubjectPublicKeyInfo(keys);
-        this.setRiddle(riddle);
+        this.setCommitment(commitment);
     }
 
     static fromData(identity: string, type: number, keys: KeyPair, secret: bigint){
         let crypto = new AttestationCrypto();
-        let riddle = crypto.makeCommitment(identity, type, secret);
-        return new this(riddle, keys);
+        let commitment = crypto.makeCommitment(identity, type, secret);
+        return (new this()).fromCommitment(commitment, keys);
+    }
+
+    static fromBytes(bytes: Uint8Array){
+        let me = new this();
+        me.fromDerEncode(bytes);
+        return me;
     }
 
     setSignature(signature: string) {
@@ -28,7 +40,7 @@ export class IdentifierAttestation extends Attestation {
         // let alg = new AlgorithmIdentifierASN();
         // alg.algorithm = signature;
         // hadrcoded ASN1 sequence
-        this.signature = "300906072A8648CE3D0201";
+        this.signingAlgorithm = "300906072A8648CE3D0201";
     }
     setSubjectPublicKeyInfo(keys: KeyPair){
         // TODO generate algorithm object
@@ -41,18 +53,18 @@ export class IdentifierAttestation extends Attestation {
     }
 
 
-    setRiddle(riddle: Uint8Array) {
+    setCommitment(commitment: Uint8Array) {
         // TODO hardcoded OID
         // extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
         let attestOIDencoded = "060B2B060104018B3A73790128";
         let extensions: string = attestOIDencoded
             + Asn1Der.encode('BOOLEAN', 1)
-        + Asn1Der.encode('OCTET_STRING', uint8tohex(riddle));
+        + Asn1Der.encode('OCTET_STRING', uint8tohex(commitment));
 
         let extensionsEncoded = Asn1Der.encode('SEQUENCE', extensions);
         extensionsEncoded = Asn1Der.encode('SEQUENCE', extensionsEncoded);
 
-        this.riddle = riddle;
+        this.commitment = commitment;
         // Double Sequence is needed to be compatible with X509V3
         // TODO create extensions as correct type "Extensions"
         // this.extensions = extensionsEncoded;

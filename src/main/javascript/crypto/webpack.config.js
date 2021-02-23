@@ -20,7 +20,7 @@ module.exports = {
         mainFields: ['loader', 'main']
     },
     output: {
-        filename: 'bundle.js',
+        filename: 'authenticator.js',
         path: path.resolve(__dirname, 'dist'),
     },
     // watch: true,

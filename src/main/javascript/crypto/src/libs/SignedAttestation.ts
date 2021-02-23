@@ -1,24 +1,27 @@
 import {AsnParser} from "@peculiar/asn1-schema";
-import {MyAttestation} from "./../asn1/shemas/AttestationFramework";
+import {MyAttestation} from "../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
-import {base64ToUint8array, uint8tohex} from "./utils";
+import {base64ToUint8array, uint8toBuffer, uint8tohex} from "./utils";
 import {SignatureUtility} from "./SignatureUtility";
 import {Attestation} from "./Attestation";
+import {Verifiable} from "./Verifiable";
+import {Validateable} from "./Validateable";
+import {ASNEncodable} from "./ASNEncodable";
 
-export class SignedAttestation {
+export class SignedAttestation implements ASNEncodable, Verifiable, Validateable {
     signature: any;
     publicKey: any;
     att: Attestation;
-    uint8data: Uint8Array;
     commitment: Uint8Array;
     // constructor(asn1der: string, private keys: KeyPair) {
     constructor(
-        private asn1der: string,
+        private uint8data: Uint8Array,
         private attestorKey: KeyPair
     ) {
-        this.uint8data = base64ToUint8array(asn1der);
-        const myAttestation: MyAttestation = AsnParser.parse(this.uint8data, MyAttestation);
-        this.att =  Attestation.fromDerEncode(myAttestation.signedInfo);
+        const myAttestation: MyAttestation = AsnParser.parse( uint8toBuffer( this.uint8data ), MyAttestation);
+        this.att = new Attestation();
+        this.att.fromDerEncode(myAttestation.signedInfo);
+
         this.signature = myAttestation.signatureValue;
         if (!this.verify()) {
             throw new Error("SignedAttestation signature is not valid");
@@ -27,14 +30,18 @@ export class SignedAttestation {
 
     verify(){
         try {
-            return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKey);
+            let publKey = SignatureUtility.recoverPublicKeyFromMessageSignature(this.att.getDerEncoding(), new Uint8Array(this.signature));
+            console.log('publKey');
+            console.log(publKey);
+            console.log(this.attestorKey.getPublicKeyAsHexStr());
+            // return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKey);
         } catch (e) {
             return false;
         }
     }
 
     getCommitment() {
-        return this.att.getRiddle();
+        return this.att.getCommitment();
     }
 
     checkValidity(){

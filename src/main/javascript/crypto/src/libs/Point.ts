@@ -1,4 +1,4 @@
-import {mod, invert, bnToBuf, uint8merge, BnPowMod} from "./utils";
+import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn} from "./utils";
 
 // curve SECP256k1
 export let CURVE_SECP256k1 = {
@@ -81,12 +81,11 @@ export class Point {
             return new Uint8Array(0);
         }
 
-        let X = bnToBuf(this.x);
+        let X = bnToBuf(this.x,32);
         if (compressed) {
             return uint8merge([Uint8Array.from([2]),X]);
         }
-
-        return uint8merge([Uint8Array.from([4]), X , bnToBuf(this.y)]);
+        return uint8merge([Uint8Array.from([4]), X , bnToBuf(this.y, 32)]);
     }
 
     equals(other: Point): boolean {
@@ -117,6 +116,27 @@ export class Point {
                 let X = BigInt('0x' + hex.slice(2,66));
                 let Y = BigInt('0x' + hex.slice(66,130));
                 // console.log(X,Y);
+                p = new Point(X, Y, useCurve);
+                break;
+            default:
+                throw new Error('only decompressed points allowed');
+        }
+        if (!p.validate()) {
+            throw new Error(`Point not valid (${p.x},${p.y})`);
+        }
+        return p;
+    }
+
+    static decodeFromUint8(uint: Uint8Array, useCurve: {[index: string]:bigint} = CURVE_SECP256k1){
+        if (uint.length != 65) {
+            throw new Error('only decompressed points allowed. 65 bytes.');
+        }
+        let p;
+        let type = uint[0];
+        switch (type) {
+            case 4:
+                let X = uint8ToBn(uint.slice(1,34));
+                let Y = uint8ToBn(uint.slice(34));
                 p = new Point(X, Y, useCurve);
                 break;
             default:

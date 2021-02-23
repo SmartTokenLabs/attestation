@@ -8,16 +8,21 @@ export function stringToHex(str: string) {
     return hex;
 }
 
-export function hexStringToArray(str: string) {
+export function hexStringToArray(str: string = '') {
     let arr = [];
     let strArr = [...str];
     if (strArr.length % 2) strArr.unshift('0');
     let tempStr = '';
-    while (strArr.length) {
-        tempStr = '';
-        tempStr += strArr.shift() + strArr.shift();
-        arr.push(parseInt(tempStr,16));
+    if (!strArr.length) return [];
+    if (typeof strArr != "undefined" && strArr){
+        while (strArr.length) {
+            tempStr = '';
+            // @ts-ignore
+            tempStr += strArr.shift() + strArr.shift();
+            arr.push(parseInt(tempStr,16));
+        }
     }
+
     return arr;
 }
 
@@ -72,8 +77,8 @@ export function bnToUint8(bn: bigint): Uint8Array{
     return bnToBuf(bn);
 }
 
-export function bnToBuf(bn: bigint): Uint8Array {
-    var hex = BigInt(bn).toString(16);
+export function bnToBuf(bn: bigint, length = 0): Uint8Array {
+    var hex = BigInt(bn).toString(16).padStart(length * 2,'0');
     if (hex.length % 2) { hex = '0' + hex; }
 
     var len = hex.length / 2;
@@ -113,11 +118,30 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
     }
     return window.btoa( binary );
 }
-export function base64ToUint8array( base64str: string ): Uint8Array {
-    // change base64url to base64
+
+export function pemOrBase64Orbase64urlToString(base64str: string): string {
+    // maybe remove first and last line and concat lines
+    let base64StrArray = base64str.split(/\r?\n/);
+    if (base64str.slice(0,3) === "---") {
+        base64StrArray.shift();
+        base64StrArray.pop();
+    }
+    base64str = base64StrArray.join('')
+
+    // maybe change base64url to base64
     base64str = base64str.split('_').join('/')
         .split('-').join('+')
         .split('.').join('=');
+
+    return base64str;
+}
+/*
+Convert pem/base64/base64url to Uint8Array
+ */
+export function base64ToUint8array( base64str: string ): Uint8Array {
+
+    base64str = pemOrBase64Orbase64urlToString(base64str);
+
     let res: Uint8Array;
     if (typeof Buffer !== 'undefined') {
         res = Uint8Array.from(Buffer.from(base64str, 'base64'));
@@ -155,3 +179,14 @@ export function BnPowMod(base: bigint, n: bigint, mod: bigint) {
 export function uint8tohex(uint8: Uint8Array): string {
     return Array.from(uint8).map(i => ('0' + i.toString(16)).slice(-2)).join('');
 }
+
+export function uint8toBuffer(uint8: Uint8Array): any {
+    if (typeof Buffer != "undefined"){
+        // node Buffer
+        return Buffer.from(uint8);
+    } else {
+        // browser ArrayBuffer
+        return uint8;
+    }
+}
+

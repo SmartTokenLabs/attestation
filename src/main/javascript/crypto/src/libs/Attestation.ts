@@ -1,4 +1,4 @@
-import {uint8tohex} from "./utils";
+import {uint8toBuffer, uint8tohex} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedInfo, SubjectPublicKeyInfo} from "../asn1/shemas/AttestationFramework";
 import {Name} from "../asn1/shemas/InformationFramework";
@@ -8,9 +8,9 @@ import {KeyPair} from "./KeyPair";
 export class Attestation {
     protected version = 18; // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
     private serialNumber: any;
-    // private signature:AlgorithmIdentifierASN;
+    // private signingAlgorithm:AlgorithmIdentifierASN;
     // der encoded
-    protected signature:string;
+    protected signingAlgorithm:string;
     private issuer: Name;//X500Name  Optional
     private notValidBefore: any;// Optional
     private notValidAfter: any;// Optional
@@ -23,61 +23,89 @@ export class Attestation {
     protected subjectPublicKey: KeyPair;    // Optional
     private smartcontracts: any; // ASN1integers  // Optional
     private dataObject: any;
-    protected riddle: Uint8Array;
+    protected commitment: Uint8Array;
     // der encoded
     // protected extensions: string;
     protected extensions: Extensions;
     private signedInfo: Uint8Array;
-    constructor(){
 
-    }
-    static fromDerEncode( signedInfo: Uint8Array): Attestation {
-        let decodedAttestationObj: SignedInfo = AsnParser.parse(signedInfo, SignedInfo);
+    constructor(){}
 
-        let me = new this();
-        me.signedInfo = signedInfo;
-        me.version = decodedAttestationObj.version.version;
-        me.serialNumber = decodedAttestationObj.serialNumber;
+    fromDerEncode( signedInfo: Uint8Array) {
+        let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8toBuffer(signedInfo), SignedInfo);
 
-        me.signature = decodedAttestationObj.signature.algorithm.toString();
+        this.signedInfo = signedInfo;
+        this.version = decodedAttestationObj.version.version;
+        this.serialNumber = decodedAttestationObj.serialNumber;
+
+        this.signingAlgorithm = decodedAttestationObj.signature.algorithm.toString();
 
         if (decodedAttestationObj.validity){
-            me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
-            me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+            this.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
+            this.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
         }
         // TODO enable it
         let rdn = decodedAttestationObj.subject.rdnSequence;
         if (rdn && rdn[0] && rdn[0][0]){
             let obj = rdn[0][0];
-            me.subject = (obj.type.toString() == "2.5.4.3" ? "CN=" : "") + obj.value;
+            this.subject = (obj.type.toString() == "2.5.4.3" ? "CN=" : "") + obj.value;
         }
-        // me.subject = decodedAttestationObj.subject.rdnSequence;
+        // this.subject = decodedAttestationObj.subject.rdnSequence;
         // TODO enable it
-        me.subjectPublicKeyInfo = decodedAttestationObj.subjectPublicKeyInfo;
-        me.subjectPublicKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(me.subjectPublicKeyInfo.value.subjectPublicKey)));
+        this.subjectPublicKeyInfo = decodedAttestationObj.subjectPublicKeyInfo;
+        this.subjectPublicKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(this.subjectPublicKeyInfo.value.subjectPublicKey)));
 
-        me.issuer = decodedAttestationObj.issuer;
+        this.issuer = decodedAttestationObj.issuer;
         // this = attestation.issuer;
 
         if (decodedAttestationObj.contract){
-            me.smartcontracts = decodedAttestationObj.contract;
+            this.smartcontracts = decodedAttestationObj.contract;
         }
 
         if (decodedAttestationObj.attestsTo.extensions){
-            me.extensions = decodedAttestationObj.attestsTo.extensions;
-            me.riddle = new Uint8Array(me.extensions.extension.extnValue);
+            this.extensions = decodedAttestationObj.attestsTo.extensions;
+            this.commitment = new Uint8Array(this.extensions.extension.extnValue);
         } else if(decodedAttestationObj.attestsTo.dataObject) {
             // TODO parse dataObject
-            //me.extensions = decodedAttestationObj.attestsTo.dataObject;
+            //this.extensions = decodedAttestationObj.attestsTo.dataObject;
         }
-        return me;
     }
+
+    public isValidX509(): boolean {
+        // if (this.version.getValue().intValueExact() != 0 && version.getValue().intValueExact() != 1  && version.getValue().intValueExact() != 2) {
+        if (this.version != 18) {
+            return false;
+        }
+        if (this.issuer == null || this.issuer.rdnSequence.length == 0) {
+            return false;
+        }
+        if (this.notValidBefore == null || this.notValidAfter == null) {
+            return false;
+        }
+        if (this.subject == null) {
+            return false;
+        }
+        if (this.subjectPublicKeyInfo == null) {
+            return false;
+        }
+        if (this.smartcontracts != null) {
+            return false;
+        }
+        if (this.dataObject != null) {
+            return false;
+        }
+        if (this.version == null || this.serialNumber == null || this.signingAlgorithm == null) {
+            return false;
+        }
+        return true;
+    }
+
     getDerEncoding(): string{
         return uint8tohex(new Uint8Array(this.signedInfo));
     }
 
-    getRiddle(): Uint8Array{
-        return this.riddle;
+    getCommitment(): Uint8Array{
+        return this.commitment;
     }
 
     getNotValidBefore(): number{
@@ -94,8 +122,8 @@ export class Attestation {
     checkValidity(){
         if (this.version == null
             || this.serialNumber == null
-            || this.signature == null
-            || (this.extensions == null && this.dataObject == null && !this.riddle)
+            || this.signingAlgorithm == null
+            || (this.extensions == null && this.dataObject == null && !this.commitment)
         ) {
             console.log("Some attest data missed");
             console.log(this.extensions);
@@ -130,7 +158,7 @@ export class Attestation {
         return this.subject;
     }
     getSignature(): string{
-        return this.signature;
+        return this.signingAlgorithm;
     }
 
 

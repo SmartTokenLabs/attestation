@@ -2,15 +2,30 @@ import {AsnProp, AsnPropTypes, AsnType, AsnTypeTypes} from "@peculiar/asn1-schem
 import {ValidityValue, Version, AlgorithmIdentifierASN, Extensions} from "./AuthenticationFramework";
 import {Name} from "./InformationFramework";
 
-export class SubjectPublicKeyInfoValue {
+export class PublicKeyInfoValue {
     @AsnProp({ type: AlgorithmIdentifierASN }) public algorithm: AlgorithmIdentifierASN;
-    @AsnProp({ type: AsnPropTypes.BitString }) public subjectPublicKey: AsnPropTypes.BitString;
+    @AsnProp({ type: AsnPropTypes.BitString }) public subjectPublicKey: Uint8Array;
 }
 
 @AsnType({ type: AsnTypeTypes.Choice })
 export class SubjectPublicKeyInfo {
-    @AsnProp({ type: SubjectPublicKeyInfoValue }) public value?: SubjectPublicKeyInfoValue;
+    @AsnProp({ type: PublicKeyInfoValue }) public value?: PublicKeyInfoValue;
     @AsnProp({ type: AsnPropTypes.Any }) public null? = false;
+}
+
+export class PrivateKeyData {
+    @AsnProp({ type: AsnPropTypes.Integer }) public one: number;
+    @AsnProp({ type: AsnPropTypes.OctetString }) public privateKey: Uint8Array;
+    @AsnProp({ type: AsnPropTypes.Any, context: 0 })
+    public algDescr: Uint8Array;
+    @AsnProp({ type: AsnPropTypes.BitString, context: 1 })
+    public publicKey: Uint8Array;
+}
+
+export class PrivateKeyInfo {
+    @AsnProp({ type: AsnPropTypes.Integer }) public one: number;
+    @AsnProp({ type: AsnPropTypes.Any }) public algIdent: Uint8Array;
+    @AsnProp({ type: AsnPropTypes.OctetString }) public keysData: Uint8Array;
 }
 
 @AsnType({ type: AsnTypeTypes.Choice })

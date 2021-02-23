@@ -4,13 +4,14 @@ import { AttestationCrypto } from "./AttestationCrypto";
 import {hexStringToArray, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
+import {Attestable} from "./Attestable";
 
 let sha3 = require("js-sha3");
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
 
 
-export class Cheque {
+export class Cheque implements Attestable {
     // publicKey: string;
     // riddle: Uint8Array;
     private commitment: Uint8Array;
@@ -115,8 +116,8 @@ export class Cheque {
     }
 
     // TODO code it
-    getDerEncoding(): Uint8Array{
-        return Uint8Array.from([]);
+    getDerEncoding(): string{
+        return this.encoded;
     }
     public checkValidity(): boolean {
         let now: number = Date.now();

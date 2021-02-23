@@ -1,19 +1,12 @@
-import { Point } from "./Point";
+import {CURVE_BN256, Point} from "./Point";
 import { Asn1Der } from "./DerUtility";
-import {hexStringToArray, uint8ToBn, uint8tohex} from "./utils";
+import {hexStringToArray, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {ATTESTATION_TYPE} from "./interfaces";
 import {FullProofOfExponent} from "./FullProofOfExponent";
-import {SignatureUtility} from "./SignatureUtility";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {Identity} from "../asn1/shemas/AttestationRequest";
-
-let EC = require("elliptic");
-let ec = new EC.ec('secp256k1');
-const ASN1 = require('@lapo/asn1js');
-
-let sha3 = require("js-sha3");
 
 export interface attestationRequestData {
     request?: string,
@@ -53,10 +46,7 @@ export class AttestationRequest {
         this.pok = pok;
         this.keys = keys;
 
-        let ecKey = ec.keyFromPrivate(this.keys.getPrivateAsHexString(), 'hex');
-        let encodingHash = sha3.keccak256(hexStringToArray(this.getUnsignedEncoding()))
-        let signature = ecKey.sign(encodingHash);
-        this.signature = signature.toDER('hex');
+        this.signature = this.keys.signBytesWithEthereum(hexStringToArray(this.getUnsignedEncoding()));
         // console.log("signature = " + this.signature);
     }
     getUnsignedEncoding(){
@@ -80,10 +70,12 @@ export class AttestationRequest {
             Asn1Der.encode('BIT_STRING', this.signature);
         return Asn1Der.encode('SEQUENCE_30', res);
     }
-    static fromBytes(asn1: Uint8Array): AttestationRequest {
+    static fromBytes(asn1: Uint8Array, keys: KeyPair): AttestationRequest {
         let me = new this();
 
-        let identity: Identity = AsnParser.parse( asn1, Identity);
+        me.keys = keys;
+
+        let identity: Identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
 
         me.identity = identity.unsignedIdentity.identifier;
         me.type = identity.unsignedIdentity.type;
@@ -92,9 +84,9 @@ export class AttestationRequest {
         let challengeEnc = new Uint8Array(identity.unsignedIdentity.proof.challengePoint);
         let tPointEnc = new Uint8Array(identity.unsignedIdentity.proof.responseValue);
 
-        let riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
+        let riddle = Point.decodeFromHex(uint8tohex(riddleEnc), CURVE_BN256 );
         let challenge = uint8ToBn(challengeEnc);
-        let tPoint = Point.decodeFromHex(uint8tohex(tPointEnc) );
+        let tPoint = Point.decodeFromHex(uint8tohex(tPointEnc), CURVE_BN256 );
 
         me.pok = FullProofOfExponent.fromData(riddle, tPoint, challenge);
 
@@ -113,8 +105,7 @@ export class AttestationRequest {
     }
     verify():boolean {
 
-        let encodingHash = sha3.keccak256(hexStringToArray(this.getUnsignedEncoding()))
-        if (!SignatureUtility.verify(encodingHash, this.signature, this.keys)) {
+        if (!this.keys.verifyHexStringWithEthereum(this.getUnsignedEncoding(), this.signature)) {
             return false;
         }
         // console.log('signatureVerify OK');

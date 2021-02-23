@@ -72,7 +72,6 @@ export class Authenticator {
         this.signedTokenSecret = tokenObj.ticketSecret;
         this.attestationOrigin = tokenObj.attestationOrigin;
         this.authResultCallback = authResultCallback;
-        // TODO temporary disable, while stage.attestaion.id broken
         this.getIdentifierAttestation();
 
     }
@@ -127,7 +126,7 @@ export class Authenticator {
         let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.subjectPublicKey)));
 
         console.log('lets test attestaion:');
-        let att = new SignedAttestation(base64attestation, attestorKey);
+        let att = new SignedAttestation(base64ToUint8array(base64attestation), attestorKey);
 
         if (!att.checkValidity()) {
             console.log("Could not validate attestation");
@@ -139,8 +138,8 @@ export class Authenticator {
         }
         console.log('attestaion valid');
 
-        let redeem: AttestedObject = new AttestedObject(
-            ticket, att,
+        let redeem: AttestedObject = new AttestedObject();
+        redeem.create(ticket, att,
             BigInt(attestationSecret), BigInt(ticketSecret));
 
         // console.log("redeem.getDerEncodeProof(): ");
