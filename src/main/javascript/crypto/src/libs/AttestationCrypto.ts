@@ -267,8 +267,7 @@ export class AttestationCrypto {
         do {
             hiding = this.makeSecret();
             t = Pedestren_H.multiplyDA(hiding);
-            challengeList.push(t);
-            c = this.mapToInteger(this.makeArray(challengeList));
+            c = this.mapToInteger(this.makeArray(challengeList.concat([t])));
         } while (c >= CURVE_BN256.n);
         d = mod(hiding + c * exponent, CURVE_BN256.n);
         return FullProofOfExponent.fromData(riddle, t, d);

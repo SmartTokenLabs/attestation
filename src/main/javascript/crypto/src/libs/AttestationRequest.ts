@@ -90,7 +90,7 @@ export class AttestationRequest {
 
         me.pok = FullProofOfExponent.fromData(riddle, tPoint, challenge);
 
-        let publicKey = new Uint8Array(identity.publicKey.value.subjectPublicKey);
+        let publicKey = new Uint8Array(identity.publicKey.value.publicKey);
 
         me.keys = KeyPair.fromPublicHex(uint8tohex(publicKey));
 

@@ -45,7 +45,7 @@ export class SignatureUtility {
     }
 
     static async signMessageWithBrowserWallet(message: string){
-        await window.ethereum.enable();
+        await window.ethereum.send('eth_requestAccounts');
         // let u = ethers.utils;
         let provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
         let signer = provider.getSigner();
@@ -75,7 +75,7 @@ export class SignatureUtility {
         return await ethers.utils.recoverPublicKey(digest, sign)
     }
 
-    static async signEIP712WithBrowserWallet(payload: string, webDomain: string){
+    static async signEIP712WithBrowserWallet(payload: string, webDomain: string): Promise<string> {
         // How its encoded at metamask ...
         // All properties on a domain are optional
         // const domain = {
@@ -102,7 +102,7 @@ export class SignatureUtility {
         //     from: signer
         // },
         try {
-            await window.ethereum.enable();
+            await window.ethereum.send('eth_requestAccounts');
             // let u = ethers.utils;
             let provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
             let signer = provider.getSigner();
@@ -111,7 +111,6 @@ export class SignatureUtility {
             // let ethAddress = await signer.getAddress();
 
             let Eip712Data = SignatureUtility.Eip712Data;
-            let Eip712Types = SignatureUtility.Eip712Types;
 
             const domainTypes = [
                 {name: "name", type: "string"},
@@ -142,7 +141,7 @@ export class SignatureUtility {
             const dataValue: { [index: string]: string | number } = {};
             dataValue[Eip712Data['PAYLOAD_NAME']] = payload;
             dataValue[Eip712Data['DESCRIPTION_NAME']] = Eip712Data['USAGE_VALUE'];
-            dataValue[Eip712Data['TIMESTAMP_NAME']] = (new Date()).getTime();
+            dataValue[Eip712Data['TIMESTAMP_NAME']] = new Date().getTime();
 
             let signature = await signer._signTypedData(domainData, dataTypes, dataValue);
 
@@ -154,7 +153,8 @@ export class SignatureUtility {
                 primaryType: Eip712Data['PRIMARY_NAME'],
                 message: dataValue
             };
-            completeData.types[Eip712Data['PRIMARY_NAME']] = dataTypes;
+
+            completeData.types[Eip712Data['PRIMARY_NAME']] = dataTypes[Eip712Data['PRIMARY_NAME']];
 
             let dataStringified = JSON.stringify(completeData);
 
@@ -168,7 +168,7 @@ export class SignatureUtility {
             return JSON.stringify(externalAuthenticationData);
         } catch (e){
             console.error('Cant sign eip712 data. Error: '+ e);
-            return false;
+            return '';
         }
     }
 }

@@ -2,18 +2,17 @@ import {AttestationCrypto} from "./AttestationCrypto";
 import {SignedAttestation} from "./SignedAttestation";
 import {hexStringToArray, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
-import {AttestableObject} from "./AttestableObject";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {KeyPair} from "./KeyPair";
-import {Identity} from "../asn1/shemas/AttestationRequest";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {UseToken} from "../asn1/shemas/UseToken";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 import {Point} from "./Point";
 import {IdentifierAttestation} from "./IdentifierAttestation";
-import {Attestation} from "./Attestation";
 import {Attestable} from "./Attestable";
 import {SignatureUtility} from "./SignatureUtility";
+import {Verifiable} from "./Verifiable";
+import {ASNEncodable} from "./ASNEncodable";
 
 declare global {
     interface Window {
@@ -24,7 +23,7 @@ declare global {
 
 // TODO public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature,
 //       AsymmetricKeyParameter userPublicKey) {
-export class AttestedObject {
+export class AttestedObject implements ASNEncodable, Verifiable {
     private crypto: AttestationCrypto;
     private pok: ProofOfExponentInterface;
     private unsignedEncoding: string;
@@ -39,6 +38,8 @@ export class AttestedObject {
     private userKeyPair: KeyPair;
 
     private preSignEncoded: string;
+
+    private webDomain: string;
 
     constructor() {}
 
@@ -57,6 +58,11 @@ export class AttestedObject {
         this.derEncodedProof = this.pok.getDerEncoding();
 
         this.fillPresignData();
+
+    }
+
+    setWebDomain(domain: string){
+        this.webDomain = domain;
     }
 
     fillPresignData(){
@@ -91,13 +97,15 @@ export class AttestedObject {
 
 
     async sign(){
-        this.signature = await SignatureUtility.signMessageWithBrowserWallet(this.unsignedEncoding);
-        let vec = this.preSignEncoded +
-            Asn1Der.encode('BIT_STRING', this.signature);
-        this.encoding = Asn1Der.encode('SEQUENCE_30', vec);
-        if (!this.verify()) {
-            throw new Error("The redeem request is not valid");
-        }
+        this.encoding = await SignatureUtility.signEIP712WithBrowserWallet(this.preSignEncoded, this.webDomain );
+        return this.encoding;
+        // this.signature = await SignatureUtility.signMessageWithBrowserWallet(this.unsignedEncoding);
+        // let vec = this.preSignEncoded +
+        //     Asn1Der.encode('BIT_STRING', this.signature);
+        // this.encoding = Asn1Der.encode('SEQUENCE_30', vec);
+        // if (!this.verify()) {
+        //     throw new Error("The redeem request is not valid");
+        // }
     }
 
     public checkValidity(): boolean {

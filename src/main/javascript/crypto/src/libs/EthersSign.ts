@@ -4,7 +4,7 @@ export class EthersSign {
     constructor() {}
 
     static async signMessage(message: string){
-        await window.ethereum.enable();
+        await window.ethereum.send('eth_requestAccounts');
         // let u = ethers.utils;
         let provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
         let signer = provider.getSigner();
@@ -14,7 +14,7 @@ export class EthersSign {
     }
 
     static async signEip712(obj: any){
-        await window.ethereum.enable();
+        await window.ethereum.send('eth_requestAccounts');
         // let u = ethers.utils;
         let provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
         let signer = provider.getSigner();

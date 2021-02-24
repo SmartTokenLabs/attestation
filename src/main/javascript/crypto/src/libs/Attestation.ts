@@ -53,7 +53,10 @@ export class Attestation {
         // this.subject = decodedAttestationObj.subject.rdnSequence;
         // TODO enable it
         this.subjectPublicKeyInfo = decodedAttestationObj.subjectPublicKeyInfo;
-        this.subjectPublicKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(this.subjectPublicKeyInfo.value.subjectPublicKey)));
+        this.subjectPublicKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(this.subjectPublicKeyInfo.value.publicKey)));
+
+        //console.log('this.subjectPublicKey.getAddress()');
+        //console.log(this.subjectPublicKey.getAddress());
 
         this.issuer = decodedAttestationObj.issuer;
         // this = attestation.issuer;

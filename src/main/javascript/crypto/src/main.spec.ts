@@ -50,9 +50,11 @@ describe("SignedAttestation test", () => {
 
 
     const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
-    const attestorPubUint8 = base64ToUint8array(attestorPubPEM);
-    let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( attestorPubUint8), PublicKeyInfoValue);
-    let attestorPubKey = KeyPair.publicFromUint(publicKeyObj.subjectPublicKey);
+    // const attestorPubUint8 = base64ToUint8array(attestorPubPEM);
+    // let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( attestorPubUint8), PublicKeyInfoValue);
+    // let attestorPubKey = KeyPair.publicFromUint(publicKeyObj.publicKey);
+    let attestorPubKey = KeyPair.publicFromBase64(attestorPubPEM);
+
 
     const attestationPEM = readFileSync(PREFIX_PATH + 'attestation.pem', 'utf8');
     const attestationUint8 = base64ToUint8array(attestationPEM);

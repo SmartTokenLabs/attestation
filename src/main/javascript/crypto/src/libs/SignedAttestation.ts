@@ -30,11 +30,11 @@ export class SignedAttestation implements ASNEncodable, Verifiable, Validateable
 
     verify(){
         try {
-            let publKey = SignatureUtility.recoverPublicKeyFromMessageSignature(this.att.getDerEncoding(), new Uint8Array(this.signature));
-            console.log('publKey');
-            console.log(publKey);
-            console.log(this.attestorKey.getPublicKeyAsHexStr());
-            // return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKey);
+            // let publKey = SignatureUtility.recoverPublicKeyFromMessageSignature(this.att.getDerEncoding(), new Uint8Array(this.signature));
+            // console.log('publKey');
+            // console.log(publKey);
+            // console.log(this.attestorKey.getPublicKeyAsHexStr());
+            return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKey);
         } catch (e) {
             return false;
         }

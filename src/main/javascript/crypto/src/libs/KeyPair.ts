@@ -4,7 +4,7 @@ import {CURVE_SECP256k1, Point} from "./Point";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {
     PrivateKeyData,
-    PrivateKeyInfo,
+    PrivateKeyInfo, PublicKeyInfoValue,
     SubjectPublicKeyInfo
 } from "../asn1/shemas/AttestationFramework";
 import {ethers} from "ethers";
@@ -53,15 +53,15 @@ export class KeyPair {
 
         let publicUint8 = base64ToUint8array(base64);
 
-        let pub: SubjectPublicKeyInfo = AsnParser.parse( uint8toBuffer(publicUint8), SubjectPublicKeyInfo);
+        let pub: PublicKeyInfoValue = AsnParser.parse( uint8toBuffer(publicUint8), PublicKeyInfoValue);
 
-        me.pubKey = pub.value.subjectPublicKey;
+        me.pubKey = new Uint8Array(pub.publicKey);
         return me;
     }
 
     static publicFromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): KeyPair {
         let me = new this();
-        me.pubKey = spki.value.subjectPublicKey;
+        me.pubKey = spki.value.publicKey;
         return me;
     }
 
@@ -168,8 +168,8 @@ export class KeyPair {
     getAddress(): string {
         var pubPoint = this.getPublicKeyAsHexStr();
         pubPoint = pubPoint.substr(2);
-        let hash = sha3.keccak256(pubPoint);
-        return "0x" + hash.substr(-20);
+        let hash = sha3.keccak256(hexStringToArray(pubPoint));
+        return "0x" + hash.substr(-40);
     }
 
     signMessage(message: string){
