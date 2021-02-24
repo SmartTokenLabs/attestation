@@ -6,25 +6,19 @@
   <namedType name="Identity">
     <type>
       <sequence>
-        <element name="unsignedIdentity" type="UnsignedIdentity">
-          <annotation>The user's identity.</annotation>
+        <element name="payload" type="IdentityPayload">
+          <annotation>The user's identity proof payload.</annotation>
         </element>
         <element name="subjectPublicKeyInfo" type="SubjectPublicKeyInfo">
           <annotation>The information about the user's Ethereum key that is supposed to be attested and used to sign this request</annotation>
-        </element>
-        <element name="signatureValue" type="asnx:BIT-STRING">
-          <annotation>A signature on this request by the user's Ethereum key</annotation>
         </element>
       </sequence>
     </type>
   </namedType>
 
-  <namedType name="UnsignedIdentity">
+  <namedType name="IdentityPayload">
     <type>
       <sequence>
-        <element name="identifier" type="asnx:VisibleString">
-          <annotation>The identity to be validated. Either an email address or a phone number</annotation>
-        </element>
         <element name="type" type="IdentifierType">
           <annotation>Integer describing the type of identifier.</annotation>
         </element>

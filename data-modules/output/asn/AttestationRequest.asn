@@ -10,13 +10,11 @@ IMPORTS
         FROM ProofOfExponent;
 
 Identity ::= SEQUENCE {
-    unsignedIdentity   UnsignedIdentity,
+    identityPayload    IdentityPayload,
     publicKey          SubjectPublicKeyInfo,
-    signatureValue     BIT STRING
 }
 
-UnsignedIdentity ::= SEQUENCE {
-    identifier         VisibleString,
+IdentityPayload ::= SEQUENCE {
     type               IdentifierType,
     proof              Proof
 }

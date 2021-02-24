@@ -274,20 +274,19 @@ public class SignatureUtility {
      * Verify an Ethereum signature on a message that DOES NOT include the signed-by-Ethereum prefix when used outside of the blockchain
      */
     public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
-        String pkAddress = addressFromKey(publicKey);
-        byte[] toSign = addPersonalSignPrefix(unsigned);
-        return verifyEthereumSignature(toSign, signature, pkAddress);
+        return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey));
     }
 
     /**
-     * Verify an Ethereum signature against an address on a message that DOES include the signed-by-Ethereum prefix
+     * Verify an Ethereum signature against an address on a message that DOES NOT include the signed-by-Ethereum prefix when used outside of the blockchain
      */
-    public static boolean verifyEthereumSignature(byte[] unsignedWithEthPrefix, byte[] signature, String address) {
+    public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, String address) {
         try {
+            byte[] unsignedWithEthPrefix = addPersonalSignPrefix(unsigned);
             ECPublicKeyParameters publicKey = recoverEthPublicKeyFromSignature(
                 unsignedWithEthPrefix, signature);
             String recoveredAddress = addressFromKey(publicKey);
-            return recoveredAddress.equals(address);
+            return recoveredAddress.toUpperCase().equals(address.toUpperCase());
         } catch (Exception e) {
             return false;
         }

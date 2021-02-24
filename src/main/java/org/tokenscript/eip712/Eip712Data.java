@@ -1,15 +1,15 @@
-package org.tokenscript.auth.model;
+package org.tokenscript.eip712;
 
-public class ExternalAuthenticationData {
+public class Eip712Data {
   private String signatureInHex;
   // jsonRPC and chainID are needed to be compliant with EIP712 https://eips.ethereum.org/EIPS/eip-712
   private String jsonRpc;
   private int chainId;
   private String jsonSigned;
 
-  public ExternalAuthenticationData() {}
+  public Eip712Data() {}
 
-  public ExternalAuthenticationData(String signatureInHex, String jsonRpc, int chainId, String jsonSigned) {
+  public Eip712Data(String signatureInHex, String jsonRpc, int chainId, String jsonSigned) {
     this.signatureInHex = signatureInHex;
     this.jsonRpc = jsonRpc;
     this.chainId = chainId;
