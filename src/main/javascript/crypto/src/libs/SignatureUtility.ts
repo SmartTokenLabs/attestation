@@ -102,10 +102,25 @@ export class SignatureUtility {
         //     from: signer
         // },
         try {
+            if (!window.ethereum){
+                throw new Error('Please install metamask before.');
+            }
+
+
+
             await window.ethereum.send('eth_requestAccounts');
             // let u = ethers.utils;
             let provider = new ethers.providers.Web3Provider(window.web3.currentProvider);
             let signer = provider.getSigner();
+
+            if (!signer) throw new Error("Active Wallet required");
+
+            const metamaskEnabled = await window.ethereum.enable();
+
+            if (!metamaskEnabled){
+                throw new Error("Active Wallet required");
+            }
+
             let network = await provider.getNetwork();
 
             // let ethAddress = await signer.getAddress();

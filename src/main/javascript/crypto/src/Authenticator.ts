@@ -1,12 +1,10 @@
 import {SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
 import {Ticket} from "./Ticket";
-import {TicketDecoder} from "./TicketDecoder";
 import {KeyPair} from "./libs/KeyPair";
 import {base64ToUint8array, uint8ToBn, uint8tohex} from "./libs/utils";
-import {SubjectPublicKeyInfo} from "./asn1/shemas/AttestationFramework";
-import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedAttestation} from "./libs/SignedAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
+import {XMLconfigData} from "./data/tokenData";
 
 declare global {
     interface Window {
@@ -39,24 +37,7 @@ export class Authenticator {
     private webDomain: string;
 
     constructor(private negotiator: any = false) {
-        let XMLconfig = {
-            attestationOrigin: "http://stage.attestation.id",
-            tokensOrigin: "https://devcontickets.herokuapp.com/outlet/",
-            tokenUrlName: 'ticket',
-            tokenSecretName: 'secret',
-            unsignedTokenDataName: 'ticket',
-            // tokenParserUrl: '',
-            tokenParser: SignedDevconTicket,
-            localStorageItemName: 'dcTokens',
-            base64senderPublicKey: '04950C7C0BED23C3CAC5CC31BBB9AAD9BB5532387882670AC2B1CDF0799AB0EBC764C267F704E8FDDA0796AB8397A4D2101024D24C4EFFF695B3A417F2ED0E48CD',
-
-            base64attestorPubKey:
-                // stage.attestation.id public key
-                "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABL+y43T1OJFScEep69/yTqpqnV/jzONz9Sp4TEHyAJ7IPN9+GHweCX1hT4OFxt152sBN3jJc1s0Ymzd8pNGZNoQ=",
-            webDomain: 'devcon.org'
-        };
-
-        // this.negotiator = negotiator;
+        let XMLconfig = XMLconfigData;
 
         this.base64senderPublicKey = XMLconfig.base64senderPublicKey;
         this.base64attestorPubKey = XMLconfig.base64attestorPubKey;
@@ -112,7 +93,7 @@ export class Authenticator {
         base64senderPublicKey: string
     )
     {
-        let ticket: Ticket = TicketDecoder.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
+        let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         if (!ticket.checkValidity()) {
             console.log("Could not validate cheque");
             throw new Error("Validation failed");

@@ -1,4 +1,4 @@
-import {stringToHex, hexStringToArray, base64ToUint8array} from "./utils";
+import {stringToHex, hexStringToArray, base64ToUint8array, uint8tohex} from "./utils";
 
 const Asn1DerTagByType: {[index: string]:number} = {
     END_OF_CONTENT: 0,
@@ -88,7 +88,14 @@ export class Asn1Der {
                 break;
             case "SEQUENCE_30":
             case "OCTET_STRING":
-                encValue = value;
+                if (typeof value == "string") {
+                    // suppose that its already encoded
+                    encValue = value;
+                } else if (value.constructor === Uint8Array){
+                    encValue = uint8tohex(value);
+                } else {
+                    throw new Error('Wrong data type for OCTET_STRING');
+                }
                 break;
             case "BIT_STRING":
                 encValue = '00' + value;

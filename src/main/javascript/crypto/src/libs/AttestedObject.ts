@@ -13,6 +13,8 @@ import {Attestable} from "./Attestable";
 import {SignatureUtility} from "./SignatureUtility";
 import {Verifiable} from "./Verifiable";
 import {ASNEncodable} from "./ASNEncodable";
+import {XMLconfigData} from "../data/tokenData";
+import {AttestableObject} from "./AttestableObject";
 
 declare global {
     interface Window {
@@ -66,6 +68,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     }
 
     fillPresignData(){
+
         this.preSignEncoded = this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
             this.pok.getDerEncoding();
@@ -97,15 +100,8 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
 
     async sign(){
-        this.encoding = await SignatureUtility.signEIP712WithBrowserWallet(this.preSignEncoded, this.webDomain );
-        return this.encoding;
-        // this.signature = await SignatureUtility.signMessageWithBrowserWallet(this.unsignedEncoding);
-        // let vec = this.preSignEncoded +
-        //     Asn1Der.encode('BIT_STRING', this.signature);
-        // this.encoding = Asn1Der.encode('SEQUENCE_30', vec);
-        // if (!this.verify()) {
-        //     throw new Error("The redeem request is not valid");
-        // }
+        return await SignatureUtility.signEIP712WithBrowserWallet(this.unsignedEncoding, this.webDomain );
+
     }
 
     public checkValidity(): boolean {
@@ -156,7 +152,6 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return true;
     }
 
-
     verify(): boolean{
         //TODO
         let result: boolean =
@@ -175,84 +170,32 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         }
     }
 
-    static fromBytes<D extends UseToken>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair): AttestedObject{
-
+    static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
         let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
-        console.log(attested);
-        // TODO decode Attested
+
         let me = new this();
-        // TODO inject attestor key
-        // let attestorPublicKey: KeyPair = new KeyPair();
-        // me.att = SignedAttestation(attested.attestation, attestorPublicKey);
-        // me.attestableObject = attested.signedDevconTicket;
-        me.pok = UsageProofOfExponent.fromData(
-            Point.decodeFromHex(uint8tohex(attested.proof.challengePoint)),
-            uint8ToBn(attested.proof.responseValue) ) ;
-        me.signature = uint8tohex(new Uint8Array(attested.signatureValue));
+
+        // let attestableObj: T
+        me.attestableObject = new attestable();
+        me.attestableObject.fromBytes(attested.signedToken, issuerKey);
+
+        me.att = new SignedAttestation(new Uint8Array(attested.attestation), attestorKey);
+
+        let pok = new UsageProofOfExponent();
+        pok.fromBytes( attested.proof ) ;
+        me.pok = pok;
+
+        let attCom: Uint8Array = me.att.getUnsignedAttestation().getCommitment();
+        let objCom: Uint8Array = me.attestableObject.getCommitment();
+        let crypto = new AttestationCrypto();
+
+        if (!crypto.verifyEqualityProof(uint8tohex(attCom), uint8tohex(objCom), pok)) {
+            throw new Error("The redeem proof did not verify");
+        }
 
         return me;
     }
 
-
-/*
-    public async signFinalObject(){
-        let vec =
-            uint8tohex(this.attestableObject.getDerEncoding()) +
-            uint8tohex(this.att.getDerEncoding())+
-            this.pok.getDerEncoding();
-        this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);
-        const hash = await ethers.utils.keccak256(hexStringToArray(this.unsignedEncoding));
-
-        console.log('hash');
-        console.log(hash);
-
-        // TODO sign by user wallet
-        // this.signature = SignatureUtility.sign(this.unsignedEncoding, userKeys.getPrivate());
-        if (!window.ethereum){
-            throw new Error('Please install metamask before.');
-        }
-
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        if (!signer) throw new Error("Active Wallet required");
-
-        const userAddress = await signer.getAddress();
-
-        console.log('lets sign message');
-        const metamaskEnabled = await window.ethereum.enable();
-
-        if (!metamaskEnabled){
-            throw new Error("Active Wallet required");
-        }
-
-        // console.log(this.unsignedEncoding);
-
-        // let signature = await signer.signMessage(hexStringToArray(this.unsignedEncoding));
-        let signature = await signer.signMessage(ethers.utils.arrayify(hash));
-        console.log('signature');
-        console.log(signature);
-
-        if (!signature){
-            throw new Error("Cant sign data");
-        }
-
-        const ethereumHash = await ethers.utils.keccak256("\x19Ethereum Signed Message:\n" + hash.length + hash);
-        const pk = ethers.utils.recoverPublicKey(ethereumHash, signature);
-        const recoveredAddress = ethers.utils.computeAddress(ethers.utils.arrayify(pk));
-
-        console.log('recoveredAddress');
-        console.log(recoveredAddress);
-
-        //     vec.add(new DERBitString(this.signature));
-        //     this.encoding = new DERSequence(vec).getEncoded();
-        // } catch (IOException e) {
-        //     throw new RuntimeException(e);
-        // }
-        // if (!verify()) {
-        //     throw new IllegalArgumentException("The redeem request is not valid");
-        // }
-    }
-*/
     private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponentInterface {
         // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
         // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
