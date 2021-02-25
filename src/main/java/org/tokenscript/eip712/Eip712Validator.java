@@ -14,7 +14,7 @@ public class Eip712Validator extends Eip712Common {
   public Eip712Validator(String domain, Eip712Encoder encoder) {
     super();
     if (!Eip712Common.isDomainValid(domain)) {
-      throw new RuntimeException("Issuer domain is not a valid domain");
+      throw new IllegalArgumentException("Issuer domain is not a valid domain");
     }
     this.domain = domain;
     this.encoder = encoder;

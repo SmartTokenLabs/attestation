@@ -7,7 +7,6 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.auth.AuthenticatorEncoder.InternalAuthenticationData;
-import org.tokenscript.eip712.Eip712Common;
 import org.tokenscript.eip712.Eip712Validator;
 
 /**
@@ -25,9 +24,6 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
 
   public Eip712AuthValidator(AttestableObjectDecoder<T> decoder, AuthenticatorEncoder authenticator, AsymmetricKeyParameter attestorPublicKey, String domain,  long acceptableTimeLimit) {
     super(domain, authenticator);
-    if (!Eip712Common.isDomainValid(domain)) {
-      throw new RuntimeException("Issuer domain is not a valid domain");
-    }
     this.attestorPublicKey = attestorPublicKey;
     this.decoder = decoder;
     this.timelimitInMs = acceptableTimeLimit;

@@ -85,7 +85,7 @@ public class EIP712AuthenticationTest {
   public void testConsistency() {
     AttestedObject attestedTicket = makeAttestedTicket();
     long testTimestamp = System.currentTimeMillis();
-    Eip712AuthIssuer testIssuer = new TestEip712AuthIssuer(userKeys, new TestAuthenticatorEncoder(), testTimestamp);
+    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys, new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     String newToken = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertEquals(token, newToken);
@@ -130,7 +130,7 @@ public class EIP712AuthenticationTest {
   public void tooNew() {
     AttestedObject attestedTicket = makeAttestedTicket();
     long testTimestamp = System.currentTimeMillis() + 2 * validator.timelimitInMs;
-    Eip712AuthIssuer testIssuer = new TestEip712AuthIssuer(userKeys, new TestAuthenticatorEncoder(), testTimestamp);
+    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys, new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));
   }
@@ -173,10 +173,11 @@ public class EIP712AuthenticationTest {
 
   @Test
   public void invalidDomainIssuer() {
+    AttestedObject attestedTicket = makeAttestedTicket();
     assertThrows( RuntimeException.class, () -> {
       AuthenticatorEncoder authenticator = new AuthenticatorEncoder(rand);
       Eip712AuthIssuer issuer = new Eip712AuthIssuer(userKeys, authenticator);
-      issuer.buildSignedToken(null, "www.noHttpPrefix.com");
+      issuer.buildSignedToken(attestedTicket, "www.noHttpPrefix.com");
     });
   }
 
@@ -188,10 +189,10 @@ public class EIP712AuthenticationTest {
     assertFalse(validator.validateRequest(token));
   }
 
-  private class TestEip712AuthIssuer extends Eip712AuthIssuer {
+  private class TestEip712Authentication extends Eip712AuthIssuer {
     private final long testTimestamp;
 
-    public TestEip712AuthIssuer(AsymmetricCipherKeyPair signingKeys, AuthenticatorEncoder authenticator, long testTimestamp) {
+    public TestEip712Authentication(AsymmetricCipherKeyPair signingKeys, AuthenticatorEncoder authenticator, long testTimestamp) {
       super(signingKeys, authenticator);
       this.testTimestamp = testTimestamp;
     }
