@@ -93,7 +93,8 @@ export class Authenticator {
         base64senderPublicKey: string
     )
     {
-        let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
+        // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
+        let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.publicFromBase64(base64senderPublicKey));
         if (!ticket.checkValidity()) {
             console.log("Could not validate cheque");
             throw new Error("Validation failed");
