@@ -29,7 +29,6 @@ public class AttestationRequestTest {
 
   @Test
   public void testSunshine() {
-    String id = "+4588888888";
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
     FullProofOfExponent pok = crypto.computeAttestationProof(secret);
@@ -40,7 +39,6 @@ public class AttestationRequestTest {
 
   @Test
   public void testDecoding() {
-    String id = "foo@bar.baz";
     AttestationType type = AttestationType.EMAIL;
     BigInteger secret = new BigInteger("42424242");
     FullProofOfExponent pok = crypto.computeAttestationProof(secret);
