@@ -49,8 +49,8 @@ console.log(dataobj2);
 
 // instantiate by a dictionary object and ENCODE it
 
-let crypto = new AttestationCrypto();
-let commitment = crypto.makeCommitment('mah@mah.com', ATTESTATION_TYPE['mail'], BigInt(45845870611));
+//let crypto = new AttestationCrypto();
+//let commitment = crypto.makeCommitment('mah@mah.com', ATTESTATION_TYPE['mail'], BigInt(45845870611));
 
 let dataobj4;
 dataobj4 = new SignedDevconTicket({
