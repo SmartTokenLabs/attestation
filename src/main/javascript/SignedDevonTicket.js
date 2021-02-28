@@ -23,7 +23,7 @@ export class DevconTicket {
       throw new TypeError("Unimplemented: Not accepting string yet.")
     }
     if (source instanceof ArrayBuffer) {
-      const asn1 = fromBER(source)
+      const asn1 = fromBER(source);
       this.fromSchema(asn1.result);
     } else {
       this.devconId = getParametersValue(

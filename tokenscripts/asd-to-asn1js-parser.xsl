@@ -175,27 +175,26 @@ export class <xsl:value-of select="@name"/> {
       value: [
 		<xsl:for-each select="type/sequence//element">
 		<xsl:choose>
-			<xsl:when test="starts-with(@type, 'asnx:')">
-			new <xsl:value-of select="f:asd2asn1js-data-type(substring-after(@type, 'asnx:'))"/>({
-				name: names.<xsl:value-of select="@name"/> || "<xsl:value-of select="@name"/>",
-			})
-			</xsl:when>
-			<xsl:when test="parent::optional">
-			<xsl:value-of select="@type"/>.schema(
-				names.<xsl:value-of select="@name"/> || {
-				  names: {
-					blockName: "<xsl:value-of select="@name"/>",
-				  },
-				  optional: true
-				}
-			)
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:value-of select="@type"/>.schema(parameters)
-			</xsl:otherwise>
+		<xsl:when test="starts-with(@type, 'asnx:')">
+		new <xsl:value-of select="f:asd2asn1js-data-type(substring-after(@type, 'asnx:'))"/>({
+			name: names.<xsl:value-of select="@name"/> || "<xsl:value-of select="@name"/>",
+		})
+		</xsl:when>
+		<xsl:when test="parent::optional">
+		<xsl:value-of select="@type"/>.schema(
+			names.<xsl:value-of select="@name"/> || {
+			  names: {
+				blockName: "<xsl:value-of select="@name"/>",
+			  },
+			  optional: true
+			}
+		)
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:value-of select="@type"/>.schema(parameters)</xsl:otherwise>
 		</xsl:choose><xsl:if test="position() != last()">,</xsl:if>
-		</xsl:for-each>	
-		 ],
+		</xsl:for-each>
+	  ],
     });
     }
 	</xsl:template>
@@ -205,8 +204,7 @@ export class <xsl:value-of select="@name"/> {
     //region Clear input data first
     clearProps(schema, [
 	<xsl:for-each select="type/sequence//element">
-	  "<xsl:value-of select="@name"/>",
-	</xsl:for-each>
+	  "<xsl:value-of select="@name"/>",</xsl:for-each>
     ]);
     //endregion
 
@@ -252,7 +250,7 @@ export class <xsl:value-of select="@name"/> {
 	<xsl:template name="toSchema">
 	
 	<xsl:variable name="notAllPremetive" select="not(type/sequence//element[not(starts-with(@type, 'asnx:'))])"/>
-	<xsl:variable name="sequenceName" select="concat(@name, 'Sequence')"/>
+	<xsl:variable name="sequenceName" select="concat(f:lower-case(substring(@name, 1, 1)), substring(@name, 2), 'Sequence')"/>
 	<xsl:variable name="elementName" select="//element[@type = current()/@name]/@name"/>
 	<xsl:message>1-<xsl:sequence select="."/></xsl:message>
 	toSchema() {
@@ -360,14 +358,15 @@ export class <xsl:value-of select="@name"/> {
 	</xsl:template>
 	
 	<xsl:template name="serialize">
+	<xsl:variable name="variableName" select="concat(f:lower-case(substring(@name, 1, 1)), substring(@name, 2))"/>
 	serialize() {
 		let sequence = this.toSchema();
 
 		const result = compareSchema(sequence, sequence, <xsl:value-of select="@name"/>.schema());
 		console.log(result.verified);
 
-		const <xsl:value-of select="@name"/>BER = sequence.toBER(false);
-		return new Uint8Array(<xsl:value-of select="@name"/>BER)
+		const <xsl:value-of select="$variableName"/>BER = sequence.toBER(false);
+		return new Uint8Array(<xsl:value-of select="$variableName"/>BER)
 
 	}
 	</xsl:template>
