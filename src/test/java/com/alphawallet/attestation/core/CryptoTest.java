@@ -191,6 +191,19 @@ public class CryptoTest {
   }
 
   @Test
+  public void testNonceAttestationProof() {
+    FullProofOfExponent pok1 = crypto.computeAttestationProof(SECRET1);
+    FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1, new byte[0]);
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok1));
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    // Randomness is used in PoK construction
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok2.getDerEncoding()));
+    FullProofOfExponent pok3 = crypto.computeAttestationProof(SECRET1, new byte[] {0x42} );
+    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok3));
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok3.getDerEncoding()));
+  }
+
+  @Test
   public void testEqualityProof() {
     byte[] com1 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET1);
     byte[] com2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET2);
@@ -238,6 +251,20 @@ public class CryptoTest {
 
     pok2 = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
+  }
+
+  @Test
+  public void testNonceEqualityProof() {
+    byte[] com1 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET1);
+    byte[] com2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET2);
+    UsageProofOfExponent pok1 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+    UsageProofOfExponent pok2 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2, new byte[0]);
+    assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok1));
+    // Randomness is used in PoK construction
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok2.getDerEncoding()));
+    UsageProofOfExponent pok3 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2, new byte[] {0x42} );
+    assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok3));
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok3.getDerEncoding()));
   }
 
   @Test

@@ -25,14 +25,12 @@ public class SignatureTest {
   private AsymmetricCipherKeyPair keys;
   private AsymmetricCipherKeyPair userKeys;
   private SecureRandom rand;
-  private AttestationCrypto crypto;
 
   @BeforeEach
   public void setupCrypto() throws NoSuchAlgorithmException {
     Security.addProvider(new BouncyCastleProvider());
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    crypto = new AttestationCrypto(rand);
     keys = SignatureUtility.constructECKeys(SECP364R1, rand);
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }

@@ -15,13 +15,19 @@ public class FullProofOfExponent implements ProofOfExponent {
   private final ECPoint riddle;
   private final ECPoint tPoint;
   private final BigInteger challenge;
+  private final byte[] nonce;
   private final byte[] encoding;
 
-  public FullProofOfExponent(ECPoint riddle, ECPoint tPoint, BigInteger challenge) {
+  public FullProofOfExponent(ECPoint riddle, ECPoint tPoint, BigInteger challenge, byte[] nonce) {
     this.riddle = riddle;
     this.tPoint = tPoint;
     this.challenge = challenge;
-    this.encoding = makeEncoding(riddle, tPoint, challenge);
+    this.nonce = nonce;
+    this.encoding = makeEncoding(riddle, tPoint, challenge, nonce);
+  }
+
+  public FullProofOfExponent(ECPoint riddle, ECPoint tPoint, BigInteger challenge) {
+    this(riddle, tPoint, challenge, new byte[0]);
   }
 
   public FullProofOfExponent(byte[] derEncoded) {
@@ -36,17 +42,19 @@ public class FullProofOfExponent implements ProofOfExponent {
       this.challenge = new BigInteger(challengeEnc.getOctets());
       ASN1OctetString tPointEnc = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++));
       this.tPoint = AttestationCrypto.decodePoint(tPointEnc.getOctets());
+      this.nonce = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private byte[] makeEncoding(ECPoint riddle, ECPoint tPoint, BigInteger challenge) {
+  private byte[] makeEncoding(ECPoint riddle, ECPoint tPoint, BigInteger challenge, byte[] nonce) {
     try {
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(new DEROctetString(riddle.getEncoded(false)));
       res.add(new DEROctetString(challenge.toByteArray()));
       res.add(new DEROctetString(tPoint.getEncoded(false)));
+      res.add(new DEROctetString(nonce));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -67,8 +75,11 @@ public class FullProofOfExponent implements ProofOfExponent {
     return challenge;
   }
 
+  @Override
+  public byte[] getNonce() { return nonce; }
+
   public UsageProofOfExponent getUsageProofOfExponent() {
-    return new UsageProofOfExponent(tPoint, challenge);
+    return new UsageProofOfExponent(tPoint, challenge, nonce);
   }
 
   @Override
