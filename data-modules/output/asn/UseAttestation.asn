@@ -1,0 +1,18 @@
+UseAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    MyAttestation
+        FROM AttestationFramework
+    Proof
+        FROM ProofOfExponent;
+
+UseAttestation ::= SEQUENCE {
+    attestation          MyAttestation,
+    proof                UsageProof,
+    nonce                OCTET STRING
+}
+
+END
