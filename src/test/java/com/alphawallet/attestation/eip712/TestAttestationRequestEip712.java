@@ -9,10 +9,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Clock;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,7 +39,9 @@ public class TestAttestationRequestEip712 {
 
   @Test
   public void testSunshine() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET);
+    byte[] nonce = Nonce.makeNonce(MAIL, SignatureUtility.addressFromKey(userKeys.getPublic()), DOMAIN,
+        Clock.systemUTC().millis());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, AttestationType.EMAIL, pok, userKeys);
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
@@ -45,7 +49,9 @@ public class TestAttestationRequestEip712 {
 
   @Test
   public void testDecoding() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET);
+    byte[] nonce = Nonce.makeNonce(MAIL, SignatureUtility.addressFromKey(userKeys.getPublic()), DOMAIN,
+        Clock.systemUTC().millis());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, AttestationType.EMAIL, pok, userKeys);
     Eip712AttestationRequest newRequest = new Eip712AttestationRequest(DOMAIN, request.getJsonEncoding());
     assertTrue(newRequest.verify());
@@ -115,6 +121,16 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, -100, MAIL,
         AttestationType.EMAIL, pok, userKeys);
+    assertFalse(request.checkValidity());
+  }
+
+  @Test
+  public void invalidNonce() {
+    byte[] wrongNonce = Nonce.makeNonce(MAIL, SignatureUtility.addressFromKey(userKeys.getPublic()), "http://www.notTheRightHotel.com",
+        Clock.systemUTC().millis());
+    FullProofOfExponent wrongPok = crypto.computeAttestationProof(ATTESTATION_SECRET, wrongNonce);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, AttestationType.EMAIL, wrongPok, userKeys);
+    assertTrue(request.verify());
     assertFalse(request.checkValidity());
   }
 

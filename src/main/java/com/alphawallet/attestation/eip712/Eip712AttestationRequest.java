@@ -3,6 +3,7 @@ package com.alphawallet.attestation.eip712;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
@@ -116,6 +117,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       accept &= verifyTimeStamp(data.getTimeStamp());
       accept &= data.getAddress().toUpperCase().equals(
           SignatureUtility.addressFromKey(attestationRequest.getPublicKey()).toUpperCase());
+      accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
+          data.getAddress(), domain);
       return accept;
     } catch (Exception e) {
       return false;
