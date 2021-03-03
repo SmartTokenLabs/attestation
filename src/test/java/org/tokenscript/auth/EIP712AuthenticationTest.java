@@ -2,6 +2,7 @@ package org.tokenscript.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,6 +14,7 @@ import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
+import org.tokenscript.eip712.FullEip712InternalData;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -23,7 +25,6 @@ import org.devcon.ticket.Ticket;
 import org.devcon.ticket.TicketDecoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.tokenscript.auth.AuthenticatorEncoder.InternalAuthenticationData;
 
 public class EIP712AuthenticationTest {
   private static final String validatorDomain = "http://www.hotelbogota.com";
@@ -189,6 +190,14 @@ public class EIP712AuthenticationTest {
     assertFalse(validator.validateRequest(token));
   }
 
+  @Test
+  public void consistentSalt() {
+    String salt = authenticator.getSalt();
+    assertNotNull(salt);
+    String otherSalt = authenticator.getSalt();
+    assertEquals(salt, otherSalt);
+  }
+
   private class TestEip712Authentication extends Eip712AuthIssuer {
     private final long testTimestamp;
 
@@ -200,7 +209,7 @@ public class EIP712AuthenticationTest {
     @Override
     public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) {
       String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
-      InternalAuthenticationData auth = new InternalAuthenticationData(
+      FullEip712InternalData auth = new FullEip712InternalData(
           AuthenticatorEncoder.USAGE_VALUE, encodedObject,
           testTimestamp);
       return buildSignedTokenFromJsonObject(auth, webDomain, chainId);

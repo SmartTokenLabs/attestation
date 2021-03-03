@@ -5,8 +5,8 @@ import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
+import org.tokenscript.eip712.FullEip712InternalData;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.tokenscript.auth.AuthenticatorEncoder.InternalAuthenticationData;
 import org.tokenscript.eip712.Eip712Validator;
 
 /**
@@ -32,12 +32,12 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
   public boolean validateRequest(String jsonInput) {
     try {
       String eip712Message = retrieveUnderlyingObject(jsonInput);
-      InternalAuthenticationData auth = mapper.readValue(eip712Message, InternalAuthenticationData.class);
+      FullEip712InternalData auth = mapper.readValue(eip712Message, FullEip712InternalData.class);
       AttestedObject<T> attestedObject = retrieveAttestedObject(auth);
       String signerAddress = SignatureUtility.addressFromKey(attestedObject.getUserPublicKey());
 
       boolean accept = true;
-      accept &= verifySignature(jsonInput, signerAddress);
+      accept &= verifySignature(jsonInput, signerAddress, FullEip712InternalData.class);
       accept &= validateAuthentication(auth);
       accept &= validateAttestedObject(attestedObject);
       return accept;
@@ -46,13 +46,13 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
     }
   }
 
-  private AttestedObject retrieveAttestedObject(InternalAuthenticationData message) {
+  private AttestedObject retrieveAttestedObject(FullEip712InternalData message) {
     byte[] attestedObjectBytes = URLUtility.decodeData(message.getPayload());
     AttestedObject<T> decodedAttestedObject = new AttestedObject<>(attestedObjectBytes, decoder, attestorPublicKey);
     return decodedAttestedObject;
   }
 
-  private boolean validateAuthentication(InternalAuthenticationData authentication) {
+  private boolean validateAuthentication(FullEip712InternalData authentication) {
     try {
       boolean accept = true;
       accept &= authentication.getDescription().equals(AuthenticatorEncoder.USAGE_VALUE);

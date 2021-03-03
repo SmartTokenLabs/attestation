@@ -1,11 +1,6 @@
 package org.tokenscript.auth;
 
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Domain;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +19,7 @@ public class AuthenticatorEncoder implements Eip712Encoder {
   static final String USAGE_VALUE = "Single-use authentication";
 
   private final SecureRandom random;
+  private String salt = null;
 
   public AuthenticatorEncoder(SecureRandom random) {
     this.random = random;
@@ -49,7 +45,10 @@ public class AuthenticatorEncoder implements Eip712Encoder {
 
   @Override
   public String getSalt() {
-    return Hex.toHexString(random.generateSeed(32));
+    if (salt == null) {
+      salt = Hex.toHexString(random.generateSeed(32));
+    }
+    return salt;
   }
 
   @Override
@@ -62,42 +61,4 @@ public class AuthenticatorEncoder implements Eip712Encoder {
     return PROTOCOL_VERSION;
   }
 
-  static class InternalAuthenticationData {
-    private String description;
-    private String payload;
-    private long timeStamp;
-
-    public InternalAuthenticationData() {}
-
-    public InternalAuthenticationData(String description, String payload, long timeStamp) {
-      this.description = description;
-      this.payload = payload;
-      this.timeStamp = timeStamp;
-    }
-
-    public String getDescription() {
-      return description;
-    }
-
-    public void setDescription(String description) {
-      this.description = description;
-    }
-
-    public String getPayload() {
-      return payload;
-    }
-
-    public void setPayload(String payload) {
-      this.payload = payload;
-    }
-
-    public long getTimeStamp() {
-      return timeStamp;
-    }
-
-    public void setTimeStamp(long timeStamp) {
-      this.timeStamp = timeStamp;
-    }
-
-  }
 }

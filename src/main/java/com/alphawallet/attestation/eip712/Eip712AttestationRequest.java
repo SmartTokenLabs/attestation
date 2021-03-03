@@ -8,18 +8,19 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
-import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestData;
+import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
+import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
   public static final int DEFAULT_TIME_LIMIT_MS = 100000;
 
   private final AttestationRequest attestationRequest;
-  private final AttestationRequestData data;
+  private final AttestationRequestInternalData data;
   private final String jsonEncoding;
   private final long acceptableTimeLimit;
 
@@ -36,7 +37,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       this.attestationRequest = new AttestationRequest(type, pok, keys.getPublic());
       this.jsonEncoding = makeToken(identifier, keys);
       String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
-      this.data = mapper.readValue(attestationRequestData, AttestationRequestData.class);
+      this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not encode object");
     }
@@ -53,7 +54,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       this.acceptableTimeLimit = acceptableTimeLimit;
       this.jsonEncoding = jsonEncoding;
       String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
-      this.data = mapper.readValue(attestationRequestData, AttestationRequestData.class);
+      this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
       this.attestationRequest = new AttestationRequest(URLUtility.decodeData(data.getPayload()));
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not decode object");
@@ -71,7 +72,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     Eip712Issuer issuer = new Eip712Issuer(keys, encoder);
     String address = SignatureUtility.addressFromKey(keys.getPublic());
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
-    AttestationRequestData data = new AttestationRequestData(
+    AttestationRequestInternalData data = new AttestationRequestInternalData(
         Eip712AttestationRequestEncoder.USAGE_VALUE,
         identifier, address, encodedAttestationRequest, System.currentTimeMillis());
     return issuer.buildSignedTokenFromJsonObject(data, domain, PLACEHOLDER_CHAIN_ID);
@@ -103,7 +104,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     if (!attestationRequest.verify()) {
       return false;
     }
-    if (!verifySignature(jsonEncoding, data.getAddress())) {
+    if (!verifySignature(jsonEncoding, data.getAddress(), AttestationRequestInternalData.class)) {
       return false;
     }
     return true;

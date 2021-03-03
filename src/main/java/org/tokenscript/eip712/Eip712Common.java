@@ -14,11 +14,13 @@ public abstract class Eip712Common {
   protected static final String JSON_RPC_VER = "2.0";
   protected final CryptoFunctions cryptoFunctions;
   protected final ObjectMapper mapper;
+  protected final Eip712Encoder encoder;
 
-  public Eip712Common() {
+  public Eip712Common(Eip712Encoder encoder) {
     Security.addProvider(new BouncyCastleProvider());
     this.cryptoFunctions = new CryptoFunctions();
     this.mapper = new ObjectMapper();
+    this.encoder = encoder;
   }
 
   public static boolean isDomainValid(String domain) {
