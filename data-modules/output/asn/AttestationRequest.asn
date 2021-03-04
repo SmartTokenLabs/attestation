@@ -4,17 +4,10 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    SubjectPublicKeyInfo
-        FROM AttestationFramework
     Proof
         FROM ProofOfExponent;
 
 Identity ::= SEQUENCE {
-    identityPayload    IdentityPayload,
-    publicKey          SubjectPublicKeyInfo,
-}
-
-IdentityPayload ::= SEQUENCE {
     type               IdentifierType,
     proof              Proof
 }

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Date;
 import org.bouncycastle.asn1.DERSequence;
@@ -43,7 +44,7 @@ public class AttestationTest {
         Date now = new Date();
         att.setNotValidBefore(now);
         assertEquals(att.getNotValidBefore().toString(), now.toString());
-        Date later = new Date(System.currentTimeMillis()+1000);
+        Date later = new Date(Clock.systemUTC().millis()+1000);
         att.setNotValidAfter(later);
         assertEquals(att.getNotValidAfter().toString(), later.toString());
         att.setSubject("CN=me");
@@ -90,7 +91,7 @@ public class AttestationTest {
         Attestation res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
         assertTrue(res.checkValidity());
         assertTrue(res.isValidX509());
-        Date almostNow = new Date(System.currentTimeMillis() - 1000);
+        Date almostNow = new Date(Clock.systemUTC().millis() - 1000);
         res.setNotValidAfter(almostNow);
         assertFalse(res.checkValidity());
     }

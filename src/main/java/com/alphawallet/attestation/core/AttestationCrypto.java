@@ -22,6 +22,7 @@ import org.bouncycastle.math.ec.ECCurve.Fp;
 import org.bouncycastle.math.ec.ECPoint;
 
 public class AttestationCrypto {
+  public static final int BYTES_IN_DIGEST = 256 / 8;
   public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
   public static final BigInteger curveOrder = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
@@ -94,13 +95,18 @@ public class AttestationCrypto {
    * This is used to convince the attestor that the user knows a secret which the attestor will
    * then use to construct a Pedersen commitment to the user's identifier.
    * @param randomness The randomness used in the commitment
+   * @param nonce A nonce to link the proof to a specific context/challenge
    * @return
    */
-  public FullProofOfExponent computeAttestationProof(BigInteger randomness) {
+  public FullProofOfExponent computeAttestationProof(BigInteger randomness, byte[] nonce) {
     // Compute the random part of the commitment, i.e. H^randomness
     ECPoint riddle = H.multiply(randomness);
     List<ECPoint> challengeList = Arrays.asList(H, riddle);
-    return constructSchnorrPOK(riddle, randomness, challengeList);
+    return constructSchnorrPOK(riddle, randomness, challengeList, nonce);
+  }
+
+  public FullProofOfExponent computeAttestationProof(BigInteger randomness) {
+    return computeAttestationProof(randomness, new byte[0]);
   }
 
   /**
@@ -120,37 +126,50 @@ public class AttestationCrypto {
    * @param commitment2 Second Pedersen commitment to some message m
    * @param randomness1 The randomness used in commitment1
    * @param randomness2 The randomness used in commitment2
+   * @param nonce A nonce to link the proof to a specific context/challenge
    * @return
    */
-  public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2) {
+  public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2, byte[] nonce) {
     ECPoint comPoint1 = decodePoint(commitment1);
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger exponent = randomness1.subtract(randomness2).mod(curveOrder);
     List<ECPoint> challengeList = Arrays.asList(H, comPoint1, comPoint2);
-    return constructSchnorrPOK(riddle, exponent, challengeList).getUsageProofOfExponent();
+    return constructSchnorrPOK(riddle, exponent, challengeList, nonce).getUsageProofOfExponent();
+  }
+
+  public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2) {
+    return computeEqualityProof(commitment1, commitment2, randomness1, randomness2, new byte[0]);
   }
 
   /**
    * Constructs a Schnorr proof of knowledge of exponent of a riddle to base H.
-   * The challenge value used (c) is computed from the challengeList and the internal t value.
+   * The challenge value used (c) is computed from the challengePoints and the internal t value.
    * The method uses rejection sampling to ensure that the t value is sampled s.t. the
    * challenge will always be less than curveOrder.
    */
-  private FullProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengeList) {
+  private FullProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengePoints, byte[] nonce) {
     ECPoint t;
     BigInteger hiding, c, d;
     // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
     do {
       hiding = makeSecret();
       t = H.multiply(hiding);
-      List<ECPoint> finalChallengeList = new ArrayList<>(challengeList);
-      finalChallengeList.add(t);
-      c = mapToInteger(makeArray(finalChallengeList));
+      c = computeChallenge(t, challengePoints, nonce);
     } while (c.compareTo(curveOrder) >= 0);
     d = hiding.add(c.multiply(exponent)).mod(curveOrder);
-    return new FullProofOfExponent(riddle.normalize(), t.normalize(), d);
+    return new FullProofOfExponent(riddle.normalize(), t.normalize(), d, nonce);
+  }
+
+  private static BigInteger computeChallenge(ECPoint t, List<ECPoint> challengeList, byte[] nonce) {
+    List<ECPoint> finalChallengeList = new ArrayList<>(challengeList);
+    finalChallengeList.add(t);
+    byte[] challengePointBytes = makeArray(finalChallengeList);
+    byte[] challengeBytes = new byte[challengePointBytes.length+nonce.length];
+    System.arraycopy(challengePointBytes, 0, challengeBytes, 0, challengePointBytes.length);
+    System.arraycopy(nonce, 0, challengeBytes, challengePointBytes.length, nonce.length);
+    return mapToInteger(challengeBytes);
   }
 
   /**
@@ -159,7 +178,7 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyAttestationRequestProof(FullProofOfExponent pok)  {
-    BigInteger c = mapToInteger(makeArray(Arrays.asList(H, pok.getRiddle(), pok.getPoint())));
+    BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getNonce());
     return verifyPok(pok, c);
   }
 
@@ -176,8 +195,8 @@ public class AttestationCrypto {
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute the value the riddle should have
     ECPoint riddle = comPoint1.subtract(comPoint2);
-    BigInteger c = mapToInteger(makeArray(Arrays.asList(H, comPoint1, comPoint2, pok.getPoint())));
-    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge()), c);
+    BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, comPoint1, comPoint2), pok.getNonce());
+    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge(), pok.getNonce()), c);
   }
 
   private static boolean verifyPok(FullProofOfExponent pok, BigInteger c) {

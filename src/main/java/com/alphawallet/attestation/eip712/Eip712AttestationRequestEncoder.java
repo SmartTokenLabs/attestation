@@ -1,31 +1,18 @@
 package com.alphawallet.attestation.eip712;
 
-import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Domain;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.util.encoders.Hex;
 import org.tokenscript.eip712.Eip712Encoder;
-import org.web3j.abi.datatypes.Address;
+import org.tokenscript.eip712.FullEip712InternalData;
 
 public class Eip712AttestationRequestEncoder implements Eip712Encoder {
   static final String PROTOCOL_VERSION = "0.1";
 
   static final String PRIMARY_NAME = "AttestationRequest";
-  static final String DESCRIPTION_NAME = "description";
-  static final String PAYLOAD_NAME = "payload";
-  static final String IDENTITY_NAME = "identity";
   static final String ADDRESS_NAME = "address";
-  static final String TIMESTAMP_NAME = "timestamp";//"Timestamp (milliseconds since epoch)";
-
   static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
   public Eip712AttestationRequestEncoder() {
@@ -36,7 +23,7 @@ public class Eip712AttestationRequestEncoder implements Eip712Encoder {
     List<Entry> content = new ArrayList<>();
     content.add(new Entry(PAYLOAD_NAME, STRING));
     content.add(new Entry(DESCRIPTION_NAME, STRING));
-    content.add(new Entry(IDENTITY_NAME, STRING));
+    content.add(new Entry(IDENTIFIER_NAME, STRING));
     content.add(new Entry(ADDRESS_NAME, ADDRESS));
     content.add(new Entry(TIMESTAMP_NAME, UINT64));
     types.put(PRIMARY_NAME, content);
@@ -65,30 +52,25 @@ public class Eip712AttestationRequestEncoder implements Eip712Encoder {
     return null;
   }
 
-  static class AttestationRequestData {
-    private String description;
+  static class AttestationRequestInternalData extends FullEip712InternalData {
     private String identifier;
     // TODO This should actually be of type Address, but currently this type of the web3j is not Jackson serializable
     private String address;
-    private String payload;
-    private long timeStamp;
 
-    public AttestationRequestData() {}
+    public AttestationRequestInternalData() {
+      super();
+    }
 
-    public AttestationRequestData(String description, String identifier, String address, String payload, long timeStamp) {
-      this.description = description;
+    public AttestationRequestInternalData(String description, String identifier, String address, String payload, long timeStamp) {
+      super(description, payload, timestampFormat.format(new Date(timeStamp)));
       this.identifier = identifier;
       this.address = address;
-      this.payload = payload;
-      this.timeStamp = timeStamp;
     }
 
-    public String getDescription() {
-      return description;
-    }
-
-    public void setDescription(String description) {
-      this.description = description;
+    public AttestationRequestInternalData(String description, String identifier, String address, String payload, String timeStamp) {
+      super(description, payload, timeStamp);
+      this.identifier = identifier;
+      this.address = address;
     }
 
     public String getIdentifier() {
@@ -107,20 +89,5 @@ public class Eip712AttestationRequestEncoder implements Eip712Encoder {
       this.address = address;
     }
 
-    public String getPayload() {
-      return payload;
-    }
-
-    public void setPayload(String payload) {
-      this.payload = payload;
-    }
-
-    public long getTimeStamp() {
-      return timeStamp;
-    }
-
-    public void setTimeStamp(long timeStamp) {
-      this.timeStamp = timeStamp;
-    }
   }
 }

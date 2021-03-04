@@ -13,6 +13,7 @@ import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequest;
 import java.io.IOException;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -226,8 +228,10 @@ public class Demo {
       Path outputDirRequest, Path outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
-    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, type, pok, keys);
+    String address = SignatureUtility.addressFromKey(keys.getPublic());
+    byte[] nonce = Nonce.makeNonce(receiverId, address, ATTESTOR_DOMAIN, Clock.systemUTC().millis());
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, type, pok, keys.getPrivate(), address);
     Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
         CREATE, TRUNCATE_EXISTING);
     DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
@@ -253,7 +257,7 @@ public class Demo {
     att.setSerialNumber(new Random().nextLong());
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
+    att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
     SignedAttestation signed = new SignedAttestation(att, keys);
     DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
   }

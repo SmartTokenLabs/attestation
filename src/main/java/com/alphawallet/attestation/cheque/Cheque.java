@@ -6,6 +6,7 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.Clock;
 import java.util.Date;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -43,7 +44,7 @@ public class Cheque implements Attestable {
     this.commitment = AttestationCrypto.makeCommitment(identifier, type, secret);
     this.publicKey = keys.getPublic();
     this.amount = amount;
-    long current =  System.currentTimeMillis();
+    long current =  Clock.systemUTC().millis();
     this.notValidBefore = current - (current % 1000); // Round down to nearest second
     this.notValidAfter = this.notValidBefore + validity;
     ASN1Sequence cheque = makeCheque(this.commitment, amount, notValidBefore, notValidAfter);
@@ -106,7 +107,7 @@ public class Cheque implements Attestable {
 
   @Override
   public boolean checkValidity() {
-    long currentTime = System.currentTimeMillis();
+    long currentTime = Clock.systemUTC().millis();
     if (!(currentTime >= getNotValidBefore() && currentTime < getNotValidAfter())) {
       System.err.println("Cheque is no longer valid");
       return false;

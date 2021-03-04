@@ -2,6 +2,7 @@ package org.tokenscript.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,17 +14,20 @@ import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Clock;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.devcon.ticket.Ticket;
 import org.devcon.ticket.TicketDecoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.tokenscript.auth.AuthenticatorEncoder.InternalAuthenticationData;
+import org.tokenscript.eip712.FullEip712InternalData;
 
 public class EIP712AuthenticationTest {
   private static final String validatorDomain = "http://www.hotelbogota.com";
@@ -54,7 +58,7 @@ public class EIP712AuthenticationTest {
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
     authenticator = new AuthenticatorEncoder(rand);
     validator = new Eip712AuthValidator(decoder, authenticator, attestorKeys.getPublic(), validatorDomain);
-    issuer = new Eip712AuthIssuer(userKeys, authenticator);
+    issuer = new Eip712AuthIssuer(userKeys.getPrivate(), authenticator);
   }
 
   private static AttestedObject<Ticket> makeAttestedTicket() {
@@ -68,33 +72,33 @@ public class EIP712AuthenticationTest {
   }
 
   @Test
-  public void legalRequest() {
+  public void legalRequest() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
     assertTrue(validator.validateRequest(token));
   }
 
   @Test
-  public void testNewChainID() {
+  public void testNewChainID() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain, 1);
     assertTrue(validator.validateRequest(token));
   }
 
   @Test
-  public void testConsistency() {
+  public void testConsistency() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    long testTimestamp = System.currentTimeMillis();
-    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys, new TestAuthenticatorEncoder(), testTimestamp);
+    long testTimestamp = Clock.systemUTC().millis();
+    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     String newToken = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertEquals(token, newToken);
   }
 
   @Test
-  public void testDifferenceWithDifferentChainIds() {
+  public void testDifferenceWithDifferentChainIds() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    Eip712AuthIssuer testIssuer = new Eip712AuthIssuer(userKeys, new TestAuthenticatorEncoder());
+    Eip712AuthIssuer testIssuer = new Eip712AuthIssuer(userKeys.getPrivate(), new TestAuthenticatorEncoder());
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain, 0);
     String newToken = testIssuer.buildSignedToken(attestedTicket, validatorDomain, 1);
     assertFalse(token.equals(newToken));
@@ -106,7 +110,7 @@ public class EIP712AuthenticationTest {
   }
 
   @Test
-  public void wrongAttestedKey() {
+  public void wrongAttestedKey() throws Exception {
     AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     Attestation att = HelperTest.makeUnsignedStandardAtt(newKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedAttestation signed = new SignedAttestation(att, attestorKeys);
@@ -118,19 +122,19 @@ public class EIP712AuthenticationTest {
   }
 
   @Test
-  public void wrongSignature() {
+  public void wrongSignature() throws Exception {
     AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    Eip712AuthIssuer newIssuer = new Eip712AuthIssuer(newKeys);
+    Eip712AuthIssuer newIssuer = new Eip712AuthIssuer(newKeys.getPrivate());
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = newIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));
   }
 
   @Test
-  public void tooNew() {
+  public void tooNew() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    long testTimestamp = System.currentTimeMillis() + 2 * validator.timelimitInMs;
-    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys, new TestAuthenticatorEncoder(), testTimestamp);
+    long testTimestamp = Clock.systemUTC().millis() + 2 * validator.DEFAULT_TIME_LIMIT_MS;
+    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));
   }
@@ -146,7 +150,7 @@ public class EIP712AuthenticationTest {
   }
 
   @Test
-  public void incorrectModifiedToken() {
+  public void incorrectModifiedToken() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
     byte[] tokenBytes = token.getBytes(StandardCharsets.UTF_8);
@@ -156,7 +160,7 @@ public class EIP712AuthenticationTest {
   }
 
   @Test
-  public void incorrectDomain() {
+  public void incorrectDomain() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
     // Extra a in domain
     String token = issuer.buildSignedToken(attestedTicket, "http://www.hotelbogotaa.com");
@@ -176,31 +180,39 @@ public class EIP712AuthenticationTest {
     AttestedObject attestedTicket = makeAttestedTicket();
     assertThrows( RuntimeException.class, () -> {
       AuthenticatorEncoder authenticator = new AuthenticatorEncoder(rand);
-      Eip712AuthIssuer issuer = new Eip712AuthIssuer(userKeys, authenticator);
+      Eip712AuthIssuer issuer = new Eip712AuthIssuer(userKeys.getPrivate(), authenticator);
       issuer.buildSignedToken(attestedTicket, "www.noHttpPrefix.com");
     });
   }
 
   @Test
-  public void invalidVersion() {
+  public void invalidVersion() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    Eip712AuthIssuer testIssuer = new Eip712AuthIssuer(userKeys, new TestAuthenticatorEncoder("2.2"));
+    Eip712AuthIssuer testIssuer = new Eip712AuthIssuer(userKeys.getPrivate(), new TestAuthenticatorEncoder("2.2"));
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));
+  }
+
+  @Test
+  public void consistentSalt() {
+    String salt = authenticator.getSalt();
+    assertNotNull(salt);
+    String otherSalt = authenticator.getSalt();
+    assertEquals(salt, otherSalt);
   }
 
   private class TestEip712Authentication extends Eip712AuthIssuer {
     private final long testTimestamp;
 
-    public TestEip712Authentication(AsymmetricCipherKeyPair signingKeys, AuthenticatorEncoder authenticator, long testTimestamp) {
-      super(signingKeys, authenticator);
+    public TestEip712Authentication(AsymmetricKeyParameter signingKey, AuthenticatorEncoder authenticator, long testTimestamp) {
+      super(signingKey, authenticator);
       this.testTimestamp = testTimestamp;
     }
 
     @Override
-    public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) {
+    public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) throws JsonProcessingException {
       String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
-      InternalAuthenticationData auth = new InternalAuthenticationData(
+      FullEip712InternalData auth = new FullEip712InternalData(
           AuthenticatorEncoder.USAGE_VALUE, encodedObject,
           testTimestamp);
       return buildSignedTokenFromJsonObject(auth, webDomain, chainId);

@@ -1,22 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <asnx:module xmlns:asnx="urn:ietf:params:xml:ns:asnx" name="AttestationRequest">
-  <import name="SubjectPublicKeyInfo" schemaLocation="AttestationFramework.asd"/>
   <import name="Proof" schemaLocation="ProofOfExponent.asd"/>
 
   <namedType name="Identity">
-    <type>
-      <sequence>
-        <element name="payload" type="IdentityPayload">
-          <annotation>The user's identity proof payload.</annotation>
-        </element>
-        <element name="subjectPublicKeyInfo" type="SubjectPublicKeyInfo">
-          <annotation>The information about the user's Ethereum key that is supposed to be attested and used to sign this request</annotation>
-        </element>
-      </sequence>
-    </type>
-  </namedType>
-
-  <namedType name="IdentityPayload">
     <type>
       <sequence>
         <element name="type" type="IdentifierType">

@@ -2,10 +2,12 @@ package org.tokenscript.auth;
 
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.URLUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.security.SecureRandom;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.tokenscript.auth.AuthenticatorEncoder.InternalAuthenticationData;
+import java.time.Clock;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.eip712.FullEip712InternalData;
 
 /**
  * Class for issuing EIP712 tokens containing a useDevconTicket object.
@@ -14,22 +16,23 @@ import org.tokenscript.eip712.Eip712Issuer;
 public class Eip712AuthIssuer extends Eip712Issuer {
   private final AuthenticatorEncoder authenticator;
 
-  public Eip712AuthIssuer(AsymmetricCipherKeyPair signingKeys) {
-    this(signingKeys, new AuthenticatorEncoder(new SecureRandom()));
+  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey) {
+    this(signingKey, new AuthenticatorEncoder(new SecureRandom()));
   }
 
-  public Eip712AuthIssuer(AsymmetricCipherKeyPair signingKeys, AuthenticatorEncoder authenticator) {
-    super(signingKeys, authenticator);
+  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, AuthenticatorEncoder authenticator) {
+    super(signingKey, authenticator);
     this.authenticator = authenticator;
   }
 
-  public String buildSignedToken(AttestedObject attestedObject, String webDomain) {
+  public String buildSignedToken(AttestedObject attestedObject, String webDomain) throws JsonProcessingException {
     return buildSignedToken(attestedObject, webDomain, 0);
   }
 
-  public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) {
+  public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) throws JsonProcessingException {
     String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
-    InternalAuthenticationData auth = new InternalAuthenticationData(authenticator.USAGE_VALUE, encodedObject, System.currentTimeMillis());
+    FullEip712InternalData auth = new FullEip712InternalData(authenticator.USAGE_VALUE, encodedObject, Clock
+        .systemUTC().millis());
     return buildSignedTokenFromJsonObject(auth, webDomain, chainId);
   }
 }
