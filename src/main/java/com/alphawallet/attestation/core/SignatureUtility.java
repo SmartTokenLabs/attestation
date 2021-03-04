@@ -3,7 +3,14 @@ package com.alphawallet.attestation.core;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Security;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -27,10 +34,13 @@ import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -76,7 +86,7 @@ public class SignatureUtility {
         do {
             keys = constructECKeys(rand);
             ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-            yCoord = pk.getQ().getYCoord().toBigInteger();
+            yCoord = pk.getQ().getAffineYCoord().toBigInteger();
         } while (yCoord.compareTo(fieldModulo.shiftRight(1)) > 0);
         return keys;
     }
@@ -125,6 +135,45 @@ public class SignatureUtility {
     public static AsymmetricKeyParameter restoreKeyFromSPKI(byte[] input) throws IOException {
         SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(input);
         return PublicKeyFactory.createKey(spki);
+    }
+
+    public static PrivateKey convertPrivateBouncyCastleKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            KeyFactory ecKeyFac = getFactory(bcKey);
+            byte[] encodedBCKey = PrivateKeyInfoFactory.createPrivateKeyInfo(bcKey).getEncoded();
+            PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(encodedBCKey);
+            return ecKeyFac.generatePrivate(pkcs8EncodedKeySpec);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static PublicKey convertPublicBouncyCastleKeyToJavaKey(AsymmetricKeyParameter bcKey) {
+        try {
+            Security.addProvider(new BouncyCastleProvider());
+            KeyFactory ecKeyFac = getFactory(bcKey);
+            SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(bcKey);
+            X509EncodedKeySpec encodedKey = new X509EncodedKeySpec(spki.getEncoded());
+            return ecKeyFac.generatePublic(encodedKey);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static KeyFactory getFactory(AsymmetricKeyParameter key) throws Exception {
+        if (key instanceof ECKeyParameters) {
+            return KeyFactory.getInstance("EC", "BC");
+        } else if (key instanceof RSAKeyParameters) {
+            return KeyFactory.getInstance("RSA", "BC");
+        } else {
+            throw new IllegalArgumentException("Only ECDSA or RSA keys are supported");
+        }
+    }
+
+    public static KeyPair convertBouncyCastleKeysToJavaKey(AsymmetricCipherKeyPair bcKeys) {
+        return new KeyPair(convertPublicBouncyCastleKeyToJavaKey(bcKeys.getPublic()), convertPrivateBouncyCastleKeyToJavaKey(
+            bcKeys.getPrivate()));
     }
 
     /**

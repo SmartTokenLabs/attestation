@@ -106,7 +106,7 @@ public class CryptoTest {
     for (int i=0; i<10; i++) {
       AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
       ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-      BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
+      BigInteger yCoord = pk.getQ().getAffineYCoord().toBigInteger();
       System.out.println(yCoord);
       BigInteger fieldModulo = SignatureUtility.ECDSAdomain.getCurve().getField().getCharacteristic();
       assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
@@ -401,11 +401,11 @@ public class CryptoTest {
       BigInteger y = ySquare.modPow(magicExp, AttestationCrypto.fieldSize);
       resPoint = AttestationCrypto.curve.createPoint(x, y).normalize();
       // Ensure that we have a consistent choice of which "sign" of y we use. We always use the smallest possible value of y
-      if (resPoint.getYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
+      if (resPoint.getAffineYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
         resPoint = resPoint.negate().normalize();
       }
       referencePoint = resPoint.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize();
-      if (referencePoint.getYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
+      if (referencePoint.getAffineYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
         referencePoint = referencePoint.negate().normalize();
       }
       // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem
