@@ -257,7 +257,7 @@ public class Demo {
     att.setSerialNumber(new Random().nextLong());
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
+    att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
     SignedAttestation signed = new SignedAttestation(att, keys);
     DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
   }

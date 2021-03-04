@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Clock;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -87,7 +88,7 @@ public class EIP712AuthenticationTest {
   @Test
   public void testConsistency() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    long testTimestamp = System.currentTimeMillis();
+    long testTimestamp = Clock.systemUTC().millis();
     Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     String newToken = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
@@ -132,7 +133,7 @@ public class EIP712AuthenticationTest {
   @Test
   public void tooNew() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    long testTimestamp = System.currentTimeMillis() + 2 * validator.DEFAULT_TIME_LIMIT_MS;
+    long testTimestamp = Clock.systemUTC().millis() + 2 * validator.DEFAULT_TIME_LIMIT_MS;
     Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));

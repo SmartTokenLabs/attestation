@@ -59,7 +59,7 @@ public class Eip712Validator extends Eip712Common {
       Date currentTimestampWSubtractedLimit = new Date(currentTime - acceptableTimeLimitMs);
       Date parsedTimestamp = encoder.timestampFormat.parse(timestamp);
       // Verify timestamp is still valid and not too old
-      // i.e. parsedTimestamp \in ]currentTimestampWSubtractedLimit;  currentTimestampWAddedLimit[
+      // i.e. parsedTimestamp in ]currentTimestampWSubtractedLimit;  currentTimestampWAddedLimit[
       if (parsedTimestamp.before(currentTimestampWAddedLimit) &&
           parsedTimestamp.after(currentTimestampWSubtractedLimit)) {
         return true;

@@ -7,6 +7,7 @@ import com.alphawallet.token.entity.Signable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.text.ParseException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -280,7 +281,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       return false;
     }
     if (getNotValidBefore() != null && getNotValidAfter() != null) {
-      long currentTime = System.currentTimeMillis();
+      long currentTime = Clock.systemUTC().millis();
       Date attNotBefore = getNotValidBefore();
       Date attNotAfter = getNotValidAfter();
       if (attNotBefore != null && attNotAfter != null) {

@@ -4,6 +4,7 @@ import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.URLUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.FullEip712InternalData;
@@ -30,7 +31,8 @@ public class Eip712AuthIssuer extends Eip712Issuer {
 
   public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) throws JsonProcessingException {
     String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
-    FullEip712InternalData auth = new FullEip712InternalData(authenticator.USAGE_VALUE, encodedObject, System.currentTimeMillis());
+    FullEip712InternalData auth = new FullEip712InternalData(authenticator.USAGE_VALUE, encodedObject, Clock
+        .systemUTC().millis());
     return buildSignedTokenFromJsonObject(auth, webDomain, chainId);
   }
 }
