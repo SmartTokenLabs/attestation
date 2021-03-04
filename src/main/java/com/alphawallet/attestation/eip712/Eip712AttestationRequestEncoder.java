@@ -2,6 +2,7 @@ package com.alphawallet.attestation.eip712;
 
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import org.tokenscript.eip712.Eip712Encoder;
@@ -11,12 +12,7 @@ public class Eip712AttestationRequestEncoder implements Eip712Encoder {
   static final String PROTOCOL_VERSION = "0.1";
 
   static final String PRIMARY_NAME = "AttestationRequest";
-  static final String DESCRIPTION_NAME = "description";
-  static final String PAYLOAD_NAME = "payload";
-  static final String IDENTITY_NAME = "identity";
   static final String ADDRESS_NAME = "address";
-  static final String TIMESTAMP_NAME = "timestamp";//"Timestamp (milliseconds since epoch)";
-
   static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
   public Eip712AttestationRequestEncoder() {
@@ -27,7 +23,7 @@ public class Eip712AttestationRequestEncoder implements Eip712Encoder {
     List<Entry> content = new ArrayList<>();
     content.add(new Entry(PAYLOAD_NAME, STRING));
     content.add(new Entry(DESCRIPTION_NAME, STRING));
-    content.add(new Entry(IDENTITY_NAME, STRING));
+    content.add(new Entry(IDENTIFIER_NAME, STRING));
     content.add(new Entry(ADDRESS_NAME, ADDRESS));
     content.add(new Entry(TIMESTAMP_NAME, UINT64));
     types.put(PRIMARY_NAME, content);
@@ -66,6 +62,12 @@ public class Eip712AttestationRequestEncoder implements Eip712Encoder {
     }
 
     public AttestationRequestInternalData(String description, String identifier, String address, String payload, long timeStamp) {
+      super(description, payload, timestampFormat.format(new Date(timeStamp)));
+      this.identifier = identifier;
+      this.address = address;
+    }
+
+    public AttestationRequestInternalData(String description, String identifier, String address, String payload, String timeStamp) {
       super(description, payload, timeStamp);
       this.identifier = identifier;
       this.address = address;

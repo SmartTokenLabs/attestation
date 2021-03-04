@@ -7,13 +7,23 @@ import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Domain;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InvalidObjectException;
+import java.time.Clock;
+import java.util.Date;
 import org.bouncycastle.util.encoders.Hex;
 
 public class Eip712Validator extends Eip712Common {
+  public static final int DEFAULT_TIME_LIMIT_MS = 100000;
+
   protected final String domain;
+  protected final long acceptableTimeLimitMs;
 
   public Eip712Validator(String domain, Eip712Encoder encoder) {
+    this(domain, DEFAULT_TIME_LIMIT_MS, encoder);
+  }
+
+  public Eip712Validator(String domain, long acceptableTimeLimitMs, Eip712Encoder encoder) {
     super(encoder);
+    this.acceptableTimeLimitMs = acceptableTimeLimitMs;
     if (!Eip712Common.isDomainValid(domain)) {
       throw new IllegalArgumentException("Issuer domain is not a valid domain");
     }
@@ -38,6 +48,24 @@ public class Eip712Validator extends Eip712Common {
     accept &= domainToCheck.getName().equals(domain);
     accept &= domainToCheck.getVersion().equals(encoder.getProtocolVersion());
     return accept;
+  }
+
+  public boolean verifyTimeStamp(String timestamp) {
+    try {
+      long currentTime = Clock.systemUTC().millis();
+      Date currentTimestampWAddedLimit = new Date(currentTime + acceptableTimeLimitMs);
+      Date currentTimestampWSubtractedLimit = new Date(currentTime - acceptableTimeLimitMs);
+      Date parsedTimestamp = encoder.timestampFormat.parse(timestamp);
+      // Verify timestamp is still valid and not too old
+      // i.e. parsedTimestamp \in ]currentTimestampWSubtractedLimit;  currentTimestampWAddedLimit[
+      if (parsedTimestamp.before(currentTimestampWAddedLimit) &&
+          parsedTimestamp.after(currentTimestampWSubtractedLimit)) {
+        return true;
+      }
+    } catch (Exception e) {
+      return false;
+    }
+    return false;
   }
 
   public <T extends FullEip712InternalData> boolean verifySignature(String signedJsonInput, String pkAddress, Class<T> type) {

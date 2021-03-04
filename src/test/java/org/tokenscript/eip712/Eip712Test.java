@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 public class Eip712Test {
   private static final String testDomain = "http://www.test.com";
   private static final FullEip712InternalData testObject = new FullEip712InternalData("description", "payload", 0L);
-  private static final String encodedTestObject = "{\"description\":\"description\",\"timeStamp\":0,\"payload\":\"payload\"}";
+  private static final String encodedTestObject = "{\"description\":\"description\",\"timeStamp\":\"1970.01.01 at 01:00:00.000 CET\",\"payload\":\"payload\"}";
 
   private static AsymmetricCipherKeyPair userKeys;
   private static SecureRandom rand;
@@ -53,7 +53,7 @@ public class Eip712Test {
   }
 
   @Test
-  public void testConsistency()  {
+  public void testConsistency() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     String newToken = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     assertEquals(token, newToken);
@@ -65,7 +65,7 @@ public class Eip712Test {
   }
 
   @Test
-  public void testDifferenceWithDifferentChainIds() {
+  public void testDifferenceWithDifferentChainIds() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     String newToken = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 1);
     assertFalse(token.equals(newToken));
@@ -82,7 +82,7 @@ public class Eip712Test {
   }
 
   @Test
-  public void incorrectModifiedToken() {
+  public void incorrectModifiedToken() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     byte[] tokenBytes = token.getBytes(StandardCharsets.UTF_8);
     // Flip a bit
@@ -92,7 +92,7 @@ public class Eip712Test {
   }
 
   @Test
-  public void incorrectDomain() {
+  public void incorrectDomain() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, "http://www.not-test.com", 0);
     assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(token));
   }
@@ -108,17 +108,23 @@ public class Eip712Test {
   }
 
   @Test
-  public void invalidVersionIssuer() {
+  public void invalidVersionIssuer() throws Exception {
     Eip712Issuer newIssuer = new Eip712Issuer(userKeys, new TestEncoder("2.0"));
     String token = newIssuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(token));
   }
 
   @Test
-  public void invalidVersionValidator() {
+  public void invalidVersionValidator() throws Exception {
     Eip712Validator newValidator = new Eip712Validator(testDomain, new TestEncoder("2.0"));
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     assertThrows(InvalidObjectException.class, () -> newValidator.getDomainFromJson(token));
+  }
+
+  @Test
+  public void invalidTimestamp() {
+    // Does not contain millisecond accuracy
+    assertFalse(validator.verifyTimeStamp("1970.01.01 at 01:00:00 CET"));
   }
 
   private static class TestEncoder implements Eip712Encoder {

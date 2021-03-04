@@ -9,6 +9,8 @@ import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.time.Clock;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
@@ -17,12 +19,10 @@ import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
-  public static final int DEFAULT_TIME_LIMIT_MS = 100000;
 
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
   private final String jsonEncoding;
-  private final long acceptableTimeLimit;
 
   public Eip712AttestationRequest(String attestorDomain, String identifier, AttestationType type,
       FullProofOfExponent pok, AsymmetricCipherKeyPair keys) {
@@ -31,9 +31,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit, String identifier,
       AttestationType type, FullProofOfExponent pok, AsymmetricCipherKeyPair keys) {
-    super(attestorDomain, new Eip712AttestationRequestEncoder());
+    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
-      this.acceptableTimeLimit = acceptableTimeLimit;
       this.attestationRequest = new AttestationRequest(type, pok, keys.getPublic());
       this.jsonEncoding = makeToken(identifier, keys);
       String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
@@ -49,9 +48,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit, String jsonEncoding) {
-    super(attestorDomain, new Eip712AttestationRequestEncoder());
+    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
-      this.acceptableTimeLimit = acceptableTimeLimit;
       this.jsonEncoding = jsonEncoding;
       String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
       this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
@@ -68,13 +66,13 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     }
   }
 
-  String makeToken(String identifier, AsymmetricCipherKeyPair keys) {
+  String makeToken(String identifier, AsymmetricCipherKeyPair keys) throws JsonProcessingException {
     Eip712Issuer issuer = new Eip712Issuer(keys, encoder);
     String address = SignatureUtility.addressFromKey(keys.getPublic());
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         Eip712AttestationRequestEncoder.USAGE_VALUE,
-        identifier, address, encodedAttestationRequest, System.currentTimeMillis());
+        identifier, address, encodedAttestationRequest, Clock.systemUTC().millis());
     return issuer.buildSignedTokenFromJsonObject(data, domain, PLACEHOLDER_CHAIN_ID);
   }
 
@@ -112,28 +110,14 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   @Override
   public boolean checkValidity() {
-    try {
-      boolean accept = true;
-      accept &= data.getDescription().equals(Eip712AttestationRequestEncoder.USAGE_VALUE);
-      accept &= verifyTimeStamp(data.getTimeStamp());
-      accept &= data.getAddress().toUpperCase().equals(
-          SignatureUtility.addressFromKey(attestationRequest.getPublicKey()).toUpperCase());
-      accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
-          data.getAddress(), domain);
-      return accept;
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  private boolean verifyTimeStamp(long timestamp) {
-    long currentTime = System.currentTimeMillis();
-    // Verify timestamp is still valid and not too old
-    if ((timestamp < currentTime + acceptableTimeLimit) &&
-        (timestamp > currentTime - acceptableTimeLimit)) {
-      return true;
-    }
-    return false;
+    boolean accept = true;
+    accept &= data.getDescription().equals(Eip712AttestationRequestEncoder.USAGE_VALUE);
+    accept &= verifyTimeStamp(data.getTimeStamp());
+    accept &= data.getAddress().toUpperCase().equals(
+        SignatureUtility.addressFromKey(attestationRequest.getPublicKey()).toUpperCase());
+    accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
+        data.getAddress(), domain);
+    return accept;
   }
 
 }

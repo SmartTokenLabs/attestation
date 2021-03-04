@@ -2,10 +2,11 @@ package org.tokenscript.auth;
 
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.URLUtility;
-import org.tokenscript.eip712.FullEip712InternalData;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.eip712.FullEip712InternalData;
 
 /**
  * Class for issuing EIP712 tokens containing a useDevconTicket object.
@@ -23,11 +24,11 @@ public class Eip712AuthIssuer extends Eip712Issuer {
     this.authenticator = authenticator;
   }
 
-  public String buildSignedToken(AttestedObject attestedObject, String webDomain) {
+  public String buildSignedToken(AttestedObject attestedObject, String webDomain)throws JsonProcessingException {
     return buildSignedToken(attestedObject, webDomain, 0);
   }
 
-  public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) {
+  public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) throws JsonProcessingException {
     String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
     FullEip712InternalData auth = new FullEip712InternalData(authenticator.USAGE_VALUE, encodedObject, System.currentTimeMillis());
     return buildSignedTokenFromJsonObject(auth, webDomain, chainId);

@@ -134,4 +134,5 @@ public class TestAttestationRequestEip712 {
     assertFalse(request.checkValidity());
   }
 
+
 }

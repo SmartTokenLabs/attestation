@@ -14,19 +14,17 @@ import org.tokenscript.eip712.Eip712Validator;
  * The tokens are supposed to be issued by the user for consumption by a third party website.
  */
 public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
-  protected final long timelimitInMs;
   private final AsymmetricKeyParameter attestorPublicKey;
   private final AttestableObjectDecoder<T> decoder;
 
   public Eip712AuthValidator(AttestableObjectDecoder<T> decoder, AuthenticatorEncoder authenticator, AsymmetricKeyParameter attestorPublicKey, String domain) {
-    this(decoder, authenticator, attestorPublicKey, domain, 10000);
+    this(decoder, authenticator, attestorPublicKey, domain, DEFAULT_TIME_LIMIT_MS);
   }
 
-  public Eip712AuthValidator(AttestableObjectDecoder<T> decoder, AuthenticatorEncoder authenticator, AsymmetricKeyParameter attestorPublicKey, String domain,  long acceptableTimeLimit) {
-    super(domain, authenticator);
+  public Eip712AuthValidator(AttestableObjectDecoder<T> decoder, AuthenticatorEncoder authenticator, AsymmetricKeyParameter attestorPublicKey, String domain, long acceptableTimeLimit) {
+    super(domain, acceptableTimeLimit, authenticator);
     this.attestorPublicKey = attestorPublicKey;
     this.decoder = decoder;
-    this.timelimitInMs = acceptableTimeLimit;
   }
 
   public boolean validateRequest(String jsonInput) {
@@ -53,14 +51,10 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
   }
 
   private boolean validateAuthentication(FullEip712InternalData authentication) {
-    try {
-      boolean accept = true;
-      accept &= authentication.getDescription().equals(AuthenticatorEncoder.USAGE_VALUE);
-      accept &= verifyTimeStamp(authentication.getTimeStamp());
-      return accept;
-    } catch (Exception e) {
-      return false;
-    }
+    boolean accept = true;
+    accept &= authentication.getDescription().equals(AuthenticatorEncoder.USAGE_VALUE);
+    accept &= verifyTimeStamp(authentication.getTimeStamp());
+    return accept;
   }
 
   private boolean validateAttestedObject(AttestedObject<T> attestedObject) {
@@ -69,16 +63,6 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
     accept &= attestedObject.verify();
     accept &= attestedObject.checkValidity();
     return accept;
-  }
-
-  private boolean verifyTimeStamp(long timestamp) {
-    long currentTime = System.currentTimeMillis();
-    // Verify timestamp is still valid and not too old
-    if ((timestamp < currentTime + timelimitInMs) &&
-        (timestamp > currentTime - timelimitInMs)) {
-      return true;
-    }
-    return false;
   }
 
 }

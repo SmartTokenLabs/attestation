@@ -2,11 +2,11 @@ package org.tokenscript.eip712;
 
 public class Eip712InternalData {
   private String description;
-  private long timeStamp;
+  private String timeStamp;
 
   public Eip712InternalData() {}
 
-  public Eip712InternalData(String description, long timeStamp) {
+  public Eip712InternalData(String description, String timeStamp) {
     this.description = description;
     this.timeStamp = timeStamp;
   }
@@ -19,11 +19,11 @@ public class Eip712InternalData {
     this.description = description;
   }
 
-  public long getTimeStamp() {
+  public String getTimeStamp() {
     return timeStamp;
   }
 
-  public void setTimeStamp(long timeStamp) {
+  public void setTimeStamp(String timeStamp) {
     this.timeStamp = timeStamp;
   }
 

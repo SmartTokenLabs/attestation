@@ -14,7 +14,7 @@ public class SignableEip712InternalData extends Eip712InternalData {
 
   public SignableEip712InternalData() {}
 
-  public SignableEip712InternalData(String description, String payloadDigest, long timeStamp) {
+  public SignableEip712InternalData(String description, String payloadDigest, String timeStamp) {
     super(description, timeStamp);
     this.payloadDigest = payloadDigest;
   }
