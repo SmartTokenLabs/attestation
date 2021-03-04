@@ -11,7 +11,6 @@ import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Clock;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
@@ -23,18 +22,21 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
   private final String jsonEncoding;
+  private final AsymmetricKeyParameter publicKey;
 
   public Eip712AttestationRequest(String attestorDomain, String identifier, AttestationType type,
-      FullProofOfExponent pok, AsymmetricCipherKeyPair keys) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, type, pok, keys);
+      FullProofOfExponent pok, AsymmetricKeyParameter signingKey, String address) {
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, type, pok, signingKey, address);
   }
 
-  public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit, String identifier,
-      AttestationType type, FullProofOfExponent pok, AsymmetricCipherKeyPair keys) {
+  public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
+      String identifier, AttestationType type, FullProofOfExponent pok,
+      AsymmetricKeyParameter signingKey, String address) {
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
-      this.attestationRequest = new AttestationRequest(type, pok, keys.getPublic());
-      this.jsonEncoding = makeToken(identifier, keys);
+      this.attestationRequest = new AttestationRequest(type, pok);
+      this.jsonEncoding = makeToken(identifier, signingKey, address);
+      this.publicKey = retrievePublicKey(jsonEncoding, AttestationRequestInternalData.class);
       String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
       this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
     } catch (Exception e ) {
@@ -51,6 +53,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
       this.jsonEncoding = jsonEncoding;
+      this.publicKey = retrievePublicKey(jsonEncoding, AttestationRequestInternalData.class);
       String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
       this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
       this.attestationRequest = new AttestationRequest(URLUtility.decodeData(data.getPayload()));
@@ -66,9 +69,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     }
   }
 
-  String makeToken(String identifier, AsymmetricCipherKeyPair keys) throws JsonProcessingException {
-    Eip712Issuer issuer = new Eip712Issuer(keys, encoder);
-    String address = SignatureUtility.addressFromKey(keys.getPublic());
+  String makeToken(String identifier, AsymmetricKeyParameter signingKey, String address) throws JsonProcessingException {
+    Eip712Issuer issuer = new Eip712Issuer(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         Eip712AttestationRequestEncoder.USAGE_VALUE,
@@ -81,7 +83,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public AsymmetricKeyParameter getPublicKey() {
-    return attestationRequest.getPublicKey();
+    return publicKey;
   }
 
   public AttestationType getType() {
@@ -113,8 +115,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     boolean accept = true;
     accept &= data.getDescription().equals(Eip712AttestationRequestEncoder.USAGE_VALUE);
     accept &= verifyTimeStamp(data.getTimeStamp());
-    accept &= data.getAddress().toUpperCase().equals(
-        SignatureUtility.addressFromKey(attestationRequest.getPublicKey()).toUpperCase());
+    accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, data.getAddress());
     accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
         data.getAddress(), domain);
     return accept;

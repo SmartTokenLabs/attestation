@@ -10,7 +10,6 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +31,7 @@ public class AttestationRequestTest {
     AttestationType type = AttestationType.PHONE;
     BigInteger secret = new BigInteger("42");
     FullProofOfExponent pok = crypto.computeAttestationProof(secret);
-    AttestationRequest request = new AttestationRequest(type, pok, subjectKeys.getPublic());
+    AttestationRequest request = new AttestationRequest(type, pok);
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(request.getPok()));
     assertTrue(request.verify());
   }
@@ -42,7 +41,7 @@ public class AttestationRequestTest {
     AttestationType type = AttestationType.EMAIL;
     BigInteger secret = new BigInteger("42424242");
     FullProofOfExponent pok = crypto.computeAttestationProof(secret);
-    AttestationRequest request = new AttestationRequest(type, pok, subjectKeys.getPublic());
+    AttestationRequest request = new AttestationRequest(type, pok);
     AttestationRequest newRequest = new AttestationRequest(request.getDerEncoding());
     assertTrue(AttestationCrypto.verifyAttestationRequestProof(newRequest.getPok()));
     assertTrue(newRequest.verify());
@@ -50,10 +49,6 @@ public class AttestationRequestTest {
     assertArrayEquals(request.getDerEncoding(), newRequest.getDerEncoding());
     assertEquals(request.getType(), newRequest.getType());
     assertEquals(request.getType(), type);
-    assertEquals( ((ECKeyParameters) request.getPublicKey()).getParameters(),
-        ((ECKeyParameters) newRequest.getPublicKey()).getParameters());
-    assertEquals(((ECKeyParameters) request.getPublicKey()).getParameters(),
-        ((ECKeyParameters) subjectKeys.getPublic()).getParameters());
   }
 
 

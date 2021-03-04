@@ -4,7 +4,7 @@ import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.URLUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.security.SecureRandom;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.FullEip712InternalData;
 
@@ -15,16 +15,16 @@ import org.tokenscript.eip712.FullEip712InternalData;
 public class Eip712AuthIssuer extends Eip712Issuer {
   private final AuthenticatorEncoder authenticator;
 
-  public Eip712AuthIssuer(AsymmetricCipherKeyPair signingKeys) {
-    this(signingKeys, new AuthenticatorEncoder(new SecureRandom()));
+  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey) {
+    this(signingKey, new AuthenticatorEncoder(new SecureRandom()));
   }
 
-  public Eip712AuthIssuer(AsymmetricCipherKeyPair signingKeys, AuthenticatorEncoder authenticator) {
-    super(signingKeys, authenticator);
+  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, AuthenticatorEncoder authenticator) {
+    super(signingKey, authenticator);
     this.authenticator = authenticator;
   }
 
-  public String buildSignedToken(AttestedObject attestedObject, String webDomain)throws JsonProcessingException {
+  public String buildSignedToken(AttestedObject attestedObject, String webDomain) throws JsonProcessingException {
     return buildSignedToken(attestedObject, webDomain, 0);
   }
 

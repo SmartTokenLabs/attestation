@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InvalidObjectException;
 import java.time.Clock;
 import java.util.Date;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.Hex;
 
 public class Eip712Validator extends Eip712Common {
@@ -70,13 +72,22 @@ public class Eip712Validator extends Eip712Common {
 
   public <T extends FullEip712InternalData> boolean verifySignature(String signedJsonInput, String pkAddress, Class<T> type) {
     try {
-      byte[] signature = getSignatureFromJson(signedJsonInput);
-      String actuallySignedData = restoreSignableJson(signedJsonInput, type);
-      EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(actuallySignedData, null, 0, cryptoFunctions);
-      byte[] messageSigned = ethereumMessage.getPrehash();
-      return SignatureUtility.verifyEthereumSignature(messageSigned, signature, pkAddress);
-    } catch (Exception e) {
+      AsymmetricKeyParameter candidateKey = retrievePublicKey(signedJsonInput, type);
+      return SignatureUtility.verifyKeyAgainstAddress(candidateKey, pkAddress);
+    } catch (InvalidObjectException e) {
       return false;
+    }
+  }
+
+  public <T extends FullEip712InternalData> ECPublicKeyParameters retrievePublicKey(String signedJsonInput, Class<T> type) throws InvalidObjectException {
+    try {
+      byte[] signature = getSignatureFromJson(signedJsonInput);
+      String actuallySignedJson = restoreSignableJson(signedJsonInput, type);
+      EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(actuallySignedJson, null, 0, cryptoFunctions);
+      byte[] messageSigned = ethereumMessage.getPrehash();
+      return SignatureUtility.recoverEthPublicKeyFromSignature(messageSigned, signature);
+    } catch (Exception e) {
+      throw new InvalidObjectException("Could not recover a valid key");
     }
   }
 

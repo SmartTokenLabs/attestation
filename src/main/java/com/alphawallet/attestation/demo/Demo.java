@@ -231,7 +231,7 @@ public class Demo {
     String address = SignatureUtility.addressFromKey(keys.getPublic());
     byte[] nonce = Nonce.makeNonce(receiverId, address, ATTESTOR_DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, type, pok, keys);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, type, pok, keys.getPrivate(), address);
     Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
         CREATE, TRUNCATE_EXISTING);
     DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
