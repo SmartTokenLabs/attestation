@@ -42,8 +42,8 @@ public class SignatureUtility {
     public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(ECDSA_CURVE);
     public static final ECDomainParameters ECDSAdomain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
 
-    // Special MetaMask Ethereum Prefix
-    private static final String ethereumPrefix = new byte[] {0x19, 0x01} + "Ethereum Signed Message:\n";
+    // Special Ethereum personal message Prefix
+    private static final String personalMessagePrefix = "\u0019Ethereum Signed Message:\n";
 
     /*
      * One of the Ethereum design is, instead of verifying a message
@@ -149,13 +149,21 @@ public class SignatureUtility {
         return "0x" + Hex.toHexString(Arrays.copyOfRange(hash,hash.length-20,hash.length)).toUpperCase();
     }
 
+    public static byte[] signPersonalMsgWithEthereum(byte[] unsigned, AsymmetricKeyParameter signingKey) {
+        return signPersonalMsgWithEthereum(unsigned, 0, signingKey);
+    }
+
+    public static byte[] signPersonalMsgWithEthereum(byte[] unsigned, int chainID, AsymmetricKeyParameter signingKey) {
+        byte[] toSign = convertToPersonalEthMessage(unsigned);
+        return signWithEthereum(toSign, chainID, signingKey);
+    }
+
     public static byte[] signWithEthereum(byte[] unsigned, AsymmetricKeyParameter signingKey) {
         return signWithEthereum(unsigned, 0, signingKey);
     }
 
     public static byte[] signWithEthereum(byte[] unsigned, int chainID, AsymmetricKeyParameter signingKey) {
-        byte[] toSign = addPersonalSignPrefix(unsigned);
-        BigInteger[] signature = computeInternalSignature(toSign, (ECPrivateKeyParameters) signingKey);
+        BigInteger[] signature = computeInternalSignature(unsigned, (ECPrivateKeyParameters) signingKey);
         return normalizeAndEncodeEthereumSignature(signature, chainID);
     }
 
@@ -230,9 +238,9 @@ public class SignatureUtility {
         return new BigInteger[] {r, normalizedS, v};
     }
 
-    private static byte[] addPersonalSignPrefix(byte[] msgToSign) {
+    static byte[] convertToPersonalEthMessage(byte[] msgToSign) {
         String hexMsg = "0x" + Hex.toHexString(msgToSign);
-        String ethereumMsg = ethereumPrefix + hexMsg.length() + hexMsg;
+        String ethereumMsg = personalMessagePrefix + hexMsg.length() + hexMsg;
         return ethereumMsg.getBytes(StandardCharsets.UTF_8);
     }
 
@@ -274,18 +282,34 @@ public class SignatureUtility {
     /**
      * Verify an Ethereum signature on a message that DOES NOT include the signed-by-Ethereum prefix when used outside of the blockchain
      */
-    public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
-        return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey));
+    public static boolean verifyPersonalEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
+        return verifyPersonalEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
     }
 
     /**
      * Verify an Ethereum signature against an address on a message that DOES NOT include the signed-by-Ethereum prefix when used outside of the blockchain
      */
-    public static boolean verifyEthereumSignature(byte[] unsignedWithoutPrefix, byte[] signature, String address) {
+    public static boolean verifyPersonalEthereumSignature(byte[] unsignedWithoutPrefix, byte[] signature, String address, int chainId) {
+        byte[] unsignedWithEthPrefix = convertToPersonalEthMessage(unsignedWithoutPrefix);
+        return verifyEthereumSignature(unsignedWithEthPrefix, signature, address, chainId);
+    }
+
+    /**
+     * Verify an Ethereum signature directly on @unsigned.
+     */
+    public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
+        return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
+    }
+
+    /**
+     * VVerify an Ethereum signature directly on @unsigned.
+     */
+    public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, String address, int chainId) {
         try {
             ECPublicKeyParameters publicKey = recoverEthPublicKeyFromSignature(
-                unsignedWithoutPrefix, signature);
-           return verifyKeyAgainstAddress(publicKey, address);
+                unsigned, signature);
+            return verifyKeyAgainstAddress(publicKey, address) &&
+                getChainIdFromSignature(signature) == chainId;
         } catch (Exception e) {
             return false;
         }
@@ -294,6 +318,16 @@ public class SignatureUtility {
     public static boolean verifyKeyAgainstAddress(AsymmetricKeyParameter publicKey, String address) {
         String recoveredAddress = addressFromKey(publicKey);
         return recoveredAddress.toUpperCase().equals(address.toUpperCase());
+    }
+
+    public static int getChainIdFromSignature(byte[] signature) {
+        byte recoveryByte = signature[64];
+        if (recoveryByte == 27 || recoveryByte == 28) {
+            return 0;
+        }
+        // recovery byte is chainId * 2 + 35 for chainId >= 1
+        int res= (recoveryByte-35) >> 1;
+        return res;
     }
 
     public static boolean verify(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
@@ -317,8 +351,7 @@ public class SignatureUtility {
         }
     }
 
-    public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] unsignedWithoutPrefix, byte[] signature) {
-        byte[] unsignedWithEthPrefix = addPersonalSignPrefix(unsignedWithoutPrefix);
+    public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
@@ -328,7 +361,7 @@ public class SignatureUtility {
         }
         byte recoveryValue = signature[64];
         byte yParity = (byte) (1 - (recoveryValue % 2));
-        return computePublicKeyFromSignature(new BigInteger[]{r, s}, yParity, unsignedWithEthPrefix);
+        return computePublicKeyFromSignature(new BigInteger[]{r, s}, yParity, message);
     }
 
     private static ECPublicKeyParameters computePublicKeyFromSignature(BigInteger[] signature, byte yParity, byte[] unsignedMessage) {

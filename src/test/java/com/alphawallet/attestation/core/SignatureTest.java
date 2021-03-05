@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -63,8 +64,8 @@ public class SignatureTest {
     byte[] message = new byte[515];
     message[0] = 43;
     message[514] = 15;
-    byte[] signature = SignatureUtility.signWithEthereum(message, userKeys.getPrivate());
-    assertTrue(SignatureUtility.verifyEthereumSignature(message, signature, userKeys.getPublic()));
+    byte[] signature = SignatureUtility.signPersonalMsgWithEthereum(message, userKeys.getPrivate());
+    assertTrue(SignatureUtility.verifyPersonalEthereumSignature(message, signature, userKeys.getPublic()));
   }
 
   @Test
@@ -72,8 +73,9 @@ public class SignatureTest {
     byte[] message = new byte[515];
     message[0] = 41;
     message[514] = 45;
-    byte[] signature = SignatureUtility.signWithEthereum(message, 2, userKeys.getPrivate());
-    assertTrue(SignatureUtility.verifyEthereumSignature(message, signature, userKeys.getPublic()));
+    byte[] signature = SignatureUtility.signPersonalMsgWithEthereum(message, 2, userKeys.getPrivate());
+    assertTrue(SignatureUtility.verifyPersonalEthereumSignature(message, signature,
+        SignatureUtility.addressFromKey(userKeys.getPublic()), 2));
   }
 
   @Test
@@ -115,6 +117,48 @@ public class SignatureTest {
     String address = SignatureUtility.addressFromKey(userKeys.getPublic());
     AsymmetricKeyParameter key = SignatureUtility.recoverEthPublicKeyFromSignature(message, testSignature);
     assertEquals(address, SignatureUtility.addressFromKey(key));
+  }
+
+  @Test
+  public void personalSigning() {
+    String message = "hello world";
+    byte[] personalSignature = SignatureUtility.signPersonalMsgWithEthereum(message.getBytes(
+        StandardCharsets.UTF_8), userKeys.getPrivate());
+    assertTrue(SignatureUtility.verifyPersonalEthereumSignature(message.getBytes(StandardCharsets.UTF_8),
+        personalSignature, userKeys.getPublic()));
+    // A personal signature does not verify as a normal signature
+    assertFalse(SignatureUtility.verifyEthereumSignature(message.getBytes(StandardCharsets.UTF_8),
+        personalSignature, userKeys.getPublic()));
+    byte[] normalSignature = SignatureUtility.signWithEthereum(message.getBytes(
+        StandardCharsets.UTF_8), userKeys.getPrivate());
+    assertFalse(SignatureUtility.verifyPersonalEthereumSignature(message.getBytes(StandardCharsets.UTF_8),
+        normalSignature, userKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyEthereumSignature(message.getBytes(StandardCharsets.UTF_8),
+        normalSignature, userKeys.getPublic()));
+  }
+
+  @Test
+  public void verifyingChainId() {
+    byte[] signature = new byte[65];
+    signature[64] = 27;
+    assertEquals(SignatureUtility.getChainIdFromSignature(signature), 0);
+    signature[64] = 28;
+    assertEquals(SignatureUtility.getChainIdFromSignature(signature), 0);
+    signature[64] = 37;
+    assertEquals(SignatureUtility.getChainIdFromSignature(signature), 1);
+    signature[64] = 42;
+    assertEquals(SignatureUtility.getChainIdFromSignature(signature), 3);
+  }
+
+  @Test
+  public void verifyWrongChain() {
+    byte[] msgWithoutPrefix = new byte[] {0x42};
+    byte[] personalSignature = SignatureUtility.signPersonalMsgWithEthereum(msgWithoutPrefix, 4, userKeys.getPrivate());
+    assertTrue(SignatureUtility.verifyPersonalEthereumSignature(msgWithoutPrefix, personalSignature,
+        SignatureUtility.addressFromKey(userKeys.getPublic()), 4));
+    assertFalse(SignatureUtility.verifyPersonalEthereumSignature(msgWithoutPrefix, personalSignature, userKeys.getPublic()));
+    assertFalse(SignatureUtility.verifyPersonalEthereumSignature(msgWithoutPrefix, personalSignature,
+        SignatureUtility.addressFromKey(userKeys.getPublic()), 5));
   }
 
   private static BigInteger[] signDeterministic(byte[] toSign, AsymmetricKeyParameter key) {
