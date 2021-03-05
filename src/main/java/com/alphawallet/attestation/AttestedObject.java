@@ -44,7 +44,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
       this.unsignedEncoding = new DERSequence(vec).getEncoded();
-      this.signature = SignatureUtility.signWithEthereum(this.unsignedEncoding, userKeys.getPrivate());
+      this.signature = SignatureUtility.signPersonalMsgWithEthereum(this.unsignedEncoding, userKeys.getPrivate());
       vec.add(new DERBitString(this.signature));
       this.encoding = new DERSequence(vec).getEncoded();
     } catch (IOException e) {
@@ -164,7 +164,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       try {
         AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
         if (!SignatureUtility
-            .verifyEthereumSignature(this.unsignedEncoding, this.signature, parsedSubjectKey)) {
+            .verifyPersonalEthereumSignature(this.unsignedEncoding, this.signature, parsedSubjectKey)) {
           System.err.println("The signature on RedeemCheque is not valid");
           return false;
         }
@@ -182,7 +182,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok);
     if (signature != null) {
       return result && SignatureUtility
-          .verifyEthereumSignature(unsignedEncoding, signature, userPublicKey);
+          .verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey);
     } else {
       return result;
     }
