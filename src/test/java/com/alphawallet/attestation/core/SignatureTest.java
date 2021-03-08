@@ -49,15 +49,15 @@ public class SignatureTest {
     sha256.reset();
     sha256.update(message);
     byte[] digest = sha256.digest();
-    byte[] bcSignature = SignatureUtility.signHashedRandomized(digest, keys.getPrivate());
+    byte[] bcSignature = SignatureUtility.signHashedRandomized(digest, largeKeys.getPrivate());
 
-    ECPrivateKey javaPriv = (ECPrivateKey) SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(keys.getPrivate());
+    ECPrivateKey javaPriv = (ECPrivateKey) SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(largeKeys.getPrivate());
     Signature signer = Signature.getInstance("SHA256withECDSA");
     signer.initSign(javaPriv);
     signer.update(message);
     byte[] javaSignature = signer.sign();
 
-    ECPublicKey javaPub = (ECPublicKey) SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(keys.getPublic());
+    ECPublicKey javaPub = (ECPublicKey) SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(largeKeys.getPublic());
     Signature verifier = Signature.getInstance("SHA256withECDSA");
     verifier.initVerify(javaPub);
     verifier.update(message);
@@ -67,8 +67,8 @@ public class SignatureTest {
     verifier.update(message);
     assertTrue(verifier.verify(bcSignature));
 
-    assertTrue(SignatureUtility.verifyHashed(digest, javaSignature, keys.getPublic()));
-    assertTrue(SignatureUtility.verifyHashed(digest, bcSignature, keys.getPublic()));
+    assertTrue(SignatureUtility.verifyHashed(digest, javaSignature, largeKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyHashed(digest, bcSignature, largeKeys.getPublic()));
   }
 
   @Test
