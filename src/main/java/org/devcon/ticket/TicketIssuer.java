@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class Issuer {
+public class TicketIssuer {
     static SecureRandom rand = new SecureRandom();
 
     public static void main(String... args) throws java.io.IOException{
