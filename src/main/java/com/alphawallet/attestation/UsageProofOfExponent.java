@@ -14,12 +14,18 @@ import org.bouncycastle.math.ec.ECPoint;
 public class UsageProofOfExponent implements ProofOfExponent {
   private final ECPoint tPoint;
   private final BigInteger challenge;
+  private final byte[] nonce;
   private final byte[] encoding;
 
-  public UsageProofOfExponent(ECPoint tPoint, BigInteger challenge) {
+  public UsageProofOfExponent(ECPoint tPoint, BigInteger challenge, byte[] nonce) {
     this.tPoint = tPoint;
     this.challenge = challenge;
+    this.nonce = nonce;
     this.encoding = makeEncoding(tPoint, challenge);
+  }
+
+  public UsageProofOfExponent(ECPoint tPoint, BigInteger challenge) {
+    this(tPoint, challenge, new byte[0]);
   }
 
   public UsageProofOfExponent(byte[] derEncoded) {
@@ -32,6 +38,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
       this.challenge = new BigInteger(challengeEnc.getOctets());
       ASN1OctetString tPointEnc = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++));
       this.tPoint = AttestationCrypto.decodePoint(tPointEnc.getOctets());
+      this.nonce = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -42,6 +49,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(new DEROctetString(challenge.toByteArray()));
       res.add(new DEROctetString(tPoint.getEncoded(false)));
+      res.add(new DEROctetString(nonce));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -57,6 +65,9 @@ public class UsageProofOfExponent implements ProofOfExponent {
   public BigInteger getChallenge() {
     return challenge;
   }
+
+  @Override
+  public byte[] getNonce() { return nonce; }
 
   @Override
   public byte[] getDerEncoding() {

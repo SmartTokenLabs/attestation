@@ -1,7 +1,9 @@
 package com.alphawallet.attestation.demo;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+
 import com.alphawallet.attestation.Attestation;
-import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation;
@@ -11,13 +13,17 @@ import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.eip712.Eip712AttestationRequest;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -37,6 +43,9 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 public class Demo {
   static SecureRandom rand = new SecureRandom();
   static AttestationCrypto crypto = new AttestationCrypto(rand);
+
+  public static final String ATTESTOR_DOMAIN = "http://wwww.attestation.id";
+
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
     CommandLine line;
@@ -219,30 +228,36 @@ public class Demo {
       Path outputDirRequest, Path outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
-    FullProofOfExponent pok = crypto.computeAttestationProof(secret);
-    AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
-
-    DERUtility.writePEM(request.getDerEncoding(), "ATTESTATION REQUEST", outputDirRequest);
+    String address = SignatureUtility.addressFromKey(keys.getPublic());
+    byte[] nonce = Nonce.makeNonce(receiverId, address, ATTESTOR_DOMAIN, Clock.systemUTC().millis());
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, type, pok, keys.getPrivate(), address);
+    Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
+        CREATE, TRUNCATE_EXISTING);
     DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
   }
 
   private static void constructAttest(Path pathAttestorKey, String issuerName,
-      long validityInMilliseconds, Path pathRequest, Path attestationDir) throws IOException {
+      long validityInMilliseconds, Path pathRequest, Path attestationDir) throws Exception {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathAttestorKey));
-    byte[] requestBytes = DERUtility.restoreBytes(Files.readAllLines(pathRequest));
-    AttestationRequest request = new AttestationRequest(requestBytes);
+    String jsonRequest = String.join("", Files.readAllLines(pathRequest));
+    Eip712AttestationRequest attestationRequest = new Eip712AttestationRequest(ATTESTOR_DOMAIN, jsonRequest);
     // TODO here is where it should be verified the user actually controls the mail
-    if (!request.verify()) {
+    if (!attestationRequest.verify()) {
       System.err.println("Could not verify attestation signing request");
+      throw new RuntimeException("Verification failed");
+    }
+    if (!attestationRequest.checkValidity()) {
+      System.err.println("Could not validate attestation signing request");
       throw new RuntimeException("Validation failed");
     }
-    byte[] commitment = AttestationCrypto.makeCommitment(request.getIdentity(), request.getType(), request.getPok().getRiddle());
-    Attestation att = new IdentifierAttestation(commitment, request.getPublicKey());
+    byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
+    Attestation att = new IdentifierAttestation(commitment, attestationRequest.getPublicKey());
     att.setIssuer("CN=" + issuerName);
     att.setSerialNumber(new Random().nextLong());
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
+    att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
     SignedAttestation signed = new SignedAttestation(att, keys);
     DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
   }

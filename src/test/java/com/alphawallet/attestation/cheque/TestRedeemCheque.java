@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.util.Arrays;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -138,7 +139,7 @@ public class TestRedeemCheque {
     Field field = cheque.getClass().getDeclaredField("notValidAfter");
     field.setAccessible(true);
     // Set validity to the past
-    field.set(cheque, System.currentTimeMillis()-1000);
+    field.set(cheque, Clock.systemUTC().millis()-1000);
     assertFalse(cheque.checkValidity());
     assertFalse(attestedCheque.checkValidity());
     // Verification should also fail since signature is now invalid
