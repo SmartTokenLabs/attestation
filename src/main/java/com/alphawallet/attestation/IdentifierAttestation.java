@@ -9,6 +9,8 @@ import java.math.BigInteger;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
@@ -104,6 +106,18 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("Could not parse subject public key");
     }
     return true;
+  }
+
+  public byte[] getCommitment() {
+    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
+    ASN1Sequence extensions = DERSequence.getInstance(getExtensions().getObjectAt(0));
+    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
+    return ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+  }
+
+  public String getAddress() {
+    // Remove the "CN=" prefix
+    return getSubject().substring(3);
   }
 
   /**

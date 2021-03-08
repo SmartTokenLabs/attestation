@@ -59,7 +59,7 @@ public class TestAttestationRequestEip712 {
     assertTrue(newRequest.verify());
     assertTrue(newRequest.checkValidity());
 
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(newRequest.getPok()));
+    assertTrue(AttestationCrypto.verifyFullProof(newRequest.getPok()));
     assertArrayEquals(request.getPok().getDerEncoding(), newRequest.getPok().getDerEncoding());
     assertEquals(request.getJsonEncoding(), newRequest.getJsonEncoding());
     assertEquals(request.getType(), newRequest.getType());

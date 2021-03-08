@@ -165,41 +165,41 @@ public class CryptoTest {
   @Test
   public void testAttestationRequestProof() {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
+    assertTrue(AttestationCrypto.verifyFullProof(pok));
     // Test with other randomness
     FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    assertTrue(AttestationCrypto.verifyFullProof(pok2));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallenge(), pok2.getChallenge());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other secret
     pok = crypto.computeAttestationProof(BigInteger.ONE);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
+    assertTrue(AttestationCrypto.verifyFullProof(pok));
 
     // Negative tests
     pok = crypto.computeAttestationProof(SECRET1);
 
     pok2 = new FullProofOfExponent(pok.getRiddle().add(AttestationCrypto.H), pok.getPoint(), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    assertFalse(AttestationCrypto.verifyFullProof(pok2));
 
     pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    assertFalse(AttestationCrypto.verifyFullProof(pok2));
 
     pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    assertFalse(AttestationCrypto.verifyFullProof(pok2));
   }
 
   @Test
   public void testNonceAttestationProof() {
     FullProofOfExponent pok1 = crypto.computeAttestationProof(SECRET1);
     FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1, new byte[0]);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok1));
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    assertTrue(AttestationCrypto.verifyFullProof(pok1));
+    assertTrue(AttestationCrypto.verifyFullProof(pok2));
     // Randomness is used in PoK construction
     assertFalse(Arrays.equals(pok1.getDerEncoding(), pok2.getDerEncoding()));
     FullProofOfExponent pok3 = crypto.computeAttestationProof(SECRET1, new byte[] {0x42} );
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok3));
+    assertTrue(AttestationCrypto.verifyFullProof(pok3));
     assertFalse(Arrays.equals(pok1.getDerEncoding(), pok3.getDerEncoding()));
   }
 
@@ -340,7 +340,7 @@ public class CryptoTest {
     rand2.setSeed("otherseed".getBytes());
     AttestationCrypto crypt2 = new AttestationCrypto(rand2);
     FullProofOfExponent pok = crypt2.computeAttestationProof(SECRET1);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
+    assertTrue(AttestationCrypto.verifyFullProof(pok));
 
     // Check consistency
     rand2 = SecureRandom.getInstance("SHA1PRNG");

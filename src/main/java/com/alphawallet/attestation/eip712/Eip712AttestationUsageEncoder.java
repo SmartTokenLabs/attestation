@@ -2,9 +2,11 @@ package com.alphawallet.attestation.eip712;
 
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import org.tokenscript.eip712.Eip712Encoder;
+import org.tokenscript.eip712.FullEip712InternalData;
 
 public class Eip712AttestationUsageEncoder implements Eip712Encoder {
   static final String PROTOCOL_VERSION = "0.1";
@@ -54,27 +56,14 @@ public class Eip712AttestationUsageEncoder implements Eip712Encoder {
     return null;
   }
 
-  static class AttestationUsageData {
-    private String description;
+  static class AttestationUsageData extends FullEip712InternalData {
     private String identifier;
-    private String payload;
-    private long timeStamp;
 
-    public AttestationUsageData() {}
+    public AttestationUsageData() { super(); }
 
     public AttestationUsageData(String description, String identifier, String payload, long timeStamp) {
-      this.description = description;
+      super(description, payload, timestampFormat.format(new Date(timeStamp)));
       this.identifier = identifier;
-      this.payload = payload;
-      this.timeStamp = timeStamp;
-    }
-
-    public String getDescription() {
-      return description;
-    }
-
-    public void setDescription(String description) {
-      this.description = description;
     }
 
     public String getIdentifier() {
@@ -85,20 +74,5 @@ public class Eip712AttestationUsageEncoder implements Eip712Encoder {
       this.identifier = identifier;
     }
 
-    public String getPayload() {
-      return payload;
-    }
-
-    public void setPayload(String payload) {
-      this.payload = payload;
-    }
-
-    public long getTimeStamp() {
-      return timeStamp;
-    }
-
-    public void setTimeStamp(long timeStamp) {
-      this.timeStamp = timeStamp;
-    }
   }
 }

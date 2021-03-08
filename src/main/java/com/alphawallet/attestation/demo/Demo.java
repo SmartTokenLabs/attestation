@@ -3,12 +3,11 @@ package com.alphawallet.attestation.demo;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
-import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.SignedAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
@@ -188,7 +187,7 @@ public class Demo {
     byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
         DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
-    SignedAttestation att = new SignedAttestation(attestationBytes, attestationProviderKey);
+    SignedIdentityAttestation att = new SignedIdentityAttestation(attestationBytes, attestationProviderKey);
 
     if (!cheque.checkValidity()) {
       System.err.println("Could not validate cheque");
@@ -198,7 +197,7 @@ public class Demo {
       System.err.println("Could not verify cheque");
       throw new RuntimeException("Verification failed");
     }
-    if (!att.checkValidity()) {
+    if (!((IdentifierAttestation) att.getUnsignedAttestation()).checkValidity()) {
       System.err.println("Could not validate attestation");
       throw new RuntimeException("Validation failed");
     }
@@ -218,7 +217,8 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
-    if (!sc.verifyEqualityProof(redeem.getAtt().getCommitment(), redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
+    byte[] attestationCommit = ((IdentifierAttestation) redeem.getAtt().getUnsignedAttestation()).getCommitment();
+    if (!sc.verifyEqualityProof(attestationCommit, redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");
     }
@@ -252,13 +252,13 @@ public class Demo {
       throw new RuntimeException("Validation failed");
     }
     byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
-    Attestation att = new IdentifierAttestation(commitment, attestationRequest.getPublicKey());
+    IdentifierAttestation att = new IdentifierAttestation(commitment, attestationRequest.getPublicKey());
     att.setIssuer("CN=" + issuerName);
     att.setSerialNumber(new Random().nextLong());
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
-    SignedAttestation signed = new SignedAttestation(att, keys);
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, keys);
     DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
   }
 

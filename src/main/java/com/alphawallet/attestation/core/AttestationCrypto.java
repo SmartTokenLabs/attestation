@@ -177,7 +177,7 @@ public class AttestationCrypto {
    * @param pok The proof to verify
    * @return True if the proof is OK and false otherwise
    */
-  public static boolean verifyAttestationRequestProof(FullProofOfExponent pok)  {
+  public static boolean verifyFullProof(FullProofOfExponent pok)  {
     BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getNonce());
     return verifyPok(pok, c);
   }

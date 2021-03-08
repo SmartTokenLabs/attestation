@@ -9,7 +9,6 @@ import java.io.InvalidObjectException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
@@ -17,13 +16,14 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class SignedAttestation implements ASNEncodable, Verifiable, Validateable {
-  private final Attestation att;
+public class SignedIdentityAttestation extends IdentifierAttestation implements Verifiable {
+  private final IdentifierAttestation att;
   private final byte[] signature;
   private final AsymmetricKeyParameter attestationVerificationKey;
 
-  public SignedAttestation(Attestation att, AsymmetricCipherKeyPair attestationSigningkey) {
+  public SignedIdentityAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningkey) {
     this.att = att;
     this.signature = SignatureUtility.signDeterministic(att.getPrehash(), attestationSigningkey.getPrivate());
     this.attestationVerificationKey = attestationSigningkey.getPublic();
@@ -32,27 +32,27 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
     }
   }
 
-  public SignedAttestation(byte[] derEncoding, AsymmetricKeyParameter signingPublicKey) throws IOException {
+  public SignedIdentityAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
     ASN1InputStream input = new ASN1InputStream(derEncoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
     ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    this.att = new Attestation(attestationEnc.getEncoded());
+    AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
+    // TODO ideally this should be refactored to SignedAttestation being augmented with an generic
+    // Attestation type and an encoder to construct such an attestation
+    this.att = new IdentifierAttestation(attestationEnc.getEncoded());
     DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
     this.signature = signatureEnc.getBytes();
-    this.attestationVerificationKey = signingPublicKey;
+    this.attestationVerificationKey = verificationKey;
+    AlgorithmIdentifier verificationKeyIdentifier = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(verificationKey).getAlgorithm();
+    if (!algorithmEncoded.equals(verificationKeyIdentifier)) {
+      throw new IllegalArgumentException("Algorithm encoded does not match supplied key.");
+    }
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
     }
   }
 
-  public byte[] getCommitment() {
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1Sequence extensions = DERSequence.getInstance(att.getExtensions().getObjectAt(0));
-    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    return ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-  }
-
-  public Attestation getUnsignedAttestation() {
+  public IdentifierAttestation getUnsignedAttestation() {
     return att;
   }
 
@@ -70,7 +70,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
     return constructSignedAttestation(this.att, this.signature);
   }
 
-  static byte[] constructSignedAttestation(Attestation unsignedAtt, byte[] signature) {
+  static byte[] constructSignedAttestation(IdentifierAttestation unsignedAtt, byte[] signature) {
     try {
       byte[] rawAtt = unsignedAtt.getPrehash();
       ASN1EncodableVector res = new ASN1EncodableVector();

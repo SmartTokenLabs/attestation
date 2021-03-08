@@ -11,8 +11,7 @@ IMPORTS
 
 UseAttestation ::= SEQUENCE {
     attestation          MyAttestation,
-    proof                UsageProof,
-    nonce                OCTET STRING
+    proof                Proof
 }
 
 END
