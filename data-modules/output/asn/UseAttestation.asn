@@ -7,10 +7,13 @@ IMPORTS
     MyAttestation
         FROM AttestationFramework
     Proof
-        FROM ProofOfExponent;
+        FROM ProofOfExponent
+    IdentifierType
+        FROM AttestationRequest;
 
 UseAttestation ::= SEQUENCE {
     attestation          MyAttestation,
+    type                 IdentifierType,
     proof                Proof
 }
 

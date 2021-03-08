@@ -197,7 +197,7 @@ public class Demo {
       System.err.println("Could not verify cheque");
       throw new RuntimeException("Verification failed");
     }
-    if (!((IdentifierAttestation) att.getUnsignedAttestation()).checkValidity()) {
+    if (!att.getUnsignedAttestation().checkValidity()) {
       System.err.println("Could not validate attestation");
       throw new RuntimeException("Validation failed");
     }
@@ -217,7 +217,7 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
-    byte[] attestationCommit = ((IdentifierAttestation) redeem.getAtt().getUnsignedAttestation()).getCommitment();
+    byte[] attestationCommit = redeem.getAtt().getUnsignedAttestation().getCommitment();
     if (!sc.verifyEqualityProof(attestationCommit, redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");

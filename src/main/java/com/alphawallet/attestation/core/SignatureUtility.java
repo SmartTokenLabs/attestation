@@ -37,10 +37,10 @@ import org.bouncycastle.util.encoders.Hex;
 public class SignatureUtility {
     public static final String ECDSA_CURVE = "secp256k1";
     public static final String MAC_ALGO = "HmacSHA256";
-    public static final ASN1ObjectIdentifier OID_SIGNATURE_ALG = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for elliptic curve crypto ecPublicKey
-    public static final AlgorithmIdentifier ALGORITHM_IDENTIFIER = new AlgorithmIdentifier(OID_SIGNATURE_ALG);
     public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(ECDSA_CURVE);
     public static final ECDomainParameters ECDSAdomain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
+    public static final ASN1ObjectIdentifier OID_SIGNATURE_ALG = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for ECDSA signatures without hash function specified
+    public static final AlgorithmIdentifier ALGORITHM_IDENTIFIER = new AlgorithmIdentifier(OID_SIGNATURE_ALG, ECDSACurve);
 
     // Special Ethereum personal message Prefix
     private static final String personalMessagePrefix = "\u0019Ethereum Signed Message:\n";
@@ -108,7 +108,7 @@ public class SignatureUtility {
      */
     public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
         AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
-            SignatureUtility.OID_SIGNATURE_ALG, SignatureUtility.ECDSACurve.toASN1Primitive());
+            SignatureUtility.OID_SIGNATURE_ALG, SignatureUtility.ECDSACurve);
         return restoreDefaultKey(identifierEnc, input);
     }
 

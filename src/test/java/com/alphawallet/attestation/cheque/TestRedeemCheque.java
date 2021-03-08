@@ -100,7 +100,7 @@ public class TestRedeemCheque {
         issuerKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
-    assertTrue(AttestationCrypto.verifyEqualityProof(newRedeem.getAtt().getCommitment(), newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
+    assertTrue(AttestationCrypto.verifyEqualityProof(newRedeem.getAtt().getUnsignedAttestation().getCommitment(), newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
 
     assertArrayEquals(
         attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());

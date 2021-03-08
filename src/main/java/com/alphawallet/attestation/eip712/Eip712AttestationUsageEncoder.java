@@ -12,11 +12,6 @@ public class Eip712AttestationUsageEncoder implements Eip712Encoder {
   static final String PROTOCOL_VERSION = "0.1";
 
   static final String PRIMARY_NAME = "AttestationUsage";
-  static final String DESCRIPTION_NAME = "description";
-  static final String PAYLOAD_NAME = "payload";
-  static final String IDENTITY_NAME = "identity";
-  static final String TIMESTAMP_NAME = "timestamp";//"Timestamp (milliseconds since epoch)";
-
   static final String USAGE_VALUE = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\".";
 
   public Eip712AttestationUsageEncoder() {
@@ -28,7 +23,7 @@ public class Eip712AttestationUsageEncoder implements Eip712Encoder {
     List<Entry> content = new ArrayList<>();
     content.add(new Entry(PAYLOAD_NAME, STRING));
     content.add(new Entry(DESCRIPTION_NAME, STRING));
-    content.add(new Entry(IDENTITY_NAME, STRING));
+    content.add(new Entry(IDENTIFIER_NAME, STRING));
     content.add(new Entry(TIMESTAMP_NAME, UINT64));
     types.put(PRIMARY_NAME, content);
     List<Entry> domainContent = new ArrayList<>();

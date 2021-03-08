@@ -14,7 +14,9 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
@@ -41,7 +43,7 @@ public class SignedIdentityAttestationTest {
 
   @Test
   public void testSignAttestation() {
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
@@ -51,7 +53,7 @@ public class SignedIdentityAttestationTest {
 
   @Test
   public void testDecoding() throws Exception {
-    IdentifierAttestation att = HelperTest.makeMaximalAtt(subjectKeys.getPublic());
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.TEN, "someOther@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     assertTrue(SignatureUtility.verify(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
@@ -62,14 +64,18 @@ public class SignedIdentityAttestationTest {
 
   @Test
   public void invalidAlgorithmParameter() throws Exception {
-    IdentifierAttestation att = HelperTest.makeMaximalAtt(subjectKeys.getPublic());
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.TEN, "some@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
-    assertThrows(IllegalArgumentException.class, () -> new SignedIdentityAttestation(signed.getUnsignedAttestation().getDerEncoding(), issuerKeys.getPublic()));
+    assertThrows(IllegalArgumentException.class, () ->  new SignedIdentityAttestation(signed.getDerEncoding(), subjectKeys.getPublic()));
+
   }
 
   @Test
   public void testX509() throws Exception {
-    Attestation att = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
+    X9ECParameters SECP256R1 = SECNamedCurves.getByName("secp256r1");
+    AsymmetricCipherKeyPair newSubjectKeys = SignatureUtility.constructECKeys(SECP256R1, rand);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(newSubjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.TEN, "some@mail.com");
+    att.setSigningAlgorithm(new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"), SECP256R1.toASN1Primitive())); // ECDSA with SHA256
     byte[] toSign = att.getPrehash();
     byte[] digestBytes = new byte[32];
     Digest digest = new SHA256Digest();

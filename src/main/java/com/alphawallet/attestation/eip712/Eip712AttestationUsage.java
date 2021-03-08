@@ -1,16 +1,21 @@
 package com.alphawallet.attestation.eip712;
 
+import com.alphawallet.attestation.FullProofOfExponent;
+import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.UseAttestation;
+import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.time.Clock;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.math.ec.ECPoint;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
@@ -72,13 +77,43 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   }
 
   String makeToken(String identifier, UseAttestation useAttestation,
-      AsymmetricKeyParameter signingKey) throws JsonProcessingException, IOException {
+      AsymmetricKeyParameter signingKey) throws IOException {
     Eip712Issuer issuer = new Eip712Issuer(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(useAttestation.getDerEncoding());
     AttestationUsageData data = new AttestationUsageData(
-        Eip712AttestationRequestEncoder.USAGE_VALUE,
+        Eip712AttestationUsageEncoder.USAGE_VALUE,
         identifier, encodedUseAttestation, Clock.systemUTC().millis());
     return issuer.buildSignedTokenFromJsonObject(data, domain, PLACEHOLDER_CHAIN_ID);
+  }
+
+  private boolean proofLinking() {
+    BigInteger candidateExponent = AttestationCrypto.mapToCurveMultiplier(getType(), getIdentifier());
+    ECPoint commitmentPoint = AttestationCrypto.decodePoint(getAttestation().getUnsignedAttestation().getCommitment());
+    ECPoint candidateRiddle = commitmentPoint.subtract(AttestationCrypto.G.multiply(candidateExponent));
+    if (!candidateRiddle.equals(getPok().getRiddle())) {
+      return false;
+    }
+    return true;
+  }
+
+  public String getIdentifier() {
+    return data.getIdentifier();
+  }
+
+  public AsymmetricKeyParameter getPublicKey() {
+    return publicKey;
+  }
+
+  public FullProofOfExponent getPok() {
+    return useAttestation.getPok();
+  }
+
+  public AttestationType getType() {
+    return useAttestation.getType();
+  }
+
+  public SignedIdentityAttestation getAttestation() {
+    return useAttestation.getAttestation();
   }
 
   @Override
@@ -90,6 +125,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
     accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(), data.getIdentifier(),
         (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain);
+    accept &= proofLinking();
     return accept;
   }
 
@@ -99,7 +135,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       return false;
     }
     // Remove the "CN=" prefix of subject to get the address
-    String address = useAttestation.getAttestation().getUnsignedAttestation().getSubject().substring(0, 3);
+    String address = useAttestation.getAttestation().getUnsignedAttestation().getAddress();
     if (!verifySignature(jsonEncoding, address, AttestationUsageData.class)) {
       return false;
     }

@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
@@ -18,18 +17,24 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class SignedIdentityAttestation extends IdentifierAttestation implements Verifiable {
+public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
   private final IdentifierAttestation att;
   private final byte[] signature;
   private final AsymmetricKeyParameter attestationVerificationKey;
 
-  public SignedIdentityAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningkey) {
+  public SignedIdentityAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningKey) {
     this.att = att;
-    this.signature = SignatureUtility.signDeterministic(att.getPrehash(), attestationSigningkey.getPrivate());
-    this.attestationVerificationKey = attestationSigningkey.getPublic();
-    if (!verify()) {
-      throw new IllegalArgumentException("The signature is not valid");
+    this.attestationVerificationKey = attestationSigningKey.getPublic();
+    try {
+      AlgorithmIdentifier algorithmIdentifier = SubjectPublicKeyInfoFactory
+          .createSubjectPublicKeyInfo(attestationVerificationKey).getAlgorithm();
+      // Ensure that the signing algorithm is correct
+      this.att.setSigningAlgorithm(algorithmIdentifier);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Could not parse attestation and key information");
     }
+    this.signature = SignatureUtility.signDeterministic(att.getPrehash(), attestationSigningKey.getPrivate());
+    constructorCheck();
   }
 
   public SignedIdentityAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
@@ -44,9 +49,13 @@ public class SignedIdentityAttestation extends IdentifierAttestation implements 
     this.signature = signatureEnc.getBytes();
     this.attestationVerificationKey = verificationKey;
     AlgorithmIdentifier verificationKeyIdentifier = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(verificationKey).getAlgorithm();
-    if (!algorithmEncoded.equals(verificationKeyIdentifier)) {
-      throw new IllegalArgumentException("Algorithm encoded does not match supplied key.");
+    if (!algorithmEncoded.equals(verificationKeyIdentifier) || !algorithmEncoded.equals(att.getSigningAlgorithm())) {
+      throw new IllegalArgumentException("Algorithm specified is not consistent with keys.");
     }
+    constructorCheck();
+  }
+
+  void constructorCheck() {
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
     }
@@ -75,7 +84,7 @@ public class SignedIdentityAttestation extends IdentifierAttestation implements 
       byte[] rawAtt = unsignedAtt.getPrehash();
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Primitive.fromByteArray(rawAtt));
-      res.add(new AlgorithmIdentifier(new ASN1ObjectIdentifier(unsignedAtt.getSigningAlgorithm())));
+      res.add(unsignedAtt.getSigningAlgorithm());
       res.add(new DERBitString(signature));
       return new DERSequence(res).getEncoded();
     } catch (Exception e) {
@@ -96,6 +105,5 @@ public class SignedIdentityAttestation extends IdentifierAttestation implements 
       return false;
     }
   }
-
 
 }

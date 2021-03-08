@@ -7,9 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.AttestableObjectDecoder;
-import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
@@ -62,7 +62,7 @@ public class EIP712AuthenticationTest {
   }
 
   private static AttestedObject<Ticket> makeAttestedTicket() {
-    Attestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
     AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, userKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
@@ -112,7 +112,7 @@ public class EIP712AuthenticationTest {
   @Test
   public void wrongAttestedKey() throws Exception {
     AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    Attestation att = HelperTest.makeUnsignedStandardAtt(newKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(newKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
     AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);

@@ -1,5 +1,6 @@
 package com.alphawallet.attestation;
 
+import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.Validateable;
@@ -7,19 +8,23 @@ import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
 public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
   private final SignedIdentityAttestation attestation;
+  private final AttestationType type;
   private final FullProofOfExponent pok;
   private final byte[] encoding;
 
-  public UseAttestation(SignedIdentityAttestation attestation, FullProofOfExponent pok) {
+  public UseAttestation(SignedIdentityAttestation attestation, AttestationType type, FullProofOfExponent pok) {
     this.attestation = attestation;
+    this.type = type;
     this.pok = pok;
     this.encoding = makeEncoding(attestation, pok);
+    constructorCheck();
   }
 
   public UseAttestation(byte[] derEncoding, AsymmetricKeyParameter attestationVerificationKey) {
@@ -29,10 +34,16 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       int i = 0;
       this.attestation = new SignedIdentityAttestation(asn1.getObjectAt(i++).toASN1Primitive().getEncoded(), attestationVerificationKey);
+      this.type = AttestationType.values()[
+          ASN1Integer.getInstance(asn1.getObjectAt(i++)).getValue().intValueExact()];;
       this.pok = new FullProofOfExponent(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    constructorCheck();
+  }
+
+  private void constructorCheck() {
     if (!verify()) {
       throw new IllegalArgumentException("The use attestation object is not valid");
     }
@@ -42,6 +53,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     try {
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Sequence.getInstance(attestation.getDerEncoding()));
+      res.add(new ASN1Integer(type.ordinal()));
       res.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
@@ -53,7 +65,9 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     return attestation;
   }
 
-  public ProofOfExponent getPok() {
+  public AttestationType getType() { return type; }
+
+  public FullProofOfExponent getPok() {
     return pok;
   }
 

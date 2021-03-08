@@ -106,7 +106,7 @@ public class UseTicketTest {
     assertTrue(attestedTicketWithoutSig.checkValidity());
     assertTrue(attestedTicketWithoutSig.getAttestableObject().verify());
     assertTrue(attestedTicketWithoutSig.getAtt().verify());
-    assertTrue(AttestationCrypto.verifyEqualityProof(attestedTicketWithoutSig.getAtt().getCommitment(), attestedTicketWithoutSig.getAttestableObject().getCommitment(), attestedTicketWithoutSig.getPok()));
+    assertTrue(AttestationCrypto.verifyEqualityProof(attestedTicketWithoutSig.getAtt().getUnsignedAttestation().getCommitment(), attestedTicketWithoutSig.getAttestableObject().getCommitment(), attestedTicketWithoutSig.getPok()));
 
     assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
         attestedTicketWithoutSig.getAttestableObject().getDerEncoding());
@@ -124,7 +124,7 @@ public class UseTicketTest {
         ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.getAtt().verify());
-    assertTrue(AttestationCrypto.verifyEqualityProof(newAttestedTicket.getAtt().getCommitment(), newAttestedTicket.getAttestableObject().getCommitment(), newAttestedTicket.getPok()));
+    assertTrue(AttestationCrypto.verifyEqualityProof(newAttestedTicket.getAtt().getUnsignedAttestation().getCommitment(), newAttestedTicket.getAttestableObject().getCommitment(), newAttestedTicket.getPok()));
 
     assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
         newAttestedTicket.getAttestableObject().getDerEncoding());
@@ -193,7 +193,7 @@ public class UseTicketTest {
   public void testNegativeWrongProofIdentity() throws Exception {
     // Wrong attestation secret
     ProofOfExponent newPok = crypto
-        .computeEqualityProof(attestedTicket.getAtt().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), new BigInteger("42424242"), TICKET_SECRET);
+        .computeEqualityProof(attestedTicket.getAtt().getUnsignedAttestation().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), new BigInteger("42424242"), TICKET_SECRET);
     Field field = attestedTicket.getClass().getDeclaredField("pok");
     field.setAccessible(true);
     // Change the proof
@@ -201,7 +201,7 @@ public class UseTicketTest {
     // Validation should still pass
     assertTrue(attestedTicket.checkValidity());
     // Verification of the proof itself should fail
-    assertFalse(AttestationCrypto.verifyEqualityProof(attestedTicket.getAtt().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), newPok));
+    assertFalse(AttestationCrypto.verifyEqualityProof(attestedTicket.getAtt().getUnsignedAttestation().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), newPok));
     // Verification should fail of the attested ticket
     assertFalse(attestedTicket.verify());
   }

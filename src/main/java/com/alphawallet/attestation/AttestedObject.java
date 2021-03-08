@@ -152,7 +152,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
 
     // CHECK: the Ethereum address on the attestation matches receivers signing key
-    String attestationEthereumAddress = getAtt().getUnsignedAttestation().getSubject().substring(3);
+    String attestationEthereumAddress = getAtt().getUnsignedAttestation().getAddress();
     if (!attestationEthereumAddress.equals(SignatureUtility.addressFromKey(getUserPublicKey()))) {
       System.err.println("The attestation is not to the same Ethereum user who is sending this request");
       return false;
@@ -179,8 +179,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    IdentifierAttestation identifierAttestation = (IdentifierAttestation) att.getUnsignedAttestation();
-    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(identifierAttestation.getCommitment(), attestableObject.getCommitment(), pok);
+    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok);
     if (signature != null) {
       return result && SignatureUtility
           .verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey);
@@ -192,9 +191,8 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
     // We require that the internal attestation is an IdentifierAttestation
-    IdentifierAttestation identifierAttestation = (IdentifierAttestation) att.getUnsignedAttestation();
-    ProofOfExponent pok = crypto.computeEqualityProof(identifierAttestation.getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
-    if (!crypto.verifyEqualityProof(identifierAttestation.getCommitment(), attestableObject.getCommitment(), pok)) {
+    ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
+    if (!crypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
       throw new RuntimeException("The redeem proof did not verify");
     }
     return pok;

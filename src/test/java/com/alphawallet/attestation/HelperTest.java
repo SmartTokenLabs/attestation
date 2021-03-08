@@ -21,20 +21,12 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class HelperTest {
-  public static final int CHARS_IN_LINE = 65;
   public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
-//  public static KeyPair constructKeys(SecureRandom rand) throws Exception {
-//    Security.addProvider(new BouncyCastleProvider());
-//    KeyPairGenerator keyGen = KeyPairGenerator.getInstance(AttestationCrypto.SIGNATURE_ALG, "BC");
-//    ECGenParameterSpec ecSpec = new ECGenParameterSpec(AttestationCrypto.ECDSA_CURVE);
-//    keyGen.initialize(ecSpec, rand);
-//    return keyGen.generateKeyPair();
-//  }
-
-  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter key,
+  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
       BigInteger secret, String mail) {
-    IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL, key, secret);
+    IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL,
+        subjectPublicKey, secret);
     att.setIssuer("CN=ALX");
     att.setSerialNumber(1);
     Date now = new Date();
@@ -44,6 +36,19 @@ public class HelperTest {
     assertTrue(att.checkValidity());
     assertFalse(att.isValidX509()); // Since the version is wrong, and algorithm is non-standard
     return att;
+  }
+
+  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
+      AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
+    try {
+      IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
+      att.setSigningAlgorithm(
+          SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerPublicKey).getAlgorithm());
+      assertTrue(att.checkValidity());
+      return att;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /* the unsigned x509 attestation will have a subject of "CN=0x2042424242424564648" */

@@ -8,9 +8,7 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -75,16 +73,6 @@ public class IdentifierAttestationTest {
     field.setAccessible(true);
     // Change the subject address
     field.set(initial, new X500Name("CN=012345678901234567890123456789012345678901"));
-    assertFalse(initial.checkValidity());
-  }
-
-  @Test
-  public void testInvalidSignature() throws Exception {
-    IdentifierAttestation initial = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.TEN, mail);
-    Field field = initial.getClass().getSuperclass().getDeclaredField("signingAlgorithm");
-    field.setAccessible(true);
-    // Change the signature identifier
-    field.set(initial, new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.0.2.313")));
     assertFalse(initial.checkValidity());
   }
 
