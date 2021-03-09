@@ -8,14 +8,14 @@ public class SignableEip712InternalData extends Eip712InternalData {
   private String payloadDigest;
 
   public SignableEip712InternalData(FullEip712InternalData fullData) {
-    super(fullData.getDescription(), fullData.getTimeStamp());
+    super(fullData.getDescription(), fullData.getTimestamp());
     this.payloadDigest = Hex.toHexString(AttestationCrypto.hashWithKeccak(fullData.getPayload().getBytes(StandardCharsets.UTF_8)));
   }
 
   public SignableEip712InternalData() {}
 
-  public SignableEip712InternalData(String description, String payloadDigest, String timeStamp) {
-    super(description, timeStamp);
+  public SignableEip712InternalData(String description, String payloadDigest, String timestamp) {
+    super(description, timestamp);
     this.payloadDigest = payloadDigest;
   }
 

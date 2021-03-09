@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class CapabilityTest {
-  private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
+  private static final X9ECParameters SECP384R1 = SECNamedCurves.getByName("secp384r1");
   private static final String receiverDomain = "http://www.hotelbogota.com";
   private static final String verifierDomain = "http://www.ticket.devcon.org";
 
@@ -38,7 +38,7 @@ public class CapabilityTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
-    ticketKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    ticketKeys = SignatureUtility.constructECKeys(SECP384R1, rand);
     issuer = new CapabilityIssuer(ticketKeys, verifierDomain);
     validator = new CapabilityValidator(ticketKeys.getPublic(), verifierDomain);
     tasks = new HashSet<>();

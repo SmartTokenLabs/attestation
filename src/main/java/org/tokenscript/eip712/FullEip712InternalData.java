@@ -8,13 +8,13 @@ public class FullEip712InternalData extends Eip712InternalData {
 
   public FullEip712InternalData() {}
 
-  public FullEip712InternalData(String description, String payload, long timeStamp) {
-    super(description, Eip712Encoder.timestampFormat.format(new Date(timeStamp)));
+  public FullEip712InternalData(String description, String payload, long timestamp) {
+    super(description, Eip712Encoder.timestampFormat.format(new Date(timestamp)));
     this.payload = payload;
   }
 
-  public FullEip712InternalData(String description, String payload, String timeStamp) {
-    super(description, timeStamp);
+  public FullEip712InternalData(String description, String payload, String timestamp) {
+    super(description, timestamp);
     this.payload = payload;
   }
 

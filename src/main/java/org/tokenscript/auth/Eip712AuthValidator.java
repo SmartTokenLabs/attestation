@@ -29,8 +29,7 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
 
   public boolean validateRequest(String jsonInput) {
     try {
-      String eip712Message = retrieveUnderlyingObject(jsonInput);
-      FullEip712InternalData auth = mapper.readValue(eip712Message, FullEip712InternalData.class);
+      FullEip712InternalData auth = retrieveUnderlyingObject(jsonInput, FullEip712InternalData.class);
       AttestedObject<T> attestedObject = retrieveAttestedObject(auth);
       String signerAddress = SignatureUtility.addressFromKey(attestedObject.getUserPublicKey());
 
@@ -53,7 +52,7 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
   private boolean validateAuthentication(FullEip712InternalData authentication) {
     boolean accept = true;
     accept &= authentication.getDescription().equals(AuthenticatorEncoder.USAGE_VALUE);
-    accept &= verifyTimeStamp(authentication.getTimeStamp());
+    accept &= verifyTimeStamp(authentication.getTimestamp());
     return accept;
   }
 

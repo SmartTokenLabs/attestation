@@ -2,13 +2,13 @@ package org.tokenscript.eip712;
 
 public class Eip712InternalData {
   private String description;
-  private String timeStamp;
+  private String timestamp;
 
   public Eip712InternalData() {}
 
-  public Eip712InternalData(String description, String timeStamp) {
+  public Eip712InternalData(String description, String timestamp) {
     this.description = description;
-    this.timeStamp = timeStamp;
+    this.timestamp = timestamp;
   }
 
   public String getDescription() {
@@ -19,12 +19,12 @@ public class Eip712InternalData {
     this.description = description;
   }
 
-  public String getTimeStamp() {
-    return timeStamp;
+  public String getTimestamp() {
+    return timestamp;
   }
 
-  public void setTimeStamp(String timeStamp) {
-    this.timeStamp = timeStamp;
+  public void setTimestamp(String timestamp) {
+    this.timestamp = timestamp;
   }
 
 }

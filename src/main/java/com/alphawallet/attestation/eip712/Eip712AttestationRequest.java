@@ -37,8 +37,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       this.attestationRequest = new AttestationRequest(type, pok);
       this.jsonEncoding = makeToken(identifier, signingKey, address);
       this.publicKey = retrievePublicKey(jsonEncoding, AttestationRequestInternalData.class);
-      String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
-      this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
+      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not encode object");
     }
@@ -54,8 +53,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     try {
       this.jsonEncoding = jsonEncoding;
       this.publicKey = retrievePublicKey(jsonEncoding, AttestationRequestInternalData.class);
-      String attestationRequestData = retrieveUnderlyingObject(jsonEncoding);
-      this.data = mapper.readValue(attestationRequestData, AttestationRequestInternalData.class);
+      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
       this.attestationRequest = new AttestationRequest(URLUtility.decodeData(data.getPayload()));
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not decode object");
@@ -114,7 +112,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   public boolean checkValidity() {
     boolean accept = true;
     accept &= data.getDescription().equals(Eip712AttestationRequestEncoder.USAGE_VALUE);
-    accept &= verifyTimeStamp(data.getTimeStamp());
+    accept &= verifyTimeStamp(data.getTimestamp());
     accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, data.getAddress());
     accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
         data.getAddress(), domain);
