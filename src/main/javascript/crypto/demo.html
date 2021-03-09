@@ -12,6 +12,11 @@
 </head>
 <body>
 <div id="log"></div>
+    <script type="text/javascript" src="assets/js/buffer.js"></script>
+<script>
+    Buffer = buffer.Buffer;
+    process = {env: {NODE_DEBUG: "false"}};
+</script>
     <script type="text/javascript" src="dist/authenticator.js"></script>
 <script>
     counter = 1;
@@ -35,6 +40,20 @@
     }
 
     (async ()=>{
+        let attest = new Attest();
+        writeToLog('prepare and sign attestRequest.');
+        let secret = BigInt(12345);
+
+        let crypto = new AttestationCrypto();
+        let pok = crypto.computeAttestationProof(secret);
+        await attest.addData('https://devcon.org', 'test@test.com', 0, pok);
+        writeToLog('attestRequest received:');
+        let attestJson = attest.getJsonEncoding();
+        writeToLog(attestJson);
+
+        writeToLog('create attestation');
+
+        return;
 
         // let base64ticket = "MIGXMAkCAQYCAW8CAQAEQQQvZiRvuwETD_9d_eDp_4b0o0caeQ9FZ7e8hsxMi7SNsx-xkbfqtaNONRXQzQ1wO95bOVk3BRSdbQBNVLox62pCA0cAMEQCIFavePjptmgxBsVuHp7bZSDxK0ovB8d9URp2VjiGos56AiA9apKTL6Kk74Jgf2H7Mb4EZqlsdwJLXSN23sC6aoRyKg==";
         let base64ticket = "MIGbMA0CAQYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNHADBEAiBwLK_95NPZo0W01HDBfyZisZ2KaNrzoWuxRV-nhjGLMAIgaOP4eVVINH5xM8Cv9OVDdyOG3BxUqyPVQOuDU9PaC9o=";

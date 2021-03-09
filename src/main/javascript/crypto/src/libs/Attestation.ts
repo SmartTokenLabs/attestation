@@ -7,7 +7,7 @@ import {KeyPair} from "./KeyPair";
 
 export class Attestation {
     protected version = 18; // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
-    private serialNumber: any;
+    protected serialNumber: any;
     // private signingAlgorithm:AlgorithmIdentifierASN;
     // der encoded
     protected signingAlgorithm:string;
@@ -114,8 +114,17 @@ export class Attestation {
     getNotValidBefore(): number{
         return this.notValidBefore;
     }
+
+    setNotValidBefore(d: number){
+        this.notValidBefore = d;
+    }
+
     getNotValidAfter(): number{
         return this.notValidAfter;
+    }
+
+    setNotValidAfter(d: number){
+        this.notValidAfter = d;
     }
 
     getSubjectPublicKeyInfo(){
@@ -165,4 +174,38 @@ export class Attestation {
     }
 
 
+    public getPrehash(): Uint8Array {
+        if (!this.checkValidity()) {
+            return null;
+        }
+        let res: string;
+        // TODO implement
+        // res.add(new DERTaggedObject(true, 0, this.version));
+        // res.add(this.serialNumber);
+        // res.add(this.signingAlgorithm);
+        // res.add(this.issuer == null ? new DERSequence() : this.issuer);
+        // if (this.notValidAfter != null && this.notValidBefore != null) {
+        //     ASN1EncodableVector date = new ASN1EncodableVector();
+        //     date.add(new Time(this.notValidBefore));
+        //     date.add(new Time(this.notValidAfter));
+        //     res.add(new DERSequence(date));
+        // } else {
+        //     res.add(DERNull.INSTANCE);
+        // }
+        // res.add(this.subject == null ? new DERSequence() : this.subject);
+        // res.add(this.subjectPublicKeyInfo == null ? DERNull.INSTANCE : this.subjectPublicKeyInfo);
+        // if (this.smartcontracts != null) {
+        //     res.add(this.smartcontracts);
+        // }
+        // if (this.extensions != null) {
+        //     res.add(new DERTaggedObject(true, 3, this.extensions));
+        // } else {
+        //     res.add(new DERTaggedObject(true, 4, this.dataObject));
+        // }
+        // try {
+        //     return new DERSequence(res).getEncoded();
+        // } catch (IOException e) {
+        //     throw new RuntimeException(e);
+        // }
+    }
 }

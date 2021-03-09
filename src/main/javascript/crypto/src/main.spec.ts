@@ -9,6 +9,9 @@ import {PrivateKeyInfo, SignedInfo, PublicKeyInfoValue} from "./asn1/shemas/Atte
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedAttestation} from "./libs/SignedAttestation";
 import {Eip712Validator} from "./libs/Eip712Validator";
+import {Eip712AttestationRequest} from "./libs/Eip712AttestationRequest";
+import {AttestationCrypto} from "./libs/AttestationCrypto";
+import {IdentifierAttestation} from "./libs/IdentifierAttestation";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -25,11 +28,29 @@ describe("Attestation test", () => {
     const receiverPrivPEM = readFileSync(PREFIX_PATH + 'receiver-priv.pem', 'utf8');
 
     const attestationRequestPem = readFileSync(PREFIX_PATH + 'attestation-request.pem', 'utf8');
-    const attestationRequestUint8 = base64ToUint8array(attestationRequestPem);
+    // const attestationRequestUint8 = base64ToUint8array(attestationRequestPem);
+    const attestationRequestJson = attestationRequestPem.split(/\r?\n/).join('');
 
-    const attRequest = AttestationRequest.fromBytes( attestationRequestUint8, KeyPair.publicFromBase64(receiverPubPEM) );
+    const attestationRequest = new Eip712AttestationRequest();
+    attestationRequest.setDomain('http://wwww.attestation.id' );
+    attestationRequest.fillJsonData(attestationRequestJson);
 
+    let crypto = new AttestationCrypto();
+    let commitment = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
 
+    let issuerName = "AlphaWallet";
+    let validityInMilliseconds = 100000;
+    let att:IdentifierAttestation = new IdentifierAttestation();
+    att.fromCommitment(commitment, attestationRequest.getKeys());
+    att.setIssuer("CN=" + issuerName);
+    att.setSerialNumber(999);
+    let now: number = Date.now();
+    att.setNotValidBefore(now);
+    att.setNotValidAfter(now + validityInMilliseconds);
+    // TODO implement
+    // let signed:SignedAttestation = new SignedAttestation(att, attestorKeys);
+    // DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
+    console.log('attest data filled');
 });
 
 describe("Keys decode test", () => {
@@ -60,7 +81,7 @@ describe("SignedAttestation test", () => {
     const attestationPEM = readFileSync(PREFIX_PATH + 'attestation.pem', 'utf8');
     const attestationUint8 = base64ToUint8array(attestationPEM);
 
-    let signedAttest = new SignedAttestation(attestationUint8, attestorPubKey)
+    let signedAttest = SignedAttestation.fromBytes(attestationUint8, attestorPubKey);
 
 });
 

@@ -14,47 +14,55 @@ export interface attestationRequestData {
 }
 
 export class AttestationRequest {
-    public signature: string;
-    private identity: string;
     private type: number;
     public pok: FullProofOfExponent;
     private keys: KeyPair;
     constructor() {}
+    /*
     static fromEmail(identity: string){
         let crypto = new AttestationCrypto();
         let keys = KeyPair.createKeys();
         let secret: bigint = crypto.makeSecret();
         let pok:FullProofOfExponent = crypto.computeAttestationProof(secret);
-        let request = AttestationRequest.fromData(identity, ATTESTATION_TYPE["mail"], pok, keys);
+        let request = AttestationRequest.fromData(ATTESTATION_TYPE["mail"], pok, keys);
         let output: attestationRequestData = {
             request: request.getDerEncoding(),
             requestSecret: secret
         }
         return output;
-    }
-    static fromData(identity: string, type: number, pok: FullProofOfExponent, keys: KeyPair): AttestationRequest {
+    }*/
+    static fromData(type: number, pok: FullProofOfExponent, keys: KeyPair): AttestationRequest {
         let me = new this();
-        me.create(identity, type, pok, keys);
+        me.create(type, pok, keys);
         if (!me.verify()) {
-            throw new Error("The signature or proof is not valid");
+            throw new Error("The proof is not valid");
         }
         return me;
     }
-    create(identity: string, type: number, pok: FullProofOfExponent, keys: KeyPair){
-        this.identity = identity;
+
+    static fromTypeAndPok(type: number, pok: FullProofOfExponent): AttestationRequest {
+        let me = new this();
+        me.type = type;
+        me.pok = pok;
+        return me;
+    }
+
+    create(type: number, pok: FullProofOfExponent, keys: KeyPair){
         this.type = type;
         this.pok = pok;
         this.keys = keys;
 
-        this.signature = this.keys.signBytesWithEthereum(hexStringToArray(this.getUnsignedEncoding()));
-        // console.log("signature = " + this.signature);
+        if (!this.verify()) {
+            throw new Error("Could not verify the proof");
+        }
     }
+
     getUnsignedEncoding(){
-        let res = Asn1Der.encode('VISIBLE_STRING',this.identity) +
-            Asn1Der.encode('INTEGER',this.type) +
+        let res = Asn1Der.encode('INTEGER',this.type) +
             this.pok.encoding;
         return Asn1Der.encode('SEQUENCE_30',res);
     }
+
     getDerEncoding(){
         // let ecKey = ec.keyFromPrivate(this.keys.getPrivateAsHexString(), 'hex');
         // var pubPoint = ecKey.getPublic().encode('hex');
@@ -65,11 +73,10 @@ export class AttestationRequest {
             Asn1Der.encode('BIT_STRING', pubPoint)
         );
 
-        let res = this.getUnsignedEncoding() +
-            pubKeyDer +
-            Asn1Der.encode('BIT_STRING', this.signature);
+        let res = this.getUnsignedEncoding() + pubKeyDer;
         return Asn1Der.encode('SEQUENCE_30', res);
     }
+
     static fromBytes(asn1: Uint8Array, keys: KeyPair): AttestationRequest {
         let me = new this();
 
@@ -77,12 +84,11 @@ export class AttestationRequest {
 
         let identity: Identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
 
-        me.identity = identity.unsignedIdentity.identifier;
-        me.type = identity.unsignedIdentity.type;
+        me.type = identity.identityPayload.type;
 
-        let riddleEnc = new Uint8Array(identity.unsignedIdentity.proof.riddle);
-        let challengeEnc = new Uint8Array(identity.unsignedIdentity.proof.challengePoint);
-        let tPointEnc = new Uint8Array(identity.unsignedIdentity.proof.responseValue);
+        let riddleEnc = new Uint8Array(identity.identityPayload.proof.riddle);
+        let challengeEnc = new Uint8Array(identity.identityPayload.proof.challengePoint);
+        let tPointEnc = new Uint8Array(identity.identityPayload.proof.responseValue);
 
         let riddle = Point.decodeFromHex(uint8tohex(riddleEnc), CURVE_BN256 );
         let challenge = uint8ToBn(challengeEnc);
@@ -90,25 +96,18 @@ export class AttestationRequest {
 
         me.pok = FullProofOfExponent.fromData(riddle, tPoint, challenge);
 
-        let publicKey = new Uint8Array(identity.publicKey.value.publicKey);
+        // let publicKey = new Uint8Array(identity.publicKey.value.publicKey);
 
-        me.keys = KeyPair.fromPublicHex(uint8tohex(publicKey));
-
-        let signature = new Uint8Array(identity.signatureValue);
-        me.signature = uint8tohex(signature);
+        me.keys = KeyPair.publicFromSubjectPublicKeyInfo(identity.publicKey);
 
         if (!me.verify()) {
-            throw new Error("The signature is not valid");
+            throw new Error("Could not verify the proof");
         }
 
         return me;
     }
-    verify():boolean {
 
-        if (!this.keys.verifyHexStringWithEthereum(this.getUnsignedEncoding(), this.signature)) {
-            return false;
-        }
-        // console.log('signatureVerify OK');
+    verify():boolean {
 
         let AttestationCryptoInstance = new AttestationCrypto();
 
@@ -124,14 +123,17 @@ export class AttestationRequest {
     getPok(): FullProofOfExponent{
         return this.pok;
     }
-    getIdentity(): string{
-        return this.identity;
-    }
+
     getType(): number{
         return this.type;
     }
+
     getKeys(): KeyPair{
         return this.keys;
+    }
+
+    setKeys(keys: KeyPair){
+        this.keys = keys;
     }
 }
 

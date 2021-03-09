@@ -1,19 +1,17 @@
 import {AttestationCrypto} from "./AttestationCrypto";
 import {SignedAttestation} from "./SignedAttestation";
-import {hexStringToArray, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {KeyPair} from "./KeyPair";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {UseToken} from "../asn1/shemas/UseToken";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
-import {Point} from "./Point";
 import {IdentifierAttestation} from "./IdentifierAttestation";
 import {Attestable} from "./Attestable";
 import {SignatureUtility} from "./SignatureUtility";
 import {Verifiable} from "./Verifiable";
 import {ASNEncodable} from "./ASNEncodable";
-import {XMLconfigData} from "../data/tokenData";
 import {AttestableObject} from "./AttestableObject";
 
 declare global {
@@ -42,6 +40,20 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     private preSignEncoded: string;
 
     private webDomain: string;
+
+    static Eip712UserData: {[index: string]:string|number}  = {
+        payload: '',
+        description: '',
+        timestamp: 0
+    }
+    // static Eip712UserDataTypes: {[index: string]:string}[]  = [
+    static Eip712UserDataTypes: {name: string, type: string}[]  = [
+        {name: 'payload', type: 'string'},
+        {name: 'description', type: 'string'},
+        {name: 'timestamp', type: 'uint256'},
+    ]
+    static Eip712UserDataPrimaryName: string = "Authentication";
+    static Eip712UserDataDescription: string = "Single-use authentication";
 
     constructor() {}
 
@@ -100,8 +112,13 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
 
     async sign(){
-        return await SignatureUtility.signEIP712WithBrowserWallet(this.unsignedEncoding, this.webDomain );
+        let userData = {
+            payload: this.unsignedEncoding,
+            description: AttestedObject.Eip712UserDataDescription,
+            timestamp: new Date().getTime()
+        };
 
+        return await SignatureUtility.signEIP712WithBrowserWallet(this.webDomain, userData, AttestedObject.Eip712UserDataTypes, AttestedObject.Eip712UserDataPrimaryName );
     }
 
     public checkValidity(): boolean {

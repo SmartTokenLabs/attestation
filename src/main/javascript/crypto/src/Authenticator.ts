@@ -1,7 +1,6 @@
-import {SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex} from "./libs/utils";
+import {base64ToUint8array} from "./libs/utils";
 import {SignedAttestation} from "./libs/SignedAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";

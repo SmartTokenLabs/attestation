@@ -42,6 +42,7 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         // hadrcoded ASN1 sequence
         this.signingAlgorithm = "300906072A8648CE3D0201";
     }
+
     setSubjectPublicKeyInfo(keys: KeyPair){
         // TODO generate algorithm object
         // hardcoded algorithm
@@ -51,7 +52,6 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         // this.subjectPublicKeyInfo = Asn1Der.encode('SEQUENCE_30', res);
         this.subjectPublicKey = keys;
     }
-
 
     setCommitment(commitment: Uint8Array) {
         // TODO hardcoded OID
@@ -95,5 +95,18 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         }
 
         return true;
+    }
+
+    setIssuer(issuer: string){
+        // TODO implement
+    }
+
+    public getSerialNumber(): number {
+        return this.serialNumber;
+    }
+
+    // TODO change to up-to 20 byte array
+    public setSerialNumber(serialNumber: number) {
+        this.serialNumber = serialNumber;
     }
 }

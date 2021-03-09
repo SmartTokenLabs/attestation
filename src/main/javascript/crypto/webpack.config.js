@@ -6,13 +6,21 @@ module.exports = {
         rules: [
             {
                 test: /\.tsx?$/,
-                use: 'ts-loader',
                 exclude: /node_modules/,
+                use: [
+                    { loader: 'ts-loader', options: { transpileOnly: true } }
+                ]
             }
             ]
     },
     resolve: {
         extensions: [ '.tsx', '.ts', '.js' ],
+        fallback:
+            {
+                "stream": require.resolve("stream-browserify") ,
+                "assert": require.resolve("assert/")
+            }
+
     },
     resolveLoader: {
         modules: ['node_modules'],
@@ -29,5 +37,9 @@ module.exports = {
         aggregateTimeout: 200,
         poll: 1000,
         ignored: /node_modules/
+    },
+    optimization: {
+        minimize: false
     }
+
 };

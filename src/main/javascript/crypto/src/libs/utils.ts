@@ -111,12 +111,24 @@ export function uint8merge(list : Uint8Array[]): Uint8Array{
 }
 
 export function uint8arrayToBase64( bytes: Uint8Array ): string {
-    var binary = '';
-    var len = bytes.byteLength;
-    for (var i = 0; i < len; i++) {
+    let binary = '';
+    let len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
         binary += String.fromCharCode( bytes[ i ] );
     }
-    return window.btoa( binary );
+
+    if (typeof Buffer !== 'undefined') {
+        let buff = new Buffer(binary);
+        return buff.toString('base64');
+    } else {
+        return window.btoa( binary );
+    }
+}
+
+export function base64toBase64Url(base64: string): string {
+    return base64.split('/').join('_')
+        .split('+').join('-')
+        .split('=').join('.');
 }
 
 export function pemOrBase64Orbase64urlToString(base64str: string): string {

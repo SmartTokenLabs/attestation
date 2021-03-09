@@ -4,10 +4,7 @@ import {Proof} from "./ProofOfExponentASN";
 
 // IdentifierType ::= INTEGER { email(0), phone(1)}
 
-class UnsignedIdentity {
-
-    @AsnProp({ type: AsnPropTypes.VisibleString })
-    public identifier: string;
+class IdentityPayload {
 
     @AsnProp({ type: AsnPropTypes.Integer })
     public type: number;
@@ -19,14 +16,11 @@ class UnsignedIdentity {
 
 export class Identity {
 
-    @AsnProp({ type: UnsignedIdentity })
-    public unsignedIdentity: UnsignedIdentity;
+    @AsnProp({ type: IdentityPayload })
+    public identityPayload: IdentityPayload;
 
     @AsnProp({ type: SubjectPublicKeyInfo })
     public publicKey: SubjectPublicKeyInfo;
-
-    @AsnProp({ type: AsnPropTypes.BitString })
-    public signatureValue: Uint8Array;
 
 }
 
