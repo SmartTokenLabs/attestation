@@ -22,7 +22,9 @@ public class AuthenticatorEncoder extends Eip712Encoder {
 
   @Override
   public HashMap<String, List<Entry>> getTypes() {
-    return getDefaultTypes(PRIMARY_NAME);
+    HashMap<String, List<Entry>> types = getDefaultTypes(PRIMARY_NAME);
+    types.get(EIP712DOMAIN).add(SALT_DOMAIN_ENTRY);
+    return types;
   }
 
   @Override
