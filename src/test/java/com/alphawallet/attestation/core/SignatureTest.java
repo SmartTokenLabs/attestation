@@ -6,9 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.Signature;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -18,6 +22,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +40,35 @@ public class SignatureTest {
     rand.setSeed("seed".getBytes());
     largeKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+  }
+
+  @Test
+  public void testKeyConversion() throws Exception {
+    byte[] message = "test".getBytes(StandardCharsets.UTF_8);
+    MessageDigest sha256 = new SHA256.Digest();
+    sha256.reset();
+    sha256.update(message);
+    byte[] digest = sha256.digest();
+    byte[] bcSignature = SignatureUtility.signHashedRandomized(digest, largeKeys.getPrivate());
+
+    ECPrivateKey javaPriv = (ECPrivateKey) SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(largeKeys.getPrivate());
+    Signature signer = Signature.getInstance("SHA256withECDSA");
+    signer.initSign(javaPriv);
+    signer.update(message);
+    byte[] javaSignature = signer.sign();
+
+    ECPublicKey javaPub = (ECPublicKey) SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(largeKeys.getPublic());
+    Signature verifier = Signature.getInstance("SHA256withECDSA");
+    verifier.initVerify(javaPub);
+    verifier.update(message);
+    assertTrue(verifier.verify(javaSignature));
+
+    verifier.initVerify(javaPub);
+    verifier.update(message);
+    assertTrue(verifier.verify(bcSignature));
+
+    assertTrue(SignatureUtility.verifyHashed(digest, javaSignature, largeKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyHashed(digest, bcSignature, largeKeys.getPublic()));
   }
 
   @Test

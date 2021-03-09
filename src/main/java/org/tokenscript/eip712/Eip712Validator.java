@@ -5,6 +5,7 @@ import com.alphawallet.token.entity.EthereumTypedMessage;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Domain;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message;
+import com.alphawallet.token.web.Ethereum.web3j.StructuredDataEncoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InvalidObjectException;
 import java.time.Clock;
@@ -35,11 +36,12 @@ public class Eip712Validator extends Eip712Common {
   /**
    * Retrieve the underlying JSON object
    */
-  public String retrieveUnderlyingObject(String signedJsonInput) throws InvalidObjectException {
+  public <T extends Eip712InternalData> T retrieveUnderlyingObject(String signedJsonInput, Class<T> type) throws InvalidObjectException {
     try {
       Eip712ExternalData allData = mapper.readValue(signedJsonInput, Eip712ExternalData.class);
-      JsonNode rootNode = mapper.readTree(allData.getJsonSigned());
-      return rootNode.get("message").toString();
+      // Use StructuredDataEncoder to ensure that the data structure gets verified
+      StructuredDataEncoder encoder = new StructuredDataEncoder(allData.getJsonSigned());
+      return mapper.convertValue(encoder.jsonMessageObject.getMessage(), type);
     } catch (Exception e) {
       throw new InvalidObjectException(e.getMessage());
     }
@@ -99,8 +101,7 @@ public class Eip712Validator extends Eip712Common {
   }
 
   <T extends FullEip712InternalData> String restoreSignableJson(String signedJsonInput, Class<T> type) throws Exception {
-    String eip712Message = retrieveUnderlyingObject(signedJsonInput);
-    T fullInternalData = mapper.readValue(eip712Message, type);
+    T fullInternalData = retrieveUnderlyingObject(signedJsonInput, type);
     EIP712Domain eip712Domain = getDomainFromJson(signedJsonInput);
     StructuredData.EIP712Message message = new EIP712Message(encoder.getTypes(), encoder.getPrimaryName(),
         fullInternalData.getSignableVersion(), eip712Domain);
