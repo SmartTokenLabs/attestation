@@ -11,8 +11,6 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
   static final String PROTOCOL_VERSION = "0.1";
 
   static final String PRIMARY_NAME = "AttestationRequest";
-  static final String ADDRESS_NAME = "address";
-  static String IDENTIFIER_NAME = "identifier";
   static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
   public Eip712AttestationRequestEncoder() {
@@ -20,8 +18,8 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
 
   public HashMap<String, List<Entry>> getTypes() {
     HashMap<String, List<Entry>> types = getDefaultTypes(PRIMARY_NAME);
-    types.get(PRIMARY_NAME).add(new Entry(ADDRESS_NAME, ADDRESS));
-    types.get(PRIMARY_NAME).add(new Entry(IDENTIFIER_NAME, STRING));
+    types.get(PRIMARY_NAME).add(ADDRESS_ENTRY);
+    types.get(PRIMARY_NAME).add(IDENTIFIER_ENTRY);
     return types;
   }
 

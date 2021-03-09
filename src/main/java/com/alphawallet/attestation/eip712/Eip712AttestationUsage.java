@@ -39,10 +39,9 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder());
     try {
       this.useAttestation = useAttestation;
-      this.jsonEncoding = makeToken(identifier,useAttestation, signingKey);
+      this.jsonEncoding = makeToken(identifier, useAttestation, signingKey);
       this.publicKey = retrievePublicKey(jsonEncoding, AttestationUsageData.class);
-      String attestationUsageData = retrieveUnderlyingObject(jsonEncoding);
-      this.data = mapper.readValue(attestationUsageData, AttestationUsageData.class);
+      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not encode object");
     }
@@ -58,8 +57,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     try {
       this.jsonEncoding = jsonEncoding;
       this.publicKey = retrievePublicKey(jsonEncoding, AttestationUsageData.class);
-      String attestationUsageData = retrieveUnderlyingObject(jsonEncoding);
-      this.data = mapper.readValue(attestationUsageData, AttestationUsageData.class);
+      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
       this.useAttestation = new UseAttestation(URLUtility.decodeData(data.getPayload()), attestationIssuerVerificationKey);
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not decode object");
@@ -70,9 +68,6 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   void constructorCheck() throws IllegalArgumentException {
     if (!verify()) {
       throw new IllegalArgumentException("Could not verify Eip712 use attestation");
-    }
-    if (!checkValidity()) {
-      throw new IllegalArgumentException("Could not validate Eip712 use attestation");
     }
   }
 
@@ -117,11 +112,16 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   }
 
   @Override
+  public String getJsonEncoding() {
+    return jsonEncoding;
+  }
+
+  @Override
   public boolean checkValidity() {
     boolean accept = true;
     accept &= useAttestation.checkValidity();
     accept &= data.getDescription().equals(Eip712AttestationUsageEncoder.USAGE_VALUE);
-    accept &= verifyTimeStamp(data.getTimeStamp());
+    accept &= verifyTimeStamp(data.getTimestamp());
     accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
     accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(), data.getIdentifier(),
         (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain);
@@ -140,10 +140,5 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       return false;
     }
     return true;
-  }
-
-  @Override
-  public String getJsonEncoding() {
-    return jsonEncoding;
   }
 }

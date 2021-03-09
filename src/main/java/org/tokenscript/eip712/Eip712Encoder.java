@@ -18,6 +18,10 @@ public abstract class Eip712Encoder {
   public static final String DESCRIPTION_NAME = "description";
   public static final String PAYLOAD_NAME = "payload";
 
+  // Other relevant tags
+  public static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
+  public static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
+
   public HashMap<String, List<Entry>> getDefaultTypes(String primaryName) {
     HashMap<String, List<Entry>> types = new HashMap<>();
     List<Entry> content = new ArrayList<>();
