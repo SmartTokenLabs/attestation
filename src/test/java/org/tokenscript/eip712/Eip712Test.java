@@ -2,16 +2,17 @@ package org.tokenscript.eip712;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InvalidObjectException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -52,6 +53,20 @@ public class Eip712Test {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
     checkEquality(validator.retrieveUnderlyingObject(token, FullEip712InternalData.class));
     assertTrue(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
+  }
+
+  @Test
+  public void eipEncoding() throws Exception {
+    String json = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
+    TestEncoder encoder = new TestEncoder();
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode message = mapper.readTree(mapper.readTree(json).get("jsonSigned").asText()).findPath("message");
+    // Verify that all elements in the message got encoded
+    for (Entry currentEntry : encoder.getTypes().get(encoder.getPrimaryName())) {
+      JsonNode node = message.get(currentEntry.getName());
+      assertNotNull(node);
+      assertTrue(node.asText().length() > 0);
+    }
   }
 
   @Test
@@ -147,16 +162,7 @@ public class Eip712Test {
 
     @Override
     public HashMap<String, List<Entry>> getTypes() {
-      HashMap<String, List<Entry>> types = new HashMap<>();
-      List<Entry> content = new ArrayList<>();
-      content.add(new Entry("testElement", STRING));
-      types.put("Test", content);
-      List<Entry> domainContent = new ArrayList<>();
-      domainContent.add(new Entry("name", STRING));
-      domainContent.add(new Entry("version", STRING));
-      domainContent.add(new Entry("salt", BYTES32));
-      types.put("EIP712Domain", domainContent);
-      return types;
+      return getDefaultTypes("Test");
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.alphawallet.attestation.eip712;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,6 +16,9 @@ import com.alphawallet.attestation.UseAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -102,6 +106,22 @@ public class TestAttestationUsageEip712 {
         SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(newRequest.getSessionPublicKey()).getEncoded());
     assertEquals( ((ECKeyParameters) request.getUserPublicKey()).getParameters(),
         ((ECKeyParameters) newRequest.getUserPublicKey()).getParameters());
+  }
+
+  @Test
+  public void eipEncoding() throws Exception {
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
+    String json = request.getJsonEncoding();
+    ObjectMapper mapper = new ObjectMapper();
+    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder();
+    JsonNode message = mapper.readTree(mapper.readTree(json).get("jsonSigned").asText()).get("message");
+    // Verify that all elements in the message got encoded
+    for (Entry currentEntry : encoder.getTypes().get(encoder.getPrimaryName())) {
+      JsonNode node = message.get(currentEntry.getName());
+      assertNotNull(node);
+      assertTrue(node.asText().length() > 0);
+    }
   }
 
   @Test

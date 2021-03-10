@@ -3,6 +3,7 @@ package com.alphawallet.attestation.eip712;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,6 +13,9 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -79,6 +83,24 @@ public class TestAttestationRequestEip712 {
     assertEquals(request.getType(), newRequest.getType());
     assertEquals( ((ECKeyParameters) request.getPublicKey()).getParameters(),
         ((ECKeyParameters) newRequest.getPublicKey()).getParameters());
+  }
+
+  @Test
+  public void eipEncoding() throws Exception {
+    byte[] nonce = Nonce.makeNonce(MAIL, userAddress, DOMAIN, Clock.systemUTC().millis());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
+    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey, userAddress);
+    String json = request.getJsonEncoding();
+    ObjectMapper mapper = new ObjectMapper();
+    Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder();
+    JsonNode message = mapper.readTree(mapper.readTree(json).get("jsonSigned").asText()).get("message");
+    // Verify that all elements in the message got encoded
+    for (Entry currentEntry : encoder.getTypes().get(encoder.getPrimaryName())) {
+      JsonNode node = message.get(currentEntry.getName());
+      assertNotNull(node);
+      assertTrue(node.asText().length() > 0);
+    }
   }
 
   @Test
