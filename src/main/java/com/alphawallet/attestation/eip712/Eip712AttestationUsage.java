@@ -27,7 +27,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   private final UseAttestation useAttestation;
   private final AttestationUsageData data;
   private final String jsonEncoding;
-  private final AsymmetricKeyParameter publicKey;
+  private final AsymmetricKeyParameter userPublicKey;
 
   public Eip712AttestationUsage(String attestorDomain, String identifier, UseAttestation useAttestation, AsymmetricKeyParameter signingKey) {
     this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, useAttestation, signingKey);
@@ -40,7 +40,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     try {
       this.useAttestation = useAttestation;
       this.jsonEncoding = makeToken(identifier, useAttestation, signingKey);
-      this.publicKey = retrievePublicKey(jsonEncoding, AttestationUsageData.class);
+      this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not encode object");
@@ -56,7 +56,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder());
     try {
       this.jsonEncoding = jsonEncoding;
-      this.publicKey = retrievePublicKey(jsonEncoding, AttestationUsageData.class);
+      this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
       this.useAttestation = new UseAttestation(URLUtility.decodeData(data.getPayload()), attestationIssuerVerificationKey);
     } catch (Exception e ) {
@@ -95,8 +95,8 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     return data.getIdentifier();
   }
 
-  public AsymmetricKeyParameter getPublicKey() {
-    return publicKey;
+  public AsymmetricKeyParameter getUserPublicKey() {
+    return userPublicKey;
   }
 
   public FullProofOfExponent getPok() {
@@ -111,6 +111,10 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     return useAttestation.getAttestation();
   }
 
+  public AsymmetricKeyParameter getSessionPublicKey() {
+    return useAttestation.getSessionPublicKey();
+  }
+
   @Override
   public String getJsonEncoding() {
     return jsonEncoding;
@@ -122,7 +126,8 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     accept &= useAttestation.checkValidity();
     accept &= data.getDescription().equals(Eip712AttestationUsageEncoder.USAGE_VALUE);
     accept &= verifyTimeStamp(data.getTimestamp());
-    accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
+    accept &= SignatureUtility.verifyKeyAgainstAddress(
+        userPublicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
     accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(), data.getIdentifier(),
         (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain);
     accept &= proofLinking();

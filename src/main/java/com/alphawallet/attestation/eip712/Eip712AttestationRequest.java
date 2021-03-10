@@ -24,19 +24,19 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   private final String jsonEncoding;
   private final AsymmetricKeyParameter publicKey;
 
-  public Eip712AttestationRequest(String attestorDomain, String identifier, AttestationType type,
-      FullProofOfExponent pok, AsymmetricKeyParameter signingKey, String address) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, type, pok, signingKey, address);
+  public Eip712AttestationRequest(String attestorDomain, String identifier,
+      AttestationRequest request, AsymmetricKeyParameter signingKey, String address) {
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey, address);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
-      String identifier, AttestationType type, FullProofOfExponent pok,
+      String identifier, AttestationRequest request,
       AsymmetricKeyParameter signingKey, String address) {
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
-      this.attestationRequest = new AttestationRequest(type, pok);
+      this.attestationRequest = request;
       this.jsonEncoding = makeToken(identifier, signingKey, address);
-      this.publicKey = retrievePublicKey(jsonEncoding, AttestationRequestInternalData.class);
+      this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
     } catch (Exception e ) {
       throw new IllegalArgumentException("Could not encode object");
@@ -52,7 +52,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
       this.jsonEncoding = jsonEncoding;
-      this.publicKey = retrievePublicKey(jsonEncoding, AttestationRequestInternalData.class);
+      this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
       this.attestationRequest = new AttestationRequest(URLUtility.decodeData(data.getPayload()));
     } catch (Exception e ) {

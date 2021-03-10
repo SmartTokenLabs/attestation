@@ -6,14 +6,12 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
-import com.alphawallet.token.entity.As;
 import java.io.IOException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
@@ -21,15 +19,15 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
   private final SignedIdentityAttestation attestation;
   private final AttestationType type;
   private final FullProofOfExponent pok;
-  private final AsymmetricKeyParameter sessionKey;
+  private final AsymmetricKeyParameter sessionPublicKey;
   private final byte[] encoding;
 
-  public UseAttestation(SignedIdentityAttestation attestation, AttestationType type, FullProofOfExponent pok, AsymmetricKeyParameter sessionKey) {
+  public UseAttestation(SignedIdentityAttestation attestation, AttestationType type, FullProofOfExponent pok, AsymmetricKeyParameter sessionPublicKey) {
     this.attestation = attestation;
     this.type = type;
     this.pok = pok;
-    this.sessionKey = sessionKey;
-    this.encoding = makeEncoding(attestation, type, pok, sessionKey);
+    this.sessionPublicKey = sessionPublicKey;
+    this.encoding = makeEncoding(attestation, type, pok, sessionPublicKey);
     constructorCheck();
   }
 
@@ -43,7 +41,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
       this.type = AttestationType.values()[
           ASN1Integer.getInstance(asn1.getObjectAt(i++)).getValue().intValueExact()];;
       this.pok = new FullProofOfExponent(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
-      this.sessionKey = SignatureUtility.restoreKeyFromSPKI(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
+      this.sessionPublicKey = SignatureUtility.restoreKeyFromSPKI(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -79,8 +77,8 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     return pok;
   }
 
-  public AsymmetricKeyParameter getSessionKey() {
-    return sessionKey;
+  public AsymmetricKeyParameter getSessionPublicKey() {
+    return sessionPublicKey;
   }
 
   @Override

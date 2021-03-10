@@ -74,14 +74,14 @@ public class Eip712Validator extends Eip712Common {
 
   public <T extends FullEip712InternalData> boolean verifySignature(String signedJsonInput, String pkAddress, Class<T> type) {
     try {
-      AsymmetricKeyParameter candidateKey = retrievePublicKey(signedJsonInput, type);
+      AsymmetricKeyParameter candidateKey = retrieveUserPublicKey(signedJsonInput, type);
       return SignatureUtility.verifyKeyAgainstAddress(candidateKey, pkAddress);
     } catch (InvalidObjectException e) {
       return false;
     }
   }
 
-  public <T extends FullEip712InternalData> ECPublicKeyParameters retrievePublicKey(String signedJsonInput, Class<T> type) throws InvalidObjectException {
+  public <T extends FullEip712InternalData> ECPublicKeyParameters retrieveUserPublicKey(String signedJsonInput, Class<T> type) throws InvalidObjectException {
     try {
       byte[] signature = getSignatureFromJson(signedJsonInput);
       String actuallySignedJson = restoreSignableJson(signedJsonInput, type);

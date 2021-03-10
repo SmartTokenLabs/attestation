@@ -68,7 +68,7 @@ public class UseAttestationTest {
     assertArrayEquals(signed.getDerEncoding(), otherConstructor.getAttestation().getDerEncoding());
     assertArrayEquals(pok.getDerEncoding(), otherConstructor.getPok().getDerEncoding());
     assertArrayEquals(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(sessionKey).getEncoded(),
-        SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getSessionKey()).getEncoded());
+        SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getSessionPublicKey()).getEncoded());
     assertArrayEquals(useAttestation.getDerEncoding(), otherConstructor.getDerEncoding());
     // Internal randomness is used in pok construction
     FullProofOfExponent otherPok = crypto.computeAttestationProof(SECRET1, NONCE);

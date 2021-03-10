@@ -24,6 +24,7 @@ import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ public class TestAttestationUsageEip712 {
   }
 
   @Test
-  public void testDecoding() {
+  public void testDecoding() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     Eip712AttestationUsage newRequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), request.getJsonEncoding());
@@ -97,8 +98,10 @@ public class TestAttestationUsageEip712 {
     assertArrayEquals(request.getAttestation().getDerEncoding(), newRequest.getAttestation().getDerEncoding());
     assertEquals(request.getJsonEncoding(), newRequest.getJsonEncoding());
     assertEquals(request.getType(), newRequest.getType());
-    assertEquals( ((ECKeyParameters) request.getPublicKey()).getParameters(),
-        ((ECKeyParameters) newRequest.getPublicKey()).getParameters());
+    assertArrayEquals(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(sessionKey).getEncoded(),
+        SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(newRequest.getSessionPublicKey()).getEncoded());
+    assertEquals( ((ECKeyParameters) request.getUserPublicKey()).getParameters(),
+        ((ECKeyParameters) newRequest.getUserPublicKey()).getParameters());
   }
 
   @Test
