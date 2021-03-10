@@ -198,7 +198,7 @@ public class Demo {
       System.err.println("Could not verify cheque");
       throw new RuntimeException("Verification failed");
     }
-    if (!att.getUnsignedAttestation().checkValidity()) {
+    if (!att.checkValidity()) {
       System.err.println("Could not validate attestation");
       throw new RuntimeException("Validation failed");
     }
