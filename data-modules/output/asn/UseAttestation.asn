@@ -4,17 +4,19 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    MyAttestation
-        FROM AttestationFramework
+    MyAttestation,
+    SubjectPublicKeyInfoValue
+        FROM AttestationFramework;
     Proof
         FROM ProofOfExponent
     IdentifierType
-        FROM AttestationRequest;
+        FROM AttestationRequest
 
 UseAttestation ::= SEQUENCE {
     attestation          MyAttestation,
     type                 IdentifierType,
-    proof                Proof
+    proof                Proof,
+    sessionKey           SubjectPublicKeyInfoValue
 }
 
 END

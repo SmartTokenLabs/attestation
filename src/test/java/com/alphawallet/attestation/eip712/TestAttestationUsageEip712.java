@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
@@ -41,6 +42,7 @@ public class TestAttestationUsageEip712 {
   private static SignedIdentityAttestation signedAttestation;
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricKeyParameter userSigningKey;
+  private static AsymmetricKeyParameter sessionKey;
   private static String userAddress;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
@@ -59,6 +61,8 @@ public class TestAttestationUsageEip712 {
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     signedAttestation = new SignedIdentityAttestation(att, attestorKeys);
+    X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
+    sessionKey = SignatureUtility.constructECKeys(SECT283K1, rand).getPublic();
   }
 
   @BeforeEach
@@ -69,7 +73,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void testSunshine() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok);
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     assertTrue(usage.verify());
     assertTrue(usage.checkValidity());
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
@@ -79,7 +83,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void testDecoding() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok);
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     Eip712AttestationUsage newRequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), request.getJsonEncoding());
     assertTrue(newRequest.verify());
@@ -99,7 +103,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void badSignature() {
-      UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok);
+      UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
       Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     byte[] encoding = request.getJsonEncoding().getBytes(StandardCharsets.UTF_8);
     // Flip a bit in the signature part of the encoding
@@ -110,7 +114,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void invalidTimestamp() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok);
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -100, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
@@ -121,7 +125,7 @@ public class TestAttestationUsageEip712 {
     byte[] wrongNonce = Nonce.makeNonce(MAIL, userAddress, "http://www.notTheRightHotel.com",
         Clock.systemUTC().millis());
     FullProofOfExponent wrongPok = crypto.computeAttestationProof(ATTESTATION_SECRET, wrongNonce);
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok);
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
@@ -131,7 +135,7 @@ public class TestAttestationUsageEip712 {
   public void invalidNonceAddress() {
     byte[] wrongNonce = Nonce.makeNonce(MAIL, "0x01234567890123456789", DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent wrongPok = crypto.computeAttestationProof(ATTESTATION_SECRET, wrongNonce);
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok);
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
@@ -139,7 +143,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void invalidNonceBadIdentifier() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok);
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, "notTheRight@email.com", usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
@@ -161,8 +165,22 @@ public class TestAttestationUsageEip712 {
   }
 
   @Test
+  public void nonverifiableUseAttesation() {
+    // First verification is done in the constructor of Eip712AttestationUsage
+    Mockito.when(mockedUseAttestation.verify()).thenReturn(true).thenReturn(false);
+    Mockito.when(mockedUseAttestation.getDerEncoding()).thenReturn(new byte[] {0x00});
+    Mockito.when(mockedUseAttestation.getAttestation()).thenReturn(signedAttestation);
+    Mockito.when(mockedUseAttestation.getPok()).thenReturn(pok);
+    Mockito.when(mockedUseAttestation.getType()).thenReturn(TYPE);
+    Mockito.when(mockedUseAttestation.checkValidity()).thenReturn(true);
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation, userSigningKey);
+    assertFalse(request.verify());
+    assertTrue(request.checkValidity());
+  }
+
+  @Test
   public void invalidProofLinking() {
-    UseAttestation usage = new UseAttestation(signedAttestation, AttestationType.PHONE, pok);
+    UseAttestation usage = new UseAttestation(signedAttestation, AttestationType.PHONE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
@@ -170,11 +188,11 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void badAddressForSignatureVerification() {
-    AsymmetricCipherKeyPair userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    AsymmetricCipherKeyPair otherUserKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     IdentifierAttestation att = HelperTest
-        .makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+        .makeUnsignedStandardAtt(otherUserKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentityAttestation otherSingedAttestation = new SignedIdentityAttestation(att, attestorKeys);
-    UseAttestation usage = new UseAttestation(otherSingedAttestation, TYPE, pok);
+    UseAttestation usage = new UseAttestation(otherSingedAttestation, TYPE, pok, sessionKey);
     assertThrows(IllegalArgumentException.class, () -> new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey));
   }
 }

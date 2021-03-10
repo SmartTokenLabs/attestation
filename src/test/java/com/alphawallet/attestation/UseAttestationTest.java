@@ -1,6 +1,7 @@
 package com.alphawallet.attestation;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,6 +15,8 @@ import java.util.Arrays;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -25,6 +28,7 @@ public class UseAttestationTest {
   public static final byte[] NONCE = new byte[] {0x66};
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair issuerKeys;
+  private static AsymmetricKeyParameter sessionKey;
 
   private static AttestationCrypto crypto;
   private static SecureRandom rand;
@@ -37,6 +41,8 @@ public class UseAttestationTest {
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
     issuerKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
+    sessionKey = SignatureUtility.constructECKeys(SECT283K1, rand).getPublic();
   }
 
   @Test
@@ -44,24 +50,29 @@ public class UseAttestationTest {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), SECRET2, ID);
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
-    UseAttestation useAttestation = new UseAttestation(signed, TYPE, pok);
+    UseAttestation useAttestation = new UseAttestation(signed, TYPE, pok, sessionKey);
     assertTrue(useAttestation.verify());
     assertTrue(useAttestation.checkValidity());
   }
 
   @Test
-  public void consistentDecoding() {
+  public void consistentDecoding() throws Exception {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), SECRET2, ID);
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
-    UseAttestation useAttestation = new UseAttestation(signed, TYPE, pok);
+    UseAttestation useAttestation = new UseAttestation(signed, TYPE, pok, sessionKey);
     UseAttestation otherConstructor = new UseAttestation(useAttestation.getDerEncoding(), issuerKeys.getPublic());
     assertTrue(otherConstructor.verify());
     assertTrue(otherConstructor.checkValidity());
+    assertEquals(TYPE, otherConstructor.getType());
+    assertArrayEquals(signed.getDerEncoding(), otherConstructor.getAttestation().getDerEncoding());
+    assertArrayEquals(pok.getDerEncoding(), otherConstructor.getPok().getDerEncoding());
+    assertArrayEquals(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(sessionKey).getEncoded(),
+        SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getSessionKey()).getEncoded());
     assertArrayEquals(useAttestation.getDerEncoding(), otherConstructor.getDerEncoding());
     // Internal randomness is used in pok construction
     FullProofOfExponent otherPok = crypto.computeAttestationProof(SECRET1, NONCE);
-    UseAttestation otherUseAttestation = new UseAttestation(signed, TYPE, otherPok);
+    UseAttestation otherUseAttestation = new UseAttestation(signed, TYPE, otherPok, sessionKey);
     assertTrue(otherUseAttestation.verify());
     assertTrue(otherUseAttestation.checkValidity());
     assertFalse(Arrays.equals(useAttestation.getDerEncoding(), otherUseAttestation.getDerEncoding()));
@@ -74,7 +85,7 @@ public class UseAttestationTest {
     assertFalse(AttestationCrypto.verifyFullProof(badPok));
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), SECRET2, ID);
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
-    assertThrows(IllegalArgumentException.class, ()-> new UseAttestation(signed, TYPE, badPok));
+    assertThrows(IllegalArgumentException.class, ()-> new UseAttestation(signed, TYPE, badPok, sessionKey));
   }
 
 }

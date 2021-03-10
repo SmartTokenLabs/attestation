@@ -2,6 +2,8 @@
 <asnx:module name="UseAttestation" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
     <import name="MyAttestation"
          schemaLocation="AttestationFramework.asd"/>
+    <import name="SubjectPublicKeyInfoValue"
+         schemaLocation="AttestationFramework.asd"/>
     <import name="Proof"
          schemaLocation="ProofOfExponent.asd"/>
     <import name="IdentifierType"
@@ -17,6 +19,9 @@
                 </element>
                 <element name="proof" type="Proof">
                     <annotation>Schnorr proof of knowledge based on the commitment in the attestation</annotation>
+                </element>
+                <element name="sessionKey" type="SubjectPublicKeyInfoValue">
+                    <annotation>Public verification session key to be used for future authentications</annotation>
                 </element>
             </sequence>
         </type>
