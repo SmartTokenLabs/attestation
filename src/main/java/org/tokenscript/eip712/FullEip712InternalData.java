@@ -27,7 +27,7 @@ public class FullEip712InternalData extends Eip712InternalData {
   }
 
   @JsonIgnore
-  public SignableEip712InternalData getSignableVersion() {
-    return new SignableEip712InternalData(this);
+  public FullEip712InternalData getSignableVersion() {
+    return new FullEip712InternalData(getDescription(), Eip712Encoder.computePayloadDigest(getPayload()), getTimestamp());
   }
 }

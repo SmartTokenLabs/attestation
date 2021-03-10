@@ -44,7 +44,7 @@ public class Eip712Test {
     assertEquals(testObject.getPayload(), computedObject.getPayload());
     assertEquals(testObject.getDescription(), computedObject.getDescription());
     assertEquals(testObject.getTimestamp(), computedObject.getTimestamp());
-    assertEquals(testObject.getSignableVersion().getPayloadDigest(), computedObject.getSignableVersion().getPayloadDigest());
+    assertEquals(testObject.getSignableVersion().getPayload(), computedObject.getSignableVersion().getPayload());
   }
 
   @Test

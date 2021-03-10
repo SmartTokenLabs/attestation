@@ -1,10 +1,13 @@
 package org.tokenscript.eip712;
 
+import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.bouncycastle.util.encoders.Hex;
 
 public abstract class Eip712Encoder {
 
@@ -25,7 +28,12 @@ public abstract class Eip712Encoder {
   public static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
   public static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
 
-  public HashMap<String, List<Entry>> getDefaultTypes(String primaryName) {
+  public static String computePayloadDigest(String payload) {
+    return Hex.toHexString(AttestationCrypto.hashWithKeccak(payload.getBytes(
+        StandardCharsets.UTF_8)));
+  }
+
+  public static HashMap<String, List<Entry>> getDefaultTypes(String primaryName) {
     HashMap<String, List<Entry>> types = new HashMap<>();
     List<Entry> content = new ArrayList<>();
     content.add(new Entry(PAYLOAD_NAME, STRING));

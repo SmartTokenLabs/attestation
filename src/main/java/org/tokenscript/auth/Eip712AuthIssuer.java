@@ -13,7 +13,7 @@ import org.tokenscript.eip712.FullEip712InternalData;
  * Class for issuing EIP712 tokens containing a useDevconTicket object.
  * The tokens are supposed to be issued by the user for consumption by a third party website.
  */
-public class Eip712AuthIssuer extends Eip712Issuer {
+public class Eip712AuthIssuer extends Eip712Issuer<FullEip712InternalData> {
   private final AuthenticatorEncoder authenticator;
 
   public Eip712AuthIssuer(AsymmetricKeyParameter signingKey) {

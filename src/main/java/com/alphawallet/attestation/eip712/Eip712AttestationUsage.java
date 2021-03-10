@@ -73,7 +73,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   String makeToken(String identifier, UseAttestation useAttestation,
       AsymmetricKeyParameter signingKey) throws IOException {
-    Eip712Issuer issuer = new Eip712Issuer(signingKey, encoder);
+    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(useAttestation.getDerEncoding());
     AttestationUsageData data = new AttestationUsageData(
         Eip712AttestationUsageEncoder.USAGE_VALUE,

@@ -68,7 +68,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   String makeToken(String identifier, AsymmetricKeyParameter signingKey, String address) throws JsonProcessingException {
-    Eip712Issuer issuer = new Eip712Issuer(signingKey, encoder);
+    Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         Eip712AttestationRequestEncoder.USAGE_VALUE,

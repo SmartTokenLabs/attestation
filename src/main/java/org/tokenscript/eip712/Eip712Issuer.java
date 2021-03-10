@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.util.encoders.Hex;
 
-public class Eip712Issuer extends Eip712Common {
+public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common {
   protected final AsymmetricKeyParameter signingKey;
 
   public Eip712Issuer(AsymmetricKeyParameter signingKey, Eip712Encoder encoder) {
@@ -18,12 +18,12 @@ public class Eip712Issuer extends Eip712Common {
     this.signingKey = signingKey;
   }
 
-  public String buildSignedTokenFromJsonObject(FullEip712InternalData jsonEncodableObject, String webDomain, int chainID) throws JsonProcessingException  {
+  public String buildSignedTokenFromJsonObject(T jsonEncodableObject, String webDomain, int chainID) throws JsonProcessingException  {
     if (!Eip712Common.isDomainValid(webDomain)) {
       throw new IllegalArgumentException("Invalid domain");
     }
       // Construct a more compact version of the JSON that is more suited for human reading than the full data
-      String jsonToSign = getEncodedObject(new SignableEip712InternalData(jsonEncodableObject), webDomain);
+      String jsonToSign = getEncodedObject(jsonEncodableObject.getSignableVersion(), webDomain);
       // Sign this compacted version
       EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(jsonToSign, null, 0,
           cryptoFunctions);

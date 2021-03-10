@@ -1,6 +1,7 @@
 package com.alphawallet.attestation.eip712;
 
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -75,5 +76,11 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
       this.address = address;
     }
 
+    @JsonIgnore
+    @Override
+    public AttestationRequestInternalData getSignableVersion() {
+      return new AttestationRequestInternalData(getDescription(), getIdentifier(), getAddress(), Eip712Encoder.computePayloadDigest(getPayload()), getTimestamp());
+    }
   }
+
 }
