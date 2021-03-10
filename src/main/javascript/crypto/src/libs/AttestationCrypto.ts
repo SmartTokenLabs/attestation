@@ -23,6 +23,7 @@ export class AttestationCrypto {
     rand: bigint;
     static OID_SIGNATURE_ALG: string = "1.2.840.10045.2.1";
     private curveOrderBitLength: bigint = 254n;
+    static BYTES_IN_DIGEST: number = 256 / 8;
     constructor() {
         this.rand = this.makeSecret();
         // if (mod(CURVE_BN256.P,4n) != 3n) {
@@ -220,11 +221,11 @@ export class AttestationCrypto {
      * @param randomness The randomness used in the commitment
      * @return
      */
-    public computeAttestationProof(randomness: bigint): FullProofOfExponent {
+    public computeAttestationProof(randomness: bigint, nonce: Uint8Array = new Uint8Array([])): FullProofOfExponent {
         // Compute the random part of the commitment, i.e. H^randomness
         let riddle: Point = Pedestren_H.multiplyDA(randomness);
         let challengeList: Point[] = [Pedestren_H, riddle];
-        return this.constructSchnorrPOK(riddle, randomness, challengeList);
+        return this.constructSchnorrPOK(riddle, randomness, challengeList, nonce);
     }
     /**
      * Compute a proof that commitment1 and commitment2 are Pedersen commitments to the same message and that the user
@@ -245,14 +246,14 @@ export class AttestationCrypto {
      * @param randomness2 The randomness used in commitment2
      * @return
      */
-    public computeEqualityProof(commitment1:string, commitment2: string, randomness1:bigint, randomness2:bigint):UsageProofOfExponent {
+    public computeEqualityProof(commitment1:string, commitment2: string, randomness1:bigint, randomness2:bigint, nonce: Uint8Array = new Uint8Array([])):UsageProofOfExponent {
         let comPoint1: Point = Point.decodeFromHex(commitment1, CURVE_BN256);
         let comPoint2: Point = Point.decodeFromHex(commitment2, CURVE_BN256);
         // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
         let riddle: Point = comPoint1.subtract(comPoint2);
         let exponent: bigint = mod(randomness1 - randomness2, CURVE_BN256.n);
         let challengeList: Point[] = [Pedestren_H, comPoint1, comPoint2];
-        return this.constructSchnorrPOK(riddle, exponent, challengeList).getUsageProofOfExponent();
+        return this.constructSchnorrPOK(riddle, exponent, challengeList, nonce).getUsageProofOfExponent();
     }
     /**
      * Constructs a Schnorr proof of knowledge of exponent of a riddle to base H.
@@ -260,17 +261,24 @@ export class AttestationCrypto {
      * The method uses rejection sampling to ensure that the t value is sampled s.t. the
      * challenge will always be less than curveOrder.
      */
-    private constructSchnorrPOK(riddle: Point, exponent: bigint, challengeList: Point[]):FullProofOfExponent {
+    private constructSchnorrPOK(riddle: Point, exponent: bigint, challengePoints: Point[], nonce: Uint8Array):FullProofOfExponent {
         let t: Point;
         let hiding, c, d:bigint;
         // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
         do {
             hiding = this.makeSecret();
             t = Pedestren_H.multiplyDA(hiding);
-            c = this.mapToInteger(this.makeArray(challengeList.concat([t])));
+            // c = this.mapToInteger(this.makeArray(challengeList.concat([t])));
+            c = this.computeChallenge(t, challengePoints, nonce);
         } while (c >= CURVE_BN256.n);
         d = mod(hiding + c * exponent, CURVE_BN256.n);
-        return FullProofOfExponent.fromData(riddle, t, d);
+        return FullProofOfExponent.fromData(riddle, t, d, nonce);
+    }
+    computeChallenge(t: Point, challengeList: Point[], nonce: Uint8Array): bigint {
+        let finalChallengeList = challengeList.concat(t);
+        let challengePointBytes: Uint8Array = this.makeArray(finalChallengeList);
+        let challengeBytes = uint8merge([challengePointBytes, nonce]);
+        return this.mapToInteger(challengeBytes);
     }
 
     /**
@@ -279,7 +287,8 @@ export class AttestationCrypto {
      * @return True if the proof is OK and false otherwise
      */
     public verifyAttestationRequestProof(pok: FullProofOfExponent): boolean  {
-        let c:bigint = this.mapToInteger(this.makeArray([Pedestren_H, pok.getRiddle(), pok.getPoint()]));
+        // let c:bigint = this.mapToInteger(this.makeArray([Pedestren_H, pok.getRiddle(), pok.getPoint()]));
+        let c:bigint = this.computeChallenge(pok.getPoint(),[Pedestren_H, pok.getRiddle()], pok.getNonce());
 
         return this.verifyPok(pok, c);
     }
@@ -292,22 +301,14 @@ export class AttestationCrypto {
      * @param pok The proof to verify
      * @return True if the proof is OK and false otherwise
      */
-    public verifyEqualityProof(commitment1: string, commitment2: string, pok: ProofOfExponentInterface): boolean  {
-        let comPoint1: Point = Point.decodeFromHex(commitment1, CURVE_BN256);
-        let comPoint2: Point = Point.decodeFromHex(commitment2, CURVE_BN256);
-        // Compute the value the riddle should have
-        let riddle: Point = comPoint1.subtract(comPoint2);
-        let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
-        return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallenge()), c);
-    }
-
-    public verifyEqualityProofUint8(commitment1: Uint8Array, commitment2: Uint8Array, pok: ProofOfExponentInterface): boolean  {
+    public verifyEqualityProof(commitment1: Uint8Array, commitment2: Uint8Array, pok: ProofOfExponentInterface): boolean  {
         let comPoint1: Point = Point.decodeFromUint8(commitment1, CURVE_BN256);
         let comPoint2: Point = Point.decodeFromUint8(commitment2, CURVE_BN256);
         // Compute the value the riddle should have
         let riddle: Point = comPoint1.subtract(comPoint2);
-        let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
-        return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallenge()), c);
+        // let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
+        let c: bigint = this.computeChallenge(pok.getPoint(), [Pedestren_H, comPoint1, comPoint2], pok.getNonce());
+        return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallenge(), pok.getNonce()), c);
     }
 
     private verifyPok(pok: FullProofOfExponent, c: bigint): boolean {

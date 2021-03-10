@@ -174,7 +174,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         let result: boolean =
             this.attestableObject.verify()
             && this.att.verify()
-            && this.crypto.verifyEqualityProofUint8(
+            && this.crypto.verifyEqualityProof(
                 this.att.getCommitment(),
                 this.attestableObject.getCommitment(),
                 this.pok
@@ -190,23 +190,26 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
         let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
 
+        console.log('attested');
+        console.log(attested);
+
         let me = new this();
 
         // let attestableObj: T
         me.attestableObject = new attestable();
         me.attestableObject.fromBytes(attested.signedToken, issuerKey);
 
-        me.att = new SignedAttestation(new Uint8Array(attested.attestation), attestorKey);
+        me.att = SignedAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
 
         let pok = new UsageProofOfExponent();
-        pok.fromBytes( attested.proof ) ;
+        pok.fromBytes( new Uint8Array(attested.proof) ) ;
         me.pok = pok;
 
         let attCom: Uint8Array = me.att.getUnsignedAttestation().getCommitment();
         let objCom: Uint8Array = me.attestableObject.getCommitment();
         let crypto = new AttestationCrypto();
 
-        if (!crypto.verifyEqualityProof(uint8tohex(attCom), uint8tohex(objCom), pok)) {
+        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
             throw new Error("The redeem proof did not verify");
         }
 
@@ -227,7 +230,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         let objCom: Uint8Array = this.attestableObject.getCommitment();
         let pok: ProofOfExponentInterface = crypto.computeEqualityProof(uint8tohex(attCom), uint8tohex(objCom), attestationSecret, objectSecret);
 
-        if (!crypto.verifyEqualityProof(uint8tohex(attCom), uint8tohex(objCom), pok)) {
+        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
             throw new Error("The redeem proof did not verify");
         }
         return pok;

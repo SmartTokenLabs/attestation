@@ -1,4 +1,4 @@
-import {hexStringToArray} from "./utils";
+import {hexStringToArray, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {ethers} from "ethers";
 import {recoverTypedSignature_v4, TypedDataUtils} from "eth-sig-util";
@@ -73,9 +73,16 @@ export class SignatureUtility {
     recover public key in format 0x042f196ec33ad04c6... 132chars
      */
     static recoverPublicKeyFromTypedMessageSignature(messageObj: any, signature: string): string {
-        console.log('messageObj');
-        console.log(messageObj);
-        console.log(messageObj.types);
+
+        // console.log('messageObj');
+        // console.log(messageObj);
+        // console.log('JSON.stringify(messageObj)');
+        // console.log(JSON.stringify(messageObj));
+        // console.log('messageObj.types');
+        // console.log(messageObj.types);
+
+        messageObj.message.payload = sha3.keccak256(messageObj.message.payload);
+
         let message, pubKey;
         try {
             message = TypedDataUtils.sign(messageObj);
@@ -121,8 +128,6 @@ export class SignatureUtility {
         //     from: signer
         // },
 
-        console.log('lets SignatureUtility.signEIP712WithBrowserWallet');
-
         try {
             if (!window.ethereum){
                 throw new Error('Please install metamask before.');
@@ -136,12 +141,9 @@ export class SignatureUtility {
             // let u = ethers.utils;
             let provider = new ethers.providers.Web3Provider(window.ethereum);
 
-
             let signer = provider.getSigner();
 
             if (!signer) throw new Error("Active Wallet required");
-
-
 
             let network = await provider.getNetwork();
 
@@ -162,39 +164,27 @@ export class SignatureUtility {
             const dataTypes: { [index: string]: any } = {};
             dataTypes[primaryName] = userDataTypes;
 
-            console.log('lets try to sign data directly');
-            console.log(domainData);
-            console.log(dataTypes);
-            console.log(userDataValues);
+            // hash payload string->hexString to make smaller message to sign
+            let userDataValuesWithHashedPayload = Object.assign({}, userDataValues);
+            userDataValuesWithHashedPayload.payload = sha3.keccak256(userDataValuesWithHashedPayload.payload);
 
+            // this is internal logic, we can use it for debug
+            /*
+            console.log('lets try to sign data directly');
             const populated = await _TypedDataEncoder.resolveNames(domainData, dataTypes, userDataValues, (name: string) => {
                 return window.ethereum.resolveName(name);
             });
-            //
-            console.log('populated');
-            console.log(populated);
 
-            console.log('msgParams stringified');
             let typedMsg = _TypedDataEncoder.getPayload(populated.domain, dataTypes, populated.value);
             let msgParams = JSON.stringify(typedMsg);
-            console.log(msgParams);
 
-            // console.log('msgParams');
-            // console.log(msgParams);
-            console.log(userAddresses[0].toLowerCase());
             let directlySigned = await window.ethereum.send("eth_signTypedData_v4", [
                  userAddresses[0].toLowerCase(), msgParams
             ]);
-            console.log('directlySigned');
-            console.log(directlySigned);
-            let signature = directlySigned.result;
+            let signatureD = directlySigned.result;
+            */
 
-            // console.log('lets await signer._signTypedData');
-            // console.log(domainData);
-            // console.log(dataTypes);
-            // console.log(userDataValues);
-            // let signature = await signer._signTypedData(domainData, dataTypes, userDataValues);
-
+            let signature = await signer._signTypedData(domainData, dataTypes, userDataValuesWithHashedPayload);
 
             let completeData: { [index: string]: any } = {
                 domain: domainData,
@@ -208,10 +198,6 @@ export class SignatureUtility {
             completeData.types[primaryName] = dataTypes[primaryName];
 
             let dataStringified = JSON.stringify(completeData);
-
-            console.log('complete dataStringified');
-            console.log(dataStringified);
-
             let externalAuthenticationData: { [index: string]: string | number } = {
                 signatureInHex: signature,
                 jsonRpc: Eip712Data['JSON_RPC_VER'],

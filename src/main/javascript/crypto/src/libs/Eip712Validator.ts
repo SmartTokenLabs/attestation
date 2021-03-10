@@ -51,8 +51,9 @@ export class Eip712Validator {
             let eip712Domain = authenticationRootNode.domain;
             let eip712Message = authenticationRootNode.message;
 
-            // console.log(eip712Domain);
-            // console.log(eip712Message);
+            console.log('eip712Domain');
+            console.log(eip712Domain);
+            console.log(eip712Message);
 
             let attestedObject = this.retrieveAttestedObject(eip712Message);
             //
@@ -76,12 +77,15 @@ export class Eip712Validator {
         let issuerKey = KeyPair.publicFromBase64(XMLconfigData.base64senderPublicKey);
 
         let decodedAttestedObject = AttestedObject.fromBytes(new Uint8Array(hexToBuf(attestedObjectHex)), UseToken, attestorKey, Ticket, issuerKey);
-
         return decodedAttestedObject;
     }
 
     public verifySignature(signedJsonInput: string, pkAddress: string): boolean {
         // TODO implement
+
+        // console.log('signedJsonInput');
+        // console.log(signedJsonInput);
+        // console.log(pkAddress);
 
         let tokenData = JSON.parse(signedJsonInput);
         let signatureInHex = tokenData.signatureInHex;
@@ -90,8 +94,8 @@ export class Eip712Validator {
         let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
         let userKey = KeyPair.fromPublicHex(publicKey.substr(2));
 
-        console.log('userKey.getAddress()');
-        console.log(userKey.getAddress());
+        console.log('publicKey: ' + publicKey);
+        console.log('userKey.getAddress(): ' + userKey.getAddress());
 
         if (pkAddress.toLowerCase() !== jsonSigned.message.address.toLowerCase()){
             return false;

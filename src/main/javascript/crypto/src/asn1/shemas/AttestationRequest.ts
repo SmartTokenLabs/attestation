@@ -1,10 +1,11 @@
 import { AsnProp, AsnPropTypes } from "@peculiar/asn1-schema";
-import {SubjectPublicKeyInfo} from "./AttestationFramework";
+
 import {Proof} from "./ProofOfExponentASN";
 
 // IdentifierType ::= INTEGER { email(0), phone(1)}
 
-class IdentityPayload {
+// class IdentityPayload {
+export class Identity {
 
     @AsnProp({ type: AsnPropTypes.Integer })
     public type: number;
@@ -14,14 +15,14 @@ class IdentityPayload {
 
 }
 
-export class Identity {
-
-    @AsnProp({ type: IdentityPayload })
-    public identityPayload: IdentityPayload;
-
-    @AsnProp({ type: SubjectPublicKeyInfo })
-    public publicKey: SubjectPublicKeyInfo;
-
-}
+// export class Identity {
+//
+//     @AsnProp({ type: IdentityPayload })
+//     public identityPayload: IdentityPayload;
+//
+//     @AsnProp({ type: SubjectPublicKeyInfo })
+//     public publicKey: SubjectPublicKeyInfo;
+//
+// }
 
 

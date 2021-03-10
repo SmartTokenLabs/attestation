@@ -10,6 +10,8 @@ import {base64toBase64Url, base64ToUint8array, hexStringToArray, uint8arrayToBas
 import {TypedDataUtils} from "eth-sig-util";
 import {recoverPublicKey} from "ethers/lib/utils";
 // import { recoverTypedSignature_v4 } from 'eth-sig-util'
+const d = require('datejs');
+let sha3 = require("js-sha3");
 
 export class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
     private jsonEncoding: string;
@@ -42,7 +44,7 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     pok: FullProofOfExponent) {
         this.setDomain(attestorDomain);
 
-        this.attestationRequest = AttestationRequest.fromTypeAndPok(type,pok);
+        this.attestationRequest = AttestationRequest.fromData(type,pok);
 
         console.log('lets this.makeToken(identifier)');
         this.jsonEncoding = await this.makeToken(identifier);
@@ -57,6 +59,9 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     }
 
     fillJsonData(json: string){
+        if (!json) throw new Error('Empty json');
+
+        this.jsonEncoding = json;
         let tokenData = JSON.parse(json);
         let signatureInHex = tokenData.signatureInHex;
 
@@ -66,10 +71,13 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
         let publicKey, requestorKeys;
 
-        // console.log('public key should appear here:');
         try {
             publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
-            requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
+
+            console.log('restored address: ' + KeyPair.fromPublicHex(publicKey.substr(2)).getAddress());
+
+            // requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
+
         } catch (e){
             let m = "Recover Address failed with error:" + e;
             console.log(m)
@@ -77,11 +85,8 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
             return false;
         }
 
-
         if (!this.attestationRequest){
-            this.attestationRequest = AttestationRequest.fromBytes(base64ToUint8array( this.data.payload),requestorKeys);
-        } else {
-            this.attestationRequest.setKeys(requestorKeys);
+            this.attestationRequest = AttestationRequest.fromBytes(base64ToUint8array( this.data.payload));
         }
 
         this.constructorCheck();
@@ -111,9 +116,13 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         }
 
         let userData = {
-            payload: base64toBase64Url(uint8arrayToBase64(new Uint8Array(hexStringToArray(this.attestationRequest.getUnsignedEncoding())))),
+            payload: base64toBase64Url(uint8arrayToBase64(new Uint8Array(hexStringToArray(this.attestationRequest.getDerEncoding())))),
             description: Eip712AttestationRequest.Eip712UserDataDescription,
-            timestamp: new Date().getTime(),
+            // timestamp: new Date().getTime(),
+
+            // TODO fix hardcoded timezone
+            // timestamp: Date.today().toString("yyyy.MM.dd HH:mm:ss 000 EET"),
+            timestamp: "yyyy.MM.dd HH:mm:ss 000 EET",
             identifier: identifier,
             address: userAddress[0],
         };
@@ -134,13 +143,13 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         if (!this.attestationRequest.verify()) {
             return false;
         }
+        // console.log('lets verifySignature: ');
         if (!this.verifySignature(this.jsonEncoding, this.data.address)) {
             return false;
         }
-        if (!this.verifyDomainData()) {
-            return false;
-        }
-        return true;
+        // console.log('lets verifyDomainData: ');
+        return this.verifyDomainData();
+
     }
 
     public verifyDomainData(): boolean{
@@ -152,8 +161,9 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
         return (this.data.description === Eip712AttestationRequest.Eip712UserDataDescription)
          && this.verifyTimeStamp(this.data.timestamp)
-         && (this.data.address.toUpperCase() ===
-             this.attestationRequest.getKeys().getAddress().toUpperCase());
+        // TODO fix it
+         // && (this.data.address.toUpperCase() ===
+         //     this.attestationRequest.getKeys().getAddress().toUpperCase());
     }
 
     private verifyTimeStamp( timestamp: number): boolean {
@@ -178,8 +188,8 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         return this.attestationRequest.getPok();
     }
 
-    public getKeys(): KeyPair {
-        return this.attestationRequest.getKeys();
-    }
+    // public getKeys(): KeyPair {
+    //     return this.attestationRequest.getKeys();
+    // }
 
 }

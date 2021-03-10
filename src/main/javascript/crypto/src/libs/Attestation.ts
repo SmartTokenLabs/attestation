@@ -208,4 +208,8 @@ export class Attestation {
         //     throw new RuntimeException(e);
         // }
     }
+
+    public getSigningAlgorithm() {
+        return this.signingAlgorithm;
+    }
 }

@@ -1,4 +1,5 @@
 import {CURVE_BN256, CURVE_SECP256k1} from "./Point";
+let sha3 = require("js-sha3");
 
 export function stringToHex(str: string) {
     var hex = '';
@@ -201,4 +202,17 @@ export function uint8toBuffer(uint8: Uint8Array): any {
         return uint8;
     }
 }
+// TODO unit test it
+export function getInt64Bytes(x: number) {
+    let y= Math.floor(x/2**32);
+    return new Uint8Array( [y,(y<<8),(y<<16),(y<<24), x,(x<<8),(x<<16),(x<<24)].map(z=> z>>>24) );
+}
 
+export function hashStringTo32bytesUint8(str: string): Uint8Array {
+    return hashUint8To32bytesUint8(Uint8Array.from( stringToArray(str)));
+}
+
+export function hashUint8To32bytesUint8(data: Uint8Array): Uint8Array{
+    let arr: number[] = Array.from(data);
+    return uint8merge([new Uint8Array(32), new Uint8Array(hexStringToArray(sha3.keccak256(arr)))]).slice(-32);
+}
