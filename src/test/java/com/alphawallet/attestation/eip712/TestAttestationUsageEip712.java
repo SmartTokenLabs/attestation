@@ -3,7 +3,6 @@ package com.alphawallet.attestation.eip712;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,9 +15,8 @@ import com.alphawallet.attestation.UseAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alphawallet.attestation.core.URLUtility;
+import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -35,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.eip712.Eip712Test;
 
 public class TestAttestationUsageEip712 {
   private static final String DOMAIN = "https://www.hotelbogota.com";
@@ -112,16 +112,18 @@ public class TestAttestationUsageEip712 {
   public void eipEncoding() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    String json = request.getJsonEncoding();
-    ObjectMapper mapper = new ObjectMapper();
-    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder();
-    JsonNode message = mapper.readTree(mapper.readTree(json).get("jsonSigned").asText()).get("message");
-    // Verify that all elements in the message got encoded
-    for (Entry currentEntry : encoder.getTypes().get(encoder.getPrimaryName())) {
-      JsonNode node = message.get(currentEntry.getName());
-      assertNotNull(node);
-      assertTrue(node.asText().length() > 0);
-    }
+    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(), request.getJsonEncoding());
+  }
+
+  @Test
+  public void eipSignableEncoding() throws Exception {
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    AttestationUsageData data = new AttestationUsageData(
+        Eip712AttestationUsageEncoder.USAGE_VALUE,
+        MAIL, URLUtility.encodeData(usage.getDerEncoding()), Clock.systemUTC().millis());
+    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(userSigningKey, new Eip712AttestationUsageEncoder());
+    String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN, 0);
+    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(), json);
   }
 
   @Test

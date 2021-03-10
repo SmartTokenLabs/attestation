@@ -27,6 +27,7 @@ import org.devcon.ticket.Ticket;
 import org.devcon.ticket.TicketDecoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.tokenscript.eip712.Eip712Test;
 import org.tokenscript.eip712.FullEip712InternalData;
 
 public class EIP712AuthenticationTest {
@@ -76,6 +77,13 @@ public class EIP712AuthenticationTest {
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
     assertTrue(validator.validateRequest(token));
+  }
+
+  @Test
+  public void eipEncoding() throws Exception {
+    AttestedObject attestedTicket = makeAttestedTicket();
+    String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
+    Eip712Test.validateEncoding(authenticator, token);
   }
 
   @Test

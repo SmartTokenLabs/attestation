@@ -30,6 +30,16 @@ public class Eip712Test {
   private static Eip712Encoder encoder;
   private static ObjectMapper mapper;
 
+  public static void validateEncoding(Eip712Encoder encoder, String signedJson) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    JsonNode message = mapper.readTree(mapper.readTree(signedJson).get("jsonSigned").asText()).findPath("message");
+    // Verify that all elements in the message got encoded
+    for (Entry currentEntry : encoder.getTypes().get(encoder.getPrimaryName())) {
+      JsonNode node = message.get(currentEntry.getName());
+      assertNotNull(node);
+      assertTrue(node.asText().length() > 0);
+    }
+  }
   @BeforeAll
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
@@ -58,15 +68,9 @@ public class Eip712Test {
   @Test
   public void eipEncoding() throws Exception {
     String json = issuer.buildSignedTokenFromJsonObject(testObject, testDomain, 0);
-    TestEncoder encoder = new TestEncoder();
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode message = mapper.readTree(mapper.readTree(json).get("jsonSigned").asText()).findPath("message");
-    // Verify that all elements in the message got encoded
-    for (Entry currentEntry : encoder.getTypes().get(encoder.getPrimaryName())) {
-      JsonNode node = message.get(currentEntry.getName());
-      assertNotNull(node);
-      assertTrue(node.asText().length() > 0);
-    }
+    validateEncoding(new TestEncoder(), json);
+    String jsonSignable = issuer.buildSignedTokenFromJsonObject(testObject.getSignableVersion(), testDomain, 0);
+    validateEncoding(new TestEncoder(), jsonSignable);
   }
 
   @Test
