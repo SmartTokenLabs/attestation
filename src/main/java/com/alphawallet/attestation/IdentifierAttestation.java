@@ -13,6 +13,7 @@ import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
@@ -24,6 +25,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     EMAIL
   }
 
+  // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
+  public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
+
   /**
    * Constructs a new identifier attestation based on a secret.
    * You still need to set the optional fields, that is
@@ -34,7 +38,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super.setVersion(18); // Our initial version
     super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
     // Set default signing algorithm, but it is not final and can be changed
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -53,7 +57,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    // Set default signing algorithm, but it is not final and can be changed
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);

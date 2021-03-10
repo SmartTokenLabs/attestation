@@ -33,7 +33,7 @@ public class SignedIdentityAttestationTest {
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
-    assertTrue(SignatureUtility.verify(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
+    assertTrue(SignatureUtility.verifySHA256(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
   }
 
@@ -41,7 +41,7 @@ public class SignedIdentityAttestationTest {
   public void testDecoding() throws Exception {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.TEN, "someOther@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
-    assertTrue(SignatureUtility.verify(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
+    assertTrue(SignatureUtility.verifySHA256(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
     byte[] signedEncoded = signed.getDerEncoding();
     SignedIdentityAttestation newSigned = new SignedIdentityAttestation(signedEncoded, issuerKeys.getPublic());

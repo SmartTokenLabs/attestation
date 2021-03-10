@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -15,13 +14,12 @@ import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class HelperTest {
-  public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
       BigInteger secret, String mail) {
@@ -40,15 +38,10 @@ public class HelperTest {
 
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
       AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
-    try {
-      IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
-      att.setSigningAlgorithm(
-          SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerPublicKey).getAlgorithm());
-      assertTrue(att.checkValidity());
-      return att;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
+    assertTrue(att.checkValidity());
+    assertTrue(issuerPublicKey instanceof ECPublicKeyParameters);
+    return att;
   }
 
   /* the unsigned x509 attestation will have a subject of "CN=0x2042424242424564648" */
@@ -56,15 +49,13 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(2); // =v3 since counting starts from 0
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
+    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM); // ECDSA with SHA256 which is needed for a proper x509
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-    spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2")),  // ECDSA with SHA256 which is needed for a proper x509
-        spki.getPublicKeyData());
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
     extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
@@ -80,7 +71,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
@@ -101,7 +92,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
     att.setDataObject(new DERSequence(dataObject));
