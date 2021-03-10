@@ -14,6 +14,9 @@ public abstract class Eip712Encoder {
   public static final String UINT256 = "uint256";
   public static final String ADDRESS = "address";
 
+  public static final String EIP712DOMAIN = "EIP712Domain";
+  public static final Entry SALT_DOMAIN_ENTRY = new Entry("salt", BYTES32);
+
   public static final String TIMESTAMP_NAME = "timestamp";
   public static final String DESCRIPTION_NAME = "description";
   public static final String PAYLOAD_NAME = "payload";
@@ -34,7 +37,6 @@ public abstract class Eip712Encoder {
     domainContent.add(new Entry("version", STRING));
 //  domainContent.add(new Entry("chainId", UINT256));
 //  domainContent.add(new Entry("verifyingContract", ADDRESS));
-    domainContent.add(new Entry("salt", BYTES32));
     types.put("EIP712Domain", domainContent);
     return types;
   }
