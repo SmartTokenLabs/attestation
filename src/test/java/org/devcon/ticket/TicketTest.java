@@ -29,7 +29,7 @@ public class TicketTest {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("48646");
   private static final int TICKET_CLASS = 0; // Regular ticket
-  private static final int CONFERENCE_ID = 6;
+  private static final String CONFERENCE_ID = "6.Ø"; // Ensure it can handle utf8
   private static final BigInteger SECRET = new BigInteger("546048445646851568430134455064804806");
 
   private static AsymmetricCipherKeyPair senderKeys;
@@ -47,11 +47,22 @@ public class TicketTest {
   }
 
   @Test
+  public void sunshine() throws Exception {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    assertEquals(TICKET_ID, ticket.getTicketId());
+    assertEquals(TICKET_CLASS, ticket.getTicketClass());
+    assertEquals(CONFERENCE_ID, ticket.getDevconId());
+    SubjectPublicKeyInfo ticketSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(ticket.getPublicKey());
+    SubjectPublicKeyInfo senderSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic());
+    assertArrayEquals(senderSpki.getEncoded(), ticketSpki.getEncoded());
+  }
+
+  @Test
   public void testTicketURLSunshine() throws IOException  {
     BigInteger ticketID = new BigInteger("417541561854");
     int ticketClass = 0; // Regular Ticket
     BigInteger senderSecret = new BigInteger("45845870684");
-    Ticket ticket = new Ticket("mah@mah.com", 6, ticketID, ticketClass, senderKeys, senderSecret);
+    Ticket ticket = new Ticket("mah@mah.com", "6", ticketID, ticketClass, senderKeys, senderSecret);
 
     String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
 
@@ -79,7 +90,7 @@ public class TicketTest {
     BigInteger ticketID = new BigInteger("14840860468475837258758376");
     int ticketClass = 1; // VIP ticket
     BigInteger senderSecret = new BigInteger("186416");
-    Ticket ticket = new Ticket("ticket@test.ts", 6, ticketID, ticketClass, senderKeys, senderSecret);
+    Ticket ticket = new Ticket("ticket@test.ts", "6", ticketID, ticketClass, senderKeys, senderSecret);
     String url = URLUtility.encodeData(ticket.getDerEncoding());
     Ticket newTicket =  (new TicketDecoder(senderKeys.getPublic())).decode(URLUtility.decodeData(url));
     String newUrl = URLUtility.encodeData(newTicket.getDerEncoding());
