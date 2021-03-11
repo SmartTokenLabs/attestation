@@ -53,7 +53,6 @@ public class SignedIdentityAttestationTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.TEN, "some@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     assertThrows(IllegalArgumentException.class, () ->  new SignedIdentityAttestation(signed.getDerEncoding(), subjectKeys.getPublic()));
-
   }
   
 }

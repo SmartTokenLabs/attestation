@@ -54,5 +54,5 @@ public abstract class Eip712Encoder {
   public abstract String getSalt();
 
   // Timestamp with millisecond accuracy and timezone info
-  public static final SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy.MM.dd 'at' HH:mm:ss.SSS z");
+  public static final SimpleDateFormat timestampFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z");
 }
