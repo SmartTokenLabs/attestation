@@ -120,7 +120,6 @@ task packageAttestation(type: Jar) {
            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
            || it.relativePath.pathString.startsWith('id/attestation')
-           || it.relativePath.pathString.startsWith('org')
            || it.relativePath.pathString.startsWith('dk')){
             return true
         }
