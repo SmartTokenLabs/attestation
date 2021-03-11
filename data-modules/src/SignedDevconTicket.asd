@@ -22,9 +22,12 @@
     <namedType name="DevconTicket">
         <type>
             <sequence>
-                <element name="devconId" type="asnx:INTEGER"/>
+                <element name="devconId" type="asnx:UTF8String"/>
                 <element name="ticketId" type="asnx:INTEGER"/>
                 <element name="ticketClass" type="asnx:INTEGER"/>
+                <!-- (currently not specified)
+                <element name="co2_token" type="asnx:OCTET-STRING"/>
+                -->
             </sequence>
         </type>
     </namedType>

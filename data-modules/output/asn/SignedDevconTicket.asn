@@ -16,9 +16,9 @@ SignedDevconTicket ::= SEQUENCE {
 
 
 DevconTicket ::= SEQUENCE {
-    devconId         INTEGER,
+    devconId         UTF8String,
     ticketId         INTEGER,
-    ticketClass      INTEGER,
+    ticketClass      INTEGER
 --  (currently not specified)      --
 --  co2_token         OCTET STRING --
 }

@@ -29,12 +29,12 @@ public class TicketIssuer {
             System.err.println("Commandline Options:");
             System.err.println("{key.pem}\tPath to the PEM file that contains the issuer private key.");
             System.err.println("{mail}\tThe email address of the ticket owner.");
-            System.err.println("{devconID}\tAn integer which is 6 for Devcon 6.");
+            System.err.println("{devconID}\tA string representing the Devcon ID.");
             System.err.println("{ticketID}\tAn integer ticket ID.");
             System.err.println("{ticketClass}\tAn integer representing the ticket class.");
         } else {
             String mail = args[1];
-            int devconID = Integer.parseInt(args[2]);
+            String devconID = args[2];
             BigInteger ticketID = new BigInteger(args[3]);
             int ticketClass = Integer.parseInt(args[4]);
             Path keyFile = Paths.get(args[0]);
