@@ -15,14 +15,4 @@ export class Identity {
 
 }
 
-// export class Identity {
-//
-//     @AsnProp({ type: IdentityPayload })
-//     public identityPayload: IdentityPayload;
-//
-//     @AsnProp({ type: SubjectPublicKeyInfo })
-//     public publicKey: SubjectPublicKeyInfo;
-//
-// }
-
 

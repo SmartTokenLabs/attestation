@@ -9,6 +9,7 @@ import {SignatureUtility} from "./SignatureUtility";
 import {base64toBase64Url, base64ToUint8array, hexStringToArray, uint8arrayToBase64} from "./utils";
 import {TypedDataUtils} from "eth-sig-util";
 import {recoverPublicKey} from "ethers/lib/utils";
+import {Nonce} from "./Nonce";
 // import { recoverTypedSignature_v4 } from 'eth-sig-util'
 const d = require('datejs');
 let sha3 = require("js-sha3");
@@ -20,6 +21,7 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     // TODO type it
     private data: any;
     private eip712DomainData: any;
+    private requestorKeys: KeyPair;
 
     static Eip712UserData: {[index: string]:string|number}  = {
         address: '',
@@ -51,6 +53,7 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
         console.log('lets fillJsonData');
         try {
+            // decode JSON and fill publicKey
             this.fillJsonData(this.jsonEncoding);
         } catch (e){
             console.log(e);
@@ -69,14 +72,12 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         this.eip712DomainData = jsonSigned.domain;
         this.data = jsonSigned.message;
 
-        let publicKey, requestorKeys;
+        let publicKey;
 
         try {
             publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
-
-            console.log('restored address: ' + KeyPair.fromPublicHex(publicKey.substr(2)).getAddress());
-
-            // requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
+            this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
+            console.log('restored address: ' + this.requestorKeys.getAddress());
 
         } catch (e){
             let m = "Recover Address failed with error:" + e;
@@ -157,13 +158,12 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
             && (this.eip712DomainData.version === SignatureUtility.Eip712Data['PROTOCOL_VERSION']);
     }
 
-    public checkValidity() {
-
+    public checkValidity(): boolean {
         return (this.data.description === Eip712AttestationRequest.Eip712UserDataDescription)
          && this.verifyTimeStamp(this.data.timestamp)
-        // TODO fix it
-         // && (this.data.address.toUpperCase() ===
-         //     this.attestationRequest.getKeys().getAddress().toUpperCase());
+         && (this.requestorKeys.getAddress().toLowerCase() === this.data.address)
+         && (new Nonce().validateNonce(this.getPok().getNonce(), this.getIdentifier(),
+            this.data.address, this.domain));
     }
 
     private verifyTimeStamp( timestamp: number): boolean {

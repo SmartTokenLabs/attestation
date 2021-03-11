@@ -35,6 +35,7 @@
     "@peculiar/asn1-schema": "^2.0.27",
     "asn1js": "^2.0.26",
     "crypto": "^1.0.1",
+    "datejs": "^1.0.0-rc3",
     "elliptic": "^6.5.3",
     "eth-sig-util": "^3.0.1",
     "ethers": "^5.0.31",

@@ -31,7 +31,7 @@ export class AttestationRequest {
 
     getDerEncoding(){
         let res = Asn1Der.encode('INTEGER',this.type) +
-            this.pok.encoding;
+            this.pok.getDerEncoding();
         return Asn1Der.encode('SEQUENCE_30',res);
     }
 

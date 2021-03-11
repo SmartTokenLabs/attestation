@@ -4,10 +4,7 @@ import {UseToken} from "../asn1/shemas/UseToken";
 import {XMLconfigData} from "../data/tokenData";
 import {KeyPair} from "./KeyPair";
 import {Ticket} from "../Ticket";
-import {SignatureUtility} from "./SignatureUtility";
-// const { URL } = require('url');
-// const { Url } = require('url');
-// const {URL} = require('url')
+import {Eip712DomainInterface, SignatureUtility} from "./SignatureUtility";
 const url = require('url');
 
 export class Eip712Validator {
@@ -56,10 +53,10 @@ export class Eip712Validator {
             console.log(eip712Message);
 
             let attestedObject = this.retrieveAttestedObject(eip712Message);
-            //
-            // boolean accept = true;
-            // accept &= validateDomain(eip712Domain);
-            // accept &= validateAuthentication(auth);
+
+            // TODO implement
+            return this.validateDomain(eip712Domain)
+            // && this.validateAuthentication(auth);
             // accept &= verifySignature(authenticationData, attestedObject.getUserPublicKey());
             // accept &= validateAttestedObject(attestedObject);
             // return accept;
@@ -68,6 +65,14 @@ export class Eip712Validator {
             console.error(e);
             return false;
         }
+    }
+
+    // TODO
+    // public boolean verifyTimeStamp(String timestamp) {
+
+    validateDomain(domainToCheck: Eip712DomainInterface): boolean {
+        return (domainToCheck.name.toLowerCase() === this.domain.toLowerCase())
+        && (domainToCheck.version === SignatureUtility.Eip712Data['PROTOCOL_VERSION']);
     }
 
     retrieveAttestedObject(auth: any){
@@ -103,4 +108,7 @@ export class Eip712Validator {
         return true;
 
     }
+
+    // TODO check all methods
+    // Eip712Validator.java
 }

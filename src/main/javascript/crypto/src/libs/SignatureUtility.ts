@@ -1,18 +1,24 @@
-import {hexStringToArray, uint8tohex} from "./utils";
+import {hexStringToArray} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {ethers} from "ethers";
-import {recoverTypedSignature_v4, TypedDataUtils} from "eth-sig-util";
+import {TypedDataUtils} from "eth-sig-util";
 // let ethUtils = require("eth-sig-util");
 // ethUtils.re
-import {_TypedDataEncoder} from "@ethersproject/hash";
 import {recoverPublicKey} from "ethers/lib/utils";
 import {AttestationCrypto} from "./AttestationCrypto";
+
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
 
 let sha3 = require("js-sha3");
 
-
+export interface Eip712DomainInterface {
+    name: string,
+    version: string,
+    chainId?: number,
+    verifyingContract?: string,
+    salt?: string
+}
 
 export class SignatureUtility {
     // static Eip712Types: {[index: string]:string}  = {
@@ -210,5 +216,14 @@ export class SignatureUtility {
             console.error('Cant sign eip712 data. Error: '+ e);
             return '';
         }
+    }
+
+    static getChainIdFromSignature(signature: string):number {
+        let recoveryByte: number = Number("0x" + signature.substr(-2));
+        if (recoveryByte == 27 || recoveryByte == 28) {
+            return 0;
+        }
+        // recovery byte is chainId * 2 + 35 for chainId >= 1
+        return (recoveryByte - 35) >> 1;
     }
 }
