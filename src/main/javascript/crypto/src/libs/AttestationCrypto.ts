@@ -348,4 +348,8 @@ export class AttestationCrypto {
     //     return lhs.equals(rhs);
     // }
 
+    static hashWithKeccak(data: Uint8Array): Uint8Array {
+        return sha3.keccak256(data);
+    }
+
 }

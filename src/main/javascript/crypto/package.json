@@ -40,6 +40,7 @@
     "eth-sig-util": "^3.0.1",
     "ethers": "^5.0.31",
     "js-sha3": "^0.8.0",
+    "jsonwebtoken": "^8.5.1",
     "url": "^0.11.0"
   }
 }
