@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import org.bouncycastle.util.encoders.Hex;
 
 public abstract class Eip712Encoder {
@@ -54,5 +55,5 @@ public abstract class Eip712Encoder {
   public abstract String getSalt();
 
   // Timestamp with millisecond accuracy and timezone info
-  public static final SimpleDateFormat timestampFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z");
+  public static final SimpleDateFormat timestampFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
 }
