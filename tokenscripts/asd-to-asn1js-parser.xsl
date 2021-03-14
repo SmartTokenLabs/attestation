@@ -227,14 +227,13 @@ export class <xsl:value-of select="@name"/> {
 	  <xsl:choose>
 		<xsl:when test="@type = ('asnx:INTEGER')">
 		if ("<xsl:value-of select="@name"/>" in asn1.result) {
-		  const <xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex;
+		  <!-- const <xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex; -->
 		  this.<xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex;
 		}
 		</xsl:when>
 		<xsl:when test="@type = 'asnx:UTF8String'">
 		if ("<xsl:value-of select="@name"/>" in asn1.result) {
-		  const <xsl:value-of select="@name"/> = asn1.result.<xsl:value-of select="@name"/>;
-		  this.<xsl:value-of select="@name"/> = <xsl:value-of select="@name"/>.valueBlock.value;
+		  this.<xsl:value-of select="@name"/> = asn1.result.<xsl:value-of select="@name"/>.valueBlock.value;
 		}
 		</xsl:when>
 		<xsl:when test="starts-with(@type, 'asnx:') or parent::optional">

@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from 'fs';
 
 // testing SignedDevconTicket
-import { SignedDevconTicket } from "../../main/javascript/SignedDevonTicket.js";
+import { SignedDevconTicket } from "../../main/javascript/SignedDevconTicket.js";
 //import {AttestationCrypto} from "../../main/javascript/crypto_js/lib/AttestationCrypto.js";
 //import {ATTESTATION_TYPE} from "../../main/javascript/crypto_js/lib/interfaces.js";
 
@@ -28,7 +28,7 @@ console.log(dataobj2.toJSON());
 // get object from magiclink
 const magiclink = readFileSync('build/test-results/mah@mah.com.url', 'utf8')
 let dataobj3 = new SignedDevconTicket(magiclink);
-console.log(dataobj3);
+console.log(dataobj3.toJSON());
 
 
 //get DER from object
