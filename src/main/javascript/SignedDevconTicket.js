@@ -4,7 +4,8 @@ import {
   Integer,
   OctetString,
   Sequence,
-  fromBER
+  fromBER,
+  Utf8String
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
@@ -47,7 +48,7 @@ export class DevconTicket {
     return new Sequence({
       name: names.blockName || "ticket",
       value: [
-        new Integer({
+        new Utf8String({
           name: names.devconId || "devconId",
         }),
         new Integer({
@@ -87,8 +88,9 @@ export class DevconTicket {
     // noinspection JSUnresolvedVariable
 
     if ("devconId" in asn1.result) {
-      const devconId = asn1.result["devconId"].valueBlock._valueHex;
-      this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
+      const devconId = asn1.result.devconId;
+      this.devconId = devconId.valueBlock.value;
+      //this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
     }
 
     if ("ticketId" in asn1.result) {
