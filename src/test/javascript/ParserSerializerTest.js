@@ -3,8 +3,8 @@ import { readFileSync, writeFileSync } from 'fs';
 
 // testing SignedDevconTicket
 import { SignedDevconTicket } from "../../main/javascript/SignedDevonTicket.js";
-import {AttestationCrypto} from "../../main/javascript/crypto_js/lib/AttestationCrypto.js";
-import {ATTESTATION_TYPE} from "../../main/javascript/crypto_js/lib/interfaces.js";
+//import {AttestationCrypto} from "../../main/javascript/crypto_js/lib/AttestationCrypto.js";
+//import {ATTESTATION_TYPE} from "../../main/javascript/crypto_js/lib/interfaces.js";
 
 
 const der = readFileSync('build/test-results/signed-devcon-ticket.der');

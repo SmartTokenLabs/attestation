@@ -175,6 +175,11 @@ export class <xsl:value-of select="@name"/> {
       value: [
 		<xsl:for-each select="type/sequence//element">
 		<xsl:choose>
+		<xsl:when test="f:lower-case(@type) = 'asnx:utf8string'">
+		new Utf8String({
+			name: names.<xsl:value-of select="@name"/> || "<xsl:value-of select="@name"/>",
+		})
+		</xsl:when>
 		<xsl:when test="starts-with(@type, 'asnx:')">
 		new <xsl:value-of select="f:asd2asn1js-data-type(substring-after(@type, 'asnx:'))"/>({
 			name: names.<xsl:value-of select="@name"/> || "<xsl:value-of select="@name"/>",
@@ -224,6 +229,12 @@ export class <xsl:value-of select="@name"/> {
 		if ("<xsl:value-of select="@name"/>" in asn1.result) {
 		  const <xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex;
 		  this.<xsl:value-of select="@name"/> = asn1.result["<xsl:value-of select="@name"/>"].valueBlock._valueHex;
+		}
+		</xsl:when>
+		<xsl:when test="@type = 'asnx:UTF8String'">
+		if ("<xsl:value-of select="@name"/>" in asn1.result) {
+		  const <xsl:value-of select="@name"/> = asn1.result.<xsl:value-of select="@name"/>;
+		  this.<xsl:value-of select="@name"/> = <xsl:value-of select="@name"/>.valueBlock.value;
 		}
 		</xsl:when>
 		<xsl:when test="starts-with(@type, 'asnx:') or parent::optional">

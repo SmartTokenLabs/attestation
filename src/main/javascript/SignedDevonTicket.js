@@ -5,7 +5,8 @@ import {
   OctetString,
   Sequence,
   fromBER,
-  ObjectIdentifier
+  ObjectIdentifier,
+  Utf8String
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import PublicKeyInfo from "./pki_src/PublicKeyInfo.js";
@@ -47,7 +48,7 @@ export class DevconTicket {
     return new Sequence({
       name: names.blockName || "ticket",
       value: [
-        new Integer({
+        new Utf8String({
           name: names.devconId || "devconId",
         }),
         new Integer({
@@ -87,8 +88,9 @@ export class DevconTicket {
     // noinspection JSUnresolvedVariable
 
     if ("devconId" in asn1.result) {
-      const devconId = asn1.result["devconId"].valueBlock._valueHex;
-      this.devconId = asn1.result["devconId"].valueBlock._valueHex;
+      const devconId = asn1.result.devconId;
+      this.devconId = devconId.valueBlock.value;
+      //this.devconId = asn1.result["devconId"].valueBlock._valueHex;
       // this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
     }
 
@@ -143,7 +145,8 @@ export class DevconTicket {
 
   toJSON() {
     const object = {
-      devconId: BigInt("0x" + bufferToHexCodes(this.devconId)),
+      //devconId: BigInt("0x" + bufferToHexCodes(this.devconId)),
+      devconId: this.devconId,
       ticketId: BigInt("0x" + bufferToHexCodes(this.ticketId)),
       ticketClass: BigInt("0x" + bufferToHexCodes(this.ticketClass))
     };
@@ -347,7 +350,7 @@ export class SignedDevconTicket {
     console.log(result.verified);
 
     const signedDevconTicketBER = sequence.toBER(false);
-    return new Uint8Array(signedDevconTicketBER)
+    return new Uint8Array(signedDevconTicketBER);
 
   }
 }
