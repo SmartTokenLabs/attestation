@@ -26,7 +26,6 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -160,7 +159,7 @@ public class Demo {
     byte[] pub = spki.getEncoded();
     DERUtility.writePEM(pub, "PUBLIC KEY", pathPubKey);
     PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(keys.getPrivate());
-    DERUtility.writePEM(privInfo.getEncoded(), "CHEQUE", pathPrivKey);
+    DERUtility.writePEM(privInfo.getEncoded(), "PRIVATE KEY", pathPrivKey);
   }
 
   private static void createCheque(AttestationCrypto crypto, int amount, String receiverId, AttestationType type,
@@ -254,7 +253,8 @@ public class Demo {
     byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
     Attestation att = new IdentifierAttestation(commitment, attestationRequest.getPublicKey());
     att.setIssuer("CN=" + issuerName);
-    att.setSerialNumber(new Random().nextLong());
+    // Serial numbers are usually 20 bytes long, normally positive but expressed in two's complement, hence the -1
+    att.setSerialNumber(new BigInteger(20*8-1, rand));
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));

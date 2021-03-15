@@ -6,6 +6,7 @@ import com.alphawallet.token.entity.SignMessageType;
 import com.alphawallet.token.entity.Signable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import java.math.BigInteger;
 import java.text.ParseException;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -124,12 +125,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     this.version = new ASN1Integer(version);
   }
 
-  public int getSerialNumber() {
-    return serialNumber.getValue().intValueExact();
+  public BigInteger getSerialNumber() {
+    return serialNumber.getValue();
   }
 
-  // TODO change to up-to 20 byte array
-  public void setSerialNumber(long serialNumber) {
+  public void setSerialNumber(BigInteger serialNumber) {
     this.serialNumber = new ASN1Integer(serialNumber);
   }
 

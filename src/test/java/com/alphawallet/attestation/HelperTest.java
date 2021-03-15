@@ -36,7 +36,7 @@ public class HelperTest {
       BigInteger secret, String mail) {
     IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL, key, secret);
     att.setIssuer("CN=ALX");
-    att.setSerialNumber(1);
+    att.setSerialNumber(BigInteger.ONE);
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis() + 3600000)); // Valid for an hour
@@ -50,7 +50,7 @@ public class HelperTest {
   public static Attestation makeUnsignedx509Att(AsymmetricKeyParameter key) throws IOException  {
     Attestation att = new Attestation();
     att.setVersion(2); // =v3 since counting starts from 0
-    att.setSerialNumber(42);
+    att.setSerialNumber(BigInteger.valueOf(42));
     att.setSigningAlgorithm(ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
     att.setIssuer("CN=ALX");
     Date now = new Date();
@@ -74,7 +74,7 @@ public class HelperTest {
   public static Attestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
-    att.setSerialNumber(42);
+    att.setSerialNumber(BigInteger.valueOf(42));
     att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     att.setIssuer("CN=ALX");
     Date now = new Date();
@@ -95,7 +95,7 @@ public class HelperTest {
   public static Attestation makeMinimalAtt() {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
-    att.setSerialNumber(42);
+    att.setSerialNumber(BigInteger.valueOf(42));
     att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));

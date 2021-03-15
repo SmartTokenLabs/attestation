@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -37,8 +38,8 @@ public class AttestationTest {
         Attestation att = new Attestation();
         att.setVersion(19);
         assertEquals(att.getVersion(), 19);
-        att.setSerialNumber(42);
-        assertEquals(att.getSerialNumber(), 42);
+        att.setSerialNumber(new BigInteger("42468486410864084823058"));
+        assertEquals(att.getSerialNumber(), new BigInteger("42468486410864084823058"));
         att.setIssuer("CN=ALX");
         assertEquals(att.getIssuer(), "CN=ALX");
         Date now = new Date();
