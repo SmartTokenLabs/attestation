@@ -6,18 +6,21 @@ import {AttestationRequest} from "./AttestationRequest";
 import {KeyPair} from "./KeyPair";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {SignatureUtility} from "./SignatureUtility";
-import {base64toBase64Url, base64ToUint8array, hexStringToArray, uint8arrayToBase64} from "./utils";
-import {TypedDataUtils} from "eth-sig-util";
-import {recoverPublicKey} from "ethers/lib/utils";
+import {
+    base64toBase64Url,
+    base64ToUint8array,
+    hexStringToArray, hexStringToBase64Url, hexStringToUint8,
+    pemOrBase64Orbase64urlToString,
+    uint8arrayToBase64,
+    uint8tohex
+} from "./utils";
 import {Nonce} from "./Nonce";
-// import { recoverTypedSignature_v4 } from 'eth-sig-util'
-const d = require('datejs');
-let sha3 = require("js-sha3");
 
 export class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
     private jsonEncoding: string;
     private attestationRequest: AttestationRequest;
-    private acceptableTimeLimit: number = 100000;
+    // TODO change to 100000
+    private acceptableTimeLimit: number = 10000000;
     // TODO type it
     private data: any;
     private eip712DomainData: any;
@@ -41,17 +44,16 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     static Eip712UserDataPrimaryName: string = "AttestationRequest";
     static Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
 
-    async addData(attestorDomain: string, identifier: string, type: number,
-    // pok: FullProofOfExponent, requestorKey: KeyPair) {
-    pok: FullProofOfExponent) {
-        this.setDomain(attestorDomain);
+    async addData(attestorDomain: string, identifier: string, request: AttestationRequest) {
+        this.setDomainAndTimout(attestorDomain);
 
-        this.attestationRequest = AttestationRequest.fromData(type,pok);
+        // this.attestationRequest = AttestationRequest.fromData(type,pok);
+        this.attestationRequest = request;
 
-        console.log('lets this.makeToken(identifier)');
         this.jsonEncoding = await this.makeToken(identifier);
 
-        console.log('lets fillJsonData');
+        // console.log('lets fillJsonData');
+        // console.log(this.jsonEncoding);
         try {
             // decode JSON and fill publicKey
             this.fillJsonData(this.jsonEncoding);
@@ -72,18 +74,14 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         this.eip712DomainData = jsonSigned.domain;
         this.data = jsonSigned.message;
 
-        let publicKey;
-
         try {
-            publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
+            let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
             console.log('restored address: ' + this.requestorKeys.getAddress());
-
         } catch (e){
             let m = "Recover Address failed with error:" + e;
             console.log(m)
-            // throw new Error(m);
-            return false;
+            throw new Error(m);
         }
 
         if (!this.attestationRequest){
@@ -102,30 +100,17 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
     async makeToken(identifier: string) {
 
-        if (!window.ethereum){
-            throw new Error('Please install metamask before.');
-        }
-        let userAddress = '';
-        try {
-            // that method doesnt fire metamask connect
-            // userAddress = await window.ethereum.request({ method: 'eth_accounts' });
-            userAddress = await window.ethereum.enable();
-            if (!userAddress || !userAddress.length) throw new Error('Cant see wallet address.');
-        } catch (e){
-            console.log('Cant see wallet address.');
-            throw new Error('Cant see wallet address.');
-        }
+        let userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
+
+        let ts = Date().toString();
+        ts = ts.substr(0, ts.indexOf('(') - 1);
 
         let userData = {
-            payload: base64toBase64Url(uint8arrayToBase64(new Uint8Array(hexStringToArray(this.attestationRequest.getDerEncoding())))),
+            payload: hexStringToBase64Url(this.attestationRequest.getDerEncoding()),
             description: Eip712AttestationRequest.Eip712UserDataDescription,
-            // timestamp: new Date().getTime(),
-
-            // TODO fix hardcoded timezone
-            // timestamp: Date.today().toString("yyyy.MM.dd HH:mm:ss 000 EET"),
-            timestamp: "yyyy.MM.dd HH:mm:ss 000 EET",
+            timestamp: ts,
             identifier: identifier,
-            address: userAddress[0],
+            address: userAddress,
         };
 
 
@@ -144,11 +129,11 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         if (!this.attestationRequest.verify()) {
             return false;
         }
-        // console.log('lets verifySignature: ');
+
         if (!this.verifySignature(this.jsonEncoding, this.data.address)) {
             return false;
         }
-        // console.log('lets verifyDomainData: ');
+
         return this.verifyDomainData();
 
     }
@@ -159,11 +144,27 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     }
 
     public checkValidity(): boolean {
-        return (this.data.description === Eip712AttestationRequest.Eip712UserDataDescription)
-         && this.verifyTimeStamp(this.data.timestamp)
-         && (this.requestorKeys.getAddress().toLowerCase() === this.data.address)
-         && (new Nonce().validateNonce(this.getPok().getNonce(), this.getIdentifier(),
-            this.data.address, this.domain));
+
+        if (this.data.description !== Eip712AttestationRequest.Eip712UserDataDescription) {
+            console.log('Description is not correct');
+            return false;
+        };
+
+        if (!this.verifyTimeStamp(Date.parse(this.data.timestamp))) {
+            console.log('Timelimit expired');
+            return false;
+        };
+
+        if (this.requestorKeys.getAddress().toLowerCase() !== this.data.address.toLowerCase()) {
+            console.log('Keys doesnt fit');
+            return false;
+        };
+
+        if (! (new Nonce().validateNonce(this.getPok().getNonce(), this.getIdentifier(), this.data.address, this.domain))) {
+            console.log('Nonce check failed');
+            return false;
+        };
+        return true;
     }
 
     private verifyTimeStamp( timestamp: number): boolean {
@@ -188,8 +189,8 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
         return this.attestationRequest.getPok();
     }
 
-    // public getKeys(): KeyPair {
-    //     return this.attestationRequest.getKeys();
-    // }
+    public getRequestorKeys(): KeyPair {
+        return this.requestorKeys;
+    }
 
 }

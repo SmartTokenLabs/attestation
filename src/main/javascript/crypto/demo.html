@@ -43,25 +43,43 @@
         let attest = new Attest();
         writeToLog('prepare and sign attestRequest.');
         let secret = BigInt(12345);
+        let receiverId = "test@test.com";
+        let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-        let crypto = new AttestationCrypto();
-        let pok = crypto.computeAttestationProof(secret);
-        await attest.addData('https://devcon.org', 'test@test.com', 0, pok);
+        let attestJson = await Authenticator.requestAttest(receiverId, 0, ATTESTOR_DOMAIN, secret);
+
         writeToLog('attestRequest received:');
-        let attestJson = attest.getJsonEncoding();
+
         writeToLog(attestJson);
 
         writeToLog('create attestation');
 
-        return;
-
-        // let base64ticket = "MIGXMAkCAQYCAW8CAQAEQQQvZiRvuwETD_9d_eDp_4b0o0caeQ9FZ7e8hsxMi7SNsx-xkbfqtaNONRXQzQ1wO95bOVk3BRSdbQBNVLox62pCA0cAMEQCIFavePjptmgxBsVuHp7bZSDxK0ovB8d9URp2VjiGos56AiA9apKTL6Kk74Jgf2H7Mb4EZqlsdwJLXSN23sC6aoRyKg==";
         let base64ticket = "MIGbMA0CAQYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNHADBEAiBwLK_95NPZo0W01HDBfyZisZ2KaNrzoWuxRV-nhjGLMAIgaOP4eVVINH5xM8Cv9OVDdyOG3BxUqyPVQOuDU9PaC9o=";
         // let ticketSecret =45845870611;
         let ticketSecret =45845870684;
 
         writeToLog('base64ticket: ' + base64ticket);
         writeToLog('ticketSecret: ' + ticketSecret);
+
+        let attestorPrivateKey = "-----BEGIN CHEQUE-----\n" +
+            "MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA////////////\n" +
+            "/////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n" +
+            "AAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEE\n" +
+            "eb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio\n" +
+            "/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQ\n" +
+            "NkFBAgEBBIIBVTCCAVECAQEEIIl3HJrX0OAEtiZWlqGDCOtSmpZv5o6kasujb/47\n" +
+            "kGWsoIHjMIHgAgEBMCwGByqGSM49AQECIQD/////////////////////////////\n" +
+            "///////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQg\n" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXO\n" +
+            "hwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7\n" +
+            "ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAATq\n" +
+            "T42Iv5c4koQmBVq+qhJ3Q/VRK1gKWXNDJpJlkuFdoFekKkDYxr5ldiLZJ9+EmIr7\n" +
+            "1Fl6qYxW/gX31q+jgxnQ\n" +
+            "-----END CHEQUE----- ";
+
+        // Authenticator.createAttest(attestorPrivateKey,'AlphaWallet', 60*60*1000, attestJson, ATTESTOR_DOMAIN);
+
+        return;
 
         (new Authenticator()).getAuthenticationBlob({
             ticketBlob: base64ticket,

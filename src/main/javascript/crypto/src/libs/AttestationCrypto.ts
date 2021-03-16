@@ -34,6 +34,7 @@ export class AttestationCrypto {
         }
 
     }
+
     private verifyCurveOrder(curveOrder: bigint): boolean{
         // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
         // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
@@ -286,7 +287,7 @@ export class AttestationCrypto {
      * @param pok The proof to verify
      * @return True if the proof is OK and false otherwise
      */
-    public verifyAttestationRequestProof(pok: FullProofOfExponent): boolean  {
+    public verifyFullProof(pok: FullProofOfExponent): boolean  {
         // let c:bigint = this.mapToInteger(this.makeArray([Pedestren_H, pok.getRiddle(), pok.getPoint()]));
         let c:bigint = this.computeChallenge(pok.getPoint(),[Pedestren_H, pok.getRiddle()], pok.getNonce());
 
@@ -350,6 +351,10 @@ export class AttestationCrypto {
 
     static hashWithKeccak(data: Uint8Array): Uint8Array {
         return sha3.keccak256(data);
+    }
+
+    static hashWithSHA256(data: Uint8Array): Uint8Array {
+        return sha3.sha3_256(data);
     }
 
 }

@@ -1,4 +1,5 @@
 import {
+    ethAddressToUint8,
     getInt64Bytes,
     hashStringTo32bytesUint8,
     hashUint8To32bytesUint8,
@@ -7,44 +8,52 @@ import {
     uint8merge, uint8ToBn, uint8tohex
 } from "./utils";
 import {AttestationCrypto} from "./AttestationCrypto";
+import {SignatureUtility} from "./SignatureUtility";
 
 export class Nonce {
-    static TIMESTAMP_SLACK_MS:number = 60000; // 1 minute
+    // TODO change to 1 minute
+    static TIMESTAMP_SLACK_MS:number = 6000000; // 100 minute
     static LONG_BYTES:number = 8;
     static ADDRESS_BYTES:number = 20;
 
-    ethAddressToUint8(str: string): Uint8Array {
-        // TODO Ensure that the address is valid, since this will throw an exception if not
-        let addr = Uint8Array.from(hexStringToArray(str.substr(2)));
-        if (addr.length != 20) throw new Error('wrong address length');
-        return addr;
-    }
-
-    makeNonce(senderIdentifier: string, address: string, receiverIdentifier: string,otherData: Uint8Array = new Uint8Array([]), timestampInMs: number) {
+    static async makeNonce(senderIdentifier: string, address: string = "", receiverIdentifier: string,otherData: Uint8Array = new Uint8Array([]), timestampInMs: number = 0) {
         // Hash to ensure all variable length components is encoded with constant length
+        if (!address) {
+            address = await SignatureUtility.connectMetamaskAndGetAddress();
+        }
+
+        if (!timestampInMs) {
+            timestampInMs = Date.now();
+        }
+
         return uint8merge([
             getInt64Bytes(timestampInMs),
             hashStringTo32bytesUint8(senderIdentifier),
-            this.ethAddressToUint8(address),
+            ethAddressToUint8(address),
             hashStringTo32bytesUint8(receiverIdentifier),
             hashUint8To32bytesUint8(otherData)
         ]);
     }
 
-    validateNonce(nonce: Uint8Array, senderIdentifier: string, address: string, receiverIdentifier: string, otherData: Uint8Array = new Uint8Array([0])){
+    validateNonce(nonce: Uint8Array, senderIdentifier: string, address: string, receiverIdentifier: string, otherData: Uint8Array = new Uint8Array(0)){
 
         if (!this.validateTimestamp(this.getTimestamp(nonce), Date.now())) {
+            console.log('timestamp check failed');
             return false;
         }
         if (!this.validateSenderIdentifier(nonce, senderIdentifier)) {
+            console.log('validateSenderIdentifier check failed');
             return false;
         }
         if (!this.validateAddress(nonce, address)) {
+            console.log('validateAddress check failed');
             return false;
         }
         if (!this.validateReceiverIdentifier(nonce, receiverIdentifier)) {
+            console.log('validateReceiverIdentifier check failed');
             return false;
         }
+
         return this.validateOtherData(nonce, otherData);
 
     }
@@ -66,7 +75,7 @@ export class Nonce {
     }
 
     validateAddress(nonce: Uint8Array, address: string):boolean {
-        if (uint8tohex(this.ethAddressToUint8(address)).toLowerCase() === uint8tohex(nonce.slice(Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST, Nonce.LONG_BYTES +
+        if (uint8tohex(ethAddressToUint8(address)).toLowerCase() === uint8tohex(nonce.slice(Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST, Nonce.LONG_BYTES +
             AttestationCrypto.BYTES_IN_DIGEST + Nonce.ADDRESS_BYTES)).toLowerCase()) return true;
         return false;
     }

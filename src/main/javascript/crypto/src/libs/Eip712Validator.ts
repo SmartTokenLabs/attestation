@@ -10,6 +10,8 @@ const url = require('url');
 export class Eip712Validator {
     private XMLConfig: any;
     protected domain: string;
+    protected acceptableTimeLimitMs: number;
+    public DEFAULT_TIME_LIMIT_MS = 100000;
 
     constructor() {
         this.XMLConfig = XMLconfigData;
@@ -28,7 +30,8 @@ export class Eip712Validator {
         return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
     };
 
-    setDomain(domain: string){
+    setDomainAndTimout(domain: string, acceptableTimeLimitMs: number = this.DEFAULT_TIME_LIMIT_MS){
+        this.acceptableTimeLimitMs = acceptableTimeLimitMs;
         if (!Eip712Validator.stringIsAValidUrl(domain)) throw new Error('wrong domain');
         this.domain = domain;
     }
@@ -86,11 +89,6 @@ export class Eip712Validator {
     }
 
     public verifySignature(signedJsonInput: string, pkAddress: string): boolean {
-        // TODO implement
-
-        // console.log('signedJsonInput');
-        // console.log(signedJsonInput);
-        // console.log(pkAddress);
 
         let tokenData = JSON.parse(signedJsonInput);
         let signatureInHex = tokenData.signatureInHex;
@@ -99,10 +97,12 @@ export class Eip712Validator {
         let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
         let userKey = KeyPair.fromPublicHex(publicKey.substr(2));
 
-        console.log('publicKey: ' + publicKey);
-        console.log('userKey.getAddress(): ' + userKey.getAddress());
-
         if (pkAddress.toLowerCase() !== jsonSigned.message.address.toLowerCase()){
+            console.log('message.address is not equal pkAddress');
+            return false;
+        }
+        if (pkAddress.toLowerCase() !== userKey.getAddress().toLowerCase()){
+            console.log('Recovered address is not equal pkAddress');
             return false;
         }
         return true;

@@ -7,18 +7,19 @@ import {Attestation} from "./Attestation";
 import {Verifiable} from "./Verifiable";
 import {Validateable} from "./Validateable";
 import {ASNEncodable} from "./ASNEncodable";
+import {Asn1Der} from "./DerUtility";
 
-export class SignedAttestation implements ASNEncodable, Verifiable, Validateable {
-    signature: any;
-    publicKey: any;
-    att: Attestation;
-    commitment: Uint8Array;
+export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
+    private signature: any;
+    private att: Attestation;
+    private commitment: Uint8Array;
     private uint8data: Uint8Array;
     private attestorKeys: KeyPair;
+    static ECDSA_WITH_SHA256 = "1.2.840.10045.4.3.2";
 
     constructor() {}
 
-    static fromBytes(uint8data: Uint8Array, attestorKeys: KeyPair): SignedAttestation {
+    static fromBytes(uint8data: Uint8Array, attestorKeys: KeyPair): SignedIdentityAttestation {
         let me = new this();
         me.uint8data = uint8data;
         me.attestorKeys = attestorKeys;
@@ -28,21 +29,20 @@ export class SignedAttestation implements ASNEncodable, Verifiable, Validateable
 
         me.signature = myAttestation.signatureValue;
         if (!me.verify()) {
-            throw new Error("SignedAttestation signature is not valid");
+            throw new Error("SignedIdentityAttestation signature is not valid");
         }
         return me;
     }
 
-    static fromData(att: Attestation, attestorKeys: KeyPair): SignedAttestation{
+    static fromData(att: Attestation, attestationSigningKey: KeyPair): SignedIdentityAttestation{
         let me = new this();
-        me.attestorKeys = attestorKeys;
+        me.attestorKeys = attestationSigningKey;
         me.att = att;
+        me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
+        // me.signature = SignatureUtility.signDeterministicSHA256(me.att.getPrehash(), attestationSigningKey);
+
         // TODO implement
-        // me.signature = attestorKeys.signBytes(att.getPrehash());
-        // me.attestationVerificationKey = attestorKeys.getPublicKeyAsHexStr();
-        // if (!this.verify()) {
-        //     throw new Error("The signature is not valid");
-        // }
+        // me.constructorCheck(attestationSigningKey);
         return me;
     }
 
@@ -71,6 +71,22 @@ export class SignedAttestation implements ASNEncodable, Verifiable, Validateable
     }
 
     getDerEncoding(): string{
-        return uint8tohex(new Uint8Array(this.uint8data));
+        if (this.uint8data && this.uint8data.length){
+            return uint8tohex(new Uint8Array(this.uint8data));
+        } else {
+            return this.constructSignedAttestation();
+        }
+
     }
+
+    constructSignedAttestation(){
+
+        let rawAtt: Uint8Array = this.att.getPrehash();
+        let res: string = uint8tohex(rawAtt)
+            + Asn1Der.encode('OBJECT_ID', this.att.getSigningAlgorithm())
+            + Asn1Der.encode('BIT_STRING', this.signature);
+
+        return Asn1Der.encode('SEQUENCE_30', res);
+    }
+
 }

@@ -52,7 +52,7 @@ export class SignedInfo {
     @AsnProp({ type: AsnPropTypes.Integer }) public serialNumber: number; // CertificateSerialNumber,
     @AsnProp({ type: AlgorithmIdentifierASN }) public signature: AlgorithmIdentifierASN; // AlgorithmIdentifier,
     @AsnProp({ type: Name }) public issuer:Name; // Name,
-    @AsnProp({ type: ValidityValue }) public validity:ValidityValue; // Validity,
+    @AsnProp({ type: ValidityValue, optional: true }) public validity?:ValidityValue; // Validity,
     @AsnProp({ type: Name }) public subject: Name; //  Name,
     @AsnProp({ type: SubjectPublicKeyInfo }) public subjectPublicKeyInfo: SubjectPublicKeyInfo; // SubjectPublicKeyInfo,
     @AsnProp({ type: SmartContract, optional: true }) public contract?: SmartContract; // contract             SEQUENCE OF SmartContract OPTIONAL,

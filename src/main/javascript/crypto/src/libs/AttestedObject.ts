@@ -1,5 +1,5 @@
 import {AttestationCrypto} from "./AttestationCrypto";
-import {SignedAttestation} from "./SignedAttestation";
+import {SignedIdentityAttestation} from "./SignedIdentityAttestation";
 import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
@@ -21,7 +21,7 @@ declare global {
     }
 }
 
-// TODO public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature,
+// TODO public AttestedObject(T object, SignedIdentityAttestation att, ProofOfExponent pok, byte[] signature,
 //       AsymmetricKeyParameter userPublicKey) {
 export class AttestedObject implements ASNEncodable, Verifiable {
     private crypto: AttestationCrypto;
@@ -31,7 +31,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     private signature: string;
     private encoding: string;
     private attestableObject: any;
-    private att: SignedAttestation;
+    private att: SignedIdentityAttestation;
     private attestationSecret: bigint ;
     private objectSecret: bigint;
     private userPublicKey: Uint8Array;
@@ -59,7 +59,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     create<T extends Attestable>(
         attestableObject: T ,
-        att: SignedAttestation,
+        att: SignedIdentityAttestation,
         attestationSecret: bigint ,
         objectSecret: bigint
     ){
@@ -89,7 +89,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     fromDecodedData<T extends Attestable>(
         attestableObject: T ,
-        att: SignedAttestation,
+        att: SignedIdentityAttestation,
         pok: ProofOfExponentInterface ,
         signature: string
     ){
@@ -103,7 +103,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         let vec = this.preSignEncoded + Asn1Der.encode('BIT_STRING', this.signature)
 
         this.encoding = Asn1Der.encode('SEQUENCE_30', vec);
-        this.userKeyPair = KeyPair.publicFromSubjectPublicKeyInfo(this.att.getUnsignedAttestation().getSubjectPublicKeyInfo());
+        this.userKeyPair = this.att.getUnsignedAttestation().getSubjectPublicKeyInfo();
 
         if (!this.verify()) {
             throw new Error("The redeem request is not valid");
@@ -156,7 +156,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         if (this.signature != null) {
             let spki = this.getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
             try {
-                if (!KeyPair.publicFromSubjectPublicKeyInfo(spki).verifyHexStringWithEthereum(this.unsignedEncoding, this.signature)) {
+                if (!spki.verifyHexStringWithEthereum(this.unsignedEncoding, this.signature)) {
                     console.error("The signature on RedeemCheque is not valid");
                     return false;
                 }
@@ -181,7 +181,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             );
         if (this.signature != null) {
             let spki = this.getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-            return result && KeyPair.publicFromSubjectPublicKeyInfo(spki).verifyHexStringWithEthereum(this.unsignedEncoding, this.signature);
+            return result && spki.verifyHexStringWithEthereum(this.unsignedEncoding, this.signature);
         } else {
             return result;
         }
@@ -199,7 +199,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         me.attestableObject = new attestable();
         me.attestableObject.fromBytes(attested.signedToken, issuerKey);
 
-        me.att = SignedAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
+        me.att = SignedIdentityAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
 
         let pok = new UsageProofOfExponent();
         pok.fromBytes( new Uint8Array(attested.proof) ) ;

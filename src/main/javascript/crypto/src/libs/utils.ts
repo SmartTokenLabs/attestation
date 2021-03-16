@@ -27,6 +27,14 @@ export function hexStringToArray(str: string = '') {
     return arr;
 }
 
+export function hexStringToUint8(str: string = '') {
+    return Uint8Array.from(hexStringToArray(str));
+}
+
+export function hexStringToBase64Url(str: string = ''): string {
+    return base64toBase64Url(uint8arrayToBase64(hexStringToUint8(str)))
+}
+
 export function mod(a: bigint, b: bigint = CURVE_BN256.P): bigint {
     const result = a % b;
     return result >= 0 ? result : b + result;
@@ -103,9 +111,13 @@ export function uint8merge(list : Uint8Array[]): Uint8Array{
     if (list.length === 0) return out;
 
     for (let i = 0; i< list.length; i++){
-        let temp = new Uint8Array(out.length + list[i].length);
+        if (typeof list[i] !== "object" || !list[i].length) {
+            throw new Error('wrong input values');
+        }
+        let toAdd = Uint8Array.from(list[i]);
+        let temp = new Uint8Array(out.length + toAdd.length);
         temp.set(out);
-        temp.set(list[i], out.length);
+        temp.set(toAdd, out.length);
         out = temp;
     }
     return out;
@@ -118,7 +130,9 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
         binary += String.fromCharCode( bytes[ i ] );
     }
 
-    if (typeof Buffer !== 'undefined') {
+
+    // if (typeof Buffer !== 'undefined') {
+    if (typeof window === 'undefined' || !window.btoa) {
         let buff = new Buffer(binary);
         return buff.toString('base64');
     } else {
@@ -156,17 +170,12 @@ export function base64ToUint8array( base64str: string ): Uint8Array {
     base64str = pemOrBase64Orbase64urlToString(base64str);
 
     let res: Uint8Array;
-    if (typeof Buffer !== 'undefined') {
+    // if (typeof Buffer !== 'undefined') {
+    if (typeof window === 'undefined' || !window.atob) {
         res = Uint8Array.from(Buffer.from(base64str, 'base64'));
     } else {
         res = Uint8Array.from(atob(base64str), c => c.charCodeAt(0));
     }
-    // var asciiStr = window.atob( base64str );
-    // let byteArray: number[] = [];
-    // for (var i = 0; i < asciiStr.length; i++) {
-    //     byteArray.push(asciiStr.charCodeAt(i));
-    // }
-    // return Uint8Array.from( byteArray );
     return res;
 }
 
@@ -190,6 +199,7 @@ export function BnPowMod(base: bigint, n: bigint, mod: bigint) {
 }
 
 export function uint8tohex(uint8: Uint8Array): string {
+    if (!uint8 || !uint8.length) return '';
     return Array.from(uint8).map(i => ('0' + i.toString(16)).slice(-2)).join('');
 }
 
@@ -215,4 +225,34 @@ export function hashStringTo32bytesUint8(str: string): Uint8Array {
 export function hashUint8To32bytesUint8(data: Uint8Array): Uint8Array{
     let arr: number[] = Array.from(data);
     return uint8merge([new Uint8Array(32), new Uint8Array(hexStringToArray(sha3.keccak256(arr)))]).slice(-32);
+}
+
+export function ethAddressToUint8(str: string): Uint8Array {
+    // TODO Ensure that the address is valid, since this will throw an exception if not
+    let addr = Uint8Array.from(hexStringToArray(str.substr(2)));
+    if (addr.length != 20) throw new Error('wrong address length');
+    return addr;
+}
+
+export function formatGeneralizedDateTime(date: number):string {
+    var d = new Date(date),
+        month = '' + (d.getUTCMonth() + 1),
+        day = '' + d.getUTCDate(),
+        year = d.getUTCFullYear();
+    let hour = '' + d.getUTCHours(),
+        min = '' + d.getUTCMinutes(),
+        sec = '' + d.getUTCSeconds()
+
+    if (month.length < 2)
+        month = '0' + month;
+    if (day.length < 2)
+        day = '0' + day;
+    if (hour.length < 2)
+        hour = '0' + hour;
+    if (min.length < 2)
+        min = '0' + min;
+    if (sec.length < 2)
+        sec = '0' + sec;
+
+    return [year, month, day, hour, min, sec].join('') + 'Z';
 }

@@ -47,7 +47,7 @@ export class FullProofOfExponent {
     makeEncoding(riddle: Point, tPoint: Point, challenge: bigint, nonce: Uint8Array = new Uint8Array([])):string{
         let proof = Asn1Der.encode('OCTET_STRING', uint8tohex(riddle.getEncoded()))
             + Asn1Der.encode('OCTET_STRING', challenge.toString(16))
-            + Asn1Der.encode('OCTET_STRING', uint8tohex(tPoint.getEncoded()));
+            + Asn1Der.encode('OCTET_STRING', uint8tohex(tPoint.getEncoded()))
             + Asn1Der.encode('OCTET_STRING', uint8tohex(nonce));
 
         return Asn1Der.encode('SEQUENCE_30', proof);

@@ -83,6 +83,12 @@ export class KeyPair {
         return me;
     }
 
+    static privateFromPEM(pem: string): KeyPair {
+        const receiverPrivUint8 = base64ToUint8array(pem);
+        let privateKeyObj: PrivateKeyInfo = AsnParser.parse(uint8toBuffer( receiverPrivUint8), PrivateKeyInfo);
+        return KeyPair.privateFromKeyInfo(privateKeyObj);
+    }
+
     /*
     static privateFromAsn1base64(base64: string): KeyPair {
         let me = new this();
@@ -174,6 +180,7 @@ export class KeyPair {
         // TODO
     }
     signBytes(bytes: number[]): string{
+
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let encodingHash = sha3.keccak256(bytes)
         let signature = ecKey.sign(encodingHash);

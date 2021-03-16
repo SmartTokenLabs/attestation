@@ -100,8 +100,8 @@ export class Cheque implements Attestable {
 
     makeCheque(){
         let timeList =
-            Asn1Der.encode('GENERALIZED_TIME', formatGeneralizedDateTime(this.notValidBefore)) +
-            Asn1Der.encode('GENERALIZED_TIME', formatGeneralizedDateTime(this.notValidAfter));
+            Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore) +
+            Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
         let fullSequence =
             Asn1Der.encode('INTEGER', this.amount) +
             Asn1Der.encode('SEQUENCE_30', timeList) +
@@ -140,26 +140,3 @@ export class Cheque implements Attestable {
 
 }
 
-// TODO add timezone
-function formatGeneralizedDateTime(date: any):string {
-    var d = new Date(date),
-        month = '' + (d.getUTCMonth() + 1),
-        day = '' + d.getUTCDate(),
-        year = d.getUTCFullYear();
-    let hour = '' + d.getUTCHours(),
-        min = '' + d.getUTCMinutes(),
-        sec = '' + d.getUTCSeconds()
-
-    if (month.length < 2)
-        month = '0' + month;
-    if (day.length < 2)
-        day = '0' + day;
-    if (hour.length < 2)
-        hour = '0' + hour;
-    if (min.length < 2)
-        min = '0' + min;
-    if (sec.length < 2)
-        sec = '0' + sec;
-
-    return [year, month, day, hour, min, sec].join('') + 'Z';
-}

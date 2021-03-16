@@ -2,7 +2,7 @@ import { AsnProp, AsnPropTypes } from "@peculiar/asn1-schema";
 import {Proof} from "./ProofOfExponentASN";
 import {MyAttestation, PublicKeyInfoValue} from "./AttestationFramework";
 
-export class Identity {
+export class UseAttestation {
 
     @AsnProp({ type: MyAttestation })
     public attestation: MyAttestation;

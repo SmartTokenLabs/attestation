@@ -87,11 +87,15 @@ export class SignatureUtility {
         // console.log('messageObj.types');
         // console.log(messageObj.types);
 
-        messageObj.message.payload = sha3.keccak256(messageObj.message.payload);
+        // let rawPayload = messageObj.message.payload;
+        // messageObj.message.payload = sha3.keccak256(rawPayload);
 
         let message, pubKey;
         try {
+            let rawPayload = messageObj.message.payload;
+            messageObj.message.payload = sha3.keccak256(rawPayload);
             message = TypedDataUtils.sign(messageObj);
+            messageObj.message.payload = rawPayload;
         } catch (e){
             const m = 'Cant sign data, possibly wrong format. ' + e
             throw new Error(m);
@@ -218,6 +222,21 @@ export class SignatureUtility {
         }
     }
 
+    static async connectMetamaskAndGetAddress(): Promise<string>{
+
+        if (!window.ethereum){
+            throw new Error('Please install metamask before.');
+        }
+
+        // const userAddresses = await window.ethereum.request({ method: 'eth_accounts' });
+        const userAddresses = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!userAddresses || !userAddresses.length ){
+            throw new Error("Active Wallet required");
+        }
+
+        return userAddresses[0];
+    }
+
     static getChainIdFromSignature(signature: string):number {
         let recoveryByte: number = Number("0x" + signature.substr(-2));
         if (recoveryByte == 27 || recoveryByte == 28) {
@@ -225,5 +244,91 @@ export class SignatureUtility {
         }
         // recovery byte is chainId * 2 + 35 for chainId >= 1
         return (recoveryByte - 35) >> 1;
+    }
+
+    signDeterministicSHA256(toSign: Uint8Array, key: KeyPair) {
+        let digest = AttestationCrypto.hashWithSHA256(toSign);
+        let signature = this.computeInternalSignature(digest, key);
+        return this.normalizeAndEncodeDerSignature(signature, key);
+    }
+
+    computeInternalSignature(digest: Uint8Array, key: KeyPair): bigint[]{
+        let z: bigint = BigInt(digest);
+
+        // TODO implement
+        // HMacDSAKCalculator randomnessProvider = new HMacDSAKCalculator(new KeccakDigest(256));
+        // randomnessProvider.init(key.getParameters().getN(), key.getD(), digest);
+        //
+        //
+        // BigInteger n = key.getParameters().getN();
+        // BigInteger r, k;
+        // ECPoint R;
+        // do {
+        //     k = randomnessProvider.nextK();
+        //     R = key.getParameters().getG().multiply(k).normalize();
+        //     r = R.getAffineXCoord().toBigInteger().mod(n);
+        // } while (r.equals(BigInteger.ZERO));
+        // BigInteger baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
+        // BigInteger normalizedS = normalizeS(baseS, key.getParameters());
+        // BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
+        // // Normalize parity in case s needs normalization
+        // if (!normalizedS.equals(baseS)) {
+        //     // Flip the bit value
+        //     v = BigInteger.ONE.subtract(v);
+        // }
+        // return new BigInteger[] {r, normalizedS, v};
+
+        // throw Error because its not implemented
+        throw new Error('Not implemeted computeInternalSignature');
+
+    }
+
+    normalizeAndEncodeDerSignature(signature: bigint[], params: any) {
+        try {
+            // TODO implement
+            // ASN1EncodableVector asn1 = new ASN1EncodableVector();
+            // asn1.add(new ASN1Integer(signature[0]));
+            // BigInteger s = normalizeS(signature[1], params);
+            // asn1.add(new ASN1Integer(s));
+            // return new DERSequence(asn1).getEncoded();
+            throw Error('not implemented')
+        } catch (e) {
+            throw new Error(e);
+        }
+    }
+
+    normalizeS(s: bigint, params: any) {
+        // TODO implement
+        // Normalize number s to be the lowest of its two legal values
+        // let half_curve: bigint = params.getCurve().getOrder().shiftRight(1);
+        // if (s > half_curve) {
+        //     return params.getN().subtract(s);
+        // }
+        // return s;
+
+        throw Error('not implemented')
+    }
+
+    verifySHA256(unsigned: Uint8Array, signature: Uint8Array, key: KeyPair) {
+        let digestBytes: Uint8Array = AttestationCrypto.hashWithSHA256(unsigned);
+        return this.verifyHashed(digestBytes, signature, key);
+    }
+
+    verifyHashed(digest: Uint8Array, signature: Uint8Array, key: KeyPair) {
+        // try {
+        //     ASN1InputStream input = new ASN1InputStream(signature);
+        //     ASN1Sequence seq = ASN1Sequence.getInstance(input.readObject());
+        //     BigInteger r = ASN1Integer.getInstance(seq.getObjectAt(0)).getValue();
+        //     BigInteger s = ASN1Integer.getInstance(seq.getObjectAt(1)).getValue();
+        //     s = normalizeS(s, ((ECKeyParameters) key).getParameters());
+        //     ECDSASigner signer = new ECDSASigner();
+        //     signer.init(false, key);
+        //     return signer.verifySignature(digest, r, s);
+        // } catch (Exception e) {
+        //     // Something went wrong so the signature cannot be verified
+        //     return false;
+        // }
+        throw Error('not implemented')
+
     }
 }

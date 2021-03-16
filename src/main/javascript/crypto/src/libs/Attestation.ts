@@ -1,26 +1,27 @@
-import {uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToUint8, uint8toBuffer, uint8tohex} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {SignedInfo, SubjectPublicKeyInfo} from "../asn1/shemas/AttestationFramework";
-import {Name} from "../asn1/shemas/InformationFramework";
-import {AlgorithmIdentifierASN, Extensions} from "../asn1/shemas/AuthenticationFramework";
+import {SignedInfo} from "../asn1/shemas/AttestationFramework";
+import {Extensions} from "../asn1/shemas/AuthenticationFramework";
 import {KeyPair} from "./KeyPair";
+import {Asn1Der} from "./DerUtility";
 
 export class Attestation {
+    static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
     protected version = 18; // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
     protected serialNumber: any;
     // private signingAlgorithm:AlgorithmIdentifierASN;
     // der encoded
     protected signingAlgorithm:string;
-    private issuer: Name;//X500Name  Optional
+    protected issuer: string; // X500Name value Optional
     private notValidBefore: any;// Optional
     private notValidAfter: any;// Optional
     //private subject: Name;  //X500Name  CN=Ethereum address     // Optional
     // der encoded
     protected subject: string;  //X500Name  CN=Ethereum address     // Optional
-    protected subjectPublicKeyInfo: SubjectPublicKeyInfo;    // Optional
+    // protected subjectPublicKeyInfo: SubjectPublicKeyInfo;    // Optional
     // der encoded
     //protected subjectPublicKeyInfo: string;    // Optional
-    protected subjectPublicKey: KeyPair;    // Optional
+    protected subjectKey: KeyPair;    // Optional
     private smartcontracts: any; // ASN1integers  // Optional
     private dataObject: any;
     protected commitment: Uint8Array;
@@ -50,16 +51,42 @@ export class Attestation {
             let obj = rdn[0][0];
             this.subject = (obj.type.toString() == "2.5.4.3" ? "CN=" : "") + obj.value;
         }
-        // this.subject = decodedAttestationObj.subject.rdnSequence;
-        // TODO enable it
-        this.subjectPublicKeyInfo = decodedAttestationObj.subjectPublicKeyInfo;
-        this.subjectPublicKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(this.subjectPublicKeyInfo.value.publicKey)));
 
-        //console.log('this.subjectPublicKey.getAddress()');
-        //console.log(this.subjectPublicKey.getAddress());
+        this.subjectKey = KeyPair.publicFromSubjectPublicKeyInfo(decodedAttestationObj.subjectPublicKeyInfo);
 
-        this.issuer = decodedAttestationObj.issuer;
-        // this = attestation.issuer;
+        let issuerSet = decodedAttestationObj.issuer.rdnSequence;
+        let namesArray: string[] = [];
+        if (issuerSet.length) {
+            issuerSet.forEach(issuerSetItem => {
+                let curVal = issuerSetItem[0].value;
+                let type = issuerSetItem[0].type;
+                let prefix = '';
+                switch (type){
+                    case '2.5.4.3':
+                        prefix = "CN";
+                        break;
+                    case '2.5.4.6':
+                        prefix = "C";
+                        break;
+                    case '2.5.4.10':
+                        prefix = "O";
+                        break;
+                    case '2.5.4.11':
+                        prefix = "OU";
+                        break;
+                    case '2.5.4.7':
+                        prefix = "L";
+                        break;
+                    default:
+                        throw new Error('Alg "' + type + '" Not implemented yet');
+                }
+
+                if (type && curVal) {
+                    namesArray.push(type + '=' + curVal);
+                }
+            })
+        }
+        this.issuer = namesArray.join(',');
 
         if (decodedAttestationObj.contract){
             this.smartcontracts = decodedAttestationObj.contract;
@@ -79,7 +106,7 @@ export class Attestation {
         if (this.version != 18) {
             return false;
         }
-        if (this.issuer == null || this.issuer.rdnSequence.length == 0) {
+        if (!this.issuer) {
             return false;
         }
         if (this.notValidBefore == null || this.notValidAfter == null) {
@@ -88,7 +115,7 @@ export class Attestation {
         if (this.subject == null) {
             return false;
         }
-        if (this.subjectPublicKeyInfo == null) {
+        if (!this.subjectKey) {
             return false;
         }
         if (this.smartcontracts != null) {
@@ -128,18 +155,16 @@ export class Attestation {
     }
 
     getSubjectPublicKeyInfo(){
-        return this.subjectPublicKeyInfo;
+        return this.subjectKey;
     }
 
     checkValidity(){
         if (this.version == null
             || this.serialNumber == null
             || this.signingAlgorithm == null
-            || (this.extensions == null && this.dataObject == null && !this.commitment)
+            || (!this.extensions && !this.dataObject && !this.commitment)
         ) {
             console.log("Some attest data missed");
-            console.log(this.extensions);
-            console.log(this.dataObject);
             return false;
         }
         let currentTime = Date.now();
@@ -163,50 +188,68 @@ export class Attestation {
     }
 
     setSubject(subject: string){
-        // TODO encode correctly
         this.subject = subject;
+        // // TODO encode to support multiple names
+        // if (subject.substr(0,3) === "CN="){
+        //     this.subjectAlg = "0603550403";
+        //     this.subjectName = subject.substr(3);
+        // } else {
+        //     throw new Error('not implemented other than CN=');
+        // }
     }
+
     getSubject(): string{
         return this.subject;
     }
-    getSignature(): string{
-        return this.signingAlgorithm;
-    }
 
+    setSigningAlgorithm(alg: string) {
+        this.signingAlgorithm = alg;
+    }
 
     public getPrehash(): Uint8Array {
         if (!this.checkValidity()) {
             return null;
         }
-        let res: string;
-        // TODO implement
-        // res.add(new DERTaggedObject(true, 0, this.version));
-        // res.add(this.serialNumber);
-        // res.add(this.signingAlgorithm);
-        // res.add(this.issuer == null ? new DERSequence() : this.issuer);
-        // if (this.notValidAfter != null && this.notValidBefore != null) {
-        //     ASN1EncodableVector date = new ASN1EncodableVector();
-        //     date.add(new Time(this.notValidBefore));
-        //     date.add(new Time(this.notValidAfter));
-        //     res.add(new DERSequence(date));
-        // } else {
-        //     res.add(DERNull.INSTANCE);
-        // }
+        // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
+        // new DERTaggedObject(true, 0, this.version);
+        let res: string = Asn1Der.encode('TAG', Asn1Der.encode('INTEGER', this.version),0)
+        + Asn1Der.encode('INTEGER', this.serialNumber)
+        + Asn1Der.encodeObjectId(this.signingAlgorithm);
+            // res.add(this.issuer == null ? new DERSequence() : this.issuer);
+        res += this.issuer ? Asn1Der.encodeName(this.issuer) : Asn1Der.encode('NULL_VALUE','');
+
+        if (this.notValidAfter != null && this.notValidBefore != null) {
+            let date = Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
+            + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
+            res += Asn1Der.encode('SEQUENCE_30', date);
+        } else {
+            res += Asn1Der.encode('NULL_VALUE','');
+        }
+
         // res.add(this.subject == null ? new DERSequence() : this.subject);
-        // res.add(this.subjectPublicKeyInfo == null ? DERNull.INSTANCE : this.subjectPublicKeyInfo);
+        res += this.subject ? Asn1Der.encodeName(this.subject) : Asn1Der.encode('NULL_VALUE','');
+
+        res += this.subjectKey ? this.subjectKey.getAsnDerPublic() : Asn1Der.encode('NULL_VALUE','');
+
         // if (this.smartcontracts != null) {
         //     res.add(this.smartcontracts);
         // }
-        // if (this.extensions != null) {
-        //     res.add(new DERTaggedObject(true, 3, this.extensions));
-        // } else {
-        //     res.add(new DERTaggedObject(true, 4, this.dataObject));
-        // }
-        // try {
-        //     return new DERSequence(res).getEncoded();
-        // } catch (IOException e) {
-        //     throw new RuntimeException(e);
-        // }
+
+        if (this.commitment && this.commitment.length){
+            let extensions: string = Asn1Der.encode('OBJECT_ID', Attestation.OID_OCTETSTRING)
+                + Asn1Der.encode('BOOLEAN', 1)
+                + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+            // Double Sequence is needed to be compatible with X509V3
+            res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensions)),3);
+        } else {
+            // if (this.extensions != null) {
+            //     res.add(new DERTaggedObject(true, 3, this.extensions));
+            // } else {
+            //     res.add(new DERTaggedObject(true, 4, this.dataObject));
+            // }
+            throw new Error('dataObject not implemented. We didn\'t use it before.');
+        }
+        return hexStringToUint8(Asn1Der.encode('SEQUENCE_30',res));
     }
 
     public getSigningAlgorithm() {

@@ -1,9 +1,14 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
 import {base64ToUint8array} from "./libs/utils";
-import {SignedAttestation} from "./libs/SignedAttestation";
+import {SignedIdentityAttestation} from "./libs/SignedIdentityAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
+import {AttestationCrypto} from "./libs/AttestationCrypto";
+import {AttestationRequest} from "./libs/AttestationRequest";
+import {Nonce} from "./libs/Nonce";
+import {Eip712AttestationRequest} from "./libs/Eip712AttestationRequest";
+import {IdentifierAttestation} from "./libs/IdentifierAttestation";
 
 declare global {
     interface Window {
@@ -111,7 +116,8 @@ export class Authenticator {
         let attestorKey = KeyPair.publicFromBase64(base64attestationPublicKey);
 
         console.log('lets test attestaion:');
-        let att = new SignedAttestation(base64ToUint8array(base64attestation), attestorKey);
+
+        let att = SignedIdentityAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
 
         if (!att.checkValidity()) {
             console.log("Could not validate attestation");
@@ -242,5 +248,59 @@ export class Authenticator {
 
     // getTokenAttestation(tokenObj) {
     // }
+
+    static async requestAttest( receiverId: string, type: number, attestorDomain: string, secret: bigint ){
+        // userKeyPEM: string,
+        let crypto = new AttestationCrypto();
+
+        let nonce = await Nonce.makeNonce(receiverId, '', attestorDomain);
+        let pok = crypto.computeAttestationProof(secret, nonce);
+        let attRequest = AttestationRequest.fromData(0, pok);
+        let attest = new Eip712AttestationRequest();
+        await attest.addData(attestorDomain, receiverId, attRequest);
+        let attestJson = attest.getJsonEncoding();
+
+        return attestJson;
+
+    }
+
+    static createAttest( attestorPrivateKeyPEM: string, issuerName: string, validityInMilliseconds: number ,attestRequestJson: string, attestorDomain: string ){
+        let attestorKey = KeyPair.privateFromPEM(attestorPrivateKeyPEM);
+        let attestationRequest: Eip712AttestationRequest = new Eip712AttestationRequest();
+        attestationRequest.setDomainAndTimout(attestorDomain, validityInMilliseconds);
+        try {
+            // decode JSON and fill publicKey
+            attestationRequest.fillJsonData(attestRequestJson);
+        } catch (e){
+            let m = "Failed to fill attestation data from json. " + e;
+            console.log(m);
+            throw new Error(m);
+        }
+
+        // TODO here is where it should be verified the user actually controls the mail
+        if (!attestationRequest.verify()) {
+            console.error("Could not verify attestation signing request");
+            throw new Error("Verification failed");
+        }
+        if (!attestationRequest.checkValidity()) {
+            console.error("Could not validate attestation signing request");
+            throw new Error("Validation failed");
+        }
+        let crypto = new AttestationCrypto();
+        let commitment: Uint8Array = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
+
+        let att: IdentifierAttestation = new IdentifierAttestation();
+        att.fromCommitment(commitment, attestationRequest.getRequestorKeys());
+        att.setIssuer("CN=" + issuerName);
+        att.setSerialNumber(Math.round(Math.random() * Number.MAX_SAFE_INTEGER) );
+        let now = Date.now();
+        att.setNotValidBefore(now);
+        att.setNotValidAfter(now + validityInMilliseconds);
+        let signed: SignedIdentityAttestation = SignedIdentityAttestation.fromData(att, attestorKey);
+        console.log('att filled');
+        return signed.getDerEncoding();
+    }
+
+
 
 }

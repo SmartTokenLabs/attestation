@@ -7,11 +7,12 @@ import {AttestedObject} from "./libs/AttestedObject";
 import {UseToken} from "./asn1/shemas/UseToken";
 import {PrivateKeyInfo, SignedInfo, PublicKeyInfoValue} from "./asn1/shemas/AttestationFramework";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {SignedAttestation} from "./libs/SignedAttestation";
+import {SignedIdentityAttestation} from "./libs/SignedIdentityAttestation";
 import {Eip712Validator} from "./libs/Eip712Validator";
 import {Eip712AttestationRequest} from "./libs/Eip712AttestationRequest";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
 import {IdentifierAttestation} from "./libs/IdentifierAttestation";
+import {Authenticator} from "./Authenticator";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -26,10 +27,9 @@ describe("Attestation test", () => {
     // const receiverPubPEM = readFileSync(PREFIX_PATH + 'receiver-pub.pem', 'utf8');
 
     const receiverPrivPEM = readFileSync(PREFIX_PATH + 'receiver-priv.pem', 'utf8');
-    const receiverPrivUint8 = base64ToUint8array(receiverPrivPEM);
-    let privateKeyObj: PrivateKeyInfo = AsnParser.parse(uint8toBuffer( receiverPrivUint8), PrivateKeyInfo);
-    let receiverKey = KeyPair.privateFromKeyInfo(privateKeyObj);
-    console.log('receiverKey.getAddress(): ' + receiverKey.getAddress());
+    const attestorPrivPEM = readFileSync(PREFIX_PATH + 'attestor-priv.pem', 'utf8');
+    let receiverKey = KeyPair.privateFromPEM(receiverPrivPEM);
+    //console.log('receiverKey.getAddress(): ' + receiverKey.getAddress());
 
     // const receiverPubPEM = readFileSync(PREFIX_PATH + 'receiver-pub.pem', 'utf8');
     // const receiverPubUint8 = base64ToUint8array(receiverPubPEM);
@@ -37,33 +37,18 @@ describe("Attestation test", () => {
     // let receiverPubKey = KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
     // console.log('receiverKey.getAddress(): ' + receiverPubKey.getAddress());
 
-    const attestationRequestPem = readFileSync(PREFIX_PATH + 'attestation-request.pem', 'utf8');
+    let attestationRequestJson = readFileSync(PREFIX_PATH + 'attestation-request.pem', 'utf8');
     // const attestationRequestUint8 = base64ToUint8array(attestationRequestPem);
-    const attestationRequestJson = attestationRequestPem.split(/\r?\n/).join('');
+    attestationRequestJson = attestationRequestJson.split(/\r?\n/).join('');
+    let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-    const attestationRequest = new Eip712AttestationRequest();
-    attestationRequest.setDomain('http://wwww.attestation.id' );
-    attestationRequest.fillJsonData(attestationRequestJson);
-    console.log('attestationRequest.fillJsonData(attestationRequestJson) done ');
-    return;
+    let attestRes = Authenticator.createAttest(attestorPrivPEM,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-    let crypto = new AttestationCrypto();
-    let commitment = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
+    console.log(attestRes + '-------');
 
-    let issuerName = "AlphaWallet";
-    let validityInMilliseconds = 100000;
-    let att:IdentifierAttestation = new IdentifierAttestation();
-    // TODO fix that
-    // att.fromCommitment(commitment, attestationRequest.getKeys());
-    att.setIssuer("CN=" + issuerName);
-    att.setSerialNumber(999);
-    let now: number = Date.now();
-    att.setNotValidBefore(now);
-    att.setNotValidAfter(now + validityInMilliseconds);
-    // TODO implement
-    // let signed:SignedAttestation = new SignedAttestation(att, attestorKeys);
-    // DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
-    console.log('attest data filled');
+
+
+
 });
 /*
 describe("Keys decode test", () => {
@@ -81,7 +66,7 @@ describe("Keys decode test", () => {
 
 });
 
-describe("SignedAttestation test", () => {
+describe("SignedIdentityAttestation test", () => {
 
 
     const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
@@ -94,7 +79,7 @@ describe("SignedAttestation test", () => {
     const attestationPEM = readFileSync(PREFIX_PATH + 'attestation.pem', 'utf8');
     const attestationUint8 = base64ToUint8array(attestationPEM);
 
-    let signedAttest = SignedAttestation.fromBytes(attestationUint8, attestorPubKey);
+    let signedAttest = SignedIdentityAttestation.fromBytes(attestationUint8, attestorPubKey);
 
 });
 
