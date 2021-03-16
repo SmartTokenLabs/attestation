@@ -46,9 +46,6 @@ describe("Attestation test", () => {
 
     console.log(attestRes + '-------');
 
-
-
-
 });
 /*
 describe("Keys decode test", () => {

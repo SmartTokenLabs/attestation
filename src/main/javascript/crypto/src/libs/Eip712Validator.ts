@@ -1,10 +1,10 @@
 import {AttestedObject} from "./AttestedObject";
-import {hexToBuf} from "bigint-conversion";
 import {UseToken} from "../asn1/shemas/UseToken";
 import {XMLconfigData} from "../data/tokenData";
 import {KeyPair} from "./KeyPair";
 import {Ticket} from "../Ticket";
 import {Eip712DomainInterface, SignatureUtility} from "./SignatureUtility";
+import {hexStringToUint8} from "./utils";
 const url = require('url');
 
 export class Eip712Validator {
@@ -84,7 +84,7 @@ export class Eip712Validator {
         let attestorKey = KeyPair.publicFromBase64(XMLconfigData.base64attestorPubKey);
         let issuerKey = KeyPair.publicFromBase64(XMLconfigData.base64senderPublicKey);
 
-        let decodedAttestedObject = AttestedObject.fromBytes(new Uint8Array(hexToBuf(attestedObjectHex)), UseToken, attestorKey, Ticket, issuerKey);
+        let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(attestedObjectHex), UseToken, attestorKey, Ticket, issuerKey);
         return decodedAttestedObject;
     }
 

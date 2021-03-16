@@ -116,6 +116,9 @@ export class Asn1Der {
     }
 
     static encode(type: string, value: any, id: number = 0) {
+        if (typeof value === "undefined") {
+            throw new Error('Missing value for Der encoding');
+        }
         let encType: number = Asn1DerTagByType[type];
         let encValue = '';
         switch (type) {

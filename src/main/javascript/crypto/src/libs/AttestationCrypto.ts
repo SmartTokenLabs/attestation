@@ -353,8 +353,4 @@ export class AttestationCrypto {
         return sha3.keccak256(data);
     }
 
-    static hashWithSHA256(data: Uint8Array): Uint8Array {
-        return sha3.sha3_256(data);
-    }
-
 }

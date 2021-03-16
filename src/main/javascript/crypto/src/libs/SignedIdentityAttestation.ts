@@ -39,10 +39,10 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         me.attestorKeys = attestationSigningKey;
         me.att = att;
         me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
-        // me.signature = SignatureUtility.signDeterministicSHA256(me.att.getPrehash(), attestationSigningKey);
+        me.signature = attestationSigningKey.signBytesWithEthereum( Array.from(me.att.getPrehash()));
 
         // TODO implement
-        // me.constructorCheck(attestationSigningKey);
+        me.constructorCheck(attestationSigningKey);
         return me;
     }
 
@@ -87,6 +87,10 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
             + Asn1Der.encode('BIT_STRING', this.signature);
 
         return Asn1Der.encode('SEQUENCE_30', res);
+    }
+
+    constructorCheck(attestorKey: KeyPair){
+
     }
 
 }
