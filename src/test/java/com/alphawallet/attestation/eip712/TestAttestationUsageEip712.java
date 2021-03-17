@@ -41,6 +41,7 @@ public class TestAttestationUsageEip712 {
   private static final String MAIL = "email@test.com";
   private static final AttestationType TYPE = AttestationType.EMAIL;
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("15816808484023");
+  private static final long CHAIN_ID = 1;
 
   private static byte[] nonce;
   private static FullProofOfExponent pok;
@@ -112,18 +113,20 @@ public class TestAttestationUsageEip712 {
   public void eipEncoding() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(), request.getJsonEncoding());
+    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(CHAIN_ID), request.getJsonEncoding());
   }
 
   @Test
   public void eipSignableEncoding() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    long now = Clock.systemUTC().millis();
+    long expirationTime = now + 1000;
     AttestationUsageData data = new AttestationUsageData(
         Eip712AttestationUsageEncoder.USAGE_VALUE,
-        MAIL, URLUtility.encodeData(usage.getDerEncoding()), Clock.systemUTC().millis());
-    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(userSigningKey, new Eip712AttestationUsageEncoder());
-    String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN, 0);
-    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(), json);
+        MAIL, URLUtility.encodeData(usage.getDerEncoding()), now, expirationTime);
+    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(userSigningKey, new Eip712AttestationUsageEncoder(CHAIN_ID));
+    String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN);
+    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(CHAIN_ID), json);
   }
 
   @Test
@@ -138,9 +141,19 @@ public class TestAttestationUsageEip712 {
   }
 
   @Test
+  public void expiredToken() throws Exception {
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, Eip712AttestationUsage.DEFAULT_TIME_LIMIT_MS, -1, CHAIN_ID,
+        MAIL, usage, userSigningKey);
+    assertTrue(request.verify());
+    assertFalse(request.checkValidity());
+  }
+
+  @Test
   public void invalidTimestamp() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -100, MAIL, usage, userSigningKey);
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -100, Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT, CHAIN_ID ,
+        MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
   }

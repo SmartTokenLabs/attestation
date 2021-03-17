@@ -210,7 +210,7 @@ public class SignatureUtility {
         return signWithEthereum(unsigned, 0, signingKey);
     }
 
-    public static byte[] signWithEthereum(byte[] unsigned, int chainID, AsymmetricKeyParameter signingKey) {
+    public static byte[] signWithEthereum(byte[] unsigned, long chainID, AsymmetricKeyParameter signingKey) {
         byte[] digest = AttestationCrypto.hashWithKeccak(unsigned);
         BigInteger[] signature = computeInternalSignature(digest, (ECPrivateKeyParameters) signingKey);
         return normalizeAndEncodeEthereumSignature(signature, chainID);
@@ -293,7 +293,7 @@ public class SignatureUtility {
         return ethereumMsg.getBytes(StandardCharsets.UTF_8);
     }
 
-    private static byte[] normalizeAndEncodeEthereumSignature(BigInteger[] signature, int chainID) {
+    private static byte[] normalizeAndEncodeEthereumSignature(BigInteger[] signature, long chainID) {
         byte recoveryVal = computeRecoveryValue(signature[2], chainID);
         byte[] ethereumSignature = new byte[65];
         // This byte array can be up tp 33 bytes since it must contain a sign-bit
@@ -315,7 +315,7 @@ public class SignatureUtility {
      * @param chainID Chain ID, 0, if before EIP155
      * @return 27 or 28 if chain ID = 0, otherwise value > 37
      */
-    private static byte computeRecoveryValue(BigInteger v, int chainID) {
+    private static byte computeRecoveryValue(BigInteger v, long chainID) {
         // Compute parity of y
         byte recoveryValue = v.mod(new BigInteger("2")).byteValueExact();
         // If we are after the fork specified by EIP155 we must also take chain ID into account

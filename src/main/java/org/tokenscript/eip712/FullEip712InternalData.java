@@ -26,6 +26,10 @@ public class FullEip712InternalData extends Eip712InternalData {
     this.payload = payload;
   }
 
+  /**
+   * getSignableVersion returns a compressed version of this object that is more easily presentable to an end-user.
+   * This signableVersion is the version actually signed, but the full and true version is transmitted.
+   */
   @JsonIgnore
   public FullEip712InternalData getSignableVersion() {
     return new FullEip712InternalData(getDescription(), Eip712Encoder.computePayloadDigest(getPayload()), getTimestamp());

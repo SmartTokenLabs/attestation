@@ -16,23 +16,20 @@ import org.tokenscript.eip712.FullEip712InternalData;
 public class Eip712AuthIssuer extends Eip712Issuer<FullEip712InternalData> {
   private final AuthenticatorEncoder authenticator;
 
-  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey) {
-    this(signingKey, new AuthenticatorEncoder(new SecureRandom()));
+  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, long chainId) {
+    this(signingKey, new AuthenticatorEncoder(chainId, new SecureRandom()));
   }
 
   public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, AuthenticatorEncoder authenticator) {
     super(signingKey, authenticator);
     this.authenticator = authenticator;
   }
+  
 
   public String buildSignedToken(AttestedObject attestedObject, String webDomain) throws JsonProcessingException {
-    return buildSignedToken(attestedObject, webDomain, 0);
-  }
-
-  public String buildSignedToken(AttestedObject attestedObject, String webDomain, int chainId) throws JsonProcessingException {
     String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
     FullEip712InternalData auth = new FullEip712InternalData(authenticator.USAGE_VALUE, encodedObject, Clock
         .systemUTC().millis());
-    return buildSignedTokenFromJsonObject(auth, webDomain, chainId);
+    return buildSignedTokenFromJsonObject(auth, webDomain);
   }
 }

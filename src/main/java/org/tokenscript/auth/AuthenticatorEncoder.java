@@ -13,36 +13,12 @@ public class AuthenticatorEncoder extends Eip712Encoder {
   static final String PRIMARY_NAME = "Authentication";//"Signed request to be used only for";
   static final String USAGE_VALUE = "Single-use authentication";
 
-  private final SecureRandom random;
-  private String salt = null;
-
-  public AuthenticatorEncoder(SecureRandom random) {
-    this.random = random;
+  public AuthenticatorEncoder(long chainId, SecureRandom random) {
+    super(PROTOCOL_VERSION, PRIMARY_NAME, chainId, Hex.toHexString(random.generateSeed(32)));
   }
 
   @Override
   public HashMap<String, List<Entry>> getTypes() {
-    HashMap<String, List<Entry>> types = getDefaultTypes(PRIMARY_NAME);
-    types.get(EIP712DOMAIN).add(SALT_DOMAIN_ENTRY);
-    return types;
+    return getDefaultTypes();
   }
-
-  @Override
-  public String getSalt() {
-    if (salt == null) {
-      salt = Hex.toHexString(random.generateSeed(32));
-    }
-    return salt;
-  }
-
-  @Override
-  public String getPrimaryName() {
-    return PRIMARY_NAME;
-  }
-
-  @Override
-  public String getProtocolVersion() {
-    return PROTOCOL_VERSION;
-  }
-
 }

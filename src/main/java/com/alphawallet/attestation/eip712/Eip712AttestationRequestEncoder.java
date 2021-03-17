@@ -14,29 +14,15 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
   static final String PRIMARY_NAME = "AttestationRequest";
   static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
-  public Eip712AttestationRequestEncoder() {
+  public Eip712AttestationRequestEncoder(long chainId) {
+    super(PROTOCOL_VERSION, PRIMARY_NAME, chainId);
   }
 
   public HashMap<String, List<Entry>> getTypes() {
-    HashMap<String, List<Entry>> types = getDefaultTypes(PRIMARY_NAME);
+    HashMap<String, List<Entry>> types = getDefaultTypes();
     types.get(PRIMARY_NAME).add(ADDRESS_ENTRY);
     types.get(PRIMARY_NAME).add(IDENTIFIER_ENTRY);
     return types;
-  }
-
-  @Override
-  public String getPrimaryName() {
-    return PRIMARY_NAME;
-  }
-
-  @Override
-  public String getProtocolVersion() {
-    return PROTOCOL_VERSION;
-  }
-
-  @Override
-  public String getSalt() {
-    return null;
   }
 
   static class AttestationRequestInternalData extends FullEip712InternalData {

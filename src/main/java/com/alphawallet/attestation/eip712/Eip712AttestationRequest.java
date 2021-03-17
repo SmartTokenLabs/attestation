@@ -26,13 +26,13 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, String identifier,
       AttestationRequest request, AsymmetricKeyParameter signingKey, String address) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey, address);
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey, address, PLACEHOLDER_CHAIN_ID);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
       String identifier, AttestationRequest request,
-      AsymmetricKeyParameter signingKey, String address) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
+      AsymmetricKeyParameter signingKey, String address, long chainId) {
+    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder(chainId));
     try {
       this.attestationRequest = request;
       this.jsonEncoding = makeToken(identifier, signingKey, address);
@@ -45,11 +45,12 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public Eip712AttestationRequest(String attestorDomain, String jsonEncoding) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, jsonEncoding);
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, PLACEHOLDER_CHAIN_ID, jsonEncoding);
   }
 
-  public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit, String jsonEncoding) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
+  public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit, long chainId,
+      String jsonEncoding) {
+    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder(chainId));
     try {
       this.jsonEncoding = jsonEncoding;
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
@@ -73,7 +74,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         Eip712AttestationRequestEncoder.USAGE_VALUE,
         identifier, address, encodedAttestationRequest, Clock.systemUTC().millis());
-    return issuer.buildSignedTokenFromJsonObject(data, domain, PLACEHOLDER_CHAIN_ID);
+    return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
 
   public String getIdentifier() {

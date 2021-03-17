@@ -19,7 +19,6 @@ public abstract class Eip712Encoder {
   public static final String ADDRESS = "address";
 
   public static final String EIP712DOMAIN = "EIP712Domain";
-  public static final Entry SALT_DOMAIN_ENTRY = new Entry("salt", BYTES32);
 
   public static final String TIMESTAMP_NAME = "timestamp";
   public static final String DESCRIPTION_NAME = "description";
@@ -29,12 +28,28 @@ public abstract class Eip712Encoder {
   public static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
   public static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
 
+  private final Long chainId;
+  private final String salt;
+  private final String protocolVersion;
+  private final String primaryName;
+
+  public Eip712Encoder(String protocolVersion, String primaryName, Long chainId, String salt) {
+    this.protocolVersion = protocolVersion;
+    this.primaryName = primaryName;
+    this.chainId = chainId;
+    this.salt = salt;
+  }
+
+  public Eip712Encoder(String protocolVersion, String primaryName, Long chainId) {
+    this(protocolVersion, primaryName, chainId, null);
+  }
+
   public static String computePayloadDigest(String payload) {
     return Hex.toHexString(AttestationCrypto.hashWithKeccak(payload.getBytes(
         StandardCharsets.UTF_8)));
   }
 
-  public static HashMap<String, List<Entry>> getDefaultTypes(String primaryName) {
+  public HashMap<String, List<Entry>> getDefaultTypes() {
     HashMap<String, List<Entry>> types = new HashMap<>();
     List<Entry> content = new ArrayList<>();
     content.add(new Entry(PAYLOAD_NAME, STRING));
@@ -43,16 +58,35 @@ public abstract class Eip712Encoder {
     types.put(primaryName, content);
     List<Entry> domainContent = new ArrayList<>();
     domainContent.add(new Entry("name", STRING));
-    domainContent.add(new Entry("version", STRING));
-//  domainContent.add(new Entry("chainId", UINT256));
+    if (protocolVersion != null) {
+      domainContent.add(new Entry("version", STRING));
+    }
+    if (chainId != null) {
+      domainContent.add(new Entry("chainId", UINT256));
+    }
+    if (salt != null) {
+      domainContent.add(new Entry("salt", BYTES32));
+    }
 //  domainContent.add(new Entry("verifyingContract", ADDRESS));
     types.put("EIP712Domain", domainContent);
     return types;
   }
   public abstract HashMap<String, List<Entry>> getTypes();
-  public abstract String getPrimaryName();
-  public abstract String getProtocolVersion();
-  public abstract String getSalt();
+
+  public String getPrimaryName() {
+    return primaryName;
+  }
+
+  public String getProtocolVersion() {
+    return protocolVersion;
+  }
+
+  public String getSalt() {
+    return salt;
+  }
+  public long getChainId() {
+    return chainId;
+  }
 
   // Timestamp with millisecond accuracy and timezone info
   public static final SimpleDateFormat timestampFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);

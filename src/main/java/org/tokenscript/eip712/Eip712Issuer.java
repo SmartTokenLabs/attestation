@@ -18,7 +18,7 @@ public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common
     this.signingKey = signingKey;
   }
 
-  public String buildSignedTokenFromJsonObject(T jsonEncodableObject, String webDomain, int chainID) throws JsonProcessingException  {
+  public String buildSignedTokenFromJsonObject(T jsonEncodableObject, String webDomain) throws JsonProcessingException  {
     if (!Eip712Common.isDomainValid(webDomain)) {
       throw new IllegalArgumentException("Invalid domain");
     }
@@ -27,21 +27,21 @@ public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common
       // Sign this compacted version
       EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(jsonToSign, null, 0,
           cryptoFunctions);
-      String signatureInHex = signEIP712Message(ethereumMessage, chainID);
+      String signatureInHex = signEIP712Message(ethereumMessage, encoder.getChainId());
       // Include the full version of the JSON in the external data
-      Eip712ExternalData data = new Eip712ExternalData(signatureInHex, JSON_RPC_VER, chainID, getEncodedObject(jsonEncodableObject, webDomain));
+      Eip712ExternalData data = new Eip712ExternalData(signatureInHex, JSON_RPC_VER, encoder.getChainId(), getEncodedObject(jsonEncodableObject, webDomain));
       return mapper.writeValueAsString(data);
   }
 
   String getEncodedObject(Eip712InternalData jsonEncodableObject, String webDomain) throws JsonProcessingException {
     StructuredData.EIP712Domain domain = new EIP712Domain(webDomain, encoder.getProtocolVersion(),
-        null, null, encoder.getSalt());
+        encoder.getChainId(), null, encoder.getSalt());
     StructuredData.EIP712Message message = new EIP712Message(encoder.getTypes(), encoder.getPrimaryName(),
         jsonEncodableObject, domain);
     return mapper.writeValueAsString(message);
   }
 
-  private String signEIP712Message(EthereumTypedMessage msg, int chainID) {
+  private String signEIP712Message(EthereumTypedMessage msg, long chainID) {
     byte[] signature = SignatureUtility.signWithEthereum(msg.getPrehash(), chainID, signingKey);
     return "0x" + new String(Hex.encode(signature), StandardCharsets.UTF_8);
   }

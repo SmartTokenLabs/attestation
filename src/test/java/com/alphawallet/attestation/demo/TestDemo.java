@@ -35,10 +35,10 @@ public class TestDemo {
     args = new String[]{"create-cheque", "42", "test@test.ts", "mail", "3600", PREFIX + "sender-priv.pem", PREFIX + "cheque.pem", PREFIX + "cheque-secret.pem"};
     Demo.main(args);
     // Request attestation
-    args = new String[]{"request-attest", PREFIX + "receiver-priv.pem", "test@test.ts", "mail", PREFIX + "attestation-request.pem", PREFIX + "attestation-secret.pem"};
+    args = new String[]{"request-attest", PREFIX + "receiver-priv.pem", "test@test.ts", "mail", PREFIX + "attestation-request.json", PREFIX + "attestation-secret.pem"};
     Demo.main(args);
     // Construct attestation
-    args = new String[]{"construct-attest", PREFIX + "attestor-priv.pem", "AlphaWallet", "3600", PREFIX + "attestation-request.pem", PREFIX + "attestation.pem"};
+    args = new String[]{"construct-attest", PREFIX + "attestor-priv.pem", "AlphaWallet", "3600", PREFIX + "attestation-request.json", PREFIX + "attestation.pem"};
     Demo.main(args);
     // Redeem
     args = new String[]{"receive-cheque", PREFIX + "receiver-priv.pem", PREFIX + "cheque-secret.pem", PREFIX + "attestation-secret.pem", PREFIX + "cheque.pem", PREFIX + "attestation.pem", PREFIX + "attestor-pub.pem"};

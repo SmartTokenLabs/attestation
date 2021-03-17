@@ -14,44 +14,33 @@ public class Eip712AttestationUsageEncoder extends Eip712Encoder {
   static final String PRIMARY_NAME = "AttestationUsage";
   static final String USAGE_VALUE = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\".";
 
-  public Eip712AttestationUsageEncoder() {
+  public Eip712AttestationUsageEncoder(long chainId) {
+    super(PROTOCOL_VERSION, PRIMARY_NAME, chainId);
   }
 
   @Override
   public HashMap<String, List<Entry>> getTypes() {
-    HashMap<String, List<Entry>> types = getDefaultTypes(PRIMARY_NAME);
+    HashMap<String, List<Entry>> types = getDefaultTypes();
     types.get(PRIMARY_NAME).add(IDENTIFIER_ENTRY);
     return types;
   }
 
-  @Override
-  public String getPrimaryName() {
-    return PRIMARY_NAME;
-  }
-
-  @Override
-  public String getProtocolVersion() {
-    return PROTOCOL_VERSION;
-  }
-
-  @Override
-  public String getSalt() {
-    return null;
-  }
-
   static class AttestationUsageData extends FullEip712InternalData {
     private String identifier;
+    private String expirationTime;
 
     public AttestationUsageData() { super(); }
 
-    public AttestationUsageData(String description, String identifier, String payload, long timeStamp) {
+    public AttestationUsageData(String description, String identifier, String payload, long timeStamp, long expirationTime) {
       super(description, payload, timestampFormat.format(new Date(timeStamp)));
       this.identifier = identifier;
+      this.expirationTime = timestampFormat.format(new Date(expirationTime));
     }
 
-    public AttestationUsageData(String description, String identifier, String payload, String timeStamp) {
+    public AttestationUsageData(String description, String identifier, String payload, String timeStamp, String expirationTime) {
       super(description, payload, timeStamp);
       this.identifier = identifier;
+      this.expirationTime = expirationTime;
     }
 
     public String getIdentifier() {
@@ -62,10 +51,14 @@ public class Eip712AttestationUsageEncoder extends Eip712Encoder {
       this.identifier = identifier;
     }
 
+    public String getExpirationTime() { return expirationTime; }
+
+    public void setExpirationTime(String expirationTime) { this.expirationTime = expirationTime; }
+
     @JsonIgnore
     @Override
     public AttestationUsageData getSignableVersion() {
-      return new AttestationUsageData(getDescription(), getIdentifier(), Eip712Encoder.computePayloadDigest(getPayload()), getTimestamp());
+      return new AttestationUsageData(getDescription(), getIdentifier(), Eip712Encoder.computePayloadDigest(getPayload()), getTimestamp(), getExpirationTime());
     }
   }
 }

@@ -23,21 +23,25 @@ import org.tokenscript.eip712.JsonEncodable;
 public class Eip712AttestationUsage extends Eip712Validator implements JsonEncodable, Verifiable,
     Validateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
+  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 30; // 30 minutes
 
+  private final long tokenValidityInMs;
   private final UseAttestation useAttestation;
   private final AttestationUsageData data;
   private final String jsonEncoding;
   private final AsymmetricKeyParameter userPublicKey;
 
   public Eip712AttestationUsage(String attestorDomain, String identifier, UseAttestation useAttestation, AsymmetricKeyParameter signingKey) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, useAttestation, signingKey);
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID, identifier,
+        useAttestation, signingKey);
   }
 
   public Eip712AttestationUsage(String attestorDomain, long acceptableTimeLimit,
-      String identifier, UseAttestation useAttestation,
+      long tokenValidityInMs, long chainId, String identifier, UseAttestation useAttestation,
       AsymmetricKeyParameter signingKey) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder());
+    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder(chainId));
     try {
+      this.tokenValidityInMs = tokenValidityInMs;
       this.useAttestation = useAttestation;
       this.jsonEncoding = makeToken(identifier, useAttestation, signingKey);
       this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
@@ -49,12 +53,16 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   }
 
   public Eip712AttestationUsage(String attestorDomain, AsymmetricKeyParameter attestationIssuerVerificationKey, String jsonEncoding) {
-    this(attestorDomain, attestationIssuerVerificationKey, DEFAULT_TIME_LIMIT_MS, jsonEncoding);
+    this(attestorDomain, attestationIssuerVerificationKey, DEFAULT_TIME_LIMIT_MS, DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID,
+        jsonEncoding);
   }
 
-  public Eip712AttestationUsage(String attestorDomain, AsymmetricKeyParameter attestationIssuerVerificationKey, long acceptableTimeLimit, String jsonEncoding) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder());
+  public Eip712AttestationUsage(String attestorDomain,
+      AsymmetricKeyParameter attestationIssuerVerificationKey,
+      long acceptableTimeLimit, long tokenValidityInMs, long chainId, String jsonEncoding) {
+    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder(chainId));
     try {
+      this.tokenValidityInMs = tokenValidityInMs;
       this.jsonEncoding = jsonEncoding;
       this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
@@ -75,10 +83,12 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       AsymmetricKeyParameter signingKey) throws IOException {
     Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(useAttestation.getDerEncoding());
+    long now = Clock.systemUTC().millis();
+    long expirationTime = now + tokenValidityInMs;
     AttestationUsageData data = new AttestationUsageData(
         Eip712AttestationUsageEncoder.USAGE_VALUE,
-        identifier, encodedUseAttestation, Clock.systemUTC().millis());
-    return issuer.buildSignedTokenFromJsonObject(data, domain, PLACEHOLDER_CHAIN_ID);
+        identifier, encodedUseAttestation, now, expirationTime);
+    return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
 
   private boolean proofLinking() {
