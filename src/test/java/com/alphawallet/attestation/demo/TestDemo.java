@@ -1,23 +1,14 @@
 package com.alphawallet.attestation.demo;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
-import java.io.File;
 import java.security.SecureRandom;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class TestDemo {
   private static final String PREFIX = "build/test-results/";
-  @BeforeEach
-  public void cleanup() throws Exception {
-    String[] files = new String[]{"sender-pub.pem", "sender-priv.pem", "receiver-pub.pem",
-        "receiver-priv.pem", "attestor-pub.pem", "attestor-priv.pem", "cheque.pem",
-        "cheque-secret.pem", "attestation-request.pem", "attestation-secret.pem", "attestation.pem"};
-    File currentKey;
-    for (String current : files) {
-      currentKey = new File(PREFIX+current);
-      currentKey.delete();
-    }
+  @BeforeAll
+  public static void cleanup() throws Exception {
     SecureRandom rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     // Set the demo to use deterministic randomness
@@ -26,7 +17,7 @@ public class TestDemo {
   }
 
   @Test
-  public void executeFlow() {
+  public void constructKeys() {
     String[] args;
     // Keys
     args = new String[]{"keys", PREFIX + "sender-pub.pem", PREFIX + "sender-priv.pem"};
@@ -35,6 +26,11 @@ public class TestDemo {
     Demo.main(args);
     args = new String[]{"keys", PREFIX + "attestor-pub.pem", PREFIX + "attestor-priv.pem"};
     Demo.main(args);
+  }
+
+  @Test
+  public void executeFlow() {
+    String[] args;
     // Send
     args = new String[]{"create-cheque", "42", "test@test.ts", "mail", "3600", PREFIX + "sender-priv.pem", PREFIX + "cheque.pem", PREFIX + "cheque-secret.pem"};
     Demo.main(args);
