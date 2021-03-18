@@ -17,7 +17,7 @@ import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
-  public static final int PLACEHOLDER_CHAIN_ID = 0;
+  public static final int DEFAULT_CHAIN_ID = 1;
 
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
@@ -26,7 +26,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, String identifier,
       AttestationRequest request, AsymmetricKeyParameter signingKey, String address) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey, address, PLACEHOLDER_CHAIN_ID);
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey, address,
+        DEFAULT_CHAIN_ID);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
@@ -45,7 +46,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public Eip712AttestationRequest(String attestorDomain, String jsonEncoding) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, PLACEHOLDER_CHAIN_ID, jsonEncoding);
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, DEFAULT_CHAIN_ID, jsonEncoding);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit, long chainId,

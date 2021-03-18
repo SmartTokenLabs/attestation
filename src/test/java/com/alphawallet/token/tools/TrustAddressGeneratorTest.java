@@ -1,14 +1,16 @@
 package com.alphawallet.token.tools;
 
-import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXException;
-
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.crypto.dsig.XMLSignatureException;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
 import org.bouncycastle.util.encoders.Base64;
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
 
 public class TrustAddressGeneratorTest {
     String digest;

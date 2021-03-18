@@ -51,6 +51,7 @@ public class Eip712Validator extends Eip712Common {
     boolean accept = true;
     accept &= domainToCheck.getName().equals(domain);
     accept &= domainToCheck.getVersion().equals(encoder.getProtocolVersion());
+    accept &= domainToCheck.getChainId() == encoder.getChainId();
     return accept;
   }
 

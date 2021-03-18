@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 
-
 public class ZonedDateTimeTest {
     final long unixTime = 0;
     final String ISO8601 = "1970-01-01T03:00+03:00";

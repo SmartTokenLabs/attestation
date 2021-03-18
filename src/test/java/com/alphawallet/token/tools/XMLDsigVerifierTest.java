@@ -1,7 +1,6 @@
 package com.alphawallet.token.tools;
 
 import com.alphawallet.token.entity.XMLDsigVerificationResult;
-
 import java.io.FileInputStream;
 import java.io.InputStream;
 import org.junit.jupiter.api.Test;

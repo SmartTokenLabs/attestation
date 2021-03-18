@@ -144,6 +144,23 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     return accept;
   }
 
+  boolean validateTime(long timestamp, long expirationTime) {
+    long currentTime = Clock.systemUTC().millis();
+    // If timestamp is in the future
+    if (timestamp > currentTime + acceptableTimeLimitMs) {
+      return false;
+    }
+    // If token has expired
+    if (expirationTime < currentTime - acceptableTimeLimitMs) {
+      return false;
+    }
+    // If the token is valid for too long
+    if (expirationTime - timestamp > tokenValidityInMs) {
+      return false;
+    }
+    return true;
+  }
+
   @Override
   public boolean verify() {
     if (!useAttestation.verify()) {

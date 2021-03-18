@@ -68,7 +68,7 @@ public abstract class Eip712Encoder {
       domainContent.add(new Entry("salt", BYTES32));
     }
 //  domainContent.add(new Entry("verifyingContract", ADDRESS));
-    types.put("EIP712Domain", domainContent);
+    types.put(EIP712DOMAIN, domainContent);
     return types;
   }
   public abstract HashMap<String, List<Entry>> getTypes();

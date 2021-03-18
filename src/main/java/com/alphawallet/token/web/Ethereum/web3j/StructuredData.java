@@ -13,8 +13,6 @@
 package com.alphawallet.token.web.Ethereum.web3j;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.List;
@@ -32,8 +30,8 @@ public class StructuredData {
 
         @JsonCreator
         public Entry(
-                @JsonProperty(value = "name") String name,
-                @JsonProperty(value = "type") String type) {
+            @JsonProperty(value = "name") String name,
+            @JsonProperty(value = "type") String type) {
             this.name = name;
             this.type = type;
         }
@@ -47,22 +45,20 @@ public class StructuredData {
         }
     }
 
-    @JsonInclude(Include.NON_NULL)
     public static class EIP712Domain {
         private final String name;
         private final String version;
-        // Should be uint256, but this does not serialize, so this is a hack working as long as chainId is 64 bits
         private final long chainId;
         private final Address verifyingContract;
         private final String salt;
 
         @JsonCreator
         public EIP712Domain(
-                @JsonProperty(value = "name") String name,
-                @JsonProperty(value = "version") String version,
-                @JsonProperty(value = "chainId") long chainId,
-                @JsonProperty(value = "verifyingContract") Address verifyingContract,
-                @JsonProperty(value = "salt") String salt) {
+            @JsonProperty(value = "name") String name,
+            @JsonProperty(value = "version") String version,
+            @JsonProperty(value = "chainId") long chainId,
+            @JsonProperty(value = "verifyingContract") Address verifyingContract,
+            @JsonProperty(value = "salt") String salt) {
             this.name = name;
             this.version = version;
             this.chainId = chainId;
@@ -99,10 +95,10 @@ public class StructuredData {
 
         @JsonCreator
         public EIP712Message(
-                @JsonProperty(value = "types") HashMap<String, List<Entry>> types,
-                @JsonProperty(value = "primaryType") String primaryType,
-                @JsonProperty(value = "message") Object message,
-                @JsonProperty(value = "domain") EIP712Domain domain) {
+            @JsonProperty(value = "types") HashMap<String, List<Entry>> types,
+            @JsonProperty(value = "primaryType") String primaryType,
+            @JsonProperty(value = "message") Object message,
+            @JsonProperty(value = "domain") EIP712Domain domain) {
             this.types = types;
             this.primaryType = primaryType;
             this.message = message;
@@ -128,13 +124,13 @@ public class StructuredData {
         @Override
         public String toString() {
             return "EIP712Message{"
-                    + "primaryType='"
-                    + this.primaryType
-                    + '\''
-                    + ", message='"
-                    + this.message
-                    + '\''
-                    + '}';
+                + "primaryType='"
+                + this.primaryType
+                + '\''
+                + ", message='"
+                + this.message
+                + '\''
+                + '}';
         }
     }
 }

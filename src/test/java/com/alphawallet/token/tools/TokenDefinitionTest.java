@@ -4,18 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.token.entity.ContractInfo;
 import com.alphawallet.token.entity.ParseResult;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Locale;
+import org.junit.jupiter.api.Test;
+import org.xml.sax.SAXException;
 
 
 public class TokenDefinitionTest implements ParseResult
@@ -49,7 +49,7 @@ public class TokenDefinitionTest implements ParseResult
 
     @Test
     public void BadLocaleShouldThrowException() throws IOException, SAXException {
-        Assertions.assertThrows(SAXException.class, () -> {
+        assertThrows(SAXException.class, () -> {
             TokenDefinition ticketAsset = new TokenDefinition(new FileInputStream(entryTokenTestFile), new Locale("asdf"), this);
             assertNotNull(ticketAsset);
         });
