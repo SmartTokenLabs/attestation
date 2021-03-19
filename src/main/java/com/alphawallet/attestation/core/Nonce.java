@@ -7,8 +7,6 @@ import java.util.Arrays;
 import org.web3j.abi.datatypes.Address;
 
 public class Nonce {
-  public static final long TIMESTAMP_SLACK_MS = 60000L; // 1 minute
-
   public static byte[] makeNonce(String senderIdentifier, String address, String receiverIdentifier, long timestampInMs) {
     return makeNonce(senderIdentifier, address, receiverIdentifier, new byte[0], timestampInMs);
   }
@@ -26,14 +24,15 @@ public class Nonce {
     return buffer.array();
   }
 
-  public static boolean validateNonce(byte[] nonce, String senderIdentifier, String address, String receiverIdentifier) {
-    return validateNonce(nonce, senderIdentifier, address, receiverIdentifier, new byte[0]);
+  public static boolean validateNonce(byte[] nonce, String senderIdentifier, String address,
+      String receiverIdentifier, long timestampSlack) {
+    return validateNonce(nonce, senderIdentifier, address, receiverIdentifier, timestampSlack, new byte[0]);
   }
 
   public static boolean validateNonce(byte[] nonce, String senderIdentifier,
-      String address, String receiverIdentifier, byte[] otherData) {
+      String address, String receiverIdentifier, long timestampSlack, byte[] otherData) {
     long currentTime = Clock.systemUTC().millis();
-    if (!validateTimestamp(getTimestamp(nonce), currentTime)) {
+    if (!validateTimestamp(getTimestamp(nonce), currentTime, timestampSlack)) {
       return false;
     }
     if (!validateSenderIdentifier(nonce, senderIdentifier)) {
@@ -92,11 +91,11 @@ public class Nonce {
     return buffer.getLong();
   }
 
-  static boolean validateTimestamp(long timestamp, long currentTime) {
-    if (timestamp > currentTime + TIMESTAMP_SLACK_MS) {
+  static boolean validateTimestamp(long timestamp, long currentTime, long timestampSlack) {
+    if (timestamp > currentTime + timestampSlack) {
       return false;
     }
-    if (timestamp < currentTime - TIMESTAMP_SLACK_MS) {
+    if (timestamp < currentTime - timestampSlack) {
       return false;
     }
     return true;

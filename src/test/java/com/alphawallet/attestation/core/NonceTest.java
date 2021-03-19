@@ -1,6 +1,5 @@
 package com.alphawallet.attestation.core;
 
-import static com.alphawallet.attestation.core.Nonce.TIMESTAMP_SLACK_MS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,6 +15,7 @@ public class NonceTest {
   private static final String USER = "someone@somewhere.something";
   private static final String RECEIVER = "www.somewhere.com";
   private static final long TIMESTAMP = 1614693814000L;
+  private static final long TIMESTAMP_SLACK_MS = 1000*60; // 1 min
 
   private static SecureRandom rand;
   private static String address;
@@ -38,24 +38,24 @@ public class NonceTest {
   public void validateTimestamp() {
     long currentTime;
     currentTime = TIMESTAMP + 1000;
-    assertTrue(Nonce.validateTimestamp(TIMESTAMP, currentTime));
+    assertTrue(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
     currentTime = TIMESTAMP - 1000;
-    assertTrue(Nonce.validateTimestamp(TIMESTAMP, currentTime));
+    assertTrue(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
   }
 
   @Test
   public void invalidTimestamp() {
     long currentTime;
     currentTime = TIMESTAMP + TIMESTAMP_SLACK_MS + 1000;
-    assertFalse(Nonce.validateTimestamp(TIMESTAMP, currentTime));
+    assertFalse(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
     currentTime = TIMESTAMP - TIMESTAMP_SLACK_MS - 1000;
-    assertFalse(Nonce.validateTimestamp(TIMESTAMP, currentTime));
+    assertFalse(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
   }
 
   @Test
   public void invalidTimestampInValidation() {
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, TIMESTAMP);
-    assertFalse(Nonce.validateNonce(nonce, USER, address, RECEIVER));
+    assertFalse(Nonce.validateNonce(nonce, USER, address, RECEIVER, TIMESTAMP_SLACK_MS));
   }
 
   @Test
@@ -72,7 +72,7 @@ public class NonceTest {
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, currentTime);
     AsymmetricKeyParameter key = SignatureUtility.constructECKeys(rand).getPublic();
     String address = SignatureUtility.addressFromKey(key);
-    assertThrows(NumberFormatException.class, () -> Nonce.validateNonce(nonce, USER, "0"+address, RECEIVER));
+    assertThrows(NumberFormatException.class, () -> Nonce.validateNonce(nonce, USER, "0"+address, RECEIVER, TIMESTAMP_SLACK_MS));
   }
 
   @Test
@@ -80,27 +80,27 @@ public class NonceTest {
     long currentTime = Clock.systemUTC().millis();
     byte[] otherData = new byte[] {0x42, 0x43};
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, otherData, currentTime);
-    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER, otherData));
+    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER, TIMESTAMP_SLACK_MS, otherData));
     otherData[0] ^= 0x01;
-    assertFalse(Nonce.validateNonce(nonce, USER, address, RECEIVER, otherData));
+    assertFalse(Nonce.validateNonce(nonce, USER, address, RECEIVER, TIMESTAMP_SLACK_MS, otherData));
   }
 
   @Test
   public void senderValidation() {
     long currentTime = Clock.systemUTC().millis();
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, currentTime);
-    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER));
-    assertFalse(Nonce.validateNonce(nonce, "wrongIdentifier", address, RECEIVER));
+    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER, TIMESTAMP_SLACK_MS));
+    assertFalse(Nonce.validateNonce(nonce, "wrongIdentifier", address, RECEIVER, TIMESTAMP_SLACK_MS));
   }
 
   @Test
   public void keyValidation() {
     long currentTime = Clock.systemUTC().millis();
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, currentTime);
-    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER));
+    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER, TIMESTAMP_SLACK_MS));
     AsymmetricKeyParameter otherKey = SignatureUtility.constructECKeys(rand).getPublic();
     String otherAddress = SignatureUtility.addressFromKey(otherKey);
-    assertFalse(Nonce.validateNonce(nonce, USER, otherAddress, RECEIVER));
+    assertFalse(Nonce.validateNonce(nonce, USER, otherAddress, RECEIVER, TIMESTAMP_SLACK_MS));
   }
 
 
@@ -108,8 +108,8 @@ public class NonceTest {
   public void validateReceiverIdentifier() {
     long currentTime = Clock.systemUTC().millis();
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, currentTime);
-    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER));
-    assertFalse(Nonce.validateNonce(nonce, USER, address, "wrongReceiver"));
+    assertTrue(Nonce.validateNonce(nonce, USER, address, RECEIVER, TIMESTAMP_SLACK_MS));
+    assertFalse(Nonce.validateNonce(nonce, USER, address, "wrongReceiver", TIMESTAMP_SLACK_MS));
   }
 
 }

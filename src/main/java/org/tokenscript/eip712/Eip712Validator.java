@@ -5,11 +5,14 @@ import com.alphawallet.token.entity.EthereumTypedMessage;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Domain;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message;
+import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredDataEncoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InvalidObjectException;
 import java.time.Clock;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.Hex;
@@ -86,7 +89,7 @@ public class Eip712Validator extends Eip712Common {
     try {
       byte[] signature = getSignatureFromJson(signedJsonInput);
       String actuallySignedJson = restoreSignableJson(signedJsonInput, type);
-      EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(actuallySignedJson, null, 0, cryptoFunctions);
+      EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(actuallySignedJson,null, 0, cryptoFunctions);
       byte[] messageSigned = ethereumMessage.getPrehash();
       return SignatureUtility.recoverEthPublicKeyFromSignature(messageSigned, signature);
     } catch (Exception e) {
@@ -103,19 +106,33 @@ public class Eip712Validator extends Eip712Common {
 
   <T extends FullEip712InternalData> String restoreSignableJson(String signedJsonInput, Class<T> type) throws Exception {
     T fullInternalData = retrieveUnderlyingObject(signedJsonInput, type);
-    EIP712Domain eip712Domain = getDomainFromJson(signedJsonInput);
-    StructuredData.EIP712Message message = new EIP712Message(encoder.getTypes(), encoder.getPrimaryName(),
+    Eip712ExternalData data = mapper.readValue(signedJsonInput, Eip712ExternalData.class);
+    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
+    EIP712Domain eip712Domain = getDomainFromJson(rootNode);
+    StructuredData.EIP712Message message = new EIP712Message(getTypes(rootNode), getPrimaryType(rootNode),
         fullInternalData.getSignableVersion(), eip712Domain);
     return mapper.writeValueAsString(message);
   }
 
+  HashMap<String, List<Entry>> getTypes(JsonNode rootOfEip712) throws Exception {
+    JsonNode jsonPrimaryTypes = rootOfEip712.get("types").get(getPrimaryType(rootOfEip712));
+    JsonNode jsonDomainTypes = rootOfEip712.get("types").get(Eip712Encoder.EIP712DOMAIN);
+    List<Entry> primaryTypes = mapper.readValue(jsonPrimaryTypes.toString(), List.class);
+    List<Entry> domainTypes = mapper.readValue(jsonDomainTypes.toString(), List.class);
+    HashMap<String, List<Entry>> result = new HashMap<>();
+    result.put(getPrimaryType(rootOfEip712), primaryTypes);
+    result.put(Eip712Encoder.EIP712DOMAIN, domainTypes);
+    return result;
+  }
+
+  String getPrimaryType(JsonNode rootOfEip712) {
+    return rootOfEip712.get("primaryType").asText();
+  }
   /**
    * Retrieve and validate the domain
    */
-  EIP712Domain getDomainFromJson(String signedJsonInput) throws Exception {
-    Eip712ExternalData data = mapper.readValue(signedJsonInput, Eip712ExternalData.class);
-    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
-    EIP712Domain eip712Domain = mapper.readValue(rootNode.get("domain").toString(), EIP712Domain.class);
+  EIP712Domain getDomainFromJson(JsonNode rootOfEip712) throws Exception {
+    EIP712Domain eip712Domain = mapper.readValue(rootOfEip712.get("domain").toString(), EIP712Domain.class);
     if (!validateDomain(eip712Domain)) {
       throw new InvalidObjectException("Could not verify message");
     }

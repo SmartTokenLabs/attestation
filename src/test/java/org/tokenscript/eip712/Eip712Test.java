@@ -131,7 +131,9 @@ public class Eip712Test {
   @Test
   public void incorrectDomain() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, "http://www.not-test.com");
-    assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(token));
+    Eip712ExternalData data = mapper.readValue(token, Eip712ExternalData.class);
+    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
+    assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(rootNode));
   }
 
   @Test
@@ -148,14 +150,18 @@ public class Eip712Test {
   public void invalidVersionIssuer() throws Exception {
     Eip712Issuer newIssuer = new Eip712Issuer(userKeys.getPrivate(), new TestEncoder("2.0", 1));
     String token = newIssuer.buildSignedTokenFromJsonObject(testObject, testDomain);
-    assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(token));
+    Eip712ExternalData data = mapper.readValue(token, Eip712ExternalData.class);
+    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
+    assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(rootNode));
   }
 
   @Test
   public void invalidVersionValidator() throws Exception {
     Eip712Validator newValidator = new Eip712Validator(testDomain, new TestEncoder("2.0", 1));
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain);
-    assertThrows(InvalidObjectException.class, () -> newValidator.getDomainFromJson(token));
+    Eip712ExternalData data = mapper.readValue(token, Eip712ExternalData.class);
+    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
+    assertThrows(InvalidObjectException.class, () -> newValidator.getDomainFromJson(rootNode));
   }
 
   @Test

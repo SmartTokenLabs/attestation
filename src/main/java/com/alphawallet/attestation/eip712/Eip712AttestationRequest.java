@@ -117,7 +117,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     accept &= verifyTimeStamp(data.getTimestamp());
     accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, data.getAddress());
     accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
-        data.getAddress(), domain);
+        data.getAddress(), domain, acceptableTimeLimitMs);
     return accept;
   }
 

@@ -13,9 +13,11 @@ import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.text.ParseException;
 import java.time.Clock;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.math.ec.ECPoint;
+import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
@@ -135,27 +137,33 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     boolean accept = true;
     accept &= useAttestation.checkValidity();
     accept &= data.getDescription().equals(Eip712AttestationUsageEncoder.USAGE_VALUE);
-    accept &= verifyTimeStamp(data.getTimestamp());
+    accept &= validateTime( data.getTimestamp(), data.getExpirationTime());
     accept &= SignatureUtility.verifyKeyAgainstAddress(
         userPublicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
     accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(), data.getIdentifier(),
-        (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain);
+        (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, acceptableTimeLimitMs);
     accept &= proofLinking();
     return accept;
   }
 
-  boolean validateTime(long timestamp, long expirationTime) {
-    long currentTime = Clock.systemUTC().millis();
-    // If timestamp is in the future
-    if (timestamp > currentTime + acceptableTimeLimitMs) {
-      return false;
-    }
-    // If token has expired
-    if (expirationTime < currentTime - acceptableTimeLimitMs) {
-      return false;
-    }
-    // If the token is valid for too long
-    if (expirationTime - timestamp > tokenValidityInMs) {
+  boolean validateTime(String timestamp, String expirationTime) {
+    try {
+      long timestampMs = Eip712Encoder.timestampFormat.parse(timestamp).getTime();
+      long expirationTimeMs = Eip712Encoder.timestampFormat.parse(expirationTime).getTime();
+      long currentTime = Clock.systemUTC().millis();
+      // If timestamp is in the future
+      if (timestampMs > currentTime + acceptableTimeLimitMs) {
+        return false;
+      }
+      // If token has expired
+      if (expirationTimeMs < currentTime - acceptableTimeLimitMs) {
+        return false;
+      }
+      // If the token is valid for too long
+      if (expirationTimeMs - timestampMs > tokenValidityInMs) {
+        return false;
+      }
+    } catch (ParseException e) {
       return false;
     }
     return true;

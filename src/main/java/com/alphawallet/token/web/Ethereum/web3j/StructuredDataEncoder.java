@@ -108,7 +108,6 @@ public class StructuredDataEncoder {
 
     public String encodeStruct(String structName) {
         HashMap<String, List<StructuredData.Entry>> types = jsonMessageObject.getTypes();
-
         StringBuilder structRepresentation = new StringBuilder(structName + "(");
         for (StructuredData.Entry entry : types.get(structName)) {
             structRepresentation.append(String.format("%s %s,", entry.getType(), entry.getName()));
