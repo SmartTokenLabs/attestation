@@ -37,12 +37,14 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
     public AttestationRequestInternalData(String description, String identifier, String address, String payload, long timestamp) {
       super(description, payload, timestampFormat.format(new Date(timestamp)));
       this.identifier = identifier;
+      testAddress(address);
       this.address = address;
     }
 
     public AttestationRequestInternalData(String description, String identifier, String address, String payload, String timestamp) {
       super(description, payload, timestamp);
       this.identifier = identifier;
+      testAddress(address);
       this.address = address;
     }
 
@@ -62,6 +64,12 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
       this.address = address;
     }
 
+    @JsonIgnore
+    private void testAddress(String address) {
+      if (!Eip712Encoder.isNullOrAddress(address)) {
+        throw new RuntimeException("Not a valid address");
+      }
+    }
     @JsonIgnore
     @Override
     public AttestationRequestInternalData getSignableVersion() {

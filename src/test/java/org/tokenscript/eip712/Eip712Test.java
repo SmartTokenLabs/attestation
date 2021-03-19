@@ -175,10 +175,10 @@ public class Eip712Test {
     private static final String protocolVersion = "1.0";
 
     public TestEncoder() {
-      super(protocolVersion, "Test", 1L);
+      super(protocolVersion, "Test", 1L, null, "0x0123456789012345678901234567890123456789");
     }
     public TestEncoder(String protocolVersion, long chainId) {
-      super(protocolVersion, "Test", chainId);
+      super(protocolVersion, "Test", chainId, null, "0x0123456789012345678901234567890123456789");
     }
 
     @Override

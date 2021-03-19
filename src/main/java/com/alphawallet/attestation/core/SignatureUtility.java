@@ -422,7 +422,6 @@ public class SignatureUtility {
         BigInteger u1 = z.multiply(rInverse).mod(ECDSAdomain.getN());
         BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSAdomain.getN());
         ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSAdomain.getG().multiply(u1)).normalize();
-//        publicKeyPoint = publicKeyPoint.negate().normalize();
         return new ECPublicKeyParameters(publicKeyPoint, ECDSAdomain);
     }
 

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 public abstract class Eip712Encoder {
@@ -32,16 +33,43 @@ public abstract class Eip712Encoder {
   private final String salt;
   private final String protocolVersion;
   private final String primaryName;
+  private final String verifyingContract;
 
-  public Eip712Encoder(String protocolVersion, String primaryName, Long chainId, String salt) {
+  public Eip712Encoder(String protocolVersion, String primaryName, Long chainId, String salt, String verifyingContract) {
     this.protocolVersion = protocolVersion;
     this.primaryName = primaryName;
     this.chainId = chainId;
     this.salt = salt;
+    if (!isNullOrAddress(verifyingContract)) {
+      throw new RuntimeException("Not a valid address given as verifying contract");
+    }
+    this.verifyingContract = verifyingContract;
+  }
+
+  public Eip712Encoder(String protocolVersion, String primaryName, Long chainId, String salt) {
+    this(protocolVersion, primaryName, chainId, salt, null);
   }
 
   public Eip712Encoder(String protocolVersion, String primaryName, Long chainId) {
     this(protocolVersion, primaryName, chainId, null);
+  }
+
+  public static boolean isNullOrAddress(String address) {
+    if (address == null) {
+      return true;
+    }
+    if (address.length() != 42) {
+      return false;
+    }
+    if (!address.substring(0, 2).equals("0x")) {
+      return false;
+    }
+    try {
+      Hex.decodeStrict(address.substring(2));
+    } catch (DecoderException e) {
+      return false;
+    }
+    return true;
   }
 
   public static String computePayloadDigest(String payload) {
@@ -58,16 +86,16 @@ public abstract class Eip712Encoder {
     types.put(primaryName, content);
     List<Entry> domainContent = new ArrayList<>();
     domainContent.add(new Entry("name", STRING));
-    if (protocolVersion != null) {
-      domainContent.add(new Entry("version", STRING));
-    }
+    domainContent.add(new Entry("version", STRING));
     if (chainId != null) {
       domainContent.add(new Entry("chainId", UINT256));
     }
     if (salt != null) {
       domainContent.add(new Entry("salt", BYTES32));
     }
-//  domainContent.add(new Entry("verifyingContract", ADDRESS));
+    if (verifyingContract != null) {
+      domainContent.add(new Entry("verifyingContract", ADDRESS));
+    }
     types.put(EIP712DOMAIN, domainContent);
     return types;
   }
@@ -84,8 +112,13 @@ public abstract class Eip712Encoder {
   public String getSalt() {
     return salt;
   }
-  public long getChainId() {
+
+  public Long getChainId() {
     return chainId;
+  }
+
+  public String getVerifyingContract() {
+    return verifyingContract;
   }
 
   // Timestamp with millisecond accuracy and timezone info

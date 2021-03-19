@@ -35,7 +35,7 @@ public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common
 
   String getEncodedObject(Eip712InternalData jsonEncodableObject, String webDomain) throws JsonProcessingException {
     StructuredData.EIP712Domain domain = new EIP712Domain(webDomain, encoder.getProtocolVersion(),
-        encoder.getChainId(), null, encoder.getSalt());
+        encoder.getChainId(), encoder.getVerifyingContract(), encoder.getSalt());
     StructuredData.EIP712Message message = new EIP712Message(encoder.getTypes(), encoder.getPrimaryName(),
         jsonEncodableObject, domain);
     return mapper.writeValueAsString(message);

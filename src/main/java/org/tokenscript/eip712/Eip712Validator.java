@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.Hex;
@@ -54,7 +55,9 @@ public class Eip712Validator extends Eip712Common {
     boolean accept = true;
     accept &= domainToCheck.getName().equals(domain);
     accept &= domainToCheck.getVersion().equals(encoder.getProtocolVersion());
-    accept &= domainToCheck.getChainId() == encoder.getChainId();
+    accept &= Objects.equals(domainToCheck.getChainId(), encoder.getChainId());
+    accept &= Objects.equals(domainToCheck.getVerifyingContract(), encoder.getVerifyingContract());
+    accept &= Objects.equals(domainToCheck.getSalt(), encoder.getSalt());
     return accept;
   }
 
@@ -115,14 +118,7 @@ public class Eip712Validator extends Eip712Common {
   }
 
   HashMap<String, List<Entry>> getTypes(JsonNode rootOfEip712) throws Exception {
-    JsonNode jsonPrimaryTypes = rootOfEip712.get("types").get(getPrimaryType(rootOfEip712));
-    JsonNode jsonDomainTypes = rootOfEip712.get("types").get(Eip712Encoder.EIP712DOMAIN);
-    List<Entry> primaryTypes = mapper.readValue(jsonPrimaryTypes.toString(), List.class);
-    List<Entry> domainTypes = mapper.readValue(jsonDomainTypes.toString(), List.class);
-    HashMap<String, List<Entry>> result = new HashMap<>();
-    result.put(getPrimaryType(rootOfEip712), primaryTypes);
-    result.put(Eip712Encoder.EIP712DOMAIN, domainTypes);
-    return result;
+    return mapper.readValue(rootOfEip712.get("types").toString(), HashMap.class);
   }
 
   String getPrimaryType(JsonNode rootOfEip712) {

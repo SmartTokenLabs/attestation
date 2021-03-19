@@ -16,7 +16,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.List;
-import org.web3j.abi.datatypes.Address;
 
 /**
  * This class is here due to a bug in Web3j which prevented EIP712 working for some structures
@@ -48,16 +47,18 @@ public class StructuredData {
     public static class EIP712Domain {
         private final String name;
         private final String version;
-        private final long chainId;
-        private final Address verifyingContract;
+        // Should be uint256, but this does not serialize, so this is a hack working as long as chainId is 64 bits
+        private final Long chainId;
+        // Should be Address, but this does not serialize
+        private final String verifyingContract;
         private final String salt;
 
         @JsonCreator
         public EIP712Domain(
             @JsonProperty(value = "name") String name,
             @JsonProperty(value = "version") String version,
-            @JsonProperty(value = "chainId") long chainId,
-            @JsonProperty(value = "verifyingContract") Address verifyingContract,
+            @JsonProperty(value = "chainId") Long chainId,
+            @JsonProperty(value = "verifyingContract") String verifyingContract,
             @JsonProperty(value = "salt") String salt) {
             this.name = name;
             this.version = version;
@@ -74,11 +75,11 @@ public class StructuredData {
             return version;
         }
 
-        public long getChainId() {
+        public Long getChainId() {
             return chainId;
         }
 
-        public Address getVerifyingContract() {
+        public String getVerifyingContract() {
             return verifyingContract;
         }
 
