@@ -11,8 +11,6 @@ import {AttestationCrypto} from "./AttestationCrypto";
 import {SignatureUtility} from "./SignatureUtility";
 
 export class Nonce {
-    // TODO change to 1 minute
-    static TIMESTAMP_SLACK_MS:number = 6000000; // 100 minute
     static LONG_BYTES:number = 8;
     static ADDRESS_BYTES:number = 20;
 
@@ -35,9 +33,9 @@ export class Nonce {
         ]);
     }
 
-    validateNonce(nonce: Uint8Array, senderIdentifier: string, address: string, receiverIdentifier: string, otherData: Uint8Array = new Uint8Array(0)){
+    validateNonce(nonce: Uint8Array, senderIdentifier: string, address: string, receiverIdentifier: string, timestampSlack:number, otherData: Uint8Array = new Uint8Array(0)){
 
-        if (!this.validateTimestamp(this.getTimestamp(nonce), Date.now())) {
+        if (!this.validateTimestamp(this.getTimestamp(nonce), Date.now(), timestampSlack)) {
             console.log('timestamp check failed');
             return false;
         }
@@ -58,11 +56,11 @@ export class Nonce {
 
     }
 
-    validateTimestamp(nonceTimestamp: number, timeToCompare: number): boolean {
-        if (nonceTimestamp > timeToCompare + Nonce.TIMESTAMP_SLACK_MS) {
+    validateTimestamp(nonceTimestamp: number, timeToCompare: number, timestampSlack:number ): boolean {
+        if (nonceTimestamp > timeToCompare + timestampSlack) {
             return false;
         }
-        if (nonceTimestamp < timeToCompare - Nonce.TIMESTAMP_SLACK_MS) {
+        if (nonceTimestamp < timeToCompare - timestampSlack) {
             return false;
         }
         return true;

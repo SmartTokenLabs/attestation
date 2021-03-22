@@ -36,8 +36,10 @@ export class KeyPair {
     }
 
     // hex string 129-130 symbols with leading 04 (it means uncompressed)
-    // TODO test if correct input string
     static fromPublicHex(publicHex: string){
+        if (publicHex.toLowerCase().match(/^[a-f0-9]+$/i) === null) {
+            throw new Error('Wrong Hex string input');
+        }
         if (publicHex.length < 129 || publicHex.length > 130) {
             throw new Error('Wrong public hex length');
         }
@@ -161,7 +163,7 @@ export class KeyPair {
 
     getAsnDerPublic():string {
         var pubPoint = this.getPublicKeyAsHexStr();
-        // TODO algorithm hardcoded
+        // algorithm description hardcoded
         let pubPointTypeDescrDER = "3081EC06072A8648CE3D02013081E0020101302C06072A8648CE3D0101022100FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F3044042000000000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000000704410479BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8022100FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141020101";
         return Asn1Der.encode('SEQUENCE_30',
             pubPointTypeDescrDER +
@@ -176,9 +178,8 @@ export class KeyPair {
         return "0x" + hash.substr(-40);
     }
 
-    signMessage(message: string){
-        // TODO
-    }
+    // signMessage(message: string){}
+
     signBytes(bytes: number[]): string{
 
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');

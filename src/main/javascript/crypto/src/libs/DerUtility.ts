@@ -227,7 +227,6 @@ export class Asn1Der {
             }
             return extLength;
         } else if (b1 == 128) {
-            // TODO
             throw new Error('have to code variable length')
         }
     }

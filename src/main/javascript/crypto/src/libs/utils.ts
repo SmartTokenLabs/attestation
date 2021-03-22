@@ -142,8 +142,8 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
 
 export function base64toBase64Url(base64: string): string {
     return base64.split('/').join('_')
-        .split('+').join('-')
-        .split('=').join('.');
+        .split('+').join('-');
+        // .split('=').join('.');
 }
 
 export function pemOrBase64Orbase64urlToString(base64str: string): string {
@@ -228,7 +228,9 @@ export function hashUint8To32bytesUint8(data: Uint8Array): Uint8Array{
 }
 
 export function ethAddressToUint8(str: string): Uint8Array {
-    // TODO Ensure that the address is valid, since this will throw an exception if not
+    if (str.toLowerCase().match(/^0x[a-f0-9]{40}$/i) === null) {
+        throw new Error('Wrong Ethereum Address');
+    }
     let addr = Uint8Array.from(hexStringToArray(str.substr(2)));
     if (addr.length != 20) throw new Error('wrong address length');
     return addr;

@@ -95,7 +95,6 @@ export class AttestationCrypto {
         return commitment.getEncoded(false);
     }
 
-    // TODO use type
     // hashIdentifier(type: number , identity: string): Point {
     //     let idenNum = this.mapToInteger(type, Uint8Array.from(stringToArray(identity.trim().toLowerCase())));
     //     // console.log(`idenNum(for base point) = ${idenNum}`);

@@ -4,7 +4,7 @@ import {ethers} from "ethers";
 import {TypedDataUtils} from "eth-sig-util";
 // let ethUtils = require("eth-sig-util");
 // ethUtils.re
-import {recoverPublicKey} from "ethers/lib/utils";
+import {_TypedDataEncoder, recoverPublicKey} from "ethers/lib/utils";
 import {AttestationCrypto} from "./AttestationCrypto";
 
 let EC = require("elliptic");
@@ -21,6 +21,7 @@ export interface Eip712DomainInterface {
 }
 
 export class SignatureUtility {
+    static OID_ECDSA_PUBLICKEY:string = "1.2.840.10045.2.1";
     // static Eip712Types: {[index: string]:string}  = {
     //     STRING: "string",
     //     BYTES32: "bytes32",
@@ -39,7 +40,7 @@ export class SignatureUtility {
         {name: "version", type: "string"},
         {name: "chainId", type: "uint256"},
         // {name: "verifyingContract", type: "address"},
-        {name: "salt", type: "bytes32"},
+        // {name: "salt", type: "bytes32"},
     ];
 
     static sign(str: string, keys: KeyPair):string {
@@ -139,14 +140,7 @@ export class SignatureUtility {
         // },
 
         try {
-            if (!window.ethereum){
-                throw new Error('Please install metamask before.');
-            }
-
-            const userAddresses = await window.ethereum.request({ method: 'eth_accounts' });
-            if (!userAddresses){
-                throw new Error("Active Wallet required");
-            }
+            let userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
 
             // let u = ethers.utils;
             let provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -164,9 +158,10 @@ export class SignatureUtility {
             // All properties on a domain are optional
             const domainData = {
                 chainId: network.chainId,
+                // chainId: 0,
                 name: webDomain,
-                // verifyingContract: '',
-                salt: AttestationCrypto.generateRandomHexString(32), // 32-byte value
+                // verifyingContract: userAddress,
+                // salt: AttestationCrypto.generateRandomHexString(32), // 32-byte value
                 version: Eip712Data['PROTOCOL_VERSION']
             };
 
@@ -179,30 +174,45 @@ export class SignatureUtility {
             userDataValuesWithHashedPayload.payload = sha3.keccak256(userDataValuesWithHashedPayload.payload);
 
             // this is internal logic, we can use it for debug
-            /*
-            console.log('lets try to sign data directly');
-            const populated = await _TypedDataEncoder.resolveNames(domainData, dataTypes, userDataValues, (name: string) => {
-                return window.ethereum.resolveName(name);
-            });
 
-            let typedMsg = _TypedDataEncoder.getPayload(populated.domain, dataTypes, populated.value);
-            let msgParams = JSON.stringify(typedMsg);
+            // console.log('lets try to sign data directly');
+            // const populated = await _TypedDataEncoder.resolveNames(domainData, dataTypes, userDataValues, (name: string) => {
+            //     return window.ethereum.resolveName(name);
+            // });
+            //
+            // let typedMsg = _TypedDataEncoder.getPayload(populated.domain, dataTypes, populated.value);
+            // let msgParams = JSON.stringify(typedMsg);
+            // console.log('msgParams');
+            // console.log(msgParams);
 
-            let directlySigned = await window.ethereum.send("eth_signTypedData_v4", [
-                 userAddresses[0].toLowerCase(), msgParams
-            ]);
-            let signatureD = directlySigned.result;
-            */
+            // let directlySigned = await window.ethereum.send("eth_signTypedData_v4", [
+            //      userAddresses[0].toLowerCase(), msgParams
+            // ]);
+            // let signatureD = directlySigned.result;
+
+            // sign eip712 with custom key
+            // let privateKey = "0x0123456789012345678901234567890123456789012345678901234567890123";
+            // let wallet = new ethers.Wallet(privateKey);
+            // let signature = await wallet._signTypedData(domainData, dataTypes, userDataValuesWithHashedPayload);
+            // console.log('signature');
+            // console.log(signature);
+            // console.log("wallet.address");
+            // console.log(wallet.address);
+
+// Connect a wallet to mainnet
+//             let provider = ethers.getDefaultProvider();
+//             let walletWithProvider = new ethers.Wallet(privateKey, provider);
+
 
             let signature = await signer._signTypedData(domainData, dataTypes, userDataValuesWithHashedPayload);
 
             let completeData: { [index: string]: any } = {
-                domain: domainData,
-                message: userDataValues,
-                primaryType: primaryName,
                 types: {
                     EIP712Domain: SignatureUtility.Eip712domainTypes,
-                }
+                },
+                primaryType: primaryName,
+                message: userDataValues,
+                domain: domainData,
             };
 
             completeData.types[primaryName] = dataTypes[primaryName];

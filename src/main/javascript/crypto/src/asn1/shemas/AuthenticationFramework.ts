@@ -2,7 +2,8 @@ import {AsnProp, AsnPropTypes, AsnType, AsnTypeTypes} from "@peculiar/asn1-schem
 // import {Null} from "asn1js";
 
 export class AlgorithmIdentifierASN {
-    @AsnProp({ type: AsnPropTypes.ObjectIdentifier }) public algorithm: AsnPropTypes.ObjectIdentifier;// OBJECT IDENTIFIER,
+    // @AsnProp({ type: AsnPropTypes.ObjectIdentifier }) public algorithm: AsnPropTypes.ObjectIdentifier;// OBJECT IDENTIFIER,
+    @AsnProp({ type: AsnPropTypes.ObjectIdentifier }) public algorithm: string;// OBJECT IDENTIFIER,
     @AsnProp({ type: AsnPropTypes.Any, optional: true }) public parameters?: AsnPropTypes.Any;// ANY DEFINED BY algorithm OPTIONAL
 }
 

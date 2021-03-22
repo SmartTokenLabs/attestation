@@ -25,7 +25,7 @@ export class Cheque implements Attestable {
     private notValidBefore: number;
     private notValidAfter: number;
     private signature: Uint8Array;
-    // TODO code it
+
     constructor() {}
 
     static fromData(commitment: Uint8Array, amount: number, notValidBefore: number, notValidAfter: number, signature: Uint8Array, keys: KeyPair) {
@@ -115,7 +115,6 @@ export class Cheque implements Attestable {
         return SignatureUtility.verify(cheque, uint8tohex(this.signature), this.keys);
     }
 
-    // TODO code it
     getDerEncoding(): string{
         return this.encoded;
     }

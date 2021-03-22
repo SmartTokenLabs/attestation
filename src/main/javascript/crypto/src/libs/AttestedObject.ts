@@ -21,8 +21,6 @@ declare global {
     }
 }
 
-// TODO public AttestedObject(T object, SignedIdentityAttestation att, ProofOfExponent pok, byte[] signature,
-//       AsymmetricKeyParameter userPublicKey) {
 export class AttestedObject implements ASNEncodable, Verifiable {
     private crypto: AttestationCrypto;
     private pok: ProofOfExponentInterface;
@@ -125,8 +123,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         // CHECK: that it is an identity attestation otherwise not all the checks of validity needed gets carried out
         try {
             let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();
-            let std: IdentifierAttestation = new IdentifierAttestation()
-            std.fromDerEncode(new Uint8Array(hexStringToArray(attEncoded)));
+            let std: IdentifierAttestation = IdentifierAttestation.fromBytes(new Uint8Array(hexStringToArray(attEncoded))) as IdentifierAttestation;
 
             // CHECK: perform the needed checks of an identity attestation
             if (!std.checkValidity()) {
@@ -146,11 +143,11 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
         // CHECK: the Ethereum address on the attestation matches receivers signing key
         let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
-        // TODO
-        // if (!attestationEthereumAddress == this.getUserPublicKey()) {
-        //     console.error("The attestation is not to the same Ethereum user who is sending this request");
-        //     return false;
-        // }
+
+        if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
+            console.error("The attestation is not to the same Ethereum user who is sending this request");
+            return false;
+        }
 
         // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
         if (this.signature != null) {
@@ -170,12 +167,11 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     }
 
     verify(): boolean{
-        //TODO
         let result: boolean =
             this.attestableObject.verify()
             && this.att.verify()
             && this.crypto.verifyEqualityProof(
-                this.att.getCommitment(),
+                this.att.getUnsignedAttestation().getCommitment(),
                 this.attestableObject.getCommitment(),
                 this.pok
             );
@@ -190,8 +186,8 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
         let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
 
-        console.log('attested');
-        console.log(attested);
+        // console.log('attested');
+        // console.log(attested);
 
         let me = new this();
 
@@ -250,8 +246,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     public getDerEncodingWithSignature() { return this.encoding; }
 
-    // TODO type it
-    public getDerEncoding() {
+    public getDerEncoding():string {
         return this.unsignedEncoding;
     }
 

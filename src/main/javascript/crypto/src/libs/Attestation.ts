@@ -32,27 +32,28 @@ export class Attestation {
 
     constructor(){}
 
-    fromDerEncode( signedInfo: Uint8Array) {
-        let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8toBuffer(signedInfo), SignedInfo);
+    static fromBytes( uint8bytes: Uint8Array) {
+        const me = new this();
+        let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8toBuffer(uint8bytes), SignedInfo);
 
-        this.signedInfo = signedInfo;
-        this.version = decodedAttestationObj.version.version;
-        this.serialNumber = decodedAttestationObj.serialNumber;
+        me.signedInfo = uint8bytes;
+        me.version = decodedAttestationObj.version.version;
+        me.serialNumber = decodedAttestationObj.serialNumber;
 
-        this.signingAlgorithm = decodedAttestationObj.signature.algorithm.toString();
+        me.signingAlgorithm = decodedAttestationObj.signature.algorithm.toString();
 
         if (decodedAttestationObj.validity){
-            this.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
-            this.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+            me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
+            me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
         }
-        // TODO enable it
+
         let rdn = decodedAttestationObj.subject.rdnSequence;
         if (rdn && rdn[0] && rdn[0][0]){
             let obj = rdn[0][0];
-            this.subject = (obj.type.toString() == "2.5.4.3" ? "CN=" : "") + obj.value;
+            me.subject = (obj.type.toString() == "2.5.4.3" ? "CN=" : "") + obj.value;
         }
 
-        this.subjectKey = KeyPair.publicFromSubjectPublicKeyInfo(decodedAttestationObj.subjectPublicKeyInfo);
+        me.subjectKey = KeyPair.publicFromSubjectPublicKeyInfo(decodedAttestationObj.subjectPublicKeyInfo);
 
         let issuerSet = decodedAttestationObj.issuer.rdnSequence;
         let namesArray: string[] = [];
@@ -86,19 +87,20 @@ export class Attestation {
                 }
             })
         }
-        this.issuer = namesArray.join(',');
+        me.issuer = namesArray.join(',');
 
         if (decodedAttestationObj.contract){
-            this.smartcontracts = decodedAttestationObj.contract;
+            me.smartcontracts = decodedAttestationObj.contract;
         }
 
         if (decodedAttestationObj.attestsTo.extensions){
-            this.extensions = decodedAttestationObj.attestsTo.extensions;
-            this.commitment = new Uint8Array(this.extensions.extension.extnValue);
+            me.extensions = decodedAttestationObj.attestsTo.extensions;
+            me.commitment = new Uint8Array(me.extensions.extension.extnValue);
         } else if(decodedAttestationObj.attestsTo.dataObject) {
             // TODO parse dataObject
             //this.extensions = decodedAttestationObj.attestsTo.dataObject;
         }
+        return me;
     }
 
     public isValidX509(): boolean {
@@ -189,13 +191,6 @@ export class Attestation {
 
     setSubject(subject: string){
         this.subject = subject;
-        // // TODO encode to support multiple names
-        // if (subject.substr(0,3) === "CN="){
-        //     this.subjectAlg = "0603550403";
-        //     this.subjectName = subject.substr(3);
-        // } else {
-        //     throw new Error('not implemented other than CN=');
-        // }
     }
 
     getSubject(): string{

@@ -8,7 +8,7 @@ import {Validateable} from "./Validateable";
 export class IdentifierAttestation extends Attestation implements Validateable{
     private crypto: AttestationCrypto;
     static OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
-    static DEFAULT_SIGNING_ALGORITHM = "1.2.840.10045.4.2";
+    private DEFAULT_SIGNING_ALGORITHM = "1.2.840.10045.4.2";
 
     constructor() {
         super();
@@ -19,7 +19,7 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         this.subjectKey = keys;
         this.setVersion(18); // Our initial version
         this.setSubject("CN=" + this.subjectKey.getAddress());
-        this.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
+        this.setSigningAlgorithm(this.DEFAULT_SIGNING_ALGORITHM);
 
         this.setSubjectPublicKeyInfo(keys);
         this.setCommitment(commitment);
@@ -32,9 +32,7 @@ export class IdentifierAttestation extends Attestation implements Validateable{
     }
 
     static fromBytes(bytes: Uint8Array){
-        let me = new this();
-        me.fromDerEncode(bytes);
-        return me;
+        return super.fromBytes(bytes);
     }
 
     setSubjectPublicKeyInfo(keys: KeyPair){
@@ -81,8 +79,12 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         return this.serialNumber;
     }
 
-    // TODO change to up-to 20 byte array
     public setSerialNumber(serialNumber: number) {
         this.serialNumber = serialNumber;
+    }
+
+    public getAddress(): string {
+        // Remove the "CN=" prefix
+        return this.subjectKey.getAddress();
     }
 }

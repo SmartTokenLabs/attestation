@@ -6,43 +6,24 @@ import {AttestationRequest} from "./AttestationRequest";
 import {KeyPair} from "./KeyPair";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {SignatureUtility} from "./SignatureUtility";
-import {
-    base64toBase64Url,
-    base64ToUint8array,
-    hexStringToArray, hexStringToBase64Url, hexStringToUint8,
-    pemOrBase64Orbase64urlToString,
-    uint8arrayToBase64,
-    uint8tohex
-} from "./utils";
+import {base64ToUint8array, hexStringToBase64Url} from "./utils";
 import {Nonce} from "./Nonce";
+import {Eip712Token} from "./Eip712Token";
 
-export class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
+export class Eip712AttestationRequest extends Eip712Token implements JsonEncodable, Verifiable, Validateable {
     private jsonEncoding: string;
     private attestationRequest: AttestationRequest;
-    // TODO change to 100000
-    private acceptableTimeLimit: number = 10000000;
-    // TODO type it
-    private data: any;
-    private eip712DomainData: any;
-    private requestorKeys: KeyPair;
 
-    static Eip712UserData: {[index: string]:string|number}  = {
-        address: '',
-        description: '',
-        identifier: '',
-        payload: '',
-        timestamp: 0
-    }
-    static Eip712UserDataTypes: {name: string, type: string}[]  = [
+
+    private Eip712UserDataTypes: {name: string, type: string}[]  = [
         {name: 'address', type: 'string'},
         {name: 'description', type: 'string'},
         {name: 'identifier', type: 'string'},
         {name: 'payload', type: 'string'},
-        // {name: 'timestamp', type: 'uint256'},
         {name: 'timestamp', type: 'string'},
     ]
-    static Eip712UserDataPrimaryName: string = "AttestationRequest";
-    static Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
+    private Eip712UserDataPrimaryName: string = "AttestationRequest";
+    private Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
 
     async addData(attestorDomain: string, identifier: string, request: AttestationRequest) {
         this.setDomainAndTimout(attestorDomain);
@@ -52,8 +33,6 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
         this.jsonEncoding = await this.makeToken(identifier);
 
-        // console.log('lets fillJsonData');
-        // console.log(this.jsonEncoding);
         try {
             // decode JSON and fill publicKey
             this.fillJsonData(this.jsonEncoding);
@@ -107,18 +86,18 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
         let userData = {
             payload: hexStringToBase64Url(this.attestationRequest.getDerEncoding()),
-            description: Eip712AttestationRequest.Eip712UserDataDescription,
+            description: this.Eip712UserDataDescription,
             timestamp: ts,
             identifier: identifier,
             address: userAddress,
         };
 
 
-        return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, Eip712AttestationRequest.Eip712UserDataTypes, Eip712AttestationRequest.Eip712UserDataPrimaryName );
+        return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, this.Eip712UserDataTypes, this.Eip712UserDataPrimaryName );
     }
 
     setAcceptableTimeLimit(limit: number){
-        this.acceptableTimeLimit = limit;
+        this.acceptableTimeLimitMs = limit;
     }
 
     public getJsonEncoding():string {
@@ -145,12 +124,12 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
     public checkValidity(): boolean {
 
-        if (this.data.description !== Eip712AttestationRequest.Eip712UserDataDescription) {
+        if (this.data.description !== this.Eip712UserDataDescription) {
             console.log('Description is not correct');
             return false;
         };
 
-        if (!this.verifyTimeStamp(Date.parse(this.data.timestamp))) {
+        if (!this.verifyTimeStamp(this.data.timestamp)) {
             console.log('Timelimit expired');
             return false;
         };
@@ -160,22 +139,13 @@ export class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
             return false;
         };
 
-        if (! (new Nonce().validateNonce(this.getPok().getNonce(), this.getIdentifier(), this.data.address, this.domain))) {
+        if (! (new Nonce().validateNonce(this.getPok().getNonce(), this.getIdentifier(), this.data.address, this.domain, this.acceptableTimeLimitMs))) {
             console.log('Nonce check failed');
             return false;
         };
         return true;
     }
 
-    private verifyTimeStamp( timestamp: number): boolean {
-        let currentTime = Date.now();
-        // Verify timestamp is still valid and not too old
-        if ((timestamp < currentTime + this.acceptableTimeLimit) &&
-    (timestamp > currentTime - this.acceptableTimeLimit)) {
-            return true;
-        }
-        return false;
-    }
 
     public getIdentifier(): string {
         return this.data.identifier;

@@ -1,7 +1,7 @@
 import {Point} from "./Point";
 import {Proof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {base64ToUint8array, bnToUint8, uint8ToBn, uint8tohex} from "./utils";
+import {base64ToUint8array, bnToUint8, uint8arrayToBase64, uint8ToBn, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 
@@ -12,8 +12,7 @@ export class FullProofOfExponent {
     private nonce: Uint8Array;
     public encoding: string;
 
-    constructor() {
-    }
+    private constructor() {}
 
     static fromData(riddle: Point, tPoint: Point, challenge: bigint, nonce: Uint8Array = new Uint8Array([])) {
         let me = new this();
@@ -25,23 +24,29 @@ export class FullProofOfExponent {
         return me;
     }
 
-    static fromBase64(base64DerEncoded: string) {
-        let me = new this();
+    static fromBytes( uint8data: Uint8Array ) {
+        let proof: Proof = AsnParser.parse( uint8data , Proof);
+        return this.fromASNType(proof);
+    }
 
-        me.encoding = base64DerEncoded;
-
-        let proof: Proof = AsnParser.parse( base64ToUint8array(base64DerEncoded), Proof);
+    static fromASNType( proof:Proof ) {
 
         let riddleEnc: Uint8Array = new Uint8Array(proof.riddle);
-        me.riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
+        let riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
 
         let challengeEnc: Uint8Array = new Uint8Array(proof.challengePoint);
-        me.challenge = uint8ToBn(challengeEnc);
+        let challenge = uint8ToBn(challengeEnc);
 
         let tPointEnc: Uint8Array = new Uint8Array(proof.responseValue);
-        me.tPoint = Point.decodeFromHex(uint8tohex(tPointEnc) );
+        let tPoint = Point.decodeFromHex(uint8tohex(tPointEnc) );
 
-        me.nonce = new Uint8Array(proof.nonce);
+        let nonce = new Uint8Array(proof.nonce);
+
+        return this.fromData(riddle, tPoint, challenge, nonce);
+    }
+
+    static fromBase64(base64DerEncoded: string) {
+        return FullProofOfExponent.fromBytes(base64ToUint8array(base64DerEncoded));
     }
 
     makeEncoding(riddle: Point, tPoint: Point, challenge: bigint, nonce: Uint8Array = new Uint8Array([])):string{

@@ -8,10 +8,11 @@ import {Verifiable} from "./Verifiable";
 import {Validateable} from "./Validateable";
 import {ASNEncodable} from "./ASNEncodable";
 import {Asn1Der} from "./DerUtility";
+import {IdentifierAttestation} from "./IdentifierAttestation";
 
 export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
     private signature: any;
-    private att: Attestation;
+    private att: IdentifierAttestation;
     private commitment: Uint8Array;
     private uint8data: Uint8Array;
     private attestorKeys: KeyPair;
@@ -20,53 +21,55 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
     constructor() {}
 
     static fromBytes(uint8data: Uint8Array, attestorKeys: KeyPair): SignedIdentityAttestation {
+
+        const myAttestation: MyAttestation = AsnParser.parse( uint8toBuffer( uint8data ), MyAttestation);
+        return this.fromASNType(myAttestation, attestorKeys, uint8data);
+
+    }
+
+    static fromASNType(myAttestation: MyAttestation, attestorKeys: KeyPair, uint8data: Uint8Array = new Uint8Array(0)): SignedIdentityAttestation {
         let me = new this();
         me.uint8data = uint8data;
         me.attestorKeys = attestorKeys;
-        const myAttestation: MyAttestation = AsnParser.parse( uint8toBuffer( uint8data ), MyAttestation);
-        me.att = new Attestation();
-        me.att.fromDerEncode(myAttestation.signedInfo);
+        let algorithmEncoded: string = myAttestation.signatureAlgorithm.algorithm;
+        me.att = IdentifierAttestation.fromBytes(myAttestation.signedInfo) as IdentifierAttestation;
 
         me.signature = myAttestation.signatureValue;
-        if (!me.verify()) {
-            throw new Error("SignedIdentityAttestation signature is not valid");
+        if (algorithmEncoded !== me.att.getSigningAlgorithm()) {
+            throw new Error("Algorithm specified is not consistent");
         }
+
+        me.constructorCheck(attestorKeys);
         return me;
     }
 
-    static fromData(att: Attestation, attestationSigningKey: KeyPair): SignedIdentityAttestation{
+    static fromData(att: IdentifierAttestation, attestationSigningKey: KeyPair): SignedIdentityAttestation{
         let me = new this();
         me.attestorKeys = attestationSigningKey;
         me.att = att;
         me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
         me.signature = attestationSigningKey.signBytesWithEthereum( Array.from(me.att.getPrehash()));
-
-        // TODO implement
         me.constructorCheck(attestationSigningKey);
         return me;
     }
 
     verify(){
         try {
-            // let publKey = SignatureUtility.recoverPublicKeyFromMessageSignature(this.att.getDerEncoding(), new Uint8Array(this.signature));
-            // console.log('publKey');
-            // console.log(publKey);
-            // console.log(this.attestorKey.getPublicKeyAsHexStr());
             return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKeys);
         } catch (e) {
             return false;
         }
     }
 
-    getCommitment() {
-        return this.att.getCommitment();
-    }
+    // getCommitment() {
+    //     return this.att.getCommitment();
+    // }
 
     checkValidity(){
         return this.getUnsignedAttestation().checkValidity();
     }
 
-    getUnsignedAttestation(): Attestation{
+    getUnsignedAttestation(): IdentifierAttestation{
         return this.att;
     }
 
@@ -74,23 +77,28 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         if (this.uint8data && this.uint8data.length){
             return uint8tohex(new Uint8Array(this.uint8data));
         } else {
-            return this.constructSignedAttestation();
+            return this.constructSignedAttestation(this.getUnsignedAttestation(), this.signature);
         }
-
     }
 
-    constructSignedAttestation(){
+    constructSignedAttestation(unsignedAtt: IdentifierAttestation, signature: Uint8Array){
 
-        let rawAtt: Uint8Array = this.att.getPrehash();
+        let rawAtt: Uint8Array = unsignedAtt.getPrehash();
         let res: string = uint8tohex(rawAtt)
-            + Asn1Der.encode('OBJECT_ID', this.att.getSigningAlgorithm())
-            + Asn1Der.encode('BIT_STRING', this.signature);
+            + Asn1Der.encode('OBJECT_ID', unsignedAtt.getSigningAlgorithm())
+            + Asn1Der.encode('BIT_STRING', uint8tohex(signature));
 
         return Asn1Der.encode('SEQUENCE_30', res);
     }
 
     constructorCheck(attestorKey: KeyPair){
-
+        // TODO implement
+        // if (!(verificationKey instanceof ECPublicKeyParameters)) {
+        //     throw new UnsupportedOperationException("Attestations must be signed with ECDSA key");
+        // }
+        if (!this.verify()) {
+            throw new Error("The signature is not valid");
+        }
     }
 
 }
