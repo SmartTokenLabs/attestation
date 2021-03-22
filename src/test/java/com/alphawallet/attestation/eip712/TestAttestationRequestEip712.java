@@ -101,6 +101,18 @@ public class TestAttestationRequestEip712 {
   }
 
   @Test
+  public void testOtherValues() {
+    AsymmetricCipherKeyPair otherKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    byte[] nonce = Nonce.makeNonce("0015058081234", SignatureUtility.addressFromKey(otherKeys.getPublic()), "https://www.othersite.org", Clock.systemUTC().millis());
+    FullProofOfExponent pok = crypto.computeAttestationProof(new BigInteger("623784673234325341563416"), nonce);
+    AttestationRequest attRequest = new AttestationRequest(AttestationType.PHONE, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest("https://www.othersite.org", Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS,
+        "0015058081234", attRequest, otherKeys.getPrivate(), SignatureUtility.addressFromKey(otherKeys.getPublic()), 42);
+    assertTrue(request.verify());
+    assertTrue(request.checkValidity());
+  }
+
+  @Test
   public void eipEncoding() throws Exception {
     byte[] nonce = Nonce.makeNonce(MAIL, userAddress, DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
