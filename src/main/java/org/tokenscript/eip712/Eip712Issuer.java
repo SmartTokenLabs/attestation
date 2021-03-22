@@ -29,7 +29,8 @@ public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common
           cryptoFunctions);
       String signatureInHex = signEIP712Message(ethereumMessage, encoder.getChainId());
       // Include the full version of the JSON in the external data
-      Eip712ExternalData data = new Eip712ExternalData(signatureInHex, JSON_RPC_VER, encoder.getChainId(), getEncodedObject(jsonEncodableObject, webDomain));
+      Eip712ExternalData data = new Eip712ExternalData(signatureInHex,
+          getEncodedObject(jsonEncodableObject, webDomain));
       return mapper.writeValueAsString(data);
   }
 

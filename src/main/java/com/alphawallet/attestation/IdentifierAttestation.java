@@ -89,8 +89,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The version number is " + getVersion() + ", it must be 18");
       return false;
     }
-    if (getSubject() == null || getSubject().length() != 45 || !getSubject()
-        .startsWith("CN=0x")) { // The address is 2*20+5 chars long because it starts with CN=0x
+    if (getSubject() == null || !getSubject().startsWith("CN=") || !ValidationTools.isAddress(getSubject().substring(3))) {
       System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
       return false;
     }

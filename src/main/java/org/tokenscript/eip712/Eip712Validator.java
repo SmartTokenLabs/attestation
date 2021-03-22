@@ -1,5 +1,6 @@
 package org.tokenscript.eip712;
 
+import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.token.entity.EthereumTypedMessage;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
@@ -9,8 +10,8 @@ import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredDataEncoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InvalidObjectException;
+import java.text.ParseException;
 import java.time.Clock;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +20,7 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.Hex;
 
 public class Eip712Validator extends Eip712Common {
-  public static final int DEFAULT_TIME_LIMIT_MS = 100000;
+  public static final int DEFAULT_TIME_LIMIT_MS = 10000;
 
   protected final String domain;
   protected final long acceptableTimeLimitMs;
@@ -63,20 +64,12 @@ public class Eip712Validator extends Eip712Common {
 
   public boolean verifyTimeStamp(String timestamp) {
     try {
+      long timestampInMs = encoder.TIMESTAMP_FORMAT.parse(timestamp).getTime();
       long currentTime = Clock.systemUTC().millis();
-      Date currentTimestampWAddedLimit = new Date(currentTime + acceptableTimeLimitMs);
-      Date currentTimestampWSubtractedLimit = new Date(currentTime - acceptableTimeLimitMs);
-      Date parsedTimestamp = encoder.timestampFormat.parse(timestamp);
-      // Verify timestamp is still valid and not too old
-      // i.e. parsedTimestamp in ]currentTimestampWSubtractedLimit;  currentTimestampWAddedLimit[
-      if (parsedTimestamp.before(currentTimestampWAddedLimit) &&
-          parsedTimestamp.after(currentTimestampWSubtractedLimit)) {
-        return true;
-      }
-    } catch (Exception e) {
+      return ValidationTools.validateTimestamp(timestampInMs, currentTime, acceptableTimeLimitMs);
+    } catch (ParseException e) {
       return false;
     }
-    return false;
   }
 
   public <T extends FullEip712InternalData> boolean verifySignature(String signedJsonInput, String pkAddress, Class<T> type) {
@@ -124,6 +117,7 @@ public class Eip712Validator extends Eip712Common {
   String getPrimaryType(JsonNode rootOfEip712) {
     return rootOfEip712.get("primaryType").asText();
   }
+
   /**
    * Retrieve and validate the domain
    */

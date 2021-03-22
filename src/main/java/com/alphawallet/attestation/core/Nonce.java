@@ -1,5 +1,6 @@
 package com.alphawallet.attestation.core;
 
+import com.alphawallet.attestation.ValidationTools;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -32,7 +33,7 @@ public class Nonce {
   public static boolean validateNonce(byte[] nonce, String senderIdentifier,
       String address, String receiverIdentifier, long timestampSlack, byte[] otherData) {
     long currentTime = Clock.systemUTC().millis();
-    if (!validateTimestamp(getTimestamp(nonce), currentTime, timestampSlack)) {
+    if (!ValidationTools.validateTimestamp(getTimestamp(nonce), currentTime, timestampSlack)) {
       return false;
     }
     if (!validateSenderIdentifier(nonce, senderIdentifier)) {
@@ -91,13 +92,4 @@ public class Nonce {
     return buffer.getLong();
   }
 
-  static boolean validateTimestamp(long timestamp, long currentTime, long timestampSlack) {
-    if (timestamp > currentTime + timestampSlack) {
-      return false;
-    }
-    if (timestamp < currentTime - timestampSlack) {
-      return false;
-    }
-    return true;
-  }
 }

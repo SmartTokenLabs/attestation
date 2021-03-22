@@ -1,5 +1,6 @@
 package org.tokenscript.eip712;
 
+import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.nio.charset.StandardCharsets;
@@ -8,11 +9,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 public abstract class Eip712Encoder {
-
   public static final String STRING = "string";
   public static final String BYTES32 = "bytes32";
   public static final String UINT64 = "uint64";
@@ -25,10 +24,6 @@ public abstract class Eip712Encoder {
   public static final String DESCRIPTION_NAME = "description";
   public static final String PAYLOAD_NAME = "payload";
 
-  // Other relevant tags
-  public static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
-  public static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
-
   private final Long chainId;
   private final String salt;
   private final String protocolVersion;
@@ -40,7 +35,7 @@ public abstract class Eip712Encoder {
     this.primaryName = primaryName;
     this.chainId = chainId;
     this.salt = salt;
-    if (!isNullOrAddress(verifyingContract)) {
+    if (!ValidationTools.isNullOrAddress(verifyingContract)) {
       throw new RuntimeException("Not a valid address given as verifying contract");
     }
     this.verifyingContract = verifyingContract;
@@ -52,24 +47,6 @@ public abstract class Eip712Encoder {
 
   public Eip712Encoder(String protocolVersion, String primaryName, Long chainId) {
     this(protocolVersion, primaryName, chainId, null);
-  }
-
-  public static boolean isNullOrAddress(String address) {
-    if (address == null) {
-      return true;
-    }
-    if (address.length() != 42) {
-      return false;
-    }
-    if (!address.substring(0, 2).equals("0x")) {
-      return false;
-    }
-    try {
-      Hex.decodeStrict(address.substring(2));
-    } catch (DecoderException e) {
-      return false;
-    }
-    return true;
   }
 
   public static String computePayloadDigest(String payload) {
@@ -122,5 +99,5 @@ public abstract class Eip712Encoder {
   }
 
   // Timestamp with millisecond accuracy and timezone info
-  public static final SimpleDateFormat timestampFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
+  public static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
 }

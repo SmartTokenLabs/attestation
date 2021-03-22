@@ -1,15 +1,17 @@
 package org.tokenscript.eip712;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.Date;
 
+@JsonPropertyOrder({ "payload", "description", "timestamp"})
 public class FullEip712InternalData extends Eip712InternalData {
   private String payload;
 
   public FullEip712InternalData() {}
 
   public FullEip712InternalData(String description, String payload, long timestamp) {
-    super(description, Eip712Encoder.timestampFormat.format(new Date(timestamp)));
+    super(description, Eip712Encoder.TIMESTAMP_FORMAT.format(new Date(timestamp)));
     this.payload = payload;
   }
 

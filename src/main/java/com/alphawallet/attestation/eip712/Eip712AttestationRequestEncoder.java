@@ -1,7 +1,9 @@
 package com.alphawallet.attestation.eip712;
 
+import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -9,8 +11,10 @@ import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.FullEip712InternalData;
 
 public class Eip712AttestationRequestEncoder extends Eip712Encoder {
-  static final String PROTOCOL_VERSION = "0.1";
+  public static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
+  public static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
 
+  static final String PROTOCOL_VERSION = "0.1";
   static final String PRIMARY_NAME = "AttestationRequest";
   static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
@@ -25,27 +29,28 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
     return types;
   }
 
+  @JsonPropertyOrder({ "payload", "description", "timestamp", "address", "identifier"})
   static class AttestationRequestInternalData extends FullEip712InternalData {
-    private String identifier;
     // TODO This should actually be of type Address, but currently this type of the web3j is not Jackson serializable
     private String address;
+    private String identifier;
 
     public AttestationRequestInternalData() {
       super();
     }
 
     public AttestationRequestInternalData(String description, String identifier, String address, String payload, long timestamp) {
-      super(description, payload, timestampFormat.format(new Date(timestamp)));
-      this.identifier = identifier;
+      super(description, payload, TIMESTAMP_FORMAT.format(new Date(timestamp)));
       testAddress(address);
       this.address = address;
+      this.identifier = identifier;
     }
 
     public AttestationRequestInternalData(String description, String identifier, String address, String payload, String timestamp) {
       super(description, payload, timestamp);
-      this.identifier = identifier;
       testAddress(address);
       this.address = address;
+      this.identifier = identifier;
     }
 
     public String getIdentifier() {
@@ -66,7 +71,7 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
 
     @JsonIgnore
     private void testAddress(String address) {
-      if (!Eip712Encoder.isNullOrAddress(address)) {
+      if (!ValidationTools.isNullOrAddress(address)) {
         throw new RuntimeException("Not a valid address");
       }
     }

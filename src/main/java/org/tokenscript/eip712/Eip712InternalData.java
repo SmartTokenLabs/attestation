@@ -1,5 +1,8 @@
 package org.tokenscript.eip712;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonPropertyOrder({ "description", "timestamp"})
 public class Eip712InternalData {
   private String description;
   private String timestamp;

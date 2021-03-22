@@ -170,6 +170,12 @@ public class Eip712Test {
     assertFalse(validator.verifyTimeStamp("1970.01.01 at 01:00:00 CET"));
   }
 
+  @Test
+  public void invalidAddressInEncoder() {
+    Exception e = assertThrows(RuntimeException.class, () -> new TestEncoder("1", 1, "0x0000incorrectAddress0000"));
+    assertEquals(e.getMessage(), "Not a valid address given as verifying contract");
+  }
+
   private static class TestEncoder extends Eip712Encoder {
 
     private static final String protocolVersion = "1.0";
@@ -179,6 +185,9 @@ public class Eip712Test {
     }
     public TestEncoder(String protocolVersion, long chainId) {
       super(protocolVersion, "Test", chainId, null, "0x0123456789012345678901234567890123456789");
+    }
+    public TestEncoder(String protocolVersion, long chainId, String contract) {
+      super(protocolVersion, "Test", chainId, null, contract);
     }
 
     @Override

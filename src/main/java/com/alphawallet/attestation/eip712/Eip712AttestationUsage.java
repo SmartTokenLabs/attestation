@@ -141,6 +141,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     accept &= SignatureUtility.verifyKeyAgainstAddress(
         userPublicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
     accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(), data.getIdentifier(),
+        // TODO does not check nonce based on token validity
         (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, acceptableTimeLimitMs);
     accept &= proofLinking();
     return accept;
@@ -148,8 +149,8 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   boolean validateTime(String timestamp, String expirationTime) {
     try {
-      long timestampMs = Eip712Encoder.timestampFormat.parse(timestamp).getTime();
-      long expirationTimeMs = Eip712Encoder.timestampFormat.parse(expirationTime).getTime();
+      long timestampMs = Eip712Encoder.TIMESTAMP_FORMAT.parse(timestamp).getTime();
+      long expirationTimeMs = Eip712Encoder.TIMESTAMP_FORMAT.parse(expirationTime).getTime();
       long currentTime = Clock.systemUTC().millis();
       // If timestamp is in the future
       if (timestampMs > currentTime + acceptableTimeLimitMs) {

@@ -34,23 +34,6 @@ public class NonceTest {
     assertEquals(TIMESTAMP, Nonce.getTimestamp(nonce));
   }
 
-  @Test
-  public void validateTimestamp() {
-    long currentTime;
-    currentTime = TIMESTAMP + 1000;
-    assertTrue(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
-    currentTime = TIMESTAMP - 1000;
-    assertTrue(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
-  }
-
-  @Test
-  public void invalidTimestamp() {
-    long currentTime;
-    currentTime = TIMESTAMP + TIMESTAMP_SLACK_MS + 1000;
-    assertFalse(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
-    currentTime = TIMESTAMP - TIMESTAMP_SLACK_MS - 1000;
-    assertFalse(Nonce.validateTimestamp(TIMESTAMP, currentTime, TIMESTAMP_SLACK_MS));
-  }
 
   @Test
   public void invalidTimestampInValidation() {
