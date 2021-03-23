@@ -25,7 +25,7 @@ import org.tokenscript.eip712.JsonEncodable;
 public class Eip712AttestationUsage extends Eip712Validator implements JsonEncodable, Verifiable,
     Validateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
-  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 30; // 30 minutes
+  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 7; // 1 week
 
   private final long tokenValidityInMs;
   private final UseAttestation useAttestation;

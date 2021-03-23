@@ -20,7 +20,7 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.Hex;
 
 public class Eip712Validator extends Eip712Common {
-  public static final int DEFAULT_TIME_LIMIT_MS = 10000;
+  public static final int DEFAULT_TIME_LIMIT_MS = 1000*60*20; //20 minutes
 
   protected final String domain;
   protected final long acceptableTimeLimitMs;
