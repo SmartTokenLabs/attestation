@@ -49,6 +49,10 @@ public abstract class Eip712Encoder {
     this(protocolVersion, primaryName, chainId, null);
   }
 
+  public Eip712Encoder(String protocolVersion, String primaryName) {
+    this(protocolVersion, primaryName, null, null);
+  }
+
   public static String computePayloadDigest(String payload) {
     return Hex.toHexString(AttestationCrypto.hashWithKeccak(payload.getBytes(
         StandardCharsets.UTF_8)));

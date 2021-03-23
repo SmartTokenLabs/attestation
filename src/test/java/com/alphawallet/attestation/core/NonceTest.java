@@ -46,7 +46,8 @@ public class NonceTest {
     long currentTime = Clock.systemUTC().millis();
     AsymmetricKeyParameter key = SignatureUtility.constructECKeys(rand).getPublic();
     String address = SignatureUtility.addressFromKey(key);
-    assertThrows(UnsupportedOperationException.class, () -> Nonce.makeNonce(USER, address+"a", RECEIVER, currentTime));
+    Exception e = assertThrows(IllegalArgumentException.class, () -> Nonce.makeNonce(USER, address+"a", RECEIVER, currentTime));
+    assertEquals(e.getMessage(), "Address is not valid");
   }
 
   @Test
@@ -55,7 +56,8 @@ public class NonceTest {
     byte[] nonce = Nonce.makeNonce(USER, address, RECEIVER, currentTime);
     AsymmetricKeyParameter key = SignatureUtility.constructECKeys(rand).getPublic();
     String address = SignatureUtility.addressFromKey(key);
-    assertThrows(NumberFormatException.class, () -> Nonce.validateNonce(nonce, USER, "0"+address, RECEIVER, TIMESTAMP_SLACK_MS));
+    Exception e = assertThrows(IllegalArgumentException.class, () -> Nonce.validateNonce(nonce, USER, "0"+address, RECEIVER, TIMESTAMP_SLACK_MS));
+    assertEquals(e.getMessage(), "Address is not valid");
   }
 
   @Test

@@ -18,8 +18,8 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
   static final String PRIMARY_NAME = "AttestationRequest";
   static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
-  public Eip712AttestationRequestEncoder(long chainId) {
-    super(PROTOCOL_VERSION, PRIMARY_NAME, chainId);
+  public Eip712AttestationRequestEncoder() {
+    super(PROTOCOL_VERSION, PRIMARY_NAME);
   }
 
   public HashMap<String, List<Entry>> getTypes() {

@@ -27,7 +27,7 @@ public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common
       // Sign this compacted version
       EthereumTypedMessage ethereumMessage = new EthereumTypedMessage(jsonToSign, null, 0,
           cryptoFunctions);
-      String signatureInHex = signEIP712Message(ethereumMessage, encoder.getChainId());
+      String signatureInHex = signEIP712Message(ethereumMessage);
       // Include the full version of the JSON in the external data
       Eip712ExternalData data = new Eip712ExternalData(signatureInHex,
           getEncodedObject(jsonEncodableObject, webDomain));
@@ -42,8 +42,8 @@ public class Eip712Issuer<T extends FullEip712InternalData> extends Eip712Common
     return mapper.writeValueAsString(message);
   }
 
-  private String signEIP712Message(EthereumTypedMessage msg, long chainID) {
-    byte[] signature = SignatureUtility.signWithEthereum(msg.getPrehash(), chainID, signingKey);
+  private String signEIP712Message(EthereumTypedMessage msg) {
+    byte[] signature = SignatureUtility.signWithEthereum(msg.getPrehash(), signingKey);
     return "0x" + new String(Hex.encode(signature), StandardCharsets.UTF_8);
   }
 }

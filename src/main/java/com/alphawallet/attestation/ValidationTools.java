@@ -4,6 +4,8 @@ import org.bouncycastle.util.encoders.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 public class ValidationTools {
+  // Characters in the string representation of an address
+  public static final int ADDRESS_LENGTH_IN_BYTES = 42;
 
   public static boolean validateTimestamp(long timestamp, long currentTime, long timestampSlack) {
     if (timestamp > currentTime + timestampSlack) {
@@ -16,7 +18,7 @@ public class ValidationTools {
   }
 
   public static boolean isAddress(String address) {
-    if (address.length() != 42) {
+    if (address.length() != ADDRESS_LENGTH_IN_BYTES) {
       return false;
     }
     if (!address.substring(0, 2).equals("0x")) {
