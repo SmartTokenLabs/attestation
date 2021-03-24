@@ -53,8 +53,8 @@ public class EIP712AuthenticationTest {
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    attestorKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
-    ticketKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    attestorKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    ticketKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
     authenticator = new AuthenticatorEncoder(rand);
     validator = new Eip712AuthValidator(decoder, authenticator, attestorKeys.getPublic(), validatorDomain);

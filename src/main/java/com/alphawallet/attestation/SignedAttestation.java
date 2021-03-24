@@ -25,7 +25,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
 
   public SignedAttestation(Attestation att, AsymmetricCipherKeyPair attestationSigningkey) {
     this.att = att;
-    this.signature = SignatureUtility.signDeterministic(att.getPrehash(), attestationSigningkey.getPrivate());
+    this.signature = SignatureUtility.signWithEthereum(att.getPrehash(), attestationSigningkey.getPrivate());
     this.attestationVerificationKey = attestationSigningkey.getPublic();
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
@@ -91,7 +91,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
   @Override
   public boolean verify() {
     try {
-      return SignatureUtility.verify(att.getDerEncoding(), signature, attestationVerificationKey);
+      return SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
     } catch (InvalidObjectException e) {
       return false;
     }

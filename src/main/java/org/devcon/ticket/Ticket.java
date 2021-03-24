@@ -55,7 +55,7 @@ public class Ticket implements Attestable {
     }
     ASN1Sequence asn1Tic = makeTicket();
     try {
-      this.signature = SignatureUtility.signDeterministic(asn1Tic.getEncoded(), keys.getPrivate());
+      this.signature = SignatureUtility.signWithEthereum(asn1Tic.getEncoded(), keys.getPrivate());
       this.encoded = encodeSignedTicket(asn1Tic);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -142,7 +142,7 @@ public class Ticket implements Attestable {
   public boolean verify() {
     try {
       ASN1Sequence ticket = makeTicket();
-      return SignatureUtility.verify(ticket.getEncoded(), signature, this.publicKey);
+      return SignatureUtility.verifyEthereumSignature(ticket.getEncoded(), signature, this.publicKey);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

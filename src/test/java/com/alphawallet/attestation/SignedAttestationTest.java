@@ -35,7 +35,7 @@ public class SignedAttestationTest {
     rand.setSeed("seed".getBytes());
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
-    issuerKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    issuerKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
   @Test
@@ -44,7 +44,7 @@ public class SignedAttestationTest {
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
-    assertTrue(SignatureUtility.verify(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
   }
 
@@ -52,7 +52,7 @@ public class SignedAttestationTest {
   public void testDecoding() throws Exception {
     Attestation att = HelperTest.makeMaximalAtt(subjectKeys.getPublic());
     SignedAttestation signed = new SignedAttestation(att, issuerKeys);
-    assertTrue(SignatureUtility.verify(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
     byte[] signedEncoded = signed.getDerEncoding();
     SignedAttestation newSigned = new SignedAttestation(signedEncoded, issuerKeys.getPublic());

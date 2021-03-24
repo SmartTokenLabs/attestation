@@ -49,7 +49,7 @@ public class Cheque implements Attestable {
     this.notValidAfter = this.notValidBefore + validity;
     ASN1Sequence cheque = makeCheque(this.commitment, amount, notValidBefore, notValidAfter);
     try {
-      this.signature = SignatureUtility.signDeterministic(cheque.getEncoded(), keys.getPrivate());
+      this.signature = SignatureUtility.signWithEthereum(cheque.getEncoded(), keys.getPrivate());
       this.encoded = encodeSignedCheque(cheque, this.signature, this.publicKey);
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -120,7 +120,7 @@ public class Cheque implements Attestable {
     try {
       ASN1Sequence cheque = makeCheque(this.commitment, this.amount, this.getNotValidBefore(),
           this.notValidAfter);
-      return SignatureUtility.verify(cheque.getEncoded(), signature, this.publicKey);
+      return SignatureUtility.verifyEthereumSignature(cheque.getEncoded(), signature, this.publicKey);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
