@@ -18,7 +18,6 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
@@ -142,14 +141,11 @@ public class TestAttestationUsageEip712 {
   }
 
   @Test
-  public void badSignature() {
-      UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-      Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    byte[] encoding = request.getJsonEncoding().getBytes(StandardCharsets.UTF_8);
-    // Flip a bit in the signature part of the encoding
-    encoding[40] ^= 0x01;
-    assertThrows(IllegalArgumentException.class,
-        () -> new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), new String(encoding)));
+  public void badAttesattion() {
+    Mockito.when(mockedUseAttestation.getDerEncoding()).thenReturn(new byte[0]);
+    Mockito.when(mockedUseAttestation.verify()).thenReturn(false);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation, userSigningKey));
+    assertEquals("Could not verify Eip712 use attestation", e.getMessage());
   }
 
   @Test
@@ -293,13 +289,14 @@ public class TestAttestationUsageEip712 {
   }
 
   @Test
-  public void badAddressForSignatureVerification() {
+  public void badAddressInNonce() {
     AsymmetricCipherKeyPair otherUserKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(otherUserKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentityAttestation otherSingedAttestation = new SignedIdentityAttestation(att, attestorKeys);
     UseAttestation usage = new UseAttestation(otherSingedAttestation, TYPE, pok, sessionKey);
-    assertThrows(IllegalArgumentException.class, () -> new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey));
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
+    assertFalse(request.checkValidity());
   }
 
   @Test

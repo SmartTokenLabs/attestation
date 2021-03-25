@@ -22,17 +22,17 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   private final AsymmetricKeyParameter publicKey;
 
   public Eip712AttestationRequest(String attestorDomain, String identifier,
-      AttestationRequest request, AsymmetricKeyParameter signingKey, String address) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey, address);
+      AttestationRequest request, AsymmetricKeyParameter signingKey) {
+    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
       String identifier, AttestationRequest request,
-      AsymmetricKeyParameter signingKey, String address) {
+      AsymmetricKeyParameter signingKey) {
     super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
     try {
       this.attestationRequest = request;
-      this.jsonEncoding = makeToken(identifier, signingKey, address);
+      this.jsonEncoding = makeToken(identifier, signingKey);
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
     } catch (Exception e ) {
@@ -65,12 +65,12 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     }
   }
 
-  String makeToken(String identifier, AsymmetricKeyParameter signingKey, String address) throws JsonProcessingException {
+  String makeToken(String identifier, AsymmetricKeyParameter signingKey) throws JsonProcessingException {
     Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
     long timestamp = Nonce.getTimestamp(attestationRequest.getPok().getNonce());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
-        encoder.getUsageValue(), identifier, address,
+        encoder.getUsageValue(), identifier,
         encodedAttestationRequest, timestamp);
     return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
@@ -101,9 +101,6 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     if (!attestationRequest.verify()) {
       return false;
     }
-    if (!verifySignature(jsonEncoding, data.getAddress(), AttestationRequestInternalData.class)) {
-      return false;
-    }
     return true;
   }
 
@@ -112,9 +109,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     boolean accept = true;
     accept &= data.getDescription().equals(encoder.getUsageValue());
     accept &= verifyTimeStamp(data.getTimestamp());
-    accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, data.getAddress());
     accept &= Nonce.validateNonce(getPok().getNonce(),
-        data.getAddress(), domain,
+        SignatureUtility.addressFromKey(publicKey), domain,
         encoder.stringTimestampToLong(data.getTimestamp())-acceptableTimeLimitMs,
         encoder.stringTimestampToLong(data.getTimestamp())+acceptableTimeLimitMs);
     return accept;

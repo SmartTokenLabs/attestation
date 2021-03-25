@@ -233,7 +233,7 @@ public class Demo {
     byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
     AttestationRequest attRequest = new AttestationRequest(type, pok);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, attRequest, keys.getPrivate(), address);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, attRequest, keys.getPrivate());
     Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
         CREATE, TRUNCATE_EXISTING);
     DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);

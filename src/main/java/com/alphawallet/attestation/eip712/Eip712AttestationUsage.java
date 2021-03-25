@@ -180,11 +180,6 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     if (!useAttestation.verify()) {
       return false;
     }
-    // Remove the "CN=" prefix of subject to get the address
-    String address = useAttestation.getAttestation().getUnsignedAttestation().getAddress();
-    if (!verifySignature(jsonEncoding, address, AttestationUsageData.class)) {
-      return false;
-    }
     return true;
   }
 }

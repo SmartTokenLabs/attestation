@@ -68,7 +68,7 @@ public class TestAttestationRequestEip712 {
 
   @Test
   public void referenceJsonFormat() {
-    String request = "{\"signatureInHex\":\"0xeae2e85bdeb408bd4a81fe59bae31b5dc52da6be3c848cb206523b1b62e19e020209b8bcf55e99892c1354d0da9f792752d5a59a10460a76e61e54804f2974781c\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"address\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAgIBATCB_ARBBBmSwTCP4VSOr07WYbuIZjR6oUIigLCB-o_ygrN2b2xxHKXEocXBQM3NLqQ5OkRuj0ogmOpKgwn7LhWYWkqNzvMEICgRN9ofqOkDesssamg_lzoUAnebHVvhdAo5qgxhGQINBEEECsnXLNQdO2PgaHzQWGWg4KAQ4IvSkn1hPJotLPXMhPIuZeSry7aaOEQt64wyXUolp8an18193r5MKhfZ-E3AjQRSMHg3QTE4MUNCNzI1MDc3NkUxNjc4M0Y5RDNDOTE2NkRFMEY5NUFCMjgzr4crx6TxqXpXW2o9byWM8Ya4h7ATlfLav-aSz8hWQ8YAAAF4afcmsA==\\\",\\\"description\\\":\\\"Linking Ethereum address to phone or email\\\",\\\"timestamp\\\":\\\"Thu Mar 25 2021 16:18:28 GMT+0100\\\",\\\"address\\\":\\\"0x7A181CB7250776E16783F9D3C9166DE0F95AB283\\\",\\\"identifier\\\":\\\"test@test.ts\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    String request = "{\"signatureInHex\":\"0x16ae3290f2f2ad29b42f3389f0a7895ba46ea502b698353d7269c76d9980e99b484436ea728c53cbbf8987e992bc47c12a30a70f8d27facb4559f2f4bf03e6e01b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAQIBATCB-wRBBBmSwTCP4VSOr07WYbuIZjR6oUIigLCB-o_ygrN2b2xxHKXEocXBQM3NLqQ5OkRuj0ogmOpKgwn7LhWYWkqNzvMEH23MGfsN1O7jblKx-yjoE95cuySm8kGyioo4nGC2XnMEQQQIBz3WCL5pcwKOAKv3fEB2HkzqmYpycXuCtQMzmXioJBzn94EuXgvJDLTutL9B1GsmAYJj5zaLDi6-a-M5Py14BFIweDdBMTgxQ0I3MjUwNzc2RTE2NzgzRjlEM0M5MTY2REUwRjk1QUIyODOvhyvHpPGpeldbaj1vJYzxhriHsBOV8tq_5pLPyFZDxgAAAXhqCmHE\\\",\\\"description\\\":\\\"Linking Ethereum address to phone or email\\\",\\\"timestamp\\\":\\\"Thu Mar 25 2021 16:39:28 GMT+0100\\\",\\\"identifier\\\":\\\"test@test.ts\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
     Eip712AttestationRequest eiprequest = new Eip712AttestationRequest(DOMAIN, 1000*60*60*24*365*10,
         request);
     assertTrue(eiprequest.verify());
@@ -80,7 +80,7 @@ public class TestAttestationRequestEip712 {
     byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey, userAddress);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey);
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
   }
@@ -90,7 +90,7 @@ public class TestAttestationRequestEip712 {
     byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey, userAddress);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey);
     Eip712AttestationRequest newRequest = new Eip712AttestationRequest(DOMAIN, request.getJsonEncoding());
     assertTrue(newRequest.verify());
     assertTrue(newRequest.checkValidity());
@@ -110,7 +110,7 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(new BigInteger("623784673234325341563416"), nonce);
     AttestationRequest attRequest = new AttestationRequest(AttestationType.PHONE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest("https://www.othersite.org", Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS,
-        "0015058081234", attRequest, otherKeys.getPrivate(), SignatureUtility.addressFromKey(otherKeys.getPublic()));
+        "0015058081234", attRequest, otherKeys.getPrivate());
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
   }
@@ -120,7 +120,7 @@ public class TestAttestationRequestEip712 {
     byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey, userAddress);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey);
     Eip712Test.validateEncoding(encoder, request.getJsonEncoding());
   }
 
@@ -131,7 +131,7 @@ public class TestAttestationRequestEip712 {
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         encoder.getUsageValue(),
-        MAIL, userAddress, URLUtility.encodeData(attRequest.getDerEncoding()), Clock.systemUTC().millis());
+        MAIL, URLUtility.encodeData(attRequest.getDerEncoding()), Clock.systemUTC().millis());
     Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(userSigningKey, encoder);
     String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN);
     Eip712Test.validateEncoding(encoder, json);
@@ -143,7 +143,7 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL,
-        attRequest, userSigningKey, userAddress);
+        attRequest, userSigningKey);
     assertThrows( IllegalArgumentException.class, () ->   new Eip712AttestationRequest("http://www.someOtherDomain.com", request.getJsonEncoding()));
   }
 
@@ -153,16 +153,16 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     assertThrows( RuntimeException.class, () ->  new Eip712AttestationRequest("www.noHttpPrefix", MAIL,
-        attRequest, userSigningKey, userAddress));
+        attRequest, userSigningKey));
   }
 
+  @Mock
+  AttestationRequest mockAttestationRequest;
   @Test
   public void invalidConstructor() {
-    byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
-    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
-    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
-    Exception e = assertThrows( RuntimeException.class, () ->  new Eip712AttestationRequest(DOMAIN, MAIL, attRequest,
-        userSigningKey, "0x000notValidAddress000"));
+    Mockito.when(mockAttestationRequest.getDerEncoding()).thenReturn(null);
+    Exception e = assertThrows( RuntimeException.class, () ->  new Eip712AttestationRequest(DOMAIN, MAIL, mockAttestationRequest,
+        userSigningKey));
     assertEquals(e.getMessage(), "Could not encode object");
   }
 
@@ -172,12 +172,10 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest,
-        userSigningKey, userAddress);
+        userSigningKey);
     assertThrows( RuntimeException.class, () ->  new Eip712AttestationRequest("www.noHttpPrefix", request.getJsonEncoding()));
   }
 
-  @Mock
-  AttestationRequest mockAttestationRequest;
   @Test
   public void invalidAttestationRequest() {
     byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
@@ -187,7 +185,7 @@ public class TestAttestationRequestEip712 {
     Mockito.when(mockAttestationRequest.getPok()).thenReturn(pok);
     Mockito.when(mockAttestationRequest.getType()).thenReturn(TYPE);
     assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationRequest(DOMAIN, MAIL,
-        mockAttestationRequest, userSigningKey, userAddress));
+        mockAttestationRequest, userSigningKey));
   }
 
   @Test
@@ -199,7 +197,7 @@ public class TestAttestationRequestEip712 {
     Mockito.when(mockAttestationRequest.getPok()).thenReturn(pok);
     Mockito.when(mockAttestationRequest.getType()).thenReturn(TYPE);
     assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationRequest(DOMAIN, MAIL,
-        mockAttestationRequest, userSigningKey, userAddress));
+        mockAttestationRequest, userSigningKey));
   }
 
   @Test
@@ -208,7 +206,7 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL,
-        attRequest, userSigningKey, userAddress);
+        attRequest, userSigningKey);
     String json = request.getJsonEncoding();
     String newJson = json.replace(',', '.');
     Exception e = assertThrows(IllegalArgumentException.class,
@@ -217,23 +215,12 @@ public class TestAttestationRequestEip712 {
   }
 
   @Test
-  public void wrongSignature() {
-    byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
-    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
-    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
-    Exception e = assertThrows(IllegalArgumentException.class,
-        () -> new Eip712AttestationRequest(DOMAIN, MAIL,
-            attRequest, SignatureUtility.constructECKeysWithSmallestY(rand).getPrivate(), userAddress));
-    assertEquals(e.getMessage(), "Could not verify Eip712 AttestationRequest");
-  }
-
-  @Test
   public void invalidTimestamp() {
     byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, -100, MAIL,
-        attRequest, userSigningKey, userAddress);
+        attRequest, userSigningKey);
     assertFalse(request.checkValidity());
   }
 
@@ -244,7 +231,7 @@ public class TestAttestationRequestEip712 {
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Exception e = assertThrows(IllegalArgumentException.class,
         () -> new Eip712AttestationRequest("www.nohttp.com", MAIL,
-            attRequest, userSigningKey, userAddress));
+            attRequest, userSigningKey));
     assertEquals(e.getMessage(), "Issuer domain is not a valid domain");
   }
 
@@ -254,7 +241,7 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent wrongPok = crypto.computeAttestationProof(ATTESTATION_SECRET, wrongNonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, wrongPok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest,
-        userSigningKey, userAddress);
+        userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
   }
