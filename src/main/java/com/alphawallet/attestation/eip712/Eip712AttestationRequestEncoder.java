@@ -11,15 +11,15 @@ import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.FullEip712InternalData;
 
 public class Eip712AttestationRequestEncoder extends Eip712Encoder {
-  public static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
-  public static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
+  private static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
+  private static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
 
-  static final String PROTOCOL_VERSION = "0.1";
-  static final String PRIMARY_NAME = "AttestationRequest";
-  static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
+  private static final String PROTOCOL_VERSION = "0.1";
+  private static final String PRIMARY_NAME = "AttestationRequest";
+  private static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
 
   public Eip712AttestationRequestEncoder() {
-    super(PROTOCOL_VERSION, PRIMARY_NAME);
+    super(USAGE_VALUE, PROTOCOL_VERSION, PRIMARY_NAME);
   }
 
   public HashMap<String, List<Entry>> getTypes() {

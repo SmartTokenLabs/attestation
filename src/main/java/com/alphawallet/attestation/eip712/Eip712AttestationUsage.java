@@ -13,7 +13,6 @@ import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.text.ParseException;
 import java.time.Clock;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.math.ec.ECPoint;
@@ -22,6 +21,14 @@ import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
+/**
+ * Class for asserting and validating that a user who already has an Identity Attestation wishes to
+ * use it at a given website. The assertion is linked to a public key, which can be used to validate
+ * future future communication from the user, up until a user-approved expiration time.
+ *
+ * Note that this object leaks the user's Identity Attestation (Ethereum Public key) and
+ * the user's identifier to the webserver.
+ */
 public class Eip712AttestationUsage extends Eip712Validator implements JsonEncodable, Verifiable,
     Validateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
@@ -88,7 +95,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     long now = Clock.systemUTC().millis();
     long expirationTime = now + tokenValidityInMs;
     AttestationUsageData data = new AttestationUsageData(
-        Eip712AttestationUsageEncoder.USAGE_VALUE,
+        encoder.getUsageValue(),
         identifier, encodedUseAttestation, now, expirationTime);
     return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
@@ -134,37 +141,35 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   @Override
   public boolean checkValidity() {
+    long currentTime = Clock.systemUTC().millis();
+    long nonceMinTime = currentTime - acceptableTimeLimitMs;
+    long nonceMaxTime = encoder.stringTimestampToLong(data.getExpirationTime()) + acceptableTimeLimitMs;
     boolean accept = true;
     accept &= useAttestation.checkValidity();
-    accept &= data.getDescription().equals(Eip712AttestationUsageEncoder.USAGE_VALUE);
-    accept &= validateTime( data.getTimestamp(), data.getExpirationTime());
+    accept &= data.getDescription().equals(encoder.getUsageValue());
+    accept &= validateTime(data.getTimestamp(), data.getExpirationTime());
     accept &= SignatureUtility.verifyKeyAgainstAddress(
         userPublicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
-    accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(), data.getIdentifier(),
-        // TODO does not check nonce based on token validity
-        (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, acceptableTimeLimitMs);
+    accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(),
+        (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, nonceMinTime, nonceMaxTime);
     accept &= proofLinking();
     return accept;
   }
 
   boolean validateTime(String timestamp, String expirationTime) {
-    try {
-      long timestampMs = Eip712Encoder.TIMESTAMP_FORMAT.parse(timestamp).getTime();
-      long expirationTimeMs = Eip712Encoder.TIMESTAMP_FORMAT.parse(expirationTime).getTime();
-      long currentTime = Clock.systemUTC().millis();
-      // If timestamp is in the future
-      if (timestampMs > currentTime + acceptableTimeLimitMs) {
-        return false;
-      }
-      // If token has expired
-      if (expirationTimeMs < currentTime - acceptableTimeLimitMs) {
-        return false;
-      }
-      // If the token is valid for too long
-      if (expirationTimeMs - timestampMs > tokenValidityInMs) {
-        return false;
-      }
-    } catch (ParseException e) {
+    long timestampMs = Eip712Encoder.stringTimestampToLong(timestamp);
+    long expirationTimeMs = Eip712Encoder.stringTimestampToLong(expirationTime);
+    long currentTime = Clock.systemUTC().millis();
+    // If timestamp is in the future
+    if (timestampMs > currentTime + acceptableTimeLimitMs) {
+      return false;
+    }
+    // If token has expired
+    if (expirationTimeMs < currentTime - acceptableTimeLimitMs) {
+      return false;
+    }
+    // If the token is valid for too long
+    if (expirationTimeMs - timestampMs > tokenValidityInMs) {
       return false;
     }
     return true;

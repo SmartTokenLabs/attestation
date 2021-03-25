@@ -230,7 +230,7 @@ public class Demo {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
     String address = SignatureUtility.addressFromKey(keys.getPublic());
-    byte[] nonce = Nonce.makeNonce(receiverId, address, ATTESTOR_DOMAIN, Clock.systemUTC().millis());
+    byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, Clock.systemUTC().millis());
     FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
     AttestationRequest attRequest = new AttestationRequest(type, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, attRequest, keys.getPrivate(), address);

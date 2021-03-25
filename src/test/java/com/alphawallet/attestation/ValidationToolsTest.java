@@ -10,16 +10,16 @@ public class ValidationToolsTest {
 
   @Test
   public void validateTimestamp() {
-    assertTrue(ValidationTools.validateTimestamp(1000, 950, 50));
-    assertTrue(ValidationTools.validateTimestamp(1000, 1050, 50));
+    assertTrue(ValidationTools.validateTimestampWSlack(1000, 950, 50));
+    assertTrue(ValidationTools.validateTimestampWSlack(1000, 1050, 50));
   }
 
   @Test
   public void negativeTimestampTest() {
     // Too new
-    assertFalse(ValidationTools.validateTimestamp(1000, 949, 50));
+    assertFalse(ValidationTools.validateTimestampWSlack(1000, 949, 50));
     // Too old
-    assertFalse(ValidationTools.validateTimestamp(849, 900, 50));
+    assertFalse(ValidationTools.validateTimestampWSlack(849, 900, 50));
   }
 
   @Test

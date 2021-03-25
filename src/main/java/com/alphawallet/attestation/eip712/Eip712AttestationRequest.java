@@ -10,7 +10,6 @@ import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.time.Clock;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
@@ -69,9 +68,10 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   String makeToken(String identifier, AsymmetricKeyParameter signingKey, String address) throws JsonProcessingException {
     Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
+    long timestamp = Nonce.getTimestamp(attestationRequest.getPok().getNonce());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
-        Eip712AttestationRequestEncoder.USAGE_VALUE,
-        identifier, address, encodedAttestationRequest, Clock.systemUTC().millis());
+        encoder.getUsageValue(), identifier, address,
+        encodedAttestationRequest, timestamp);
     return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
 
@@ -110,11 +110,13 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   @Override
   public boolean checkValidity() {
     boolean accept = true;
-    accept &= data.getDescription().equals(Eip712AttestationRequestEncoder.USAGE_VALUE);
+    accept &= data.getDescription().equals(encoder.getUsageValue());
     accept &= verifyTimeStamp(data.getTimestamp());
     accept &= SignatureUtility.verifyKeyAgainstAddress(publicKey, data.getAddress());
-    accept &= Nonce.validateNonce(getPok().getNonce(), getIdentifier(),
-        data.getAddress(), domain, acceptableTimeLimitMs);
+    accept &= Nonce.validateNonce(getPok().getNonce(),
+        data.getAddress(), domain,
+        encoder.stringTimestampToLong(data.getTimestamp())-acceptableTimeLimitMs,
+        encoder.stringTimestampToLong(data.getTimestamp())+acceptableTimeLimitMs);
     return accept;
   }
 

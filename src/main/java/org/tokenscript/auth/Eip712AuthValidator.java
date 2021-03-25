@@ -51,7 +51,7 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
 
   private boolean validateAuthentication(FullEip712InternalData authentication) {
     boolean accept = true;
-    accept &= authentication.getDescription().equals(AuthenticatorEncoder.USAGE_VALUE);
+    accept &= authentication.getDescription().equals(encoder.getUsageValue());
     accept &= verifyTimeStamp(authentication.getTimestamp());
     return accept;
   }

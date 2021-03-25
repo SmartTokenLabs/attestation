@@ -66,7 +66,7 @@ public class Eip712Validator extends Eip712Common {
     try {
       long timestampInMs = encoder.TIMESTAMP_FORMAT.parse(timestamp).getTime();
       long currentTime = Clock.systemUTC().millis();
-      return ValidationTools.validateTimestamp(timestampInMs, currentTime, acceptableTimeLimitMs);
+      return ValidationTools.validateTimestampWSlack(timestampInMs, currentTime, acceptableTimeLimitMs);
     } catch (ParseException e) {
       return false;
     }

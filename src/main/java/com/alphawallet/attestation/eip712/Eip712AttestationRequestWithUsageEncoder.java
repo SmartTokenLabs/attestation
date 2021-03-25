@@ -1,5 +1,6 @@
 package com.alphawallet.attestation.eip712;
 
+import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -9,17 +10,18 @@ import java.util.List;
 import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.FullEip712InternalData;
 
-public class Eip712AttestationUsageEncoder extends Eip712Encoder {
+public class Eip712AttestationRequestWithUsageEncoder extends Eip712Encoder {
   private static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
   private static final Entry EXPIRATION_ENTRY = new Entry("expirationTime", STRING);
 
   private static final String PROTOCOL_VERSION = "0.1";
 
-  private static final String PRIMARY_NAME = "AttestationUsage";
-  private static final String USAGE_VALUE = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\".";
+  private static final String PRIMARY_NAME = "AttestationRequestWUsage";
+  private static final String USAGE_VALUE = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\""
+      + " and use this to authorize usage of local, temporary keys.";
 
-  public Eip712AttestationUsageEncoder(long chainId) {
-    super(USAGE_VALUE, PROTOCOL_VERSION, PRIMARY_NAME, chainId);
+  public Eip712AttestationRequestWithUsageEncoder() {
+    super(USAGE_VALUE, PROTOCOL_VERSION, PRIMARY_NAME);
   }
 
   @Override
@@ -31,19 +33,21 @@ public class Eip712AttestationUsageEncoder extends Eip712Encoder {
   }
 
   @JsonPropertyOrder({ "payload", "description", "timestamp", "identifier", "expirationTime"})
-  static class AttestationUsageData extends FullEip712InternalData {
+  static class AttestationRequestWUsageData extends FullEip712InternalData {
     private String identifier;
     private String expirationTime;
 
-    public AttestationUsageData() { super(); }
+    public AttestationRequestWUsageData() { super(); }
 
-    public AttestationUsageData(String description, String identifier, String payload, long timeStamp, long expirationTime) {
+    public AttestationRequestWUsageData(String description, String identifier, String payload,
+        long timeStamp, long expirationTime) {
       super(description, payload, TIMESTAMP_FORMAT.format(new Date(timeStamp)));
       this.identifier = identifier;
       this.expirationTime = TIMESTAMP_FORMAT.format(new Date(expirationTime));
     }
 
-    public AttestationUsageData(String description, String identifier, String payload, String timeStamp, String expirationTime) {
+    public AttestationRequestWUsageData(String description, String identifier, String payload,
+        String timeStamp, String expirationTime) {
       super(description, payload, timeStamp);
       this.identifier = identifier;
       this.expirationTime = expirationTime;
@@ -62,9 +66,17 @@ public class Eip712AttestationUsageEncoder extends Eip712Encoder {
     public void setExpirationTime(String expirationTime) { this.expirationTime = expirationTime; }
 
     @JsonIgnore
+    private void testAddress(String address) {
+      if (!ValidationTools.isNullOrAddress(address)) {
+        throw new RuntimeException("Not a valid address");
+      }
+    }
+    @JsonIgnore
     @Override
-    public AttestationUsageData getSignableVersion() {
-      return new AttestationUsageData(getDescription(), getIdentifier(), Eip712Encoder.computePayloadDigest(getPayload()), getTimestamp(), getExpirationTime());
+    public Eip712AttestationRequestWithUsageEncoder.AttestationRequestWUsageData getSignableVersion() {
+      return new Eip712AttestationRequestWithUsageEncoder.AttestationRequestWUsageData(
+          getDescription(), getIdentifier(), Eip712Encoder.computePayloadDigest(getPayload()),
+          getTimestamp(), getExpirationTime());
     }
   }
 }

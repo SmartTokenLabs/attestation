@@ -46,6 +46,7 @@ public class TestAttestationUsageEip712 {
   private static final AttestationType TYPE = AttestationType.EMAIL;
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("15816808484023");
   private static final long CHAIN_ID = 1;
+  private static final Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder(CHAIN_ID);
 
   private static byte[] nonce;
   private static FullProofOfExponent pok;
@@ -66,7 +67,7 @@ public class TestAttestationUsageEip712 {
     AsymmetricCipherKeyPair userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     userSigningKey = userKeys.getPrivate();
     userAddress = SignatureUtility.addressFromKey(userKeys.getPublic());
-    nonce = Nonce.makeNonce(MAIL, userAddress, DOMAIN, Clock.systemUTC().millis());
+    nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
     pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
@@ -82,7 +83,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void referenceJsonFormat() {
-    String request = "{\"signatureInHex\":\"0xcbd5b3be9e00e8fcb82bb67bd6929ca13d07f0bc6147b67449613e764991fc67316803c78eea34a4ada470cd77fcac3686e5696b12ada1098741ad918180d4961b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"}]},\\\"primaryType\\\":\\\"AttestationUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIFJDCCApEwggIYoAMCARICAQEwCgYIKoZIzj0EAwIwDjEMMAoGA1UEAwwDQUxYMCIYDzIwMjEwMzIzMTYxNjU1WhgPMjAyMTAzMjMxNzE2NTVaMDUxMzAxBgNVBAMMKjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3NzCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAATpSkUyWoWaOvDxhNbg1x06S1fw_Xac_1bJzUuxqP0kynF3_OZ_SKTBz-mvunuyqG5aVYoGBh1jv0O3f-erPm7jMAcCASoCAgU5o1cwVTBTBgsrBgEEAYs6c3kBKAEB_wRBBAX-MGhom8S6_sTrSD06ksj1Ju1YTQ9FnpnOk6USKQoEFWGvh4fQSv0pASILsQG2W9Zf0hoh1fZk4_rsw6uFAwkwCgYIKoZIzj0EAwIDZwAwZAIwRdAvlpJk7KM17iNn6ACYE18ECANp2Xn78XCBJuOm07e1lsfV-GnHVL4McYQL4H2CAjBVEZdFzSP8pX0TgwNvx_xwCN8ySrYstZAE1xWZhPiKL3E2oyF6Vi5Gwkl65zW_CNYCAQEwggE9BEEEHrZI_52Bm0B6bFjSeXhyPE5bRQrJiYM87Pb9h8MWDN4JrdlWV46eIKN5N-6hH01Nq11ygzgiu7DNJS_4OeJBtwQgA3baDRVnpAlk-Zj8HRMZ4_y5omvi-6o63BwrDK3zBvwEQQQNx8gr1TUaqdeIUkr5TOdqBntV9Aw7vu1A81xDWK0CHwnlxWI1wiPlE5ht4oo-Gu0xfW-q07psaUywzHoYbYEvBIGSAAABeF_f8cq-XwR8TSn1M6N1lTheRc6ButsEAmJ3c2NM1gKnO1k_nzB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3N8BxJpS6VWwViG_3TFMX3w_C5Rk1h9lTxNkbTSZP6dyrxdJGAYb3IzySfn2y3McDwOUAtlPKgic7e_rYBF2FpHAwggFHMIH4BgcqhkjOPQIBMIHsAgEBMCUGByqGSM49AQIwGgICARsGCSqGSM49AQIDAzAJAgEFAgEHAgEMMEwEJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBEkEBQMhP3jKRIg_GjuBYvGI5VPNJl8jwVZ6FodpE7DCrCRYSSg2AczaOA8cnjGNkPldB-VCb-h-RcDoGEaY5FliNk40EWF33SJZAiQB_______________________pri7QdXcmXf9_lEUeBh4WPGECAQQDSgAEBooBBXiWJ32h2lQofYpqt0cHSpzGTeAVIVEQX42RQ6I-adN2BdbsTMsUgpZEeIxCW9OxmZMLlSyhoD3qZgVeS3BBSCoXUizE\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\".\\\",\\\"timestamp\\\":\\\"Tue Mar 23 2021 17:16:55 GMT+0100\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Tue Mar 23 2021 17:46:55 GMT+0100\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\",\\\"chainId\\\":0}}\"}";
+    String request = "{\"signatureInHex\":\"0x7c2a10b60d9295fe0ee2b820c38489b3fbb46a7cc74ed96bbfbaa1bbb7aae28c26b6c7e2814153751b70a041c0081a0a3dae71c6dd2d9a7108c6ce39035521711b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"}]},\\\"primaryType\\\":\\\"AttestationUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIE4zCCApIwggIYoAMCARICAQEwCgYIKoZIzj0EAwIwDjEMMAoGA1UEAwwDQUxYMCIYDzIwMjEwMzI1MTUxNjU4WhgPMjAyMTAzMjUxNjE2NThaMDUxMzAxBgNVBAMMKjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3NzCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAATpSkUyWoWaOvDxhNbg1x06S1fw_Xac_1bJzUuxqP0kynF3_OZ_SKTBz-mvunuyqG5aVYoGBh1jv0O3f-erPm7jMAcCASoCAgU5o1cwVTBTBgsrBgEEAYs6c3kBKAEB_wRBBAX-MGhom8S6_sTrSD06ksj1Ju1YTQ9FnpnOk6USKQoEFWGvh4fQSv0pASILsQG2W9Zf0hoh1fZk4_rsw6uFAwkwCgYIKoZIzj0EAwIDaAAwZQIxAPLl32cW4MFIK9doWjEiUMlcns49BJ5bRJPWf0sBc2_Sm_kginyEYnwrw0x3l3vrawIwTLDPNP8yfQw_4h2VqB5zMeDyerWDKlumH78UNwFCLL095qwpjzM3NMnXZe9bpqm1AgEBMIH8BEEEHrZI_52Bm0B6bFjSeXhyPE5bRQrJiYM87Pb9h8MWDN4JrdlWV46eIKN5N-6hH01Nq11ygzgiu7DNJS_4OeJBtwQgB0h3fPqk3NFFbCKL9P5j7-VBh1-_geF9p1852ollgjAEQQQNx8gr1TUaqdeIUkr5TOdqBntV9Aw7vu1A81xDWK0CHwnlxWI1wiPlE5ht4oo-Gu0xfW-q07psaUywzHoYbYEvBFIweDVBRUUyQjlBODY1NjQ5NjAzMkE2NDdFMTM2NkUxQUE2NzVGRkNCNzfAcSaUulVsFYhv90xTF98PwuUZNYfZU8TZG00mT-ncqwAAAXhp9cbBMIIBRzCB-AYHKoZIzj0CATCB7AIBATAlBgcqhkjOPQECMBoCAgEbBgkqhkjOPQECAwMwCQIBBQIBBwIBDDBMBCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQRJBAUDIT94ykSIPxo7gWLxiOVTzSZfI8FWehaHaROwwqwkWEkoNgHM2jgPHJ4xjZD5XQflQm_ofkXA6BhGmORZYjZONBFhd90iWQIkAf______________________6a4u0HV3Jl3_f5RFHgYeFjxhAgEEA0oABAaKAQV4lid9odpUKH2KardHB0qcxk3gFSFREF-NkUOiPmnTdgXW7EzLFIKWRHiMQlvTsZmTC5UsoaA96mYFXktwQUgqF1IsxA==\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\".\\\",\\\"timestamp\\\":\\\"Thu Mar 25 2021 16:16:58 GMT+0100\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Thu Apr 1 2021 17:16:58 GMT+0200\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\",\\\"chainId\\\":0}}\"}";
     Eip712AttestationUsage eiprequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), 1000*60*60*24*365*10, 1000*60*60*24*365*10, Eip712AttestationUsage.PLACEHOLDER_CHAIN_ID, request);
     assertTrue(eiprequest.verify());
     assertTrue(eiprequest.checkValidity());
@@ -124,7 +125,7 @@ public class TestAttestationUsageEip712 {
   public void eipEncoding() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(CHAIN_ID), request.getJsonEncoding());
+    Eip712Test.validateEncoding(encoder, request.getJsonEncoding());
   }
 
   @Test
@@ -133,11 +134,11 @@ public class TestAttestationUsageEip712 {
     long now = Clock.systemUTC().millis();
     long expirationTime = now + 1000;
     AttestationUsageData data = new AttestationUsageData(
-        Eip712AttestationUsageEncoder.USAGE_VALUE,
+        encoder.getUsageValue(),
         MAIL, URLUtility.encodeData(usage.getDerEncoding()), now, expirationTime);
-    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(userSigningKey, new Eip712AttestationUsageEncoder(CHAIN_ID));
+    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(userSigningKey, encoder);
     String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN);
-    Eip712Test.validateEncoding(new Eip712AttestationUsageEncoder(CHAIN_ID), json);
+    Eip712Test.validateEncoding(encoder, json);
   }
 
   @Test
@@ -163,7 +164,7 @@ public class TestAttestationUsageEip712 {
   @Test
   public void invalidTimestamp() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -100, Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT, CHAIN_ID ,
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -1001, Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT, CHAIN_ID ,
         MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
@@ -172,7 +173,6 @@ public class TestAttestationUsageEip712 {
   @Test
   public void timestampInFuture() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder(CHAIN_ID);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     long futureTime = Clock.systemUTC().millis() + Eip712Validator.DEFAULT_TIME_LIMIT_MS + 1000;
     long expirationTime = futureTime + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
@@ -184,7 +184,6 @@ public class TestAttestationUsageEip712 {
   @Test
   public void timestampExpired() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder(CHAIN_ID);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     long timestamp = Clock.systemUTC().millis() - Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT - Eip712Validator.DEFAULT_TIME_LIMIT_MS - 1000;
     long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
@@ -196,7 +195,6 @@ public class TestAttestationUsageEip712 {
   @Test
   public void timestampFromPastOk() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder(CHAIN_ID);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     long timestamp = Clock.systemUTC().millis() - Eip712Validator.DEFAULT_TIME_LIMIT_MS - 1000;
     long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
@@ -208,7 +206,6 @@ public class TestAttestationUsageEip712 {
   @Test
   public void validForTooLong() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder(CHAIN_ID);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     long timestamp = Clock.systemUTC().millis();
     long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT + Eip712Validator.DEFAULT_TIME_LIMIT_MS + 1;
@@ -220,20 +217,18 @@ public class TestAttestationUsageEip712 {
   @Test
   public void invalidTimeFormat() {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsageEncoder encoder = new Eip712AttestationUsageEncoder(CHAIN_ID);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     long timestamp = Clock.systemUTC().millis();
     long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
     String timestampString = encoder.TIMESTAMP_FORMAT.format(new Date(timestamp));
     SimpleDateFormat otherFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss", Locale.US);
     String expirationTimeString = otherFormat.format(new Date(expirationTime));
-    assertFalse(request.validateTime(timestampString, expirationTimeString));
+    assertThrows(RuntimeException.class, ()-> request.validateTime(timestampString, expirationTimeString));
   }
 
   @Test
   public void invalidNonceDomain() {
-    byte[] wrongNonce = Nonce.makeNonce(MAIL, userAddress, "http://www.notTheRightHotel.com",
-        Clock.systemUTC().millis());
+    byte[] wrongNonce = Nonce.makeNonce(userAddress, "http://www.notTheRightHotel.com", Clock.systemUTC().millis());
     FullProofOfExponent wrongPok = crypto.computeAttestationProof(ATTESTATION_SECRET, wrongNonce);
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
@@ -309,23 +304,23 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void invalidConstructor() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET);
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    Mockito.when(mockedUseAttestation.verify()).thenReturn(true);
+    Mockito.when(mockedUseAttestation.getDerEncoding()).thenReturn(null);
     // Wrong signing keys
-    Exception e = assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationUsage(DOMAIN, MAIL, usage,
-        attestorKeys.getPrivate()));
-    assertEquals(e.getMessage(), "Could not encode object");
+    Exception e = assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation,
+        userSigningKey));
+    assertEquals("Could not encode object", e.getMessage());
   }
 
   @Test
   public void invalidOtherConstructor() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET);
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     String json = request.getJsonEncoding();
     String wrongJson = json.replace(',', '.');
     Exception e = assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), wrongJson));
-    assertEquals(e.getMessage(), "Could not decode object");
+    assertEquals("Could not decode object", e.getMessage());
   }
 
 }

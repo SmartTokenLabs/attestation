@@ -14,21 +14,21 @@ import org.tokenscript.eip712.FullEip712InternalData;
  * The tokens are supposed to be issued by the user for consumption by a third party website.
  */
 public class Eip712AuthIssuer extends Eip712Issuer<FullEip712InternalData> {
-  private final AuthenticatorEncoder authenticator;
+  private final AuthenticatorEncoder encoder;
 
   public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, long chainId) {
     this(signingKey, new AuthenticatorEncoder(chainId, new SecureRandom()));
   }
 
-  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, AuthenticatorEncoder authenticator) {
-    super(signingKey, authenticator);
-    this.authenticator = authenticator;
+  public Eip712AuthIssuer(AsymmetricKeyParameter signingKey, AuthenticatorEncoder encoder) {
+    super(signingKey, encoder);
+    this.encoder = encoder;
   }
   
 
   public String buildSignedToken(AttestedObject attestedObject, String webDomain) throws JsonProcessingException {
     String encodedObject = URLUtility.encodeData(attestedObject.getDerEncoding());
-    FullEip712InternalData auth = new FullEip712InternalData(authenticator.USAGE_VALUE, encodedObject, Clock
+    FullEip712InternalData auth = new FullEip712InternalData(encoder.getUsageValue(), encodedObject, Clock
         .systemUTC().millis());
     return buildSignedTokenFromJsonObject(auth, webDomain);
   }
