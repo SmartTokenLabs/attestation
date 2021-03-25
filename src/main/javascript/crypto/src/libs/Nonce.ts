@@ -5,14 +5,14 @@ import {
     hashUint8To32bytesUint8,
     hexStringToArray,
     stringToArray,
-    uint8merge, uint8ToBn, uint8tohex
+    uint8merge, uint8ToBn, uint8tohex, uint8toString
 } from "./utils";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {SignatureUtility} from "./SignatureUtility";
+import {ValidationTools} from "./ValidationTools";
 
 export class Nonce {
     static LONG_BYTES:number = 8;
-    static ADDRESS_BYTES:number = 20;
 
     static async makeNonce(senderIdentifier: string, address: string = "", receiverIdentifier: string,otherData: Uint8Array = new Uint8Array([]), timestampInMs: number = 0) {
         // Hash to ensure all variable length components is encoded with constant length
@@ -27,7 +27,7 @@ export class Nonce {
         return uint8merge([
             getInt64Bytes(timestampInMs),
             hashStringTo32bytesUint8(senderIdentifier),
-            ethAddressToUint8(address),
+            Uint8Array.from(stringToArray(address)),
             hashStringTo32bytesUint8(receiverIdentifier),
             hashUint8To32bytesUint8(otherData)
         ]);
@@ -35,7 +35,7 @@ export class Nonce {
 
     validateNonce(nonce: Uint8Array, senderIdentifier: string, address: string, receiverIdentifier: string, timestampSlack:number, otherData: Uint8Array = new Uint8Array(0)){
 
-        if (!this.validateTimestamp(this.getTimestamp(nonce), Date.now(), timestampSlack)) {
+        if (!ValidationTools.validateTimestamp(this.getTimestamp(nonce), Date.now(), timestampSlack)) {
             console.log('timestamp check failed');
             return false;
         }
@@ -56,16 +56,6 @@ export class Nonce {
 
     }
 
-    validateTimestamp(nonceTimestamp: number, timeToCompare: number, timestampSlack:number ): boolean {
-        if (nonceTimestamp > timeToCompare + timestampSlack) {
-            return false;
-        }
-        if (nonceTimestamp < timeToCompare - timestampSlack) {
-            return false;
-        }
-        return true;
-    }
-
     validateSenderIdentifier(nonce: Uint8Array, senderIdentifier: string):boolean {
         if (uint8tohex(hashStringTo32bytesUint8(senderIdentifier)).toLowerCase() === uint8tohex(nonce.slice(Nonce.LONG_BYTES , Nonce.LONG_BYTES +
             AttestationCrypto.BYTES_IN_DIGEST)).toLowerCase()) return true;
@@ -73,13 +63,13 @@ export class Nonce {
     }
 
     validateAddress(nonce: Uint8Array, address: string):boolean {
-        if (uint8tohex(ethAddressToUint8(address)).toLowerCase() === uint8tohex(nonce.slice(Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST, Nonce.LONG_BYTES +
-            AttestationCrypto.BYTES_IN_DIGEST + Nonce.ADDRESS_BYTES)).toLowerCase()) return true;
+        if (address.toLowerCase() === uint8toString(nonce.slice(Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST, Nonce.LONG_BYTES +
+            AttestationCrypto.BYTES_IN_DIGEST + ValidationTools.ADDRESS_LENGTH_IN_BYTES)).toLowerCase()) return true;
         return false;
     }
 
     validateReceiverIdentifier(nonce: Uint8Array, receiverIdentifier: string):boolean {
-        if (uint8tohex(hashStringTo32bytesUint8(receiverIdentifier)).toLowerCase() === uint8tohex(nonce.slice(Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST+ Nonce.ADDRESS_BYTES, Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST * 2 + Nonce.ADDRESS_BYTES)).toLowerCase()) return true;
+        if (uint8tohex(hashStringTo32bytesUint8(receiverIdentifier)).toLowerCase() === uint8tohex(nonce.slice(Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST+ ValidationTools.ADDRESS_LENGTH_IN_BYTES, Nonce.LONG_BYTES + AttestationCrypto.BYTES_IN_DIGEST * 2 + ValidationTools.ADDRESS_LENGTH_IN_BYTES)).toLowerCase()) return true;
         return false;
     }
 

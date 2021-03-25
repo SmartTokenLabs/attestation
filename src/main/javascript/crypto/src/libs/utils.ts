@@ -123,13 +123,17 @@ export function uint8merge(list : Uint8Array[]): Uint8Array{
     return out;
 }
 
-export function uint8arrayToBase64( bytes: Uint8Array ): string {
+export function uint8toString(uint8: Uint8Array): string {
     let binary = '';
-    let len = bytes.byteLength;
+    let len = uint8.byteLength;
     for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode( bytes[ i ] );
+        binary += String.fromCharCode( uint8[ i ] );
     }
+    return binary;
+}
 
+export function uint8arrayToBase64( bytes: Uint8Array ): string {
+    let binary = uint8toString(bytes);
 
     // if (typeof Buffer !== 'undefined') {
     if (typeof window === 'undefined' || !window.btoa) {

@@ -32,13 +32,13 @@ export class SignatureUtility {
 
     static Eip712Data: {[index: string]:string}  = {
         PROTOCOL_VERSION: "0.1",
-        JSON_RPC_VER: "2.0",
+        // JSON_RPC_VER: "2.0",
     }
 
     static Eip712domainTypes = [
         {name: "name", type: "string"},
         {name: "version", type: "string"},
-        {name: "chainId", type: "uint256"},
+        // {name: "chainId", type: "uint256"},
         // {name: "verifyingContract", type: "address"},
         // {name: "salt", type: "bytes32"},
     ];
@@ -61,8 +61,8 @@ export class SignatureUtility {
     }
 
     static async signMessageWithBrowserWallet(message: string){
-        await window.ethereum.send('eth_requestAccounts');
-        // let u = ethers.utils;
+        await SignatureUtility.connectMetamaskAndGetAddress();
+
         let provider = new ethers.providers.Web3Provider(window.ethereum);
         let signer = provider.getSigner();
         return await signer.signMessage(message);
@@ -157,7 +157,7 @@ export class SignatureUtility {
 
             // All properties on a domain are optional
             const domainData = {
-                chainId: network.chainId,
+                // chainId: network.chainId,
                 // chainId: 0,
                 name: webDomain,
                 // verifyingContract: userAddress,
@@ -220,8 +220,8 @@ export class SignatureUtility {
             let dataStringified = JSON.stringify(completeData);
             let externalAuthenticationData: { [index: string]: string | number } = {
                 signatureInHex: signature,
-                jsonRpc: Eip712Data['JSON_RPC_VER'],
-                chainId: network.chainId,
+                // jsonRpc: Eip712Data['JSON_RPC_VER'],
+                // chainId: network.chainId,
                 jsonSigned: dataStringified
             };
 

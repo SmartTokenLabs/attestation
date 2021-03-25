@@ -14,7 +14,7 @@ import {Nonce} from "./Nonce";
 export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable, Verifiable,
     Validateable {
     public PLACEHOLDER_CHAIN_ID: number = 0;
-    public DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 30; // 30 minutes
+    public DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 7; // 1 week
     public Eip712PrimaryName: string = "AttestationUsage";
     public Eip712Description: string = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\".";
     public Eip712UserTypes: {name: string, type: string}[]  = [

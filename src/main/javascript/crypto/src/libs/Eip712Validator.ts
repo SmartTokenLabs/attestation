@@ -11,7 +11,7 @@ export class Eip712Validator {
     private XMLConfig: any;
     protected domain: string;
     protected acceptableTimeLimitMs: number;
-    public DEFAULT_TIME_LIMIT_MS = 100000;
+    public DEFAULT_TIME_LIMIT_MS = 1000 * 60 * 20; // 20 min
 
     constructor() {
         this.XMLConfig = XMLconfigData;
