@@ -13,16 +13,11 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.UseAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
-import java.time.Clock;
-import java.util.Date;
-import java.util.Locale;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -37,7 +32,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Test;
-import org.tokenscript.eip712.Eip712Validator;
 
 public class TestAttestationUsageEip712 {
   private static final String DOMAIN = "https://www.hotelbogota.com";
@@ -66,7 +60,7 @@ public class TestAttestationUsageEip712 {
     AsymmetricCipherKeyPair userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     userSigningKey = userKeys.getPrivate();
     userAddress = SignatureUtility.addressFromKey(userKeys.getPublic());
-    nonce = Nonce.makeNonce(userAddress, DOMAIN, Clock.systemUTC().millis());
+    nonce = Nonce.makeNonce(userAddress, DOMAIN, new Timestamp());
     pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
@@ -82,8 +76,9 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void referenceJsonFormat() {
-    String request = "{\"signatureInHex\":\"0x7c2a10b60d9295fe0ee2b820c38489b3fbb46a7cc74ed96bbfbaa1bbb7aae28c26b6c7e2814153751b70a041c0081a0a3dae71c6dd2d9a7108c6ce39035521711b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"}]},\\\"primaryType\\\":\\\"AttestationUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIE4zCCApIwggIYoAMCARICAQEwCgYIKoZIzj0EAwIwDjEMMAoGA1UEAwwDQUxYMCIYDzIwMjEwMzI1MTUxNjU4WhgPMjAyMTAzMjUxNjE2NThaMDUxMzAxBgNVBAMMKjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3NzCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAATpSkUyWoWaOvDxhNbg1x06S1fw_Xac_1bJzUuxqP0kynF3_OZ_SKTBz-mvunuyqG5aVYoGBh1jv0O3f-erPm7jMAcCASoCAgU5o1cwVTBTBgsrBgEEAYs6c3kBKAEB_wRBBAX-MGhom8S6_sTrSD06ksj1Ju1YTQ9FnpnOk6USKQoEFWGvh4fQSv0pASILsQG2W9Zf0hoh1fZk4_rsw6uFAwkwCgYIKoZIzj0EAwIDaAAwZQIxAPLl32cW4MFIK9doWjEiUMlcns49BJ5bRJPWf0sBc2_Sm_kginyEYnwrw0x3l3vrawIwTLDPNP8yfQw_4h2VqB5zMeDyerWDKlumH78UNwFCLL095qwpjzM3NMnXZe9bpqm1AgEBMIH8BEEEHrZI_52Bm0B6bFjSeXhyPE5bRQrJiYM87Pb9h8MWDN4JrdlWV46eIKN5N-6hH01Nq11ygzgiu7DNJS_4OeJBtwQgB0h3fPqk3NFFbCKL9P5j7-VBh1-_geF9p1852ollgjAEQQQNx8gr1TUaqdeIUkr5TOdqBntV9Aw7vu1A81xDWK0CHwnlxWI1wiPlE5ht4oo-Gu0xfW-q07psaUywzHoYbYEvBFIweDVBRUUyQjlBODY1NjQ5NjAzMkE2NDdFMTM2NkUxQUE2NzVGRkNCNzfAcSaUulVsFYhv90xTF98PwuUZNYfZU8TZG00mT-ncqwAAAXhp9cbBMIIBRzCB-AYHKoZIzj0CATCB7AIBATAlBgcqhkjOPQECMBoCAgEbBgkqhkjOPQECAwMwCQIBBQIBBwIBDDBMBCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQRJBAUDIT94ykSIPxo7gWLxiOVTzSZfI8FWehaHaROwwqwkWEkoNgHM2jgPHJ4xjZD5XQflQm_ofkXA6BhGmORZYjZONBFhd90iWQIkAf______________________6a4u0HV3Jl3_f5RFHgYeFjxhAgEEA0oABAaKAQV4lid9odpUKH2KardHB0qcxk3gFSFREF-NkUOiPmnTdgXW7EzLFIKWRHiMQlvTsZmTC5UsoaA96mYFXktwQUgqF1IsxA==\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\".\\\",\\\"timestamp\\\":\\\"Thu Mar 25 2021 16:16:58 GMT+0100\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Thu Apr 1 2021 17:16:58 GMT+0200\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\",\\\"chainId\\\":0}}\"}";
-    Eip712AttestationUsage eiprequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), 1000*60*60*24*365*10, 1000*60*60*24*365*10, Eip712AttestationUsage.PLACEHOLDER_CHAIN_ID, request);
+    String request = "{\"signatureInHex\":\"0xcaee1b2a8d2deb13c8fea398135772c9ce6843602796741b6cc92eb661b442da6b5f81822662669f7fdb93d74b55216425658f47d3f6824530452f5a0021e7181b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"}]},\\\"primaryType\\\":\\\"AttestationUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIE4zCCApIwggIYoAMCARICAQEwCgYIKoZIzj0EAwIwDjEMMAoGA1UEAwwDQUxYMCIYDzIwMjEwMzI2MTQ1NjA5WhgPMjAyMTAzMjYxNTU2MDlaMDUxMzAxBgNVBAMMKjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3NzCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAATpSkUyWoWaOvDxhNbg1x06S1fw_Xac_1bJzUuxqP0kynF3_OZ_SKTBz-mvunuyqG5aVYoGBh1jv0O3f-erPm7jMAcCASoCAgU5o1cwVTBTBgsrBgEEAYs6c3kBKAEB_wRBBAX-MGhom8S6_sTrSD06ksj1Ju1YTQ9FnpnOk6USKQoEFWGvh4fQSv0pASILsQG2W9Zf0hoh1fZk4_rsw6uFAwkwCgYIKoZIzj0EAwIDaAAwZQIxAJqL5iD2Zun4SM0qGGX0BWoT4c5JLgY7lCE_d2jfuicEzoc2vhreqjbtne4A9TioawIwF4XSqv3hMKoNWTpC4abmZhR4XWhHzbrJoghH6gBDwGgSXXZzVZI5ugb6pnjBnvsqAgEBMIH8BEEEHrZI_52Bm0B6bFjSeXhyPE5bRQrJiYM87Pb9h8MWDN4JrdlWV46eIKN5N-6hH01Nq11ygzgiu7DNJS_4OeJBtwQgJwFqSX1Qo8RC1HYHZGtU6B6QvTQQXAXkSNKZZQMGFAwEQQQNx8gr1TUaqdeIUkr5TOdqBntV9Aw7vu1A81xDWK0CHwnlxWI1wiPlE5ht4oo-Gu0xfW-q07psaUywzHoYbYEvBFIweDVBRUUyQjlBODY1NjQ5NjAzMkE2NDdFMTM2NkUxQUE2NzVGRkNCNzfAcSaUulVsFYhv90xTF98PwuUZNYfZU8TZG00mT-ncqwAAAXhvCRMoMIIBRzCB-AYHKoZIzj0CATCB7AIBATAlBgcqhkjOPQECMBoCAgEbBgkqhkjOPQECAwMwCQIBBQIBBwIBDDBMBCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQRJBAUDIT94ykSIPxo7gWLxiOVTzSZfI8FWehaHaROwwqwkWEkoNgHM2jgPHJ4xjZD5XQflQm_ofkXA6BhGmORZYjZONBFhd90iWQIkAf______________________6a4u0HV3Jl3_f5RFHgYeFjxhAgEEA0oABAaKAQV4lid9odpUKH2KardHB0qcxk3gFSFREF-NkUOiPmnTdgXW7EzLFIKWRHiMQlvTsZmTC5UsoaA96mYFXktwQUgqF1IsxA==\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\".\\\",\\\"timestamp\\\":\\\"Fri Mar 26 2021 15:56:10 GMT+0100\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Mon Mar 24 2031 15:56:10 GMT+0100\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\",\\\"chainId\\\":42}}\"}";
+    Eip712AttestationUsage eiprequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(),
+        1000L*60L*60L*24L*365L*10L, 42, request);
     assertTrue(eiprequest.verify());
     assertTrue(eiprequest.checkValidity());
   }
@@ -97,6 +92,17 @@ public class TestAttestationUsageEip712 {
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
   }
+
+  @Test
+  public void otherTimeLimit() {
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    assertTrue(usage.verify());
+    assertTrue(usage.checkValidity());
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN,  1000L*60L*60L*24L*365L*10L, 42, MAIL, usage, userSigningKey);
+    assertTrue(request.verify());
+    assertTrue(request.checkValidity());
+  }
+
 
   @Test
   public void testDecoding() throws Exception {
@@ -130,8 +136,8 @@ public class TestAttestationUsageEip712 {
   @Test
   public void eipSignableEncoding() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    long now = Clock.systemUTC().millis();
-    long expirationTime = now + 1000;
+    Timestamp now = new Timestamp();
+    Timestamp expirationTime = new Timestamp(now.getTime() + 1000);
     AttestationUsageData data = new AttestationUsageData(
         encoder.getUsageValue(),
         MAIL, URLUtility.encodeData(usage.getDerEncoding()), now, expirationTime);
@@ -151,80 +157,15 @@ public class TestAttestationUsageEip712 {
   @Test
   public void expiredToken() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, Eip712AttestationUsage.DEFAULT_TIME_LIMIT_MS, -1, CHAIN_ID,
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -1, CHAIN_ID,
         MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
-  }
-
-  @Test
-  public void invalidTimestamp() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -1001, Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT, CHAIN_ID ,
-        MAIL, usage, userSigningKey);
-    assertTrue(request.verify());
-    assertFalse(request.checkValidity());
-  }
-
-  @Test
-  public void timestampInFuture() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    long futureTime = Clock.systemUTC().millis() + Eip712Validator.DEFAULT_TIME_LIMIT_MS + 1000;
-    long expirationTime = futureTime + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
-    String futureTimeString = encoder.TIMESTAMP_FORMAT.format(new Date(futureTime));
-    String expirationTimeString = encoder.TIMESTAMP_FORMAT.format(new Date(expirationTime));
-    assertFalse(request.validateTime(futureTimeString, expirationTimeString));
-  }
-
-  @Test
-  public void timestampExpired() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    long timestamp = Clock.systemUTC().millis() - Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT - Eip712Validator.DEFAULT_TIME_LIMIT_MS - 1000;
-    long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
-    String timestampString = encoder.TIMESTAMP_FORMAT.format(new Date(timestamp));
-    String expirationTimeString = encoder.TIMESTAMP_FORMAT.format(new Date(expirationTime));
-    assertFalse(request.validateTime(timestampString, expirationTimeString));
-  }
-
-  @Test
-  public void timestampFromPastOk() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    long timestamp = Clock.systemUTC().millis() - Eip712Validator.DEFAULT_TIME_LIMIT_MS - 1000;
-    long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
-    String timestampString = encoder.TIMESTAMP_FORMAT.format(new Date(timestamp));
-    String expirationTimeString = encoder.TIMESTAMP_FORMAT.format(new Date(expirationTime));
-    assertTrue(request.validateTime(timestampString, expirationTimeString));
-  }
-
-  @Test
-  public void validForTooLong() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    long timestamp = Clock.systemUTC().millis();
-    long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT + Eip712Validator.DEFAULT_TIME_LIMIT_MS + 1;
-    String timestampString = encoder.TIMESTAMP_FORMAT.format(new Date(timestamp));
-    String expirationTimeString = encoder.TIMESTAMP_FORMAT.format(new Date(expirationTime));
-    assertFalse(request.validateTime(timestampString, expirationTimeString));
-  }
-
-  @Test
-  public void invalidTimeFormat() {
-    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    long timestamp = Clock.systemUTC().millis();
-    long expirationTime = timestamp + Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
-    String timestampString = encoder.TIMESTAMP_FORMAT.format(new Date(timestamp));
-    SimpleDateFormat otherFormat = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss", Locale.US);
-    String expirationTimeString = otherFormat.format(new Date(expirationTime));
-    assertThrows(RuntimeException.class, ()-> request.validateTime(timestampString, expirationTimeString));
   }
 
   @Test
   public void invalidNonceDomain() {
-    byte[] wrongNonce = Nonce.makeNonce(userAddress, "http://www.notTheRightHotel.com", Clock.systemUTC().millis());
+    byte[] wrongNonce = Nonce.makeNonce(userAddress, "http://www.notTheRightHotel.com", new Timestamp());
     FullProofOfExponent wrongPok = crypto.computeAttestationProof(ATTESTATION_SECRET, wrongNonce);
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);

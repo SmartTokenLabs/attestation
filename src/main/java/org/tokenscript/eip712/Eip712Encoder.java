@@ -4,12 +4,9 @@ import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import org.bouncycastle.util.encoders.Hex;
 
 public abstract class Eip712Encoder {
@@ -121,14 +118,4 @@ public abstract class Eip712Encoder {
     return verifyingContract;
   }
 
-  // Timestamp with millisecond accuracy and timezone info
-  public static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
-
-  public static long stringTimestampToLong(String timestamp) {
-    try {
-      return TIMESTAMP_FORMAT.parse(timestamp).getTime();
-    } catch (ParseException e) {
-      throw new RuntimeException(e);
-    }
-  }
 }

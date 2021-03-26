@@ -7,16 +7,6 @@ public class ValidationTools {
   // Characters in the string representation of an address
   public static final int ADDRESS_LENGTH_IN_BYTES = 42;
 
-  public static boolean validateTimestampWSlack(long timestamp, long currentTime, long timestampSlack) {
-    if (timestamp > currentTime + timestampSlack) {
-      return false;
-    }
-    if (timestamp < currentTime - timestampSlack) {
-      return false;
-    }
-    return true;
-  }
-
 
   public static boolean isAddress(String address) {
     if (address.length() != ADDRESS_LENGTH_IN_BYTES) {

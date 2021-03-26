@@ -7,21 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 public class ValidationToolsTest {
-
-  @Test
-  public void validateTimestamp() {
-    assertTrue(ValidationTools.validateTimestampWSlack(1000, 950, 50));
-    assertTrue(ValidationTools.validateTimestampWSlack(1000, 1050, 50));
-  }
-
-  @Test
-  public void negativeTimestampTest() {
-    // Too new
-    assertFalse(ValidationTools.validateTimestampWSlack(1000, 949, 50));
-    // Too old
-    assertFalse(ValidationTools.validateTimestampWSlack(849, 900, 50));
-  }
-
   @Test
   public void testNullAddress() {
     assertThrows(NullPointerException.class, () -> ValidationTools.isAddress(null));

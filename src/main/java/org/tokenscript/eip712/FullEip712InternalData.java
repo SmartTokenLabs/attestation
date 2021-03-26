@@ -1,8 +1,8 @@
 package org.tokenscript.eip712;
 
+import com.alphawallet.attestation.eip712.Timestamp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import java.util.Date;
 
 @JsonPropertyOrder({ "payload", "description", "timestamp"})
 public class FullEip712InternalData extends Eip712InternalData {
@@ -10,8 +10,8 @@ public class FullEip712InternalData extends Eip712InternalData {
 
   public FullEip712InternalData() {}
 
-  public FullEip712InternalData(String description, String payload, long timestamp) {
-    super(description, Eip712Encoder.TIMESTAMP_FORMAT.format(new Date(timestamp)));
+  public FullEip712InternalData(String description, String payload, Timestamp timestamp) {
+    super(description, timestamp);
     this.payload = payload;
   }
 

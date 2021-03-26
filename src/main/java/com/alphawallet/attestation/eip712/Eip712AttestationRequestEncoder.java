@@ -3,14 +3,12 @@ package com.alphawallet.attestation.eip712;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.FullEip712InternalData;
 
 public class Eip712AttestationRequestEncoder extends Eip712Encoder {
-  private static final Entry ADDRESS_ENTRY = new Entry("address", STRING);
   private static final Entry IDENTIFIER_ENTRY = new Entry("identifier", STRING);
 
   private static final String PROTOCOL_VERSION = "0.1";
@@ -36,8 +34,8 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
     }
 
     public AttestationRequestInternalData(String description, String identifier,
-        String payload, long timestamp) {
-      super(description, payload, TIMESTAMP_FORMAT.format(new Date(timestamp)));
+        String payload, Timestamp timestamp) {
+      super(description, payload, timestamp);
       this.identifier = identifier;
     }
 

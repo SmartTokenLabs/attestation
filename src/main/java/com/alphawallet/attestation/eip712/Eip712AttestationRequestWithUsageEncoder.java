@@ -4,7 +4,6 @@ import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import org.tokenscript.eip712.Eip712Encoder;
@@ -40,10 +39,10 @@ public class Eip712AttestationRequestWithUsageEncoder extends Eip712Encoder {
     public AttestationRequestWUsageData() { super(); }
 
     public AttestationRequestWUsageData(String description, String identifier, String payload,
-        long timeStamp, long expirationTime) {
-      super(description, payload, TIMESTAMP_FORMAT.format(new Date(timeStamp)));
+        Timestamp timeStamp, Timestamp expirationTime) {
+      super(description, payload, timeStamp);
       this.identifier = identifier;
-      this.expirationTime = TIMESTAMP_FORMAT.format(new Date(expirationTime));
+      this.expirationTime = expirationTime.getTimeAsString();
     }
 
     public AttestationRequestWUsageData(String description, String identifier, String payload,

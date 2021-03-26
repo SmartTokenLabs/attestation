@@ -14,6 +14,7 @@ import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
+import com.alphawallet.attestation.eip712.Timestamp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -149,7 +150,7 @@ public class EIP712AuthenticationTest {
   @Test
   public void tooNew() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    long testTimestamp = Clock.systemUTC().millis() + 2 * validator.DEFAULT_TIME_LIMIT_MS;
+    long testTimestamp = Clock.systemUTC().millis() + 2 * Timestamp.ALLOWED_ROUNDING;
     Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));
@@ -158,10 +159,11 @@ public class EIP712AuthenticationTest {
   @Test
   public void tooOld() throws Exception {
     AttestedObject attestedTicket = makeAttestedTicket();
-    String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
+    long testTimestamp = 10000;
+    Eip712AuthIssuer testIssuer = new TestEip712Authentication(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
+    String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
-    Eip712AuthValidator newValidator = new Eip712AuthValidator(decoder, encoder, attestorKeys.getPublic(), validatorDomain, 0);
-    Thread.sleep(1);
+    Eip712AuthValidator newValidator = new Eip712AuthValidator(decoder, encoder, attestorKeys.getPublic(), validatorDomain);
     assertFalse(newValidator.validateRequest(token));
   }
 
@@ -218,11 +220,11 @@ public class EIP712AuthenticationTest {
   }
 
   private class TestEip712Authentication extends Eip712AuthIssuer {
-    private final long testTimestamp;
+    private final Timestamp testTimestamp;
 
     public TestEip712Authentication(AsymmetricKeyParameter signingKey, AuthenticatorEncoder authenticator, long testTimestamp) {
       super(signingKey, authenticator);
-      this.testTimestamp = testTimestamp;
+      this.testTimestamp = new Timestamp(testTimestamp);
     }
 
     @Override

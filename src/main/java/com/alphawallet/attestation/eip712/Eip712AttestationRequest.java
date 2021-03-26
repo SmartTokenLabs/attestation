@@ -3,7 +3,6 @@ package com.alphawallet.attestation.eip712;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
@@ -16,10 +15,12 @@ import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
+  public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
   private final String jsonEncoding;
   private final AsymmetricKeyParameter publicKey;
+  private final long acceptableTimeLimit;
 
   public Eip712AttestationRequest(String attestorDomain, String identifier,
       AttestationRequest request, AsymmetricKeyParameter signingKey) {
@@ -29,8 +30,9 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
       String identifier, AttestationRequest request,
       AsymmetricKeyParameter signingKey) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
+    super(attestorDomain, new Eip712AttestationRequestEncoder());
     try {
+      this.acceptableTimeLimit = acceptableTimeLimit;
       this.attestationRequest = request;
       this.jsonEncoding = makeToken(identifier, signingKey);
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
@@ -47,8 +49,9 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
       String jsonEncoding) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationRequestEncoder());
+    super(attestorDomain, new Eip712AttestationRequestEncoder());
     try {
+      this.acceptableTimeLimit = acceptableTimeLimit;
       this.jsonEncoding = jsonEncoding;
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
@@ -68,10 +71,9 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   String makeToken(String identifier, AsymmetricKeyParameter signingKey) throws JsonProcessingException {
     Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
-    long timestamp = Nonce.getTimestamp(attestationRequest.getPok().getNonce());
+    Timestamp timestamp = Nonce.getTimestamp(attestationRequest.getPok().getNonce());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
-        encoder.getUsageValue(), identifier,
-        encodedAttestationRequest, timestamp);
+        encoder.getUsageValue(), identifier, encodedAttestationRequest, timestamp);
     return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
 
@@ -106,14 +108,21 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   @Override
   public boolean checkValidity() {
-    boolean accept = true;
-    accept &= data.getDescription().equals(encoder.getUsageValue());
-    accept &= verifyTimeStamp(data.getTimestamp());
-    accept &= Nonce.validateNonce(getPok().getNonce(),
+    if (!data.getDescription().equals(encoder.getUsageValue())){
+      return false;
+    }
+    Timestamp timestamp = new Timestamp(data.getTimestamp());
+    timestamp.setValidity(acceptableTimeLimit);
+    if (!timestamp.validateTimestamp()) {
+      return false;
+    }
+    if (!Nonce.validateNonce(getPok().getNonce(),
         SignatureUtility.addressFromKey(publicKey), domain,
-        encoder.stringTimestampToLong(data.getTimestamp())-acceptableTimeLimitMs,
-        encoder.stringTimestampToLong(data.getTimestamp())+acceptableTimeLimitMs);
-    return accept;
+        new Timestamp(Timestamp.stringTimestampToLong(data.getTimestamp())-acceptableTimeLimit),
+        new Timestamp(Timestamp.stringTimestampToLong(data.getTimestamp())+acceptableTimeLimit))) {
+      return false;
+    }
+    return true;
   }
 
 }

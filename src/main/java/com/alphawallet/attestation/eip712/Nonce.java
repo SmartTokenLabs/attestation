@@ -1,13 +1,13 @@
-package com.alphawallet.attestation.core;
+package com.alphawallet.attestation.eip712;
 
 import com.alphawallet.attestation.ValidationTools;
+import com.alphawallet.attestation.core.AttestationCrypto;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class Nonce {
-  // This must be as large as the possible rounding
-  public static final int TIMESTAMP_SLACK_MS = 1000;
+  public static final long DEFAULT_NONCE_TIME_LIMIT_MS = 1000*60*20; // 20 min
 
   private static final int senderAddressIndexStart = 0;
   private static final int senderAddressIndexStop = ValidationTools.ADDRESS_LENGTH_IN_BYTES;
@@ -17,11 +17,11 @@ public class Nonce {
   private static final int timestampIndexStop = timestampIndexStart + Long.BYTES;
   private static final int otherDataIndexStart = timestampIndexStop;
 
-  public static byte[] makeNonce(String senderAddress, String receiverIdentifier, long timestamp) {
+  public static byte[] makeNonce(String senderAddress, String receiverIdentifier, Timestamp timestamp) {
     return makeNonce(senderAddress, receiverIdentifier, timestamp, new byte[0]);
   }
 
-  public static byte[] makeNonce(String senderAddress, String receiverIdentifier, long timestamp, byte[] otherData) {
+  public static byte[] makeNonce(String senderAddress, String receiverIdentifier, Timestamp timestamp, byte[] otherData) {
     // Ensure that the address is valid, since this will throw an exception if not
     if (!ValidationTools.isAddress(senderAddress)) {
       throw new IllegalArgumentException("Address is not valid");
@@ -30,18 +30,18 @@ public class Nonce {
     // Hash to ensure all variable length components is encoded with constant length
     buffer.put(senderAddress.getBytes(StandardCharsets.UTF_8));
     buffer.put(AttestationCrypto.hashWithKeccak(receiverIdentifier.getBytes(StandardCharsets.UTF_8)));
-    buffer.put(longToBytes(timestamp));
+    buffer.put(longToBytes(timestamp.getTime()));
     buffer.put(otherData);
     return buffer.array();
   }
 
   public static boolean validateNonce(byte[] nonce, String senderAddress,
-      String receiverIdentifier, long minTime, long maxTime) {
+      String receiverIdentifier, Timestamp minTime, Timestamp maxTime) {
     return validateNonce(nonce, senderAddress, receiverIdentifier, minTime, maxTime, new byte[0]);
   }
 
   public static boolean validateNonce(byte[] nonce,
-      String senderAddress, String receiverIdentifier, long minTime, long maxTime, byte[] otherData) {
+      String senderAddress, String receiverIdentifier, Timestamp minTime, Timestamp maxTime, byte[] otherData) {
     if (!validateAddress(nonce, senderAddress)) {
       return false;
     }
@@ -73,15 +73,11 @@ public class Nonce {
     return Arrays.equals(receiverIdentifierDigest, recomputedReceiverIdentifierDigest);
   }
 
-  static boolean validateTimestamp(byte[] nonce, long minTime, long maxTime) {
+  static boolean validateTimestamp(byte[] nonce, Timestamp minTime, Timestamp maxTime) {
     long timestamp = bytesToLong(Arrays.copyOfRange(nonce, timestampIndexStart, timestampIndexStop));
-    if (timestamp < minTime - TIMESTAMP_SLACK_MS) {
-      return false;
-    }
-    if (timestamp > maxTime + TIMESTAMP_SLACK_MS) {
-      return false;
-    }
-    return true;
+    Timestamp nonceStamp = new Timestamp(timestamp);
+    nonceStamp.setValidity(maxTime.getTime()-minTime.getTime());
+    return nonceStamp.validateAgainstExpiration(maxTime.getTime());
   }
 
   static boolean validateOtherData(byte[] nonce, byte[] otherData) {
@@ -103,8 +99,8 @@ public class Nonce {
     return buffer.getLong();
   }
 
-  public static long getTimestamp(byte[] nonce) {
-    return bytesToLong(Arrays.copyOfRange(nonce, timestampIndexStart, timestampIndexStop));
+  public static Timestamp getTimestamp(byte[] nonce) {
+    return new Timestamp(bytesToLong(Arrays.copyOfRange(nonce, timestampIndexStart, timestampIndexStop)));
   }
 
 }

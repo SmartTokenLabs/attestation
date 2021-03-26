@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.eip712.Timestamp;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 public class Eip712Test {
   private static final String testDomain = "http://www.test.com";
-  private static final FullEip712InternalData testObject = new FullEip712InternalData("description", "payload", 0L);
+  private static final FullEip712InternalData testObject = new FullEip712InternalData("description", "payload", new Timestamp(0));
 
   private static AsymmetricCipherKeyPair userKeys;
   private static SecureRandom rand;
@@ -183,11 +184,6 @@ public class Eip712Test {
     assertThrows(InvalidObjectException.class, () -> newValidator.getDomainFromJson(rootNode));
   }
 
-  @Test
-  public void invalidTimestamp() {
-    // Does not contain millisecond accuracy
-    assertFalse(validator.verifyTimeStamp("1970.01.01 at 01:00:00 CET"));
-  }
 
   @Test
   public void invalidAddressInEncoder() {
@@ -198,7 +194,7 @@ public class Eip712Test {
   @Test
   public void invalidStringTimestamp() {
     // does not contain ms
-    Exception e = assertThrows(RuntimeException.class, () -> Eip712Encoder.stringTimestampToLong("1987.01.01 at 01:00:00 CET"));
+    Exception e = assertThrows(RuntimeException.class, () -> Timestamp.stringTimestampToLong("1987.01.01 at 01:00:00 CET"));
     assertEquals("java.text.ParseException: Unparseable date: \"1987.01.01 at 01:00:00 CET\"", e.getMessage());
   }
 

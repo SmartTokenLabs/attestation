@@ -1,6 +1,5 @@
 package org.tokenscript.eip712;
 
-import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.token.entity.EthereumTypedMessage;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
@@ -10,8 +9,6 @@ import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredDataEncoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.InvalidObjectException;
-import java.text.ParseException;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -20,18 +17,11 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.util.encoders.Hex;
 
 public class Eip712Validator extends Eip712Common {
-  public static final int DEFAULT_TIME_LIMIT_MS = 1000*60*20; //20 minutes
 
   protected final String domain;
-  protected final long acceptableTimeLimitMs;
 
   public Eip712Validator(String domain, Eip712Encoder encoder) {
-    this(domain, DEFAULT_TIME_LIMIT_MS, encoder);
-  }
-
-  public Eip712Validator(String domain, long acceptableTimeLimitMs, Eip712Encoder encoder) {
     super(encoder);
-    this.acceptableTimeLimitMs = acceptableTimeLimitMs;
     if (!Eip712Common.isDomainValid(domain)) {
       throw new IllegalArgumentException("Issuer domain is not a valid domain");
     }
@@ -53,23 +43,22 @@ public class Eip712Validator extends Eip712Common {
   }
 
   private boolean validateDomain(EIP712Domain domainToCheck) {
-    boolean accept = true;
-    accept &= domainToCheck.getName().equals(domain);
-    accept &= domainToCheck.getVersion().equals(encoder.getProtocolVersion());
-    accept &= Objects.equals(domainToCheck.getChainId(), encoder.getChainId());
-    accept &= Objects.equals(domainToCheck.getVerifyingContract(), encoder.getVerifyingContract());
-    accept &= Objects.equals(domainToCheck.getSalt(), encoder.getSalt());
-    return accept;
-  }
-
-  public boolean verifyTimeStamp(String timestamp) {
-    try {
-      long timestampInMs = encoder.TIMESTAMP_FORMAT.parse(timestamp).getTime();
-      long currentTime = Clock.systemUTC().millis();
-      return ValidationTools.validateTimestampWSlack(timestampInMs, currentTime, acceptableTimeLimitMs);
-    } catch (ParseException e) {
+    if (!domainToCheck.getName().equals(domain)) {
       return false;
     }
+    if (!domainToCheck.getVersion().equals(encoder.getProtocolVersion())) {
+      return false;
+    }
+    if (!Objects.equals(domainToCheck.getChainId(), encoder.getChainId())) {
+      return false;
+    }
+    if (!Objects.equals(domainToCheck.getVerifyingContract(), encoder.getVerifyingContract())) {
+      return false;
+    }
+    if (!Objects.equals(domainToCheck.getSalt(), encoder.getSalt())) {
+      return false;
+    }
+    return true;
   }
 
   public <T extends FullEip712InternalData> boolean verifySignature(String signedJsonInput, String pkAddress, Class<T> type) {

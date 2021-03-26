@@ -5,7 +5,6 @@ import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.UseAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.Nonce;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
@@ -13,10 +12,8 @@ import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.time.Clock;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.math.ec.ECPoint;
-import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
@@ -34,23 +31,21 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   public static final int PLACEHOLDER_CHAIN_ID = 0;
   public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 7; // 1 week
 
-  private final long tokenValidityInMs;
+  private final long maxTokenValidityInMs;
   private final UseAttestation useAttestation;
   private final AttestationUsageData data;
   private final String jsonEncoding;
   private final AsymmetricKeyParameter userPublicKey;
 
   public Eip712AttestationUsage(String attestorDomain, String identifier, UseAttestation useAttestation, AsymmetricKeyParameter signingKey) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID, identifier,
-        useAttestation, signingKey);
+    this(attestorDomain, DEFAULT_TOKEN_TIME_LIMIT,  PLACEHOLDER_CHAIN_ID, identifier, useAttestation, signingKey);
   }
 
-  public Eip712AttestationUsage(String attestorDomain, long acceptableTimeLimit,
-      long tokenValidityInMs, long chainId, String identifier, UseAttestation useAttestation,
-      AsymmetricKeyParameter signingKey) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder(chainId));
+  public Eip712AttestationUsage(String attestorDomain, long maxTokenValidityInMs, long chainId,
+      String identifier, UseAttestation useAttestation, AsymmetricKeyParameter signingKey) {
+    super(attestorDomain, new Eip712AttestationUsageEncoder(chainId));
     try {
-      this.tokenValidityInMs = tokenValidityInMs;
+      this.maxTokenValidityInMs = maxTokenValidityInMs;
       this.useAttestation = useAttestation;
       this.jsonEncoding = makeToken(identifier, useAttestation, signingKey);
       this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
@@ -61,17 +56,17 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
     constructorCheck();
   }
 
-  public Eip712AttestationUsage(String attestorDomain, AsymmetricKeyParameter attestationIssuerVerificationKey, String jsonEncoding) {
-    this(attestorDomain, attestationIssuerVerificationKey, DEFAULT_TIME_LIMIT_MS, DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID,
+  public Eip712AttestationUsage(String attestorDomain, AsymmetricKeyParameter attestationIssuerVerificationKey,
+      String jsonEncoding) {
+    this(attestorDomain, attestationIssuerVerificationKey, DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID,
         jsonEncoding);
   }
 
-  public Eip712AttestationUsage(String attestorDomain,
-      AsymmetricKeyParameter attestationIssuerVerificationKey,
-      long acceptableTimeLimit, long tokenValidityInMs, long chainId, String jsonEncoding) {
-    super(attestorDomain, acceptableTimeLimit, new Eip712AttestationUsageEncoder(chainId));
+  public Eip712AttestationUsage(String attestorDomain, AsymmetricKeyParameter attestationIssuerVerificationKey,
+      long maxTokenValidityInMs, long chainId, String jsonEncoding) {
+    super(attestorDomain, new Eip712AttestationUsageEncoder(chainId));
     try {
-      this.tokenValidityInMs = tokenValidityInMs;
+      this.maxTokenValidityInMs = maxTokenValidityInMs;
       this.jsonEncoding = jsonEncoding;
       this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
@@ -92,11 +87,10 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       AsymmetricKeyParameter signingKey) throws IOException {
     Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(useAttestation.getDerEncoding());
-    long now = Clock.systemUTC().millis();
-    long expirationTime = now + tokenValidityInMs;
+    Timestamp now = new Timestamp();
+    Timestamp expirationTime = new Timestamp(now.getTime() + maxTokenValidityInMs);
     AttestationUsageData data = new AttestationUsageData(
-        encoder.getUsageValue(),
-        identifier, encodedUseAttestation, now, expirationTime);
+        encoder.getUsageValue(), identifier, encodedUseAttestation, now, expirationTime);
     return issuer.buildSignedTokenFromJsonObject(data, domain);
   }
 
@@ -141,35 +135,28 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   @Override
   public boolean checkValidity() {
-    long currentTime = Clock.systemUTC().millis();
-    long nonceMinTime = currentTime - acceptableTimeLimitMs;
-    long nonceMaxTime = encoder.stringTimestampToLong(data.getExpirationTime()) + acceptableTimeLimitMs;
-    boolean accept = true;
-    accept &= useAttestation.checkValidity();
-    accept &= data.getDescription().equals(encoder.getUsageValue());
-    accept &= validateTime(data.getTimestamp(), data.getExpirationTime());
-    accept &= SignatureUtility.verifyKeyAgainstAddress(
-        userPublicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress());
-    accept &= Nonce.validateNonce(useAttestation.getPok().getNonce(),
-        (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, nonceMinTime, nonceMaxTime);
-    accept &= proofLinking();
-    return accept;
-  }
-
-  boolean validateTime(String timestamp, String expirationTime) {
-    long timestampMs = Eip712Encoder.stringTimestampToLong(timestamp);
-    long expirationTimeMs = Eip712Encoder.stringTimestampToLong(expirationTime);
-    long currentTime = Clock.systemUTC().millis();
-    // If timestamp is in the future
-    if (timestampMs > currentTime + acceptableTimeLimitMs) {
+    long nonceMinTime = Timestamp.stringTimestampToLong(data.getExpirationTime()) - maxTokenValidityInMs;
+    long nonceMaxTime = Timestamp.stringTimestampToLong(data.getExpirationTime());
+    if (!useAttestation.checkValidity()) {
       return false;
     }
-    // If token has expired
-    if (expirationTimeMs < currentTime - acceptableTimeLimitMs) {
+    if (!data.getDescription().equals(encoder.getUsageValue())) {
       return false;
     }
-    // If the token is valid for too long
-    if (expirationTimeMs - timestampMs > tokenValidityInMs) {
+    Timestamp time = new Timestamp(data.getTimestamp());
+    time.setValidity(maxTokenValidityInMs);
+    if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(data.getExpirationTime()))) {
+      return false;
+    }
+    if (!SignatureUtility.verifyKeyAgainstAddress(
+        userPublicKey, useAttestation.getAttestation().getUnsignedAttestation().getAddress())) {
+      return false;
+    }
+    if (!Nonce.validateNonce(useAttestation.getPok().getNonce(),
+        (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
+      return false;
+    }
+    if (!proofLinking()) {
       return false;
     }
     return true;
