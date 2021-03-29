@@ -114,10 +114,12 @@ public class EIP712AuthenticationTest {
     AttestedObject attestedTicket = makeAttestedTicket();
     Eip712AuthIssuer testIssuer1 = new Eip712AuthIssuer(userKeys.getPrivate(), new TestAuthenticatorEncoder("0.1", 1));
     String token = testIssuer1.buildSignedToken(attestedTicket, validatorDomain);
-    String equalToken = testIssuer1.buildSignedToken(attestedTicket, validatorDomain);
-    assertEquals(token, equalToken);
+    // Currently real time stamps are used so we cannot be sure they are always equal in case we
+//    String equalToken = testIssuer1.buildSignedToken(attestedTicket, validatorDomain);
+//   assertEquals(token, equalToken);
     Eip712AuthIssuer testIssuer2 = new Eip712AuthIssuer(userKeys.getPrivate(), new TestAuthenticatorEncoder("0.1", 42));
     String newToken = testIssuer2.buildSignedToken(attestedTicket, validatorDomain);
+    assertTrue(validator.validateRequest(newToken));
     assertFalse(token.equals(newToken));
   }
 

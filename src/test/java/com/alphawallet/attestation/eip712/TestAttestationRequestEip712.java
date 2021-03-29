@@ -97,8 +97,8 @@ public class TestAttestationRequestEip712 {
     assertArrayEquals(request.getPok().getDerEncoding(), newRequest.getPok().getDerEncoding());
     assertEquals(request.getJsonEncoding(), newRequest.getJsonEncoding());
     assertEquals(request.getType(), newRequest.getType());
-    assertEquals( ((ECKeyParameters) request.getPublicKey()).getParameters(),
-        ((ECKeyParameters) newRequest.getPublicKey()).getParameters());
+    assertEquals( ((ECKeyParameters) request.getUserPublicKey()).getParameters(),
+        ((ECKeyParameters) newRequest.getUserPublicKey()).getParameters());
   }
 
   @Test

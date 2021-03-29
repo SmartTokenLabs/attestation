@@ -81,7 +81,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
     return data.getIdentifier();
   }
 
-  public AsymmetricKeyParameter getPublicKey() {
+  public AsymmetricKeyParameter getUserPublicKey() {
     return publicKey;
   }
 
