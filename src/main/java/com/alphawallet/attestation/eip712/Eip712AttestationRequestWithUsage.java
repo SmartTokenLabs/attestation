@@ -16,7 +16,7 @@ import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequestWithUsage extends Eip712Validator implements JsonEncodable,
-    Verifiable, Validateable {
+    Verifiable, Validateable, TokenValidateable {
   public static final long DEFAULT_TOKEN_TIME_LIMIT = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
   public static final long DEFAULT_TIME_LIMIT_MS = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS;
 
@@ -112,20 +112,43 @@ public class Eip712AttestationRequestWithUsage extends Eip712Validator implement
     return jsonEncoding;
   }
 
+  /**
+   * Verify that an attestation can be issued. I.e. the nonce is not expired
+   */
   @Override
   public boolean checkValidity() {
-    long nonceMinTime = Timestamp.stringTimestampToLong(data.getTimestamp()) - acceptableTimeLimit;
-    long nonceMaxTime = Timestamp.stringTimestampToLong(data.getTimestamp()) + acceptableTimeLimit;
+    if (!testNonceAndDescription(acceptableTimeLimit)) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Verify that the object can be used as a usage token. I.e. the token timestamp has not expired.
+   * Note that the object can still be used as a token after the nonce for issuance has expired.
+   */
+  @Override
+  public boolean checkTokenValidity() {
+    Timestamp time = new Timestamp(data.getTimestamp());
+    time.setValidity(maxTokenValidityInMs);
+    if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(data.getExpirationTime()))) {
+      return false;
+    }
+    // Nonce validation must still happen since this also verifies user's address and receiver's domain
+    if (!testNonceAndDescription(maxTokenValidityInMs)) {
+      return false;
+    }
+    return true;
+  }
+
+  private boolean testNonceAndDescription(long timeLimit) {
+    long nonceMinTime = Timestamp.stringTimestampToLong(data.getTimestamp()) - timeLimit;
+    long nonceMaxTime = Timestamp.stringTimestampToLong(data.getTimestamp()) + timeLimit;
     if (!Nonce.validateNonce(attestationRequestWithUsage.getPok().getNonce(),
         SignatureUtility.addressFromKey(userPublicKey), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
       return false;
     }
     if (!data.getDescription().equals(encoder.getUsageValue())) {
-      return false;
-    }
-    Timestamp time = new Timestamp(data.getTimestamp());
-    time.setValidity(maxTokenValidityInMs);
-    if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(data.getExpirationTime()))) {
       return false;
     }
     return true;

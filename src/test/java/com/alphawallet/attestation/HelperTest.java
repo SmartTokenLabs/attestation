@@ -21,6 +21,8 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class HelperTest {
 
+  public static final long VALIDITY = 1000L*60L*60L*24L*365L*10L; // 10 years
+
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
       BigInteger secret, String mail) {
     IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL,
@@ -29,7 +31,7 @@ public class HelperTest {
     att.setSerialNumber(1);
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + 3600000)); // Valid for an hour
+    att.setNotValidAfter(new Date(System.currentTimeMillis() + VALIDITY));
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     assertTrue(att.checkValidity());
     assertFalse(att.isValidX509()); // Since the version is wrong, and algorithm is non-standard
@@ -53,7 +55,7 @@ public class HelperTest {
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
+    att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
@@ -75,7 +77,7 @@ public class HelperTest {
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
+    att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);

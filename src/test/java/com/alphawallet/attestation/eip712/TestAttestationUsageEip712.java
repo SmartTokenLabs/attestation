@@ -76,11 +76,11 @@ public class TestAttestationUsageEip712 {
 
   @Test
   public void referenceJsonFormat() {
-    String request = "{\"signatureInHex\":\"0xcaee1b2a8d2deb13c8fea398135772c9ce6843602796741b6cc92eb661b442da6b5f81822662669f7fdb93d74b55216425658f47d3f6824530452f5a0021e7181b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"}]},\\\"primaryType\\\":\\\"AttestationUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIE4zCCApIwggIYoAMCARICAQEwCgYIKoZIzj0EAwIwDjEMMAoGA1UEAwwDQUxYMCIYDzIwMjEwMzI2MTQ1NjA5WhgPMjAyMTAzMjYxNTU2MDlaMDUxMzAxBgNVBAMMKjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3NzCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAATpSkUyWoWaOvDxhNbg1x06S1fw_Xac_1bJzUuxqP0kynF3_OZ_SKTBz-mvunuyqG5aVYoGBh1jv0O3f-erPm7jMAcCASoCAgU5o1cwVTBTBgsrBgEEAYs6c3kBKAEB_wRBBAX-MGhom8S6_sTrSD06ksj1Ju1YTQ9FnpnOk6USKQoEFWGvh4fQSv0pASILsQG2W9Zf0hoh1fZk4_rsw6uFAwkwCgYIKoZIzj0EAwIDaAAwZQIxAJqL5iD2Zun4SM0qGGX0BWoT4c5JLgY7lCE_d2jfuicEzoc2vhreqjbtne4A9TioawIwF4XSqv3hMKoNWTpC4abmZhR4XWhHzbrJoghH6gBDwGgSXXZzVZI5ugb6pnjBnvsqAgEBMIH8BEEEHrZI_52Bm0B6bFjSeXhyPE5bRQrJiYM87Pb9h8MWDN4JrdlWV46eIKN5N-6hH01Nq11ygzgiu7DNJS_4OeJBtwQgJwFqSX1Qo8RC1HYHZGtU6B6QvTQQXAXkSNKZZQMGFAwEQQQNx8gr1TUaqdeIUkr5TOdqBntV9Aw7vu1A81xDWK0CHwnlxWI1wiPlE5ht4oo-Gu0xfW-q07psaUywzHoYbYEvBFIweDVBRUUyQjlBODY1NjQ5NjAzMkE2NDdFMTM2NkUxQUE2NzVGRkNCNzfAcSaUulVsFYhv90xTF98PwuUZNYfZU8TZG00mT-ncqwAAAXhvCRMoMIIBRzCB-AYHKoZIzj0CATCB7AIBATAlBgcqhkjOPQECMBoCAgEbBgkqhkjOPQECAwMwCQIBBQIBBwIBDDBMBCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQRJBAUDIT94ykSIPxo7gWLxiOVTzSZfI8FWehaHaROwwqwkWEkoNgHM2jgPHJ4xjZD5XQflQm_ofkXA6BhGmORZYjZONBFhd90iWQIkAf______________________6a4u0HV3Jl3_f5RFHgYeFjxhAgEEA0oABAaKAQV4lid9odpUKH2KardHB0qcxk3gFSFREF-NkUOiPmnTdgXW7EzLFIKWRHiMQlvTsZmTC5UsoaA96mYFXktwQUgqF1IsxA==\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\".\\\",\\\"timestamp\\\":\\\"Fri Mar 26 2021 15:56:10 GMT+0100\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Mon Mar 24 2031 15:56:10 GMT+0100\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\",\\\"chainId\\\":42}}\"}";
+    String request = "{\"signatureInHex\":\"0x13322e2765a9ce2e5e8dc96ce2c4701f6e8647a00deb54d8faa0bd5e97e426c813b7716aa1a8943eb7908d5a7bdfa9b13491cb6450deb77893f84c00f4320a691b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"}]},\\\"primaryType\\\":\\\"AttestationUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIE4jCCApEwggIYoAMCARICAQEwCgYIKoZIzj0EAwIwDjEMMAoGA1UEAwwDQUxYMCIYDzIwMjEwMzI5MTU0NTMzWhgPMjAzMTAzMjcxNTQ1MzNaMDUxMzAxBgNVBAMMKjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3NzCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAATpSkUyWoWaOvDxhNbg1x06S1fw_Xac_1bJzUuxqP0kynF3_OZ_SKTBz-mvunuyqG5aVYoGBh1jv0O3f-erPm7jMAcCASoCAgU5o1cwVTBTBgsrBgEEAYs6c3kBKAEB_wRBBAX-MGhom8S6_sTrSD06ksj1Ju1YTQ9FnpnOk6USKQoEFWGvh4fQSv0pASILsQG2W9Zf0hoh1fZk4_rsw6uFAwkwCgYIKoZIzj0EAwIDZwAwZAIwU2I480ufYtefOWDuOOXxMQj32UbsKxgmaaIorGhkXMzYcU5rdazbea3Jjx28F8mRAjBTshh8U6beUgk49oCaXNAiNxj3DDF93rQ3pgINHAlXQjqcpr9OrHz5hTXTueLirfwCAQEwgfwEQQQetkj_nYGbQHpsWNJ5eHI8TltFCsmJgzzs9v2HwxYM3gmt2VZXjp4go3k37qEfTU2rXXKDOCK7sM0lL_g54kG3BCAaTYw4YbOcPxdnVe5omjk9IOYxxIcygiAVzsM77G5QWQRBBA3HyCvVNRqp14hSSvlM52oGe1X0DDu-7UDzXENYrQIfCeXFYjXCI-UTmG3iij4a7TF9b6rTumxpTLDMehhtgS8EUjB4NUFFRTJCOUE4NjU2NDk2MDMyQTY0N0UxMzY2RTFBQTY3NUZGQ0I3N8BxJpS6VWwViG_3TFMX3w_C5Rk1h9lTxNkbTSZP6dyrAAABeH6pYUgwggFHMIH4BgcqhkjOPQIBMIHsAgEBMCUGByqGSM49AQIwGgICARsGCSqGSM49AQIDAzAJAgEFAgEHAgEMMEwEJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBEkEBQMhP3jKRIg_GjuBYvGI5VPNJl8jwVZ6FodpE7DCrCRYSSg2AczaOA8cnjGNkPldB-VCb-h-RcDoGEaY5FliNk40EWF33SJZAiQB_______________________pri7QdXcmXf9_lEUeBh4WPGECAQQDSgAEBooBBXiWJ32h2lQofYpqt0cHSpzGTeAVIVEQX42RQ6I-adN2BdbsTMsUgpZEeIxCW9OxmZMLlSyhoD3qZgVeS3BBSCoXUizE\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\".\\\",\\\"timestamp\\\":\\\"Mon Mar 29 2021 17:45:34 GMT+0200\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Thu Mar 27 2031 16:45:34 GMT+0100\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\",\\\"chainId\\\":42}}\"}";
     Eip712AttestationUsage eiprequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(),
         1000L*60L*60L*24L*365L*10L, 42, request);
     assertTrue(eiprequest.verify());
-    assertTrue(eiprequest.checkValidity());
+    assertTrue(eiprequest.checkTokenValidity());
   }
 
   @Test
@@ -90,7 +90,7 @@ public class TestAttestationUsageEip712 {
     assertTrue(usage.checkValidity());
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
-    assertTrue(request.checkValidity());
+    assertTrue(request.checkTokenValidity());
   }
 
   @Test
@@ -100,9 +100,8 @@ public class TestAttestationUsageEip712 {
     assertTrue(usage.checkValidity());
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN,  1000L*60L*60L*24L*365L*10L, 42, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
-    assertTrue(request.checkValidity());
+    assertTrue(request.checkTokenValidity());
   }
-
 
   @Test
   public void testDecoding() throws Exception {
@@ -110,7 +109,7 @@ public class TestAttestationUsageEip712 {
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     Eip712AttestationUsage newRequest = new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), request.getJsonEncoding());
     assertTrue(newRequest.verify());
-    assertTrue(newRequest.checkValidity());
+    assertTrue(newRequest.checkTokenValidity());
 
     assertEquals(request.getIdentifier(), newRequest.getIdentifier());
     assertTrue(AttestationCrypto.verifyFullProof(newRequest.getPok()));
@@ -160,7 +159,7 @@ public class TestAttestationUsageEip712 {
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -1, CHAIN_ID,
         MAIL, usage, userSigningKey);
     assertTrue(request.verify());
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Test
@@ -170,7 +169,7 @@ public class TestAttestationUsageEip712 {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Test
@@ -180,7 +179,7 @@ public class TestAttestationUsageEip712 {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, wrongPok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Test
@@ -188,7 +187,7 @@ public class TestAttestationUsageEip712 {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, "notTheRight@email.com", usage, userSigningKey);
     assertTrue(request.verify());
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Mock
@@ -203,7 +202,7 @@ public class TestAttestationUsageEip712 {
     Mockito.when(mockedUseAttestation.checkValidity()).thenReturn(false);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation, userSigningKey);
     assertTrue(request.verify());
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Test
@@ -217,7 +216,7 @@ public class TestAttestationUsageEip712 {
     Mockito.when(mockedUseAttestation.checkValidity()).thenReturn(true);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation, userSigningKey);
     assertFalse(request.verify());
-    assertTrue(request.checkValidity());
+    assertTrue(request.checkTokenValidity());
   }
 
   @Test
@@ -226,7 +225,7 @@ public class TestAttestationUsageEip712 {
     UseAttestation usage = new UseAttestation(signedAttestation, AttestationType.PHONE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
     assertTrue(request.verify());
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Test
@@ -237,7 +236,7 @@ public class TestAttestationUsageEip712 {
     SignedIdentityAttestation otherSingedAttestation = new SignedIdentityAttestation(att, attestorKeys);
     UseAttestation usage = new UseAttestation(otherSingedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
-    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
   @Test

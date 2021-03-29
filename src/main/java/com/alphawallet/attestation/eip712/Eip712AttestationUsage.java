@@ -7,7 +7,6 @@ import com.alphawallet.attestation.UseAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
-import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import java.io.IOException;
@@ -27,7 +26,7 @@ import org.tokenscript.eip712.JsonEncodable;
  * the user's identifier to the webserver.
  */
 public class Eip712AttestationUsage extends Eip712Validator implements JsonEncodable, Verifiable,
-    Validateable {
+    TokenValidateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
   public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 7; // 1 week
 
@@ -134,7 +133,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   }
 
   @Override
-  public boolean checkValidity() {
+  public boolean checkTokenValidity() {
     long nonceMinTime = Timestamp.stringTimestampToLong(data.getExpirationTime()) - maxTokenValidityInMs;
     long nonceMaxTime = Timestamp.stringTimestampToLong(data.getExpirationTime());
     if (!useAttestation.checkValidity()) {

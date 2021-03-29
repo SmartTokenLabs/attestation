@@ -23,6 +23,7 @@ import com.alphawallet.attestation.eip712.Eip712AttestationRequestWithUsage;
 import com.alphawallet.attestation.eip712.Eip712AttestationUsage;
 import com.alphawallet.attestation.eip712.Nonce;
 import com.alphawallet.attestation.eip712.Timestamp;
+import com.alphawallet.attestation.eip712.TokenValidateable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +55,7 @@ public class Demo {
   static AttestationCrypto crypto = new AttestationCrypto(rand);
 
   public static final String ATTESTOR_DOMAIN = "http://wwww.attestation.id";
+  public static final String WEB_DOMAIN = "http://wwww.hotelbogota.com";
 
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
@@ -374,12 +376,12 @@ public class Demo {
     X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
     AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SECT283K1, rand);
     String address = SignatureUtility.addressFromKey(userKeys.getPublic());
-    byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, new Timestamp());
+    byte[] nonce = Nonce.makeNonce(address, WEB_DOMAIN, new Timestamp());
     byte[] attSecretBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestationSecret));
     BigInteger attSecret = DERUtility.decodeSecret(attSecretBytes);
     FullProofOfExponent pok = crypto.computeAttestationProof(attSecret, nonce);
     UseAttestation attUsage = new UseAttestation(att, type, pok, sessionKeys.getPublic());
-    Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(ATTESTOR_DOMAIN, receiverId, attUsage, userKeys.getPrivate());
+    Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(WEB_DOMAIN, receiverId, attUsage, userKeys.getPrivate());
     Files.write(outputDirRequest, usageRequest.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
         CREATE, TRUNCATE_EXISTING);
     writePrivKey(sessionKeys.getPrivate(), outputSessionPrivKeyDir);
@@ -398,15 +400,15 @@ public class Demo {
     String jsonRequest = Files.readString(pathRequest);
     AsymmetricKeyParameter sessionPublicKey = null;
     try {
-      Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(ATTESTOR_DOMAIN, attestorKey, jsonRequest);
-      checkUsageValidity(usageRequest);
+      Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(WEB_DOMAIN, attestorKey, jsonRequest);
       checkUsageVerifiability(usageRequest);
+      checkUsageValidity(usageRequest);
       sessionPublicKey = usageRequest.getSessionPublicKey();
     } catch (IllegalArgumentException e) {
-      // Try as am  Eip712AttestationRequestWithUsage object instead
+      // Try as an  Eip712AttestationRequestWithUsage object instead, which is NOT linked to a specific website
       Eip712AttestationRequestWithUsage usageRequest = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, jsonRequest);
-      checkUsageValidity(usageRequest);
       checkUsageVerifiability(usageRequest);
+      checkUsageValidity(usageRequest);
       sessionPublicKey = usageRequest.getSessionPublicKey();
     }
     // Validate signature
@@ -423,8 +425,8 @@ public class Demo {
       throw new RuntimeException("Verification failed");
     }
   }
-  private static void checkUsageValidity(Validateable input) {
-    if (!input.checkValidity()) {
+  private static void checkUsageValidity(TokenValidateable input) {
+    if (!input.checkTokenValidity()) {
       System.err.println("Could not validate usage request");
       throw new RuntimeException("Validation failed");
     }
