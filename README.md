@@ -32,7 +32,7 @@ Which will create a jar file that you can run in the commandline
 
     build/libs/attestation-all.jar
 
-There is a walk-through to use the functionalities provided by this library through commandline: [commandline demonstration](cli-demo.md)
+There is a walk-through to use the functionalities provided by this library through commandline: [commandline cheque demonstration](cli-cheque-demo.md) and the  [commandline EIP712 attestation demonstration](cli-attestation-demo.md)
 
 ## Organisation of this repo
 

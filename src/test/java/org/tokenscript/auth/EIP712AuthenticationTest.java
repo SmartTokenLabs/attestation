@@ -110,19 +110,6 @@ public class EIP712AuthenticationTest {
   }
 
   @Test
-  public void testDifferenceWithDifferentChainIds() throws Exception {
-    AttestedObject attestedTicket = makeAttestedTicket();
-    Eip712AuthIssuer testIssuer1 = new Eip712AuthIssuer(userKeys.getPrivate(), new TestAuthenticatorEncoder("0.1", 1));
-    String token = testIssuer1.buildSignedToken(attestedTicket, validatorDomain);
-    // TODO Currently real time stamps are used so we cannot be sure they are always equal
-    String equalToken = testIssuer1.buildSignedToken(attestedTicket, validatorDomain);
-    assertEquals(token, equalToken);
-    Eip712AuthIssuer testIssuer2 = new Eip712AuthIssuer(userKeys.getPrivate(), new TestAuthenticatorEncoder("0.1", 42));
-    String newToken = testIssuer2.buildSignedToken(attestedTicket, validatorDomain);
-    assertFalse(token.equals(newToken));
-  }
-
-  @Test
   public void nullInput() {
     assertFalse(validator.validateRequest(null));
   }
