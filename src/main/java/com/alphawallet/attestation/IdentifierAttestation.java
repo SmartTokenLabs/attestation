@@ -61,6 +61,24 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     setCommitment(commitment);
   }
 
+  public IdentifierAttestation(String type, String identifier, AsymmetricKeyParameter key)  {
+    super();
+    super.setVersion(18); // Our initial version
+    super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
+    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    try {
+      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
+      super.setSubjectPublicKeyInfo(spki);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    //Add the identifier in the form 'TW=@twittertest' or 'EMAIL=test@test.org'
+    ASN1EncodableVector dataObject = new ASN1EncodableVector();
+    dataObject.add(new DEROctetString((type + "=" + identifier).getBytes()));
+    super.setDataObject(new DERSequence(dataObject));
+  }
+
 
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
     super(derEncoding);

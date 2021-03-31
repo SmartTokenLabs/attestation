@@ -46,6 +46,17 @@ public class HelperTest {
     return att;
   }
 
+  public static Attestation makePublicIdAttestation(AsymmetricKeyParameter key, String type, String identifier) {
+    IdentifierAttestation att = new IdentifierAttestation(type, identifier, key);
+    att.setIssuer("CN=ALPHAWALLET");
+    att.setSerialNumber(1);
+    Date now = new Date();
+    att.setNotValidBefore(now);
+    att.setNotValidAfter(new Date(System.currentTimeMillis() + 1000L*60L*60L*24L*365L)); // Valid for 1 year
+    assertTrue(att.checkValidity());
+    return att;
+  }
+
   /* the unsigned x509 attestation will have a subject of "CN=0x2042424242424564648" */
   public static Attestation makeUnsignedx509Att(AsymmetricKeyParameter key) throws IOException  {
     Attestation att = new Attestation();
