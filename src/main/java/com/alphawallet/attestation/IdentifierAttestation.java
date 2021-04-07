@@ -6,6 +6,11 @@ import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Clock;
+import java.util.Date;
+import java.util.Locale;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -29,9 +34,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
 
   /**
-   * Constructs a new identifier attestation based on a secret.
+   * Constructs a new identifier attestation based on a secret, with unlimited validity by default
    * You still need to set the optional fields, that is
-   * issuer, notValidBefore, notValidAfter, smartcontracts
+   * issuer, smartcontracts
    */
   public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
@@ -45,12 +50,13 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       throw new RuntimeException(e);
     }
     setCommitment(AttestationCrypto.makeCommitment(identity, type, secret));
+    setUnlimitedValidity();
   }
 
   /**
-   * Restores an attestation based on an already existing commitment
+   * Restores an attestation based on an already existing commitment, with unlimited validity by default
    * You still need to set the optional fields, that is
-   * issuer, notValidBefore, notValidAfter, smartcontracts
+   * issuer, smartcontracts
    */
   public IdentifierAttestation(byte[] commitment, AsymmetricKeyParameter key)  {
     super();
@@ -64,8 +70,14 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       throw new RuntimeException(e);
     }
     setCommitment(commitment);
+    setUnlimitedValidity();
   }
 
+  /**
+   * Constructs an attestation with *public* identifier and with unlimited validity by default
+   * You still need to set the optional fields, that is
+   * issuer, smartcontracts
+   */
   public IdentifierAttestation(String type, String identifier, AsymmetricKeyParameter key)  {
     super();
     super.setVersion(18); // Our initial version
@@ -77,9 +89,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
+    setUnlimitedValidity();
   }
-
 
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
     super(derEncoding);
@@ -92,6 +103,18 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     DERIA5String labelValue = new DERIA5String(identifier + " " + type);
     RDN rdn = new RDN(LABELED_URI, labelValue);
     return new X500Name(new RDN[] {rdn});
+  }
+
+  private void setUnlimitedValidity() {
+    try {
+      super.setNotValidBefore(new Date(Clock.systemUTC().millis()));
+      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss'Z'", Locale.US);
+      // This is used to indicate unlimited validity, see https://tools.ietf.org/html/rfc5280#section-4.1.2.5
+      Date notValidAfter = dateFormat.parse("99991231235959Z");
+      super.setNotValidAfter(notValidAfter);
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**

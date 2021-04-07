@@ -46,6 +46,7 @@ import org.bouncycastle.util.encoders.Hex;
 
 public class SignatureUtility {
     public static final String ECDSA_CURVE = "secp256k1";
+    public static final ASN1ObjectIdentifier OID_CURVE_PARAMS = SECNamedCurves.getOID(ECDSA_CURVE);
     public static final String MAC_ALGO = "HmacSHA256";
     public static final ASN1ObjectIdentifier OID_SIGNATURE_ALG = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for elliptic curve crypto ecPublicKey
     public static final AlgorithmIdentifier ALGORITHM_IDENTIFIER = new AlgorithmIdentifier(OID_SIGNATURE_ALG);

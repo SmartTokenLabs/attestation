@@ -34,7 +34,6 @@ public class SignedAttestationTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
     issuerKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
@@ -61,13 +60,16 @@ public class SignedAttestationTest {
 
   @Test
   public void testX509() throws Exception {
-    Attestation att = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
+    X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
+    AsymmetricCipherKeyPair newSubjectKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    AsymmetricCipherKeyPair newIssuerKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    Attestation att = HelperTest.makeUnsignedx509Att(newSubjectKeys.getPublic());
     byte[] toSign = att.getPrehash();
     byte[] digestBytes = new byte[32];
     Digest digest = new SHA256Digest();
     digest.update(toSign, 0, toSign.length);
     digest.doFinal(digestBytes, 0);
-    byte[] signature = SignatureUtility.signHashedRandomized(digestBytes, issuerKeys.getPrivate());
+    byte[] signature = SignatureUtility.signHashedRandomized(digestBytes, newIssuerKeys.getPrivate());
     byte[] signed = SignedAttestation.constructSignedAttestation(att, signature);
     // Test X509 compliance
     CertificateFactory fact = CertificateFactory.getInstance("X.509");
@@ -78,7 +80,7 @@ public class SignedAttestationTest {
     } catch (CertificateExpiredException | CertificateNotYetValidException e) {
       fail();
     }
-    PublicKey pk = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
+    PublicKey pk = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(newIssuerKeys.getPublic()));
     cert.verify(pk, new BouncyCastleProvider());
   }
 }

@@ -37,9 +37,6 @@ public class HelperTest {
     IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL, key, secret);
     att.setIssuer("CN=ALX");
     att.setSerialNumber(1);
-    Date now = new Date();
-    att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + 3600000)); // Valid for an hour
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     assertTrue(att.checkValidity());
     assertFalse(att.isValidX509()); // Since the version is wrong, and algorithm is non-standard
@@ -50,8 +47,6 @@ public class HelperTest {
     IdentifierAttestation att = new IdentifierAttestation(type, identifier, key);
     att.setIssuer("CN=ALPHAWALLET");
     att.setSerialNumber(1);
-    Date now = new Date();
-    att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis() + 1000L*60L*60L*24L*365L)); // Valid for 1 year
     assertTrue(att.checkValidity());
     return att;
@@ -69,7 +64,7 @@ public class HelperTest {
     att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-    spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2")),  // ECDSA with SHA256 which is needed for a proper x509
+    spki = new SubjectPublicKeyInfo(ECDSA_WITH_SHA256,  // ECDSA with SHA256 which is needed for a proper x509
         spki.getPublicKeyData());
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
