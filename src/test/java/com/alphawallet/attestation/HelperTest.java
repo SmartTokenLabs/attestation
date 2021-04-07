@@ -107,6 +107,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
+    att.setSubject("CN=");
     att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));

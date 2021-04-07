@@ -7,12 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Date;
+import org.bouncycastle.asn1.ASN1Boolean;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -73,9 +78,16 @@ public class AttestationTest {
     }
 
     @Test
-    public void testInvalid() {
+    public void testInvalid() throws Exception {
         Attestation res = HelperTest.makeMinimalAtt();
-        res.setDataObject(null);
+        ASN1EncodableVector extensions = new ASN1EncodableVector();
+        extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+        extensions.add(ASN1Boolean.TRUE);
+        extensions.add(new DEROctetString(new byte[] {0x42}));
+        Field extensionsField = Attestation.class.getDeclaredField("extensions");
+        extensionsField.setAccessible(true);
+        extensionsField.set(res, new DERSequence(new DERSequence(extensions)));
+        // Both dataObject and extensions have been set, which is not allowed
         assertFalse(res.checkValidity());
     }
 

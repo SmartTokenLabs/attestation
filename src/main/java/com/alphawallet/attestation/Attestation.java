@@ -185,11 +185,12 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     return subject.toString();
   }
 
-  /**
-   *
-   */
   public void setSubject(String subject) {
     this.subject = new X500Name(subject);
+  }
+
+  public void setSubject(X500Name subject) {
+    this.subject = subject;
   }
 
   public SubjectPublicKeyInfo getSubjectPublicKeyInfo() {
@@ -268,7 +269,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     if (dataObject != null) {
       return false;
     }
-    if (version == null || serialNumber == null || signingAlgorithm == null) {
+    if (version == null || subject == null || serialNumber == null || signingAlgorithm == null) {
       return false;
     }
     return true;
@@ -276,8 +277,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public boolean checkValidity() {
-    if (version == null || serialNumber == null || signingAlgorithm == null || (extensions == null
-        && dataObject == null)) {
+    if (version == null || subject == null || serialNumber == null || signingAlgorithm == null) {
       return false;
     }
     if (getNotValidBefore() != null && getNotValidAfter() != null) {
@@ -290,6 +290,9 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
           return false;
         }
       }
+    }
+    if (extensions != null && dataObject != null) {
+      return false;
     }
     return true;
   }
@@ -331,9 +334,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     if (this.smartcontracts != null) {
       res.add(this.smartcontracts);
     }
+    // The validity check ensure that only one of "extensions" and "dataObject" is set
     if (this.extensions != null) {
       res.add(new DERTaggedObject(true, 3, this.extensions));
-    } else {
+    }
+    if (this.dataObject != null) {
       res.add(new DERTaggedObject(true, 4, this.dataObject));
     }
     try {

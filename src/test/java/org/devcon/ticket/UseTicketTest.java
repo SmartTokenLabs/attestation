@@ -168,8 +168,9 @@ public class UseTicketTest {
     assertFalse(Arrays.equals(spki.getEncoded(), att.getSubjectPublicKeyInfo().getEncoded()));
     // Change public key
     field.set(att, spki);
-    // Validation should not fail
-    assertFalse(attestedTicket.getAtt().checkValidity());
+    // Validation of attestation should not fail
+    assertTrue(attestedTicket.getAtt().checkValidity());
+    // But validation of ticket should since the keys used are not consistent
     assertFalse(attestedTicket.checkValidity());
     // Verification should fail
     assertFalse(attestedTicket.getAtt().verify());

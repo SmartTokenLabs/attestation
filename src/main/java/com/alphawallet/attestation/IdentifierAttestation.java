@@ -9,12 +9,14 @@ import java.math.BigInteger;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class IdentifierAttestation extends Attestation implements Validateable {
@@ -22,6 +24,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     PHONE,
     EMAIL
   }
+
+  // SEE RFC 2079
+  public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
 
   /**
    * Constructs a new identifier attestation based on a secret.
@@ -31,7 +36,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
+    super.setSubject("CN=");
     super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -50,7 +55,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public IdentifierAttestation(byte[] commitment, AsymmetricKeyParameter key)  {
     super();
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
+    super.setSubject("CN=");
     super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -64,7 +69,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public IdentifierAttestation(String type, String identifier, AsymmetricKeyParameter key)  {
     super();
     super.setVersion(18); // Our initial version
-    super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
+    super.setSubject(makeLabeledURI(type, identifier));
     super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -73,10 +78,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       throw new RuntimeException(e);
     }
 
-    //Add the identifier in the form 'TW=@twittertest' or 'EMAIL=test@test.org'
-    ASN1EncodableVector dataObject = new ASN1EncodableVector();
-    dataObject.add(new DEROctetString((type + "=" + identifier).getBytes()));
-    super.setDataObject(new DERSequence(dataObject));
   }
 
 
@@ -85,6 +86,12 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     if (!checkValidity()) {
       throw new IllegalArgumentException("The content is not valid for an identity attestation");
     }
+  }
+
+  private X500Name makeLabeledURI(String type, String identifier) {
+    DERIA5String labelValue = new DERIA5String(identifier + " " + type);
+    RDN rdn = new RDN(LABELED_URI, labelValue);
+    return new X500Name(new RDN[] {rdn});
   }
 
   /**
@@ -100,26 +107,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The version number is " + getVersion() + ", it must be 18");
       return false;
     }
-    if (getSubject() == null || getSubject().length() != 45 || !getSubject()
-        .startsWith("CN=0x")) { // The address is 2*20+5 chars long because it starts with CN=0x
-      System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
-      return false;
-    }
     if (!getSigningAlgorithm().equals(SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId())) {
       System.err.println("The signature algorithm is supposed to be " + SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId());
       return false;
-    }
-    // Verify that the subject public key matches the subject common name
-    try {
-      AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory
-          .createKey(getSubjectPublicKeyInfo());
-      String parsedSubject = "CN=" + SignatureUtility.addressFromKey(parsedSubjectKey);
-      if (!parsedSubject.equals(getSubject())) {
-        System.err.println("The subject public key does not match the Ethereum address attested to");
-        return false;
-      }
-    } catch (IOException e) {
-      System.err.println("Could not parse subject public key");
     }
     return true;
   }

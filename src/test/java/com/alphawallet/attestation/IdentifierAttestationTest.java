@@ -2,6 +2,7 @@ package com.alphawallet.attestation;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.SignatureUtility;
@@ -69,13 +70,14 @@ public class IdentifierAttestationTest {
   }
 
   @Test
-  public void testInvalidSubject() throws Exception {
+  public void testOtherSubject() throws Exception {
     IdentifierAttestation initial = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, mail);
     Field field = initial.getClass().getSuperclass().getDeclaredField("subject");
     field.setAccessible(true);
-    // Change the subject address
-    field.set(initial, new X500Name("CN=012345678901234567890123456789012345678901"));
-    assertFalse(initial.checkValidity());
+    // Change the subject
+    field.set(initial, new X500Name("CN=John Doe"));
+    // Common Names are allowed
+    assertTrue(initial.checkValidity());
   }
 
   @Test
@@ -96,7 +98,8 @@ public class IdentifierAttestationTest {
     // Change the public key
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherKeys.getPublic());
     field.set(initial, spki);
-    assertFalse(initial.checkValidity());
+    // The key is only stored one place so it is allowed to change it as long as the attestation has not been signed
+    assertTrue(initial.checkValidity());
   }
 
 }
