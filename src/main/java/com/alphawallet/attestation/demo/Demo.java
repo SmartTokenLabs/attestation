@@ -54,6 +54,7 @@ public class Demo {
   static SecureRandom rand = new SecureRandom();
   static AttestationCrypto crypto = new AttestationCrypto(rand);
 
+  public static final X9ECParameters SESSION_KEY_CURVE = SECNamedCurves.getByName("secp256r1"); // NIST P-256
   public static final String ATTESTOR_DOMAIN = "http://wwww.attestation.id";
   public static final String WEB_DOMAIN = "http://wwww.hotelbogota.com";
 
@@ -315,8 +316,7 @@ public class Demo {
     String address = SignatureUtility.addressFromKey(userKeys.getPublic());
     byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, new Timestamp());
     FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
-    X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
-    AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SECT283K1, rand);
+    AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SESSION_KEY_CURVE, rand);
     AttestationRequestWithUsage attRequest = new AttestationRequestWithUsage(type, pok, sessionKeys.getPublic());
     Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, receiverId, attRequest, userKeys.getPrivate());
     Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
@@ -373,8 +373,7 @@ public class Demo {
     AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     AsymmetricKeyParameter attestorKey = PublicKeyFactory.createKey(DERUtility.restoreBytes(Files.readAllLines(attestorVerificationKey)));
     SignedIdentityAttestation att = new SignedIdentityAttestation(DERUtility.restoreBytes(Files.readAllLines(attestationDir)), attestorKey);
-    X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
-    AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SECT283K1, rand);
+    AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SESSION_KEY_CURVE, rand);
     String address = SignatureUtility.addressFromKey(userKeys.getPublic());
     byte[] nonce = Nonce.makeNonce(address, WEB_DOMAIN, new Timestamp());
     byte[] attSecretBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestationSecret));
