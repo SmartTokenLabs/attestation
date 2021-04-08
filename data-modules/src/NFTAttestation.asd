@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <asnx:module xmlns:asnx="urn:ietf:params:xml:ns:asnx"
-             name="AttestationFramework"
+             name="NFTAttestation"
              tagDefault="explicit">
 
  <import name="AlgorithmIdentifier"
@@ -13,7 +13,7 @@
  <import name="Name"
          schemaLocation="InformationFramework.asd"/>
 
- <namedType name="MyAttestation">
+ <namedType name="NFTAttestation">
   <type>
    <sequence>
     <element name="signedInfo">

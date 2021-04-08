@@ -1,0 +1,25 @@
+TransAuthorization
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    ERC721,
+    Address
+        FROM TransObject
+    Identifier
+        FROM NFTAttestation;
+
+TransObject ::= SEQUENCE {
+    token                ERC721,
+    -- The address of the smart contract handling transmogrify --
+    contract             Address,
+    sender               Address,
+    recipients           Recipients,
+    signatureValue       BIT STRING
+}
+
+-- List of permissible identifiers of recipient --
+Recipients ::= SEQUENCE SIZE (1..MAX) OF Identifier
+
+END

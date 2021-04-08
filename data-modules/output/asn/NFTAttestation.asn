@@ -35,6 +35,7 @@ NFTAttestation ::=  SEQUENCE  {
    }
 
    Subject ::= SEQUENCE SIZE (1) OF Identifier
+
    Identifier ::= SET SIZE (1) OF IdentifierTypeAndValue
    IdentifierTypeAndValue ::= SEQUENCE {
         type     OBJECT IDENTIFIER
