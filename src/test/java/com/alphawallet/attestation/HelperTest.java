@@ -66,7 +66,7 @@ public class HelperTest {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+    extensions.add(Attestation.OID_OCTETSTRING);
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString("hello world".getBytes()));
     // Double Sequence is needed to be compatible with X509V3

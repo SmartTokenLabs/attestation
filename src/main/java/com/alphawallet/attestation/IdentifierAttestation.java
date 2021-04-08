@@ -14,6 +14,7 @@ import java.util.Locale;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
@@ -30,6 +31,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     EMAIL
   }
 
+  public static final int HIDDEN_IDENTIFIER_VERSION = 18;
+  public static final int NFT_VERSION = 19;
   // SEE RFC 2079
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
 
@@ -40,7 +43,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
-    super.setVersion(18); // Our initial version
+    super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
     super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     try {
@@ -60,7 +63,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   public IdentifierAttestation(byte[] commitment, AsymmetricKeyParameter key)  {
     super();
-    super.setVersion(18); // Our initial version
+    super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
     super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     try {
@@ -80,7 +83,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   public IdentifierAttestation(String type, String identifier, AsymmetricKeyParameter key)  {
     super();
-    super.setVersion(18); // Our initial version
+    super.setVersion(NFT_VERSION);
     super.setSubject(makeLabeledURI(type, identifier));
     super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     try {
@@ -126,14 +129,33 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     if (!super.checkValidity()) {
       return false;
     }
-    if (getVersion() != 18) {
-      System.err.println("The version number is " + getVersion() + ", it must be 18");
+    if (getVersion() != HIDDEN_IDENTIFIER_VERSION && getVersion() != NFT_VERSION) {
+      System.err.println("The version number is " + getVersion() + ", it must be " + HIDDEN_IDENTIFIER_VERSION + " or " + NFT_VERSION);
       return false;
     }
     if (!getSigningAlgorithm().equals(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER.getAlgorithm().getId())) {
       System.err.println("The signature algorithm is supposed to be " + SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER
           .getAlgorithm().getId());
       return false;
+    }
+    if (getVersion() == NFT_VERSION) {
+      String subject = getSubject();
+      if (!subject.contains(LABELED_URI.getId())) {
+        return false;
+      }
+    }
+    if (getVersion() == HIDDEN_IDENTIFIER_VERSION) {
+      try {
+        // Check that the first extension is an octet-string, i.e. a commitment
+        ASN1Sequence firstExtension = ((ASN1Sequence) getExtensions().toArray()[0]);
+        ASN1ObjectIdentifier firstExtensionIdentifier = (ASN1ObjectIdentifier) firstExtension
+            .getObjectAt(0).toASN1Primitive();
+        if (!firstExtensionIdentifier.equals(Attestation.OID_OCTETSTRING)) {
+          return false;
+        }
+      } catch (Exception e) {
+        return false;
+      }
     }
     return true;
   }
@@ -144,7 +166,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   private void setCommitment(byte[] encodedRiddle) {
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+    extensions.add(Attestation.OID_OCTETSTRING);
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString(encodedRiddle));
     // Double Sequence is needed to be compatible with X509V3
