@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
@@ -13,8 +14,6 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
@@ -60,9 +59,8 @@ public class SignedAttestationTest {
 
   @Test
   public void testX509() throws Exception {
-    X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
-    AsymmetricCipherKeyPair newSubjectKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
-    AsymmetricCipherKeyPair newIssuerKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    AsymmetricCipherKeyPair newSubjectKeys = SignatureUtility.constructECKeys("secp384r1", rand);
+    AsymmetricCipherKeyPair newIssuerKeys = SignatureUtility.constructECKeys("secp384r1", rand);
     Attestation att = HelperTest.makeUnsignedx509Att(newSubjectKeys.getPublic());
     byte[] toSign = att.getPrehash();
     byte[] digestBytes = new byte[32];
@@ -71,6 +69,7 @@ public class SignedAttestationTest {
     digest.doFinal(digestBytes, 0);
     byte[] signature = SignatureUtility.signHashedRandomized(digestBytes, newIssuerKeys.getPrivate());
     byte[] signed = SignedAttestation.constructSignedAttestation(att, signature);
+    DERUtility.writePEM(signed, "CERTIFICATE", System.out);
     // Test X509 compliance
     CertificateFactory fact = CertificateFactory.getInstance("X.509");
     ByteArrayInputStream stream = new ByteArrayInputStream(signed);

@@ -42,7 +42,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=");
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -62,7 +62,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=");
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -82,7 +82,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject(makeLabeledURI(type, identifier));
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -130,8 +130,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The version number is " + getVersion() + ", it must be 18");
       return false;
     }
-    if (!getSigningAlgorithm().equals(SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId())) {
-      System.err.println("The signature algorithm is supposed to be " + SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId());
+    if (!getSigningAlgorithm().equals(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER.getAlgorithm().getId())) {
+      System.err.println("The signature algorithm is supposed to be " + SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER
+          .getAlgorithm().getId());
       return false;
     }
     return true;

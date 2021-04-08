@@ -64,8 +64,6 @@ public class HelperTest {
     att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-    spki = new SubjectPublicKeyInfo(ECDSA_WITH_SHA256,  // ECDSA with SHA256 which is needed for a proper x509
-        spki.getPublicKeyData());
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
     extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
@@ -81,7 +79,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
@@ -103,7 +101,7 @@ public class HelperTest {
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
     att.setSubject("CN=");
-    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
     att.setDataObject(new DERSequence(dataObject));

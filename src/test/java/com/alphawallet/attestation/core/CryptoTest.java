@@ -17,8 +17,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
@@ -32,7 +30,7 @@ public class CryptoTest {
   private AsymmetricCipherKeyPair issuerKeys;
   private SecureRandom rand;
   private AttestationCrypto crypto;
-  private static final X9ECParameters SECP256K1 = SECNamedCurves.getByName("secp256k1");
+  private static final String SECP256K1 = "secp256k1";
   private static final String ID = "test@test.ts";
   private static final AttestationType TYPE = AttestationType.EMAIL;
   private static final BigInteger SECRET1 = new BigInteger("684084084843542003217847860141382018669978641584584765489");
@@ -108,7 +106,7 @@ public class CryptoTest {
       ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
       BigInteger yCoord = pk.getQ().getAffineYCoord().toBigInteger();
       System.out.println(yCoord);
-      BigInteger fieldModulo = SignatureUtility.ECDSAdomain.getCurve().getField().getCharacteristic();
+      BigInteger fieldModulo = SignatureUtility.ECDSA_DOMAIN.getCurve().getField().getCharacteristic();
       assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
     }
   }
