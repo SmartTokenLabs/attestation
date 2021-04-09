@@ -4,19 +4,22 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    ERC721,
+    TokenId,
     Address
-        FROM TransObject
+        FROM NFTAttestation
     Identifier
-        FROM NFTAttestation;
+        FROM UriIdAttestation;
 
-TransObject ::= SEQUENCE {
-    token                ERC721,
-    -- The address of the smart contract handling transmogrify --
-    contract             Address,
-    sender               Address,
-    recipients           Recipients,
-    signatureValue       BIT STRING
+TransAuthorization ::= SEQUENCE {
+    -- Smart contract should look up to find owner based on token Id --
+    tokenId                TokenId,
+    -- The contract where the token is residing --
+    tokenContract          Address,
+    -- The address of contract or individual handling transfer of token --
+    spender                Address,
+    -- NOT DEFINED YET                 --
+    -- recipients          Recipients, --
+    signatureValue         BIT STRING
 }
 
 -- List of permissible identifiers of recipient --

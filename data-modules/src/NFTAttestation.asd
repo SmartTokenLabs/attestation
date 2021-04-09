@@ -1,95 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<asnx:module xmlns:asnx="urn:ietf:params:xml:ns:asnx"
-             name="NFTAttestation"
-             tagDefault="explicit">
-
- <import name="AlgorithmIdentifier"
-         schemaLocation="AuthenticationFramework.asd"/>
- <import name="CertificateSerialNumber"
-         schemaLocation="AuthenticationFramework.asd"/>
- <import name="Extensions"
-         schemaLocation="AuthenticationFramework.asd"/>
-
- <import name="Name"
-         schemaLocation="InformationFramework.asd"/>
-
- <namedType name="NFTAttestation">
-  <type>
-   <sequence>
-    <element name="signedInfo">
-     <type>
-      <sequence>
-       <element name="version">
+<asnx:module name="NFTAttestation" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
+    <import name="UriIdAttestation"
+         schemaLocation="UriIdAttestation.asd"/>
+    <namedType name="NFTAttestation">
         <type>
-         <tagged number="0" tagging="explicit" type="Version"/>
+            <sequence>
+                <element name="tokens" type="Tokens">
+                    <annotation>The ERC721 tokens to link to</annotation>
+                </element>
+                <optional>
+                    <element name="autograph" type="Digest">
+                        <annotation>Keccak digest of the content (pic/vid) of the NFT</annotation>
+                    </element>
+                </optional>
+                <element name="creator" type="UriIdAttestation">
+                    <annotation>The X509v3 certificate that is the attestation identifying the creator/signer</annotation>
+                </element>
+                <element name="signatureValue" type="asnx:BIT-STRING">
+                    <annotation>Algorithm is always ECDSA secp256k1</annotation>
+                </element>
+            </sequence>
         </type>
-       </element>
-       <element name="serialNumber" type="CertificateSerialNumber"/>
-       <element name="signature" type="AlgorithmIdentifier"/>
-       <element name="issuer" type="Name"/>
-       <element name="validity" type="Validity"/>
-       <element name="subject" type="Subject"/>
-       <element name="subjectPublicKeyInfo"
-                 type="SubjectPublicKeyInfo"/>
-       <optional>
-        <element name="extensions">
-         <type>
-          <tagged number="3" tagging="explicit" type="Extensions"/>
-         </type>
-        </element>
-       </optional>
-      </sequence>
-     </type>
-    </element>
-    <element name="signatureAlgorithm" type="AlgorithmIdentifier"/>
-    <element name="signatureValue" type="asnx:BIT-STRING"/>
-   </sequence>
-  </type>
- </namedType>
+    </namedType>
 
- <namedType name="Version" type="asnx:INTEGER" literalValue="19"/>
+    <!-- A 256 bit Keccak hash digest -->
+    <namedType name="Digest" type="asnx:OCTET-STRING" minSize="32" maxSize="32"/>
 
- <namedType name="Validity">
-  <type>
-   <sequence>
-    <element name="notBefore" type="asnx:GeneralizedTime"/>
-    <element name="notAfter" type="asnx:GeneralizedTime" literalValue="99991231235959Z"/>
-   </sequence>
-  </type>
- </namedType>
-
- <namedType name="Subject">
-  <type>
-   <sequence>
-    <element name="identifier" type="Identifier"/>
-   </sequence>
-  </type>
- </namedType>
- <namedType name="Identifier">
-  <type>
-   <set>
-    <element name="identifierTypeAndValue" type="IdentifierTypeAndValue"/>
-   </set>
-  </type>
- </namedType>
- <namedType name="IdentifierTypeAndValue">
-  <type>
-   <sequence>
-    <!-- MUST be labeledURI  -->
-    <element name="type" type="asnx:OBJECT-IDENTIFIER" literalValue="1.3.6.1.4.1.250.1.57"/>
-    <!-- MUST be an URI, optionally followed by a space character and then a label -->
-    <element name="value" type="asnx:IA5String"/>
-   </sequence>
-  </type>
- </namedType>
-
- <namedType name="SubjectPublicKeyInfo">
-  <type>
-   <sequence>
-    <element name="algorithm" type="AlgorithmIdentifier"/>
-    <element name="subjectPublicKey" type="asnx:BIT-STRING"/>
-   </sequence>
-  </type>
- </namedType>
-
+    <!-- See https://eips.ethereum.org/EIPS/eip-721 for details -->
+    <namedType name="Tokens">
+        <type>
+            <sequenceOf minSize="1">
+                <element name="item" type="ERC721"/>
+            </sequenceOf>
+        </type>
+    </namedType>
+    <namedType name="ERC721">
+        <type>
+            <sequence>
+                  <element name="tokenId" type="TokenId"/>
+                  <element name="address" type="Address"/>
+            </sequence>
+        </type>
+    </namedType>
+    <!-- The 256 bit non-negative integer uniquely representing the ERC721 token in question in binary -->
+    <namedType name="TokenId" type="asnx:OCTET-STRING" minSize="32" maxSize="32"/>
+    <!-- The binary encoding of the 20 bytes representing an Ethereum address -->
+    <namedType name="Address" type="asnx:OCTET-STRING" minSize="32" maxSize="20"/>
 </asnx:module>

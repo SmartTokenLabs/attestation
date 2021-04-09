@@ -4,49 +4,32 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    AlgorithmIdentifier,
-    CertificateSerialNumber,
-    Extensions
-        FROM AuthenticationFramework
-    Name
-        FROM InformationFramework;
+    UriIdAttestation
+        FROM UriIdAttestation;
 
-NFTAttestation ::=  SEQUENCE  {
-     signedInfo           SignedInfo,
-     signatureAlgorithm   AlgorithmIdentifier,
-     signatureValue       BIT STRING  }
+NFTAttestation ::= SEQUENCE {
+    tokens               Tokens,
+    -- Keccak digest of the content (pic/vid) of the NFT --
+    autograph            Digest OPTIONAL,
+    creator              UriIdAttestation,
+    signatureValue       BIT STRING
+}
 
-   SignedInfo ::=  SEQUENCE  {
-     version         [0]  EXPLICIT Version,
-     serialNumber         CertificateSerialNumber,
-     signature            AlgorithmIdentifier,
-     issuer               Name,
-     validity             Validity,
-     subject              Subject,
-     subjectPublicKeyInfo SubjectPublicKeyInfo,
-     extensions      [3]  EXPLICIT Extensions
-   }
+Tokens ::= SEQUENCE SIZE (1..MAX) OF ERC721
 
-   Version ::= INTEGER (19)
+-- A 256 bit Keccak hash digest --
+Digest ::= OCTET STRING (SIZE(32))
 
-   Validity ::= SEQUENCE {
-    notBefore       GeneralizedTime,
-    notAfter        GeneralizedTime  ("99991231235959Z") -- Unlimited validity --
-   }
+-- See https://eips.ethereum.org/EIPS/eip-721 for details --
+ERC721 ::= SEQUENCE {
+    tokenId       TokenId,
+    address       Address
+}
 
-   Subject ::= SEQUENCE SIZE (1) OF Identifier
+-- The 256 bit non-negative integer uniquely representing the ERC721 token in question in binary --
+TokenId ::= OCTET STRING (SIZE(32))
 
-   Identifier ::= SET SIZE (1) OF IdentifierTypeAndValue
-   IdentifierTypeAndValue ::= SEQUENCE {
-        type     OBJECT IDENTIFIER
-                    -- MUST be labeledURI --
-                    DEFAULT {iso(1) identified-organization(3) dod(6) internet(1) private(4) enterprise(1) 250 1 labeledURI(57)},
-        value    IA5String -- MUST be an URI, optionally followed by a space character and then a label
-   }
-
-   SubjectPublicKeyInfo ::= SEQUENCE {
-     algorithm              AlgorithmIdentifier,
-     subjectPublicKey       BIT STRING 
-   }
+-- The binary encoding of the 20 bytes representing an Ethereum address --
+Address ::= OCTET STRING (SIZE(20))
 
 END
