@@ -12,8 +12,6 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -39,10 +37,8 @@ public class UseAttestationTest {
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
-    issuerKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
-    X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
-    sessionKey = SignatureUtility.constructECKeys(SECT283K1, rand).getPublic();
+    issuerKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    sessionKey = SignatureUtility.constructECKeysWithSmallestY(rand).getPublic();
   }
 
   @Test

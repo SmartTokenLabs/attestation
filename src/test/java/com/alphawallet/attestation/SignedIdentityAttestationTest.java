@@ -7,8 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,8 +21,7 @@ public class SignedIdentityAttestationTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
-    issuerKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    issuerKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
   @Test
@@ -33,7 +30,7 @@ public class SignedIdentityAttestationTest {
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
-    assertTrue(SignatureUtility.verifySHA256(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
   }
 
@@ -41,7 +38,7 @@ public class SignedIdentityAttestationTest {
   public void testDecoding() throws Exception {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), BigInteger.TEN, "someOther@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
-    assertTrue(SignatureUtility.verifySHA256(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
+    assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
     byte[] signedEncoded = signed.getDerEncoding();
     SignedIdentityAttestation newSigned = new SignedIdentityAttestation(signedEncoded, issuerKeys.getPublic());

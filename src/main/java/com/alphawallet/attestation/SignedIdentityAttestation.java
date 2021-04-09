@@ -27,9 +27,8 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
 
   public SignedIdentityAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningKey) {
     this.att = att;
+    this.signature = SignatureUtility.signWithEthereum(att.getPrehash(), attestationSigningKey.getPrivate());
     this.attestationVerificationKey = attestationSigningKey.getPublic();
-    att.setSigningAlgorithm(ECDSA_WITH_SHA256);
-    this.signature = SignatureUtility.signDeterministicSHA256(att.getPrehash(), attestationSigningKey.getPrivate());
     constructorCheck(attestationSigningKey.getPublic());
   }
 
@@ -77,7 +76,7 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
     return constructSignedAttestation(this.att, this.signature);
   }
 
-  static byte[] constructSignedAttestation(IdentifierAttestation unsignedAtt, byte[] signature) {
+  static byte[] constructSignedAttestation(Attestation unsignedAtt, byte[] signature) {
     try {
       byte[] rawAtt = unsignedAtt.getPrehash();
       ASN1EncodableVector res = new ASN1EncodableVector();
@@ -98,7 +97,7 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
   @Override
   public boolean verify() {
     try {
-      return SignatureUtility.verifySHA256(att.getDerEncoding(), signature, attestationVerificationKey);
+      return SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
     } catch (InvalidObjectException e) {
       return false;
     }

@@ -38,7 +38,7 @@ public class EIP712AuthenticationTest {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
   private static final int TICKET_CLASS = 0;  // Regular ticket
-  private static final int CONFERENCE_ID = 6;
+  private static final String CONFERENCE_ID = "6";
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
 
@@ -55,8 +55,8 @@ public class EIP712AuthenticationTest {
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    attestorKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
-    ticketKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
+    attestorKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    ticketKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     AttestableObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
     encoder = new AuthenticatorEncoder(1, rand);
     validator = new Eip712AuthValidator(decoder, encoder, attestorKeys.getPublic(), validatorDomain);

@@ -122,10 +122,6 @@ task packageAttestation(type: Jar) {
            || it.relativePath.pathString.startsWith('id/attestation')
            || it.relativePath.pathString.startsWith('dk')){
             return true
-        } else if(!it.directory
-            && it.relativePath.pathString.startsWith('com/alphawallet/token/entity')
-            && it.name != 'Signable.class'){
-            return true
         }
     }
     manifest {

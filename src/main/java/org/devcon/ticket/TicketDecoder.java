@@ -11,6 +11,7 @@ import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
+import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -32,7 +33,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     ASN1InputStream input = new ASN1InputStream(encoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
     ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    int devconId = (ASN1Integer.getInstance(ticket.getObjectAt(0))).getValue().intValueExact();
+    String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
     BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
     int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
     /* refactored 2021-01-05 : we don't care about the ticket class set on our level
