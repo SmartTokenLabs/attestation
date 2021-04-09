@@ -35,9 +35,9 @@ public class ProofOfKnowledgeTest {
   @Test
   public void TestSunshineAttestationProof() {
     FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN);
-    assertTrue(crypto.verifyAttestationRequestProof(pok));
+    assertTrue(crypto.verifyFullProof(pok));
     FullProofOfExponent newPok = new FullProofOfExponent(pok.getDerEncoding());
-    assertTrue(crypto.verifyAttestationRequestProof(newPok));
+    assertTrue(crypto.verifyFullProof(newPok));
     assertEquals(pok.getRiddle(), newPok.getRiddle());
     assertEquals(pok.getPoint(), newPok.getPoint());
     assertEquals(pok.getChallenge(), newPok.getChallenge());
@@ -51,9 +51,9 @@ public class ProofOfKnowledgeTest {
   @Test
   public void TestSunshineAttestationProofWithNonce() {
     FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.ONE, NONCE);
-    assertTrue(crypto.verifyAttestationRequestProof(pok));
+    assertTrue(crypto.verifyFullProof(pok));
     FullProofOfExponent newPok = new FullProofOfExponent(pok.getDerEncoding());
-    assertTrue(crypto.verifyAttestationRequestProof(newPok));
+    assertTrue(crypto.verifyFullProof(newPok));
     assertEquals(pok.getRiddle(), newPok.getRiddle());
     assertEquals(pok.getPoint(), newPok.getPoint());
     assertEquals(pok.getChallenge(), newPok.getChallenge());
@@ -67,18 +67,18 @@ public class ProofOfKnowledgeTest {
   @Test
   public void TestNegativeAttestationProof() {
     FullProofOfExponent pok = crypto.computeAttestationProof(BigInteger.TEN, NONCE);
-    assertTrue(crypto.verifyAttestationRequestProof(pok));
+    assertTrue(crypto.verifyFullProof(pok));
     FullProofOfExponent newPok;
     newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE), pok.getNonce());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyFullProof(newPok));
     newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().multiply(new BigInteger("2")), pok.getChallenge(), pok.getNonce());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyFullProof(newPok));
     newPok = new FullProofOfExponent(pok.getRiddle().multiply(new BigInteger("2")), pok.getPoint(), pok.getChallenge(), pok.getNonce());
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyFullProof(newPok));
     byte[] nonce = newPok.getNonce();
     nonce[0] ^= 0x01;
     newPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge(), nonce);
-    assertFalse(crypto.verifyAttestationRequestProof(newPok));
+    assertFalse(crypto.verifyFullProof(newPok));
   }
 
   @Test

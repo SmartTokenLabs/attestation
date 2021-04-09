@@ -9,6 +9,8 @@ import java.math.BigInteger;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
@@ -23,16 +25,20 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     EMAIL
   }
 
+  // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
+  public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
+
   /**
    * Constructs a new identifier attestation based on a secret.
    * You still need to set the optional fields, that is
-   * issuer, notValidBefore, notValidAfter, smartcontracts
+   * issuer, notValidBefore, notValidAfter, smartcontracts, signingAlgorithm
    */
   public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    // Set default signing algorithm, but it is not final and can be changed
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -45,13 +51,14 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   /**
    * Restores an attestation based on an already existing commitment
    * You still need to set the optional fields, that is
-   * issuer, notValidBefore, notValidAfter, smartcontracts
+   * issuer, notValidBefore, notValidAfter, smartcontracts, signingAlgorithm
    */
   public IdentifierAttestation(byte[] commitment, AsymmetricKeyParameter key)  {
     super();
     super.setVersion(18); // Our initial version
     super.setSubject("CN=" + SignatureUtility.addressFromKey(key));
-    super.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    // Set default signing algorithm, but it is not final and can be changed
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -82,13 +89,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The version number is " + getVersion() + ", it must be 18");
       return false;
     }
-    if (getSubject() == null || getSubject().length() != 45 || !getSubject()
-        .startsWith("CN=0x")) { // The address is 2*20+5 chars long because it starts with CN=0x
+    if (getSubject() == null || !getSubject().startsWith("CN=") || !ValidationTools.isAddress(getSubject().substring(3))) {
       System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
-      return false;
-    }
-    if (!getSigningAlgorithm().equals(SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId())) {
-      System.err.println("The signature algorithm is supposed to be " + SignatureUtility.ALGORITHM_IDENTIFIER.getAlgorithm().getId());
       return false;
     }
     // Verify that the subject public key matches the subject common name
@@ -104,6 +106,18 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("Could not parse subject public key");
     }
     return true;
+  }
+
+  public byte[] getCommitment() {
+    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
+    ASN1Sequence extensions = DERSequence.getInstance(getExtensions().getObjectAt(0));
+    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
+    return ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+  }
+
+  public String getAddress() {
+    // Remove the "CN=" prefix
+    return getSubject().substring(3);
   }
 
   /**
@@ -131,11 +145,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   @Override
   public void setVersion(int version) {
-    throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
-  }
-
-  @Override
-  public void setSigningAlgorithm(AlgorithmIdentifier oid) {
     throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
   }
 

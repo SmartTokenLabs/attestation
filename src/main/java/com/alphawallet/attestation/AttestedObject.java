@@ -21,7 +21,7 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 public class AttestedObject<T extends Attestable> implements ASNEncodable, Verifiable {
   private final T attestableObject;
-  private final SignedAttestation att;
+  private final SignedIdentityAttestation att;
   private final ProofOfExponent pok;
   private final byte[] signature;
 
@@ -30,7 +30,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private final byte[] unsignedEncoding;
   private final byte[] encoding;
 
-  public AttestedObject(T attestableObject, SignedAttestation att, AsymmetricCipherKeyPair userKeys,
+  public AttestedObject(T attestableObject, SignedIdentityAttestation att, AsymmetricCipherKeyPair userKeys,
       BigInteger attestationSecret, BigInteger chequeSecret,
       AttestationCrypto crypto) {
     this.attestableObject = attestableObject;
@@ -55,7 +55,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature) {
+  public AttestedObject(T object, SignedIdentityAttestation att, ProofOfExponent pok, byte[] signature) {
     this.attestableObject = object;
     this.att = att;
     this.pok = pok;
@@ -79,12 +79,12 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   }
 
   public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
-      AsymmetricKeyParameter publicAttestationSigningKey) {
+      AsymmetricKeyParameter attestationVerificationKey) {
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
-      this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
+      this.att = new SignedIdentityAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), attestationVerificationKey);
       this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
       if (asn1.size() > 3) {
@@ -107,7 +107,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return attestableObject;
   }
 
-  public SignedAttestation getAtt() {
+  public SignedIdentityAttestation getAtt() {
     return att;
   }
 
@@ -152,7 +152,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
 
     // CHECK: the Ethereum address on the attestation matches receivers signing key
-    String attestationEthereumAddress = getAtt().getUnsignedAttestation().getSubject().substring(3);
+    String attestationEthereumAddress = getAtt().getUnsignedAttestation().getAddress();
     if (!attestationEthereumAddress.equals(SignatureUtility.addressFromKey(getUserPublicKey()))) {
       System.err.println("The attestation is not to the same Ethereum user who is sending this request");
       return false;
@@ -179,7 +179,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok);
+    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok);
     if (signature != null) {
       return result && SignatureUtility
           .verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey);
@@ -190,8 +190,9 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
-    ProofOfExponent pok = crypto.computeEqualityProof(att.getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
-    if (!crypto.verifyEqualityProof(att.getCommitment(), attestableObject.getCommitment(), pok)) {
+    // We require that the internal attestation is an IdentifierAttestation
+    ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
+    if (!crypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
       throw new RuntimeException("The redeem proof did not verify");
     }
     return pok;

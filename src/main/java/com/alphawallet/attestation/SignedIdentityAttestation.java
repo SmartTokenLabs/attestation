@@ -9,7 +9,6 @@ import java.io.InvalidObjectException;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
@@ -17,42 +16,49 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 
-public class SignedAttestation implements ASNEncodable, Verifiable, Validateable {
-  private final Attestation att;
+public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
+  public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
+
+  private final IdentifierAttestation att;
   private final byte[] signature;
   private final AsymmetricKeyParameter attestationVerificationKey;
 
-  public SignedAttestation(Attestation att, AsymmetricCipherKeyPair attestationSigningkey) {
+  public SignedIdentityAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningKey) {
     this.att = att;
-    this.signature = SignatureUtility.signWithEthereum(att.getPrehash(), attestationSigningkey.getPrivate());
-    this.attestationVerificationKey = attestationSigningkey.getPublic();
-    if (!verify()) {
-      throw new IllegalArgumentException("The signature is not valid");
-    }
+    this.signature = SignatureUtility.signWithEthereum(att.getPrehash(), attestationSigningKey.getPrivate());
+    this.attestationVerificationKey = attestationSigningKey.getPublic();
+    constructorCheck(attestationSigningKey.getPublic());
   }
 
-  public SignedAttestation(byte[] derEncoding, AsymmetricKeyParameter signingPublicKey) throws IOException {
+  public SignedIdentityAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
     ASN1InputStream input = new ASN1InputStream(derEncoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
     ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    this.att = new Attestation(attestationEnc.getEncoded());
+    AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
+    // TODO ideally this should be refactored to SignedAttestation being augmented with an generic
+    // Attestation type and an encoder to construct such an attestation
+    this.att = new IdentifierAttestation(attestationEnc.getEncoded());
     DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
     this.signature = signatureEnc.getBytes();
-    this.attestationVerificationKey = signingPublicKey;
+    this.attestationVerificationKey = verificationKey;
+    if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {
+      throw new IllegalArgumentException("Algorithm specified is not consistent");
+    }
+    constructorCheck(verificationKey);
+  }
+
+  void constructorCheck(AsymmetricKeyParameter verificationKey) {
+    if (!(verificationKey instanceof ECPublicKeyParameters)) {
+      throw new UnsupportedOperationException("Attestations must be signed with ECDSA key");
+    }
     if (!verify()) {
       throw new IllegalArgumentException("The signature is not valid");
     }
   }
 
-  public byte[] getCommitment() {
-    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
-    ASN1Sequence extensions = DERSequence.getInstance(att.getExtensions().getObjectAt(0));
-    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
-    return ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
-  }
-
-  public Attestation getUnsignedAttestation() {
+  public IdentifierAttestation getUnsignedAttestation() {
     return att;
   }
 
@@ -75,7 +81,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
       byte[] rawAtt = unsignedAtt.getPrehash();
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Primitive.fromByteArray(rawAtt));
-      res.add(new AlgorithmIdentifier(new ASN1ObjectIdentifier(unsignedAtt.getSigningAlgorithm())));
+      res.add(unsignedAtt.getSigningAlgorithm());
       res.add(new DERBitString(signature));
       return new DERSequence(res).getEncoded();
     } catch (Exception e) {
@@ -96,6 +102,5 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
       return false;
     }
   }
-
 
 }

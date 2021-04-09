@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -15,34 +14,35 @@ import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class HelperTest {
-  public static final int CHARS_IN_LINE = 65;
-  public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
-//  public static KeyPair constructKeys(SecureRandom rand) throws Exception {
-//    Security.addProvider(new BouncyCastleProvider());
-//    KeyPairGenerator keyGen = KeyPairGenerator.getInstance(AttestationCrypto.SIGNATURE_ALG, "BC");
-//    ECGenParameterSpec ecSpec = new ECGenParameterSpec(AttestationCrypto.ECDSA_CURVE);
-//    keyGen.initialize(ecSpec, rand);
-//    return keyGen.generateKeyPair();
-//  }
+  public static final long VALIDITY = 1000L*60L*60L*24L*365L*10L; // 10 years
 
-  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter key,
+  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
       BigInteger secret, String mail) {
-    IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL, key, secret);
+    IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL,
+        subjectPublicKey, secret);
     att.setIssuer("CN=ALX");
     att.setSerialNumber(1);
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + 3600000)); // Valid for an hour
+    att.setNotValidAfter(new Date(System.currentTimeMillis() + VALIDITY));
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     assertTrue(att.checkValidity());
     assertFalse(att.isValidX509()); // Since the version is wrong, and algorithm is non-standard
+    return att;
+  }
+
+  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
+      AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
+    IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
+    assertTrue(att.checkValidity());
+    assertTrue(issuerPublicKey instanceof ECPublicKeyParameters);
     return att;
   }
 
@@ -51,15 +51,13 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(2); // =v3 since counting starts from 0
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
+    att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
+    att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-    spki = new SubjectPublicKeyInfo(new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2")),  // ECDSA with SHA256 which is needed for a proper x509
-        spki.getPublicKeyData());
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
     extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
@@ -75,11 +73,11 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis()+3600000)); // Valid for an hour
+    att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
     att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
@@ -96,7 +94,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(18); // Our initial version
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(SignatureUtility.ALGORITHM_IDENTIFIER);
+    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
     att.setDataObject(new DERSequence(dataObject));

@@ -1,28 +1,24 @@
 package com.alphawallet.attestation.demo;
 
 
-import com.alphawallet.attestation.Attestation;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.HelperTest;
-import com.alphawallet.attestation.SignedAttestation;
+import com.alphawallet.attestation.IdentifierAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.token.tools.Numeric;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.List;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.devcon.ticket.Ticket;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.web3j.abi.datatypes.Address;
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestAttestationUse {
     private static final String MAIL = "test@test.ts";
@@ -37,7 +33,7 @@ public class TestAttestationUse {
     private static AsymmetricCipherKeyPair attestorKeys;
     private static SecureRandom rand;
     private static AttestationCrypto crypto;
-    private SignedAttestation attestation;
+    private SignedIdentityAttestation attestation;
     private AttestedObject<Ticket> attestedTicket;
     private final SmartContract contract = new SmartContract();
 
@@ -58,8 +54,8 @@ public class TestAttestationUse {
     @BeforeEach
     public void makeAttestedCheque()
     {
-        Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
-        attestation = new SignedAttestation(att, attestorKeys);
+        IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+        attestation = new SignedIdentityAttestation(att, attestorKeys);
     }
 
     @Test

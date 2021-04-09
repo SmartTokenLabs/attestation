@@ -1,0 +1,22 @@
+UseAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    MyAttestation,
+    SubjectPublicKeyInfoValue
+        FROM AttestationFramework;
+    Proof
+        FROM ProofOfExponent
+    IdentifierType
+        FROM AttestationRequest
+
+UseAttestation ::= SEQUENCE {
+    attestation          MyAttestation,
+    type                 IdentifierType,
+    proof                Proof,
+    sessionKey           SubjectPublicKeyInfoValue
+}
+
+END
