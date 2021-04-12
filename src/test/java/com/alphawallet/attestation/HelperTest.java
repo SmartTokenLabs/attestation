@@ -47,7 +47,6 @@ public class HelperTest {
     IdentifierAttestation att = new IdentifierAttestation(type, identifier, key);
     att.setIssuer("CN=ALPHAWALLET");
     att.setSerialNumber(1);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + 1000L*60L*60L*24L*365L)); // Valid for 1 year
     assertTrue(att.checkValidity());
     return att;
   }
