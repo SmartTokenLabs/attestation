@@ -102,19 +102,20 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     currentPos++;
 
     // The optional smartcontracts are included
-    if (asn1.getObjectAt(currentPos) instanceof ASN1Sequence) {
+    if (asn1.size() < currentPos && asn1.getObjectAt(currentPos) instanceof ASN1Sequence) {
       smartcontracts = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos));
       currentPos++;
     }
 
-    ASN1TaggedObject objects = ASN1TaggedObject.getInstance(asn1.getObjectAt(currentPos));
-    currentPos++;
-    if (objects.getTagNo() == 3) {
-      extensions = ASN1Sequence.getInstance(objects.getObject());
-    } else {
-      dataObject = ASN1Sequence.getInstance(objects.getObject());
+    if (asn1.size() < currentPos) {
+      ASN1TaggedObject objects = ASN1TaggedObject.getInstance(asn1.getObjectAt(currentPos));
+      currentPos++;
+      if (objects.getTagNo() == 3) {
+        extensions = ASN1Sequence.getInstance(objects.getObject());
+      } else {
+        dataObject = ASN1Sequence.getInstance(objects.getObject());
+      }
     }
-
   }
 
   public int getVersion() {
