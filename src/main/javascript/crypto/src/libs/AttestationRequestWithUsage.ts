@@ -1,40 +1,41 @@
-import {CURVE_BN256, Point} from "./Point";
-import { Asn1Der } from "./DerUtility";
-import { uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
-import {AttestationCrypto} from "./AttestationCrypto";
-import {FullProofOfExponent} from "./FullProofOfExponent";
-import {AsnParser} from "@peculiar/asn1-schema";
-import {Identity} from "../asn1/shemas/AttestationRequest";
 import {KeyPair} from "./KeyPair";
+import {FullProofOfExponent} from "./FullProofOfExponent";
+import {ASNEncodable} from "./ASNEncodable";
+import {Verifiable} from "./Verifiable";
+import {Identity} from "../asn1/shemas/AttestationRequestWithUsage";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {CURVE_BN256, Point} from "./Point";
+import {AttestationCrypto} from "./AttestationCrypto";
+import {Asn1Der} from "./DerUtility";
 
-export class AttestationRequest {
+export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
+    private sessionPublicKey: KeyPair;
     private type: number;
     public pok: FullProofOfExponent;
-    private constructor() {}
 
-    static fromData(type: number, pok: FullProofOfExponent): AttestationRequest {
+    private constructor() {
+    }
+
+    static fromData(type: number, pok: FullProofOfExponent, sessionPublicKey: KeyPair): AttestationRequestWithUsage {
         let me = new this();
         me.type = type;
         me.pok = pok;
+        me.sessionPublicKey = sessionPublicKey;
         if (!me.verify()) {
-            throw new Error("The proof is not valid");
+            throw new Error("Could not verify the proof");
         }
         return me;
     }
 
-    getDerEncoding(){
-        let res = Asn1Der.encode('INTEGER',this.type) +
-            this.pok.getDerEncoding();
-        return Asn1Der.encode('SEQUENCE_30',res);
-    }
-
-    static fromBytes(asn1: Uint8Array): AttestationRequest {
+    static fromBytes(asn1: Uint8Array): AttestationRequestWithUsage {
         let me = new this();
         let identity: Identity;
 
         try {
             identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
             me.type = identity.type;
+            me.sessionPublicKey = KeyPair.publicFromUint(identity.sessionKey.publicKey );
         } catch (e){
             throw new Error('Cant parse AttestationRequest Identity');
         }
@@ -59,7 +60,6 @@ export class AttestationRequest {
         // console.log('proof OK');
         return me;
     }
-
     verify():boolean {
 
         let AttestationCryptoInstance = new AttestationCrypto();
@@ -73,6 +73,14 @@ export class AttestationRequest {
         return true;
     }
 
+    getDerEncoding(){
+        let res = Asn1Der.encode('INTEGER',this.type) +
+            this.pok.getDerEncoding() +
+            this.sessionPublicKey.getAsnDerPublic();
+
+        return Asn1Der.encode('SEQUENCE_30',res);
+    }
+
     getPok(): FullProofOfExponent{
         return this.pok;
     }
@@ -80,5 +88,8 @@ export class AttestationRequest {
     getType(): number{
         return this.type;
     }
-}
 
+    getSessionPublicKey():KeyPair {
+        return this.sessionPublicKey;
+    }
+}

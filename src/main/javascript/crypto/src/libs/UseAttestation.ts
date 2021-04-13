@@ -7,7 +7,7 @@ import {SignedIdentityAttestation} from "./SignedIdentityAttestation";
 import {ASNEncodable} from "./ASNEncodable";
 import {UseAttestation as UseAttestationASN} from "../asn1/shemas/UseAttestation";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {uint8toBuffer} from "./utils";
+import {uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 
 export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
@@ -17,14 +17,16 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     private sessionPublicKey: KeyPair;
     private encoding: string;
 
-    static fromData(attestation: SignedIdentityAttestation, type: number, pok: FullProofOfExponent, sessionPublicKey: KeyPair) {
+    static fromData(attestation: SignedIdentityAttestation, type: number, pok: FullProofOfExponent, sessionPublicKey: KeyPair): UseAttestation {
         let me = new this();
         me.attestation = attestation;
         me.type = type;
         me.pok = pok;
         me.sessionPublicKey = sessionPublicKey;
+        console.log('before makeEncoding');
         me.encoding = me.makeEncoding(attestation, type, pok, sessionPublicKey);
         me.constructorCheck();
+        return me;
     }
 
     static fromBytes(derEncoding: Uint8Array, attestationVerificationKey: KeyPair) {
@@ -38,11 +40,13 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
         }
 
         try {
-
             me.attestation = SignedIdentityAttestation.fromASNType(useAttest.attestation, attestationVerificationKey);
             me.type = useAttest.type;
+
             me.pok = FullProofOfExponent.fromASNType(useAttest.proof);
+
             me.sessionPublicKey = KeyPair.publicFromUint(useAttest.sessionKey.publicKey);
+
         } catch ( e) {
             throw new Error("Cant decode internal data. " + e);
         }

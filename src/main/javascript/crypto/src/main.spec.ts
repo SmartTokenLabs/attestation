@@ -1,4 +1,4 @@
-import {base64ToUint8array, uint8toBuffer, uint8tohex} from './libs/utils';
+import {base64ToUint8array, hexStringToUint8, stringToArray, uint8ToBn, uint8toBuffer, uint8tohex} from './libs/utils';
 import {readFileSync} from "fs";
 import {Attestation} from "./libs/Attestation";
 import {AttestationRequest} from "./libs/AttestationRequest";
@@ -13,6 +13,11 @@ import {Eip712AttestationRequest} from "./libs/Eip712AttestationRequest";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
 import {IdentifierAttestation} from "./libs/IdentifierAttestation";
 import {Authenticator} from "./Authenticator";
+import {UseAttestation as UseAttestationASN} from "./asn1/shemas/UseAttestation";
+import {UseAttestation} from "./libs/UseAttestation";
+import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
+
+let EC = require("elliptic");
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -22,63 +27,144 @@ describe("Utils tests", () => {
     })
 });
 
-describe("Attestation test", () => {
+describe("Read keys test", () => {
+
+    const userPrivPEM = readFileSync(PREFIX_PATH + 'user-priv.pem', 'utf8');
+    let userKey = KeyPair.privateFromPEM(userPrivPEM);
+
+    const userPubPEM = readFileSync(PREFIX_PATH + 'user-pub.pem', 'utf8');
+    let userPubKey = KeyPair.publicFromPEM(userPubPEM);
+
+    test('Read keys test ok', () => {
+        expect(userPubKey.getPublicKeyAsHexStr()).toBe(userKey.getPublicKeyAsHexStr());
+    })
+});
+
+describe("Subtle import test", () => {
+
+    test('Session key + verify signature', async () => {
+        const userPrivPEM = readFileSync(PREFIX_PATH + 'session-priv.pem', 'utf8');
+        let userKey = KeyPair.privateFromPEM(userPrivPEM);
+
+        let messageToSign = 'message';
+
+        let subtleSignature = new Uint8Array( await userKey.signStringWithSubtle(messageToSign) );
+
+        let res;
+        try {
+             res = await userKey.verifyStringWithSubtle(subtleSignature, messageToSign);
+        } catch (e){
+            console.error('Import key Error. '+e);
+            throw new Error(e);
+        }
+
+        expect(res).toBe(true);
+
+        const signatureBin = readFileSync(PREFIX_PATH + 'signature.bin');
+        res = await userKey.verifyStringWithSubtleDerSignature(Uint8Array.from(signatureBin), messageToSign);
+
+        expect(res).toBe(true);
+    })
+});
+
+describe("Attestation request", () => {
+
+    test('Authenticator.requestAttest', async () => {
+
+        const userPrivPEM = readFileSync(PREFIX_PATH + 'user-priv.pem', 'utf8');
+        let userKey = KeyPair.privateFromPEM(userPrivPEM);
+
+
+        let secret = BigInt(12345);
+        let receiverId = "test@test.com";
+        let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
+        let attestJson = await Authenticator.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret, userKey);
+        // console.log(`attestJson = ${attestJson}`);
+    })
+
+});
+
+describe("Attestation test(disabled)", () => {
 
     // const receiverPubPEM = readFileSync(PREFIX_PATH + 'receiver-pub.pem', 'utf8');
 
-    const receiverPrivPEM = readFileSync(PREFIX_PATH + 'receiver-priv.pem', 'utf8');
+    const receiverPrivPEM = readFileSync(PREFIX_PATH + 'user-priv.pem', 'utf8');
     const attestorPrivPEM = readFileSync(PREFIX_PATH + 'attestor-priv.pem', 'utf8');
     let receiverKey = KeyPair.privateFromPEM(receiverPrivPEM);
-    //console.log('receiverKey.getAddress(): ' + receiverKey.getAddress());
 
-    // const receiverPubPEM = readFileSync(PREFIX_PATH + 'receiver-pub.pem', 'utf8');
-    // const receiverPubUint8 = base64ToUint8array(receiverPubPEM);
-    // let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( receiverPubUint8), PublicKeyInfoValue);
-    // let receiverPubKey = KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
-    // console.log('receiverKey.getAddress(): ' + receiverPubKey.getAddress());
-
-    let attestationRequestJson = readFileSync(PREFIX_PATH + 'attestation-request.pem', 'utf8');
-    // const attestationRequestUint8 = base64ToUint8array(attestationRequestPem);
+    let attestationRequestJson = readFileSync(PREFIX_PATH + 'attestation-request.json', 'utf8');
     attestationRequestJson = attestationRequestJson.split(/\r?\n/).join('');
     let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-    let attestRes = Authenticator.createAttest(attestorPrivPEM,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
+    // let attestRes = Authenticator.createAttest(attestorPrivPEM,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-    console.log(attestRes + '-------');
+    // console.log(attestRes + '-------');
 
 });
+
+describe("useAttest read", () => {
+    test('useAttest read', async () => {
+
+        const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
+        let attestorPubKey = KeyPair.publicFromPEM(attestorPubPEM);
+
+        const useAttestationJson = readFileSync(PREFIX_PATH + 'use-attestation.json', 'utf8');
+
+
+        try {
+            let useAttestRes = new Eip712AttestationUsage();
+            useAttestRes.fillJsonData(useAttestationJson, attestorPubKey);
+        } catch (e) {
+            console.error(e);
+            throw new Error('useAttestRes read failed');
+        }
+        expect(1).toBe(1);
+    });
+
+});
+
+describe("executeEipFlow test", () => {
+
+    test('executeEipFlow - useAttest', async () => {
+
+        const attestationPEM = readFileSync(PREFIX_PATH + 'attestation.crt', 'utf8');
+        const attestationSecretPEM = readFileSync(PREFIX_PATH + 'attestation-secret.pem', 'utf8');
+
+        const sessionPrivPEM = readFileSync(PREFIX_PATH + 'session-priv.pem', 'utf8');
+        let sessionKey = KeyPair.privateFromPEM(sessionPrivPEM);
+
+        const userPrivPEM = readFileSync(PREFIX_PATH + 'user-priv.pem', 'utf8');
+        let userKey = KeyPair.privateFromPEM(userPrivPEM);
+
+        const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
+        let attestorPubKey = KeyPair.publicFromPEM(attestorPubPEM);
+
+        let email = "test@test.ts";
+        let type = "mail";
+        let WEB_DOMAIN = "http://wwww.hotelbogota.com";
+
+        try {
+            let useAttestRes = await Authenticator.useAttest(
+                attestationPEM,
+                attestationSecretPEM,
+                attestorPubKey,
+                email,
+                type,
+                WEB_DOMAIN,
+                sessionKey,
+                userKey);
+            console.log(`useAttestRes = ${useAttestRes}`);
+        } catch (e) {
+            console.error(e);
+            throw new Error('useAttestRes failed');
+        }
+    })
+
+});
+
+
+
 /*
-describe("Keys decode test", () => {
-
-    const signedTokenDER = readFileSync(PREFIX_PATH + 'signed-devcon-ticket.der');
-
-    const receiverPubPEM = readFileSync(PREFIX_PATH + 'receiver-pub.pem', 'utf8');
-    const receiverPrivPEM = readFileSync(PREFIX_PATH + 'receiver-priv.pem', 'utf8');
-
-    const receiverPubUint8 = base64ToUint8array(receiverPubPEM);
-    const receiverPrivUint8 = base64ToUint8array(receiverPrivPEM);
-
-    let privateKeyObj: PrivateKeyInfo = AsnParser.parse(uint8toBuffer( receiverPrivUint8), PrivateKeyInfo);
-    let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( receiverPubUint8), PublicKeyInfoValue);
-
-});
-
-describe("SignedIdentityAttestation test", () => {
-
-
-    const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
-    // const attestorPubUint8 = base64ToUint8array(attestorPubPEM);
-    // let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( attestorPubUint8), PublicKeyInfoValue);
-    // let attestorPubKey = KeyPair.publicFromUint(publicKeyObj.publicKey);
-    let attestorPubKey = KeyPair.publicFromBase64(attestorPubPEM);
-
-
-    const attestationPEM = readFileSync(PREFIX_PATH + 'attestation.pem', 'utf8');
-    const attestationUint8 = base64ToUint8array(attestationPEM);
-
-    let signedAttest = SignedIdentityAttestation.fromBytes(attestationUint8, attestorPubKey);
-
-});
 
 describe("AttestedObject decode test", () => {
 
@@ -88,13 +174,4 @@ describe("AttestedObject decode test", () => {
 
 });
 
-describe("AttestedObject test", () => {
-
-    // const attestedObject = AttestedObject.fromBytes( new Uint8Array(signedTokenDER), UseToken, KeyPair.privateFromKeyInfo(privateKeyObj) );
-
-});
-
-// test('should return true given internal link', () => {
-//     expect(isInternalLink('/some-page')).toBe(true)
-// })
 */

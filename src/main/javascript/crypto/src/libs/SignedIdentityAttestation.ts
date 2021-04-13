@@ -1,7 +1,7 @@
 import {AsnParser} from "@peculiar/asn1-schema";
 import {MyAttestation} from "../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
-import {uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
 import {SignatureUtility} from "./SignatureUtility";
 import {Attestation} from "./Attestation";
 import {Verifiable} from "./Verifiable";
@@ -33,7 +33,6 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         me.attestorKeys = attestorKeys;
         let algorithmEncoded: string = myAttestation.signatureAlgorithm.algorithm;
         me.att = IdentifierAttestation.fromBytes(myAttestation.signedInfo) as IdentifierAttestation;
-
         me.signature = myAttestation.signatureValue;
         if (algorithmEncoded !== me.att.getSigningAlgorithm()) {
             throw new Error("Algorithm specified is not consistent");
@@ -48,15 +47,18 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         me.attestorKeys = attestationSigningKey;
         me.att = att;
         me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
-        me.signature = attestationSigningKey.signBytesWithEthereum( Array.from(me.att.getPrehash()));
+        me.signature = attestationSigningKey.signDeterministicSHA256( Array.from(me.att.getPrehash()));
         me.constructorCheck(attestationSigningKey);
         return me;
     }
 
     verify(){
         try {
-            return SignatureUtility.verify(this.att.getDerEncoding(), uint8tohex(new Uint8Array(this.signature)), this.attestorKeys);
+            // return SignatureUtility.verify(this.att.getDerEncoding(), this.signature, this.attestorKeys);
+            return this.attestorKeys.verifyDeterministicSHA256(hexStringToArray(this.att.getDerEncoding()), uint8tohex(new Uint8Array(this.signature)));
+
         } catch (e) {
+            console.error(e);
             return false;
         }
     }

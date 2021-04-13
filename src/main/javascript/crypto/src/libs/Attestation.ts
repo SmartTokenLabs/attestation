@@ -133,6 +133,10 @@ export class Attestation {
     }
 
     getDerEncoding(): string{
+        if (!this.signedInfo) {
+            console.log('this.signedInfo filled with this.getPrehash()!');
+            this.signedInfo = this.getPrehash();
+        }
         return uint8tohex(new Uint8Array(this.signedInfo));
     }
 

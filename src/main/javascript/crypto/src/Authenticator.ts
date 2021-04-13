@@ -1,6 +1,6 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array} from "./libs/utils";
+import {base64ToUint8array, hexStringToUint8, uint8merge, uint8ToBn, uint8toBuffer, uint8tohex} from "./libs/utils";
 import {SignedIdentityAttestation} from "./libs/SignedIdentityAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
@@ -9,6 +9,15 @@ import {AttestationRequest} from "./libs/AttestationRequest";
 import {Nonce} from "./libs/Nonce";
 import {Eip712AttestationRequest} from "./libs/Eip712AttestationRequest";
 import {IdentifierAttestation} from "./libs/IdentifierAttestation";
+import {SignatureUtility} from "./libs/SignatureUtility";
+import {Timestamp} from "./libs/Timestamp";
+import {FullProofOfExponent} from "./libs/FullProofOfExponent";
+import {UseAttestation} from "./libs/UseAttestation";
+import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {PublicKeyInfoValue} from "./asn1/shemas/AttestationFramework";
+
+const { subtle } = require('crypto').webcrypto;
 
 declare global {
     interface Window {
@@ -16,6 +25,22 @@ declare global {
         detachEvent: any;
     }
 }
+
+const ALPHA_CONFIG = {
+    indexedDBname: "AlphaDB",
+    indexedDBobject: "AlphaKeyStore",
+    indexedDBid: "TK",
+    keysAlgorithm: {
+        name: "ECDSA",
+        // namedCurve: "P-384"
+        namedCurve: "P-256"
+    },
+    signAlgorithm: {
+        name: "ECDSA",
+        // hash: {name: "SHA-384"},
+        hash: {name: "SHA-256"},
+    }
+};
 
 export interface devconToken {
     ticketBlob: string,
@@ -249,15 +274,27 @@ export class Authenticator {
     // getTokenAttestation(tokenObj) {
     // }
 
-    static async requestAttest( receiverId: string, type: number, attestorDomain: string, secret: bigint ){
-        // userKeyPEM: string,
-        let crypto = new AttestationCrypto();
+    static async requestAttest( receiverId: string, type: string, attestorDomain: string, secret: bigint, userKey: KeyPair = null ){
 
-        let nonce = await Nonce.makeNonce(receiverId, '', attestorDomain);
+        let crypto = new AttestationCrypto();
+        let userAddress;
+        if (userKey) {
+            userAddress = userKey.getAddress();
+        } else {
+            try {
+                userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
+            } catch (e){
+                console.log('Cant find user Ethereum Address. Please check Metamask. ' + e);
+                return;
+            }
+        }
+
+        let nonce = await Nonce.makeNonce(userAddress, attestorDomain);
+
         let pok = crypto.computeAttestationProof(secret, nonce);
-        let attRequest = AttestationRequest.fromData(0, pok);
-        let attest = new Eip712AttestationRequest();
-        await attest.addData(attestorDomain, receiverId, attRequest);
+        let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
+        let attest = new Eip712AttestationRequest(userKey);
+        await attest.addData(attestorDomain, 20*1000, receiverId, attRequest);
         let attestJson = attest.getJsonEncoding();
 
         return attestJson;
@@ -267,7 +304,7 @@ export class Authenticator {
     static createAttest( attestorPrivateKeyPEM: string, issuerName: string, validityInMilliseconds: number ,attestRequestJson: string, attestorDomain: string ){
         let attestorKey = KeyPair.privateFromPEM(attestorPrivateKeyPEM);
         let attestationRequest: Eip712AttestationRequest = new Eip712AttestationRequest();
-        attestationRequest.setDomainAndTimout(attestorDomain, validityInMilliseconds);
+        attestationRequest.setDomain(attestorDomain);
         try {
             // decode JSON and fill publicKey
             attestationRequest.fillJsonData(attestRequestJson);
@@ -296,11 +333,101 @@ export class Authenticator {
         let now = Date.now();
         att.setNotValidBefore(now);
         att.setNotValidAfter(now + validityInMilliseconds);
+        console.log('lets add SignedIdentityAttestation');
         let signed: SignedIdentityAttestation = SignedIdentityAttestation.fromData(att, attestorKey);
         console.log('att filled');
         return signed.getDerEncoding();
     }
 
+    // PREFIX + "user-priv.pem", PREFIX + "attestation.crt", PREFIX + "attestation-secret.pem", PREFIX + "attestor-pub.pem", "test@test.ts", "mail", PREFIX + "session-priv.pem", PREFIX + "use-attestation.json"
+    static async useAttest(
+        attestationBase64: string,
+        attestationSecretBase64: string ,
+        attestorKey: KeyPair,
+        receiverId: string,
+        type: string,
+        webDomain: string,
+        sessionKey: KeyPair = null,
+        userKey: KeyPair = null){
 
+        const attestationUint8 = base64ToUint8array(attestationBase64);
+        let att = SignedIdentityAttestation.fromBytes(attestationUint8, attestorKey);
+
+        let attestationSecret = uint8ToBn(base64ToUint8array(attestationSecretBase64))
+
+        let crypto = new AttestationCrypto();
+
+        let address;
+        if (userKey) {
+            address = userKey.getAddress();
+        } else {
+            address = await SignatureUtility.connectMetamaskAndGetAddress();
+        }
+
+        let nonce = await Nonce.makeNonce(address, webDomain);
+
+        let pok: FullProofOfExponent = crypto.computeAttestationProof(attestationSecret, nonce);
+        // TODO create keyPair for ECDSA
+        // let sessionKeys = null;
+
+        try {
+            let attUsage: UseAttestation = UseAttestation.fromData(att, crypto.getType(type), pok, sessionKey);
+            let usageRequest: Eip712AttestationUsage = new Eip712AttestationUsage(userKey);
+            let res = await usageRequest.addData(webDomain, receiverId, attUsage);
+            // console.log('usageRequest ready state = ' + res);
+            // console.log('usageRequest.getJsonEncoding() = ' + usageRequest.getJsonEncoding());
+            return usageRequest.getJsonEncoding();
+        } catch (e) {
+            console.error(e);
+        }
+
+    }
+/*
+    static async signMessageWithSessionKey(message: Uint8Array, sessionKey: Uint8Array = new Uint8Array(0)){
+        let privKey, signature;
+        // console.log("message = " + uint8tohex(message));
+
+        try {
+            if (sessionKey && sessionKey.length) {
+                // its nodejs and session primary key received in Uint8Array
+                console.log("sessionKey = " + uint8tohex(sessionKey));
+                console.log(sessionKey);
+
+            } else {
+                // TODO read key from local storage
+            }
+            // signature = await crypto.subtle.sign(ALPHA_CONFIG.signAlgorithm, privKey, message);
+        } catch (e){
+            console.log(e);
+            // throw new Error(e);
+        }
+        // let signatureHex = uint8tohex(new Uint8Array(signature));
+        // return signatureHex;
+    }
+
+    static async verifyMessageSignatureWithSessionKey(message: Uint8Array, signature: string, sessionKey: Uint8Array = new Uint8Array(0)){
+        let privKey;
+        if (sessionKey && sessionKey.length) {
+            // its nodejs and session primary key received in Uint8Array
+            privKey = await subtle.importKey(
+                'raw',
+                sessionKey,
+                {
+                    name: "ECDSA",
+                    namedCurve: "P-256"
+                },
+                true,
+                ['sign', 'verify']
+            );
+        } else {
+            // TODO read key from local storage
+        }
+
+        let signatureUint8 = hexStringToUint8(signature);
+
+        const result = await crypto.subtle.verify(ALPHA_CONFIG.keysAlgorithm, privKey.publicKey, signatureUint8, message );
+    }
+
+ */
 
 }

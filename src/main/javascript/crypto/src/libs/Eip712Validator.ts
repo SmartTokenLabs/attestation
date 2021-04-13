@@ -10,8 +10,8 @@ const url = require('url');
 export class Eip712Validator {
     private XMLConfig: any;
     protected domain: string;
-    protected acceptableTimeLimitMs: number;
-    public DEFAULT_TIME_LIMIT_MS = 1000 * 60 * 20; // 20 min
+    // protected acceptableTimeLimitMs: number;
+    // public DEFAULT_TIME_LIMIT_MS = 1000 * 60 * 20; // 20 min
 
     constructor() {
         this.XMLConfig = XMLconfigData;
@@ -30,8 +30,12 @@ export class Eip712Validator {
         return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
     };
 
-    setDomainAndTimout(domain: string, acceptableTimeLimitMs: number = this.DEFAULT_TIME_LIMIT_MS){
-        this.acceptableTimeLimitMs = acceptableTimeLimitMs;
+    setDomainAndTimout(domain: string){
+        if (!Eip712Validator.stringIsAValidUrl(domain)) throw new Error('wrong domain');
+        this.domain = domain;
+    }
+
+    setDomain(domain: string){
         if (!Eip712Validator.stringIsAValidUrl(domain)) throw new Error('wrong domain');
         this.domain = domain;
     }

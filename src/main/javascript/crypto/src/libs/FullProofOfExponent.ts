@@ -1,4 +1,4 @@
-import {Point} from "./Point";
+import {CURVE_BN256, Point} from "./Point";
 import {Proof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {base64ToUint8array, bnToUint8, uint8arrayToBase64, uint8ToBn, uint8tohex} from "./utils";
@@ -30,15 +30,15 @@ export class FullProofOfExponent {
     }
 
     static fromASNType( proof:Proof ) {
-
         let riddleEnc: Uint8Array = new Uint8Array(proof.riddle);
-        let riddle = Point.decodeFromHex(uint8tohex(riddleEnc) );
+
+        let riddle = Point.decodeFromHex(uint8tohex(riddleEnc), CURVE_BN256 );
 
         let challengeEnc: Uint8Array = new Uint8Array(proof.challengePoint);
         let challenge = uint8ToBn(challengeEnc);
 
         let tPointEnc: Uint8Array = new Uint8Array(proof.responseValue);
-        let tPoint = Point.decodeFromHex(uint8tohex(tPointEnc) );
+        let tPoint = Point.decodeFromHex(uint8tohex(tPointEnc), CURVE_BN256 );
 
         let nonce = new Uint8Array(proof.nonce);
 

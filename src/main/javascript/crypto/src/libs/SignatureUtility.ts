@@ -60,6 +60,7 @@ export class SignatureUtility {
         return ecKey.verify(encodingHash, signature);
     }
 
+
     static async signMessageWithBrowserWallet(message: string){
         await SignatureUtility.connectMetamaskAndGetAddress();
 
@@ -112,7 +113,7 @@ export class SignatureUtility {
         return pubKey;
     }
 
-    static async signEIP712WithBrowserWallet(webDomain: string, userDataValues: {[index: string]:string|number}, userDataTypes: Array<{name: string,type: string}>, primaryName: string): Promise<string> {
+    static async signEIP712WithBrowserWallet(webDomain: string, userDataValues: {[index: string]:string|number}, userDataTypes: Array<{name: string,type: string}>, primaryName: string, userKey: KeyPair = null): Promise<string> {
         // How its encoded at metamask ...
         // All properties on a domain are optional
         // const domain = {
@@ -140,16 +141,23 @@ export class SignatureUtility {
         // },
 
         try {
-            let userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
+            let userAddress: string;
+            let signer;
 
-            // let u = ethers.utils;
-            let provider = new ethers.providers.Web3Provider(window.ethereum);
+            if (userKey) {
+                // it should be node.js lets use defined KeyPair
+                signer = new ethers.Wallet('0x' + userKey.getPrivateAsHexString());
+            } else {
+                // it should be browser. use Metamask
+                //userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
+                let provider = new ethers.providers.Web3Provider(window.ethereum);
+                //let network = await provider.getNetwork();
+                signer = provider.getSigner();
+            }
 
-            let signer = provider.getSigner();
 
             if (!signer) throw new Error("Active Wallet required");
 
-            let network = await provider.getNetwork();
 
             // let ethAddress = await signer.getAddress();
 
@@ -158,7 +166,6 @@ export class SignatureUtility {
             // All properties on a domain are optional
             const domainData = {
                 // chainId: network.chainId,
-                // chainId: 0,
                 name: webDomain,
                 // verifyingContract: userAddress,
                 // salt: AttestationCrypto.generateRandomHexString(32), // 32-byte value
@@ -194,14 +201,9 @@ export class SignatureUtility {
             // let privateKey = "0x0123456789012345678901234567890123456789012345678901234567890123";
             // let wallet = new ethers.Wallet(privateKey);
             // let signature = await wallet._signTypedData(domainData, dataTypes, userDataValuesWithHashedPayload);
-            // console.log('signature');
-            // console.log(signature);
-            // console.log("wallet.address");
-            // console.log(wallet.address);
-
-// Connect a wallet to mainnet
-//             let provider = ethers.getDefaultProvider();
-//             let walletWithProvider = new ethers.Wallet(privateKey, provider);
+            // Connect a wallet to mainnet
+            // let provider = ethers.getDefaultProvider();
+            // let walletWithProvider = new ethers.Wallet(privateKey, provider);
 
 
             let signature = await signer._signTypedData(domainData, dataTypes, userDataValuesWithHashedPayload);
@@ -224,7 +226,6 @@ export class SignatureUtility {
                 // chainId: network.chainId,
                 jsonSigned: dataStringified
             };
-
             return JSON.stringify(externalAuthenticationData);
         } catch (e){
             console.error('Cant sign eip712 data. Error: '+ e);

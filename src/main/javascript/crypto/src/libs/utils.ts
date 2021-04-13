@@ -111,7 +111,7 @@ export function uint8merge(list : Uint8Array[]): Uint8Array{
     if (list.length === 0) return out;
 
     for (let i = 0; i< list.length; i++){
-        if (typeof list[i] !== "object" || !list[i].length) {
+        if (typeof list[i] !== "object" || typeof list[i].length !== "number" ) {
             throw new Error('wrong input values');
         }
         let toAdd = Uint8Array.from(list[i]);
@@ -151,13 +151,19 @@ export function base64toBase64Url(base64: string): string {
 }
 
 export function pemOrBase64Orbase64urlToString(base64str: string): string {
-    // maybe remove first and last line and concat lines
     let base64StrArray = base64str.split(/\r?\n/);
+
+    // maybe remove empty lines at the end of file
+    while ( base64StrArray[base64StrArray.length - 1].trim() === "" ) {
+        base64StrArray.pop();
+    }
+
+    // maybe remove first and last line and concat lines
     if (base64str.slice(0,3) === "---") {
         base64StrArray.shift();
         base64StrArray.pop();
     }
-    base64str = base64StrArray.join('')
+    base64str = base64StrArray.join('');
 
     // maybe change base64url to base64
     base64str = base64str.split('_').join('/')
@@ -180,6 +186,7 @@ export function base64ToUint8array( base64str: string ): Uint8Array {
     } else {
         res = Uint8Array.from(atob(base64str), c => c.charCodeAt(0));
     }
+
     return res;
 }
 

@@ -9,11 +9,16 @@ import {SignatureUtility} from "./SignatureUtility";
 import {base64ToUint8array, hexStringToBase64Url} from "./utils";
 import {Nonce} from "./Nonce";
 import {Eip712Token} from "./Eip712Token";
+import {Timestamp} from "./Timestamp";
 
 export class Eip712AttestationRequest extends Eip712Token implements JsonEncodable, Verifiable, Validateable {
     private jsonEncoding: string;
     private attestationRequest: AttestationRequest;
+    private acceptableTimeLimit: number;
+    private userKey: KeyPair;
+    // private publicKey: KeyPair;
 
+    static DEFAULT_TIME_LIMIT_MS:number = 1000*60*20; // 20 minutes
 
     private Eip712UserDataTypes: {name: string, type: string}[]  = [
         {name: 'address', type: 'string'},
@@ -25,25 +30,33 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     private Eip712UserDataPrimaryName: string = "AttestationRequest";
     private Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
 
-    async addData(attestorDomain: string, identifier: string, request: AttestationRequest) {
-        this.setDomainAndTimout(attestorDomain);
+    constructor(userKey: KeyPair = null) {
+        super();
+        this.userKey = userKey;
+    }
+
+    async addData(attestorDomain: string, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS, identifier: string, request: AttestationRequest) {
+        this.setDomain(attestorDomain);
 
         // this.attestationRequest = AttestationRequest.fromData(type,pok);
         this.attestationRequest = request;
+        this.acceptableTimeLimit = acceptableTimeLimit;
 
         this.jsonEncoding = await this.makeToken(identifier);
 
         try {
             // decode JSON and fill publicKey
-            this.fillJsonData(this.jsonEncoding);
+            this.fillJsonData(this.jsonEncoding, acceptableTimeLimit);
         } catch (e){
             console.log(e);
             return false;
         }
     }
 
-    fillJsonData(json: string){
+    fillJsonData(json: string, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS){
         if (!json) throw new Error('Empty json');
+
+        this.acceptableTimeLimit = acceptableTimeLimit;
 
         this.jsonEncoding = json;
         let tokenData = JSON.parse(json);
@@ -56,7 +69,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
-            console.log('restored address: ' + this.requestorKeys.getAddress());
+            // console.log('restored address: ' + this.requestorKeys.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
             console.log(m)
@@ -74,15 +87,22 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         if (!this.verify()) {
             throw new Error("Could not verify Eip712 AttestationRequest");
         }
-        console.log('verify OK');
+        // console.log('verify OK');
     }
 
     async makeToken(identifier: string) {
+        let userAddress: string;
+        if (this.userKey) {
+            userAddress = this.userKey.getAddress();
+        } else {
+            userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
+        }
 
-        let userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
 
-        let ts = Date().toString();
+        let timestamp = Nonce.getTimestamp(this.attestationRequest.getPok().getNonce());
+        let ts = new Date(timestamp).toString();
         ts = ts.substr(0, ts.indexOf('(') - 1);
+
 
         let userData = {
             payload: hexStringToBase64Url(this.attestationRequest.getDerEncoding()),
@@ -92,12 +112,12 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
             address: userAddress,
         };
 
+        return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, this.Eip712UserDataTypes, this.Eip712UserDataPrimaryName, this.userKey);
 
-        return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, this.Eip712UserDataTypes, this.Eip712UserDataPrimaryName );
     }
 
     setAcceptableTimeLimit(limit: number){
-        this.acceptableTimeLimitMs = limit;
+        this.acceptableTimeLimit = limit;
     }
 
     public getJsonEncoding():string {
@@ -109,9 +129,9 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
             return false;
         }
 
-        if (!this.verifySignature(this.jsonEncoding, this.data.address)) {
-            return false;
-        }
+        // if (!this.verifySignature(this.jsonEncoding, this.data.address)) {
+        //     return false;
+        // }
 
         return this.verifyDomainData();
 
@@ -129,20 +149,24 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
             return false;
         };
 
-        if (!this.verifyTimeStamp(this.data.timestamp)) {
-            console.log('Timelimit expired');
-            return false;
-        };
 
-        if (this.requestorKeys.getAddress().toLowerCase() !== this.data.address.toLowerCase()) {
-            console.log('Keys doesnt fit');
+        let timestamp: Timestamp = new Timestamp(this.data.timestamp);
+        timestamp.setValidity(this.acceptableTimeLimit);
+        if (!timestamp.validateTimestamp()) {
+            console.log('timestamp is not correct');
             return false;
-        };
+        }
 
-        if (! (new Nonce().validateNonce(this.getPok().getNonce(), this.getIdentifier(), this.data.address, this.domain, this.acceptableTimeLimitMs))) {
-            console.log('Nonce check failed');
+        if (!new Nonce().validateNonce(
+            this.getPok().getNonce(),
+            this.requestorKeys.getAddress(),
+            this.domain,
+            Timestamp.stringTimestampToLong(this.data.timestamp)-this.acceptableTimeLimit,
+            Timestamp.stringTimestampToLong(this.data.timestamp)+this.acceptableTimeLimit)) {
+            console.log('nonce is not correct');
             return false;
-        };
+        }
+
         return true;
     }
 

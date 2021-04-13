@@ -39,18 +39,61 @@
         }
     }
 
+    function testUseAttest(){
+        // const sessionPrivPEM = readFileSync(PREFIX_PATH + 'session-priv.pem', 'utf8');
+        // let sessionKey = KeyPair.privateFromPEM(sessionPrivPEM);
+        //
+        // const userPrivPEM = "";
+        // let userKey = KeyPair.privateFromPEM(userPrivPEM);
+
+        const attestationPEM = "MIICeDCCAh6gAwIBEgIIbeQOqSEKN2swCgYIKoZIzj0EAwIwFjEUMBIGA1UEAwwLQWxwaGFXYWxsZXQwIhgPMjAyMTA0MDcwOTA1MTNaGA8yMDIxMDQwNzA5MjUxM1owNTEzMDEGA1UEAwwqMHg1RjdCRkU3NTJBQzFBNDVGNjc0OTdEOURDREQ5QkJEQTUwQTgzOTU1MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABNNj3+rhhwxBABhmJpTmPZzkcJ6mElV8GFTdL8aGGsseXxiO8jZNWjDMFSqKAPOHT8sVZV66/uNVTxKQgDgZ8/GjVzBVMFMGCysGAQQBizpzeQEoAQH/BEEEIKilq81bkMqQGTE52CDog4p3n71zqyrHze/XuXi+AQMXDwbVA2oNuNwdMifdXFdJFTgtmJb79LIxpJA4mw69CjAKBggqhkjOPQQDAgNIADBFAiEA/fMRdG0t1Ti1ELETjYUsYPNtPfd/SRkmTCKH8hB0UC0CIBaXaudHXwt+rrlCM5zqzIHt8tUCV3mcmRkfPlwpLRTI";
+
+
+        const attestorPubPEM = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABOpPjYi/lziShCYFWr6qEndD9VErWApZc0MmkmWS4V2gV6QqQNjGvmV2Itkn34SYivvUWXqpjFb+BffWr6ODGdA=";
+
+        const attestationSecretPEM = "MCIEICsSh4DNmw+3KRfcWezYOhVLgJk9DkY86OkDs3hZnPsF";
+
+        let email = "test@test.ts";
+        let type = "mail";
+        let WEB_DOMAIN = "http://wwww.hotelbogota.com";
+
+        try {
+            Authenticator.useAttest(
+                // userKeyBase64,
+                attestationPEM,
+                attestationSecretPEM,
+                attestorPubPEM, email, type, WEB_DOMAIN).then(console.log);
+        } catch (e){
+            console.error(e);
+            throw new Error('useAttestRes failed');
+        }
+    }
+
     (async ()=>{
         let attest = new Attest();
         writeToLog('prepare and sign attestRequest.');
         let secret = BigInt(12345);
         let receiverId = "test@test.com";
-        let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
+        let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
 
-        let attestJson = await Authenticator.requestAttest(receiverId, 0, ATTESTOR_DOMAIN, secret);
+        // getAttestation() {
 
+        // Request attestation
+        // "user-priv.pem", "test@test.ts", "mail"
+
+        let attestJson = await Authenticator.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret);
         writeToLog('attestRequest received:');
-
         writeToLog(attestJson);
+
+        // Construct attestation
+        // args = new String[]{"construct-attest", PREFIX + "attestor-priv.pem", "AlphaWallet", "3600", PREFIX + "attestation-request.json", PREFIX + "attestation.crt"};
+        // Demo.main(args);
+
+
+        // executeEipFlow
+
+
+
 
         writeToLog('create attestation');
 
@@ -78,6 +121,10 @@
             "-----END CHEQUE----- ";
 
         // Authenticator.createAttest(attestorPrivateKey,'AlphaWallet', 60*60*1000, attestJson, ATTESTOR_DOMAIN);
+
+        testUseAttest();
+
+
 
         return;
 
