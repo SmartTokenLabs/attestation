@@ -28,7 +28,7 @@ public class Nonce {
     }
     ByteBuffer buffer = ByteBuffer.allocate(otherDataIndexStart + otherData.length);
     // Hash to ensure all variable length components is encoded with constant length
-    buffer.put(senderAddress.getBytes(StandardCharsets.UTF_8));
+    buffer.put(senderAddress.toUpperCase().getBytes(StandardCharsets.UTF_8));
     buffer.put(AttestationCrypto.hashWithKeccak(receiverIdentifier.getBytes(StandardCharsets.UTF_8)));
     buffer.put(longToBytes(timestamp.getTime()));
     buffer.put(otherData);
