@@ -1,6 +1,7 @@
 package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.token.entity.SignMessageType;
 import com.alphawallet.token.entity.Signable;
@@ -12,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1GeneralizedTime;
@@ -29,7 +32,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x509.Time;
 
 public class Attestation implements Signable, ASNEncodable, Validateable {
-
+  private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final String OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
 
   // Attestation fields
@@ -161,7 +164,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     try {
       return notValidBefore != null ? notValidBefore.getDate() : null;
     } catch (ParseException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not validate notValidBefore", e);
     }
   }
 
@@ -173,7 +176,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     try {
       return notValidAfter != null ? notValidAfter.getDate() : null;
     } catch (ParseException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not validate notValidAfter", e);
     }
   }
 
@@ -185,9 +188,6 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     return subject.toString();
   }
 
-  /**
-   *
-   */
   public void setSubject(String subject) {
     this.subject = new X500Name(subject);
   }
@@ -224,8 +224,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   public void setExtensions(ASN1Sequence extensions) {
     if (dataObject != null) {
-      throw new IllegalArgumentException(
-          "DataObject already set. Only one of DataObject and Extensions is allowed.");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException( "DataObject already set. Only one of DataObject and Extensions is allowed."));
     }
     this.extensions = extensions;
   }
@@ -236,8 +236,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   public void setDataObject(ASN1Sequence dataObject) {
     if (extensions != null) {
-      throw new IllegalArgumentException(
-          "Extensions already set. Only one of DataObject and Extensions is allowed.");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException( "Extensions already set. Only one of DataObject and Extensions is allowed."));
     }
     this.dataObject = dataObject;
   }
@@ -278,6 +278,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   public boolean checkValidity() {
     if (version == null || serialNumber == null || signingAlgorithm == null || (extensions == null
         && dataObject == null)) {
+      logger.error("Version, serial number, algorithm or extension/dataObject missing");
       return false;
     }
     if (getNotValidBefore() != null && getNotValidAfter() != null) {
@@ -286,7 +287,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       Date attNotAfter = getNotValidAfter();
       if (attNotBefore != null && attNotAfter != null) {
         if (!(currentTime >= attNotBefore.getTime() && currentTime < attNotAfter.getTime())) {
-          System.err.println("Attestation is no longer valid");
+          logger.error("Attestation either too old or too new");
           return false;
         }
       }
@@ -299,7 +300,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     byte[] attEncoded = getPrehash();
     // The method returns null if the encoding is invalid
     if (attEncoded == null) {
-      throw new InvalidObjectException("The attestation is not valid");
+      throw ExceptionUtil.throwException(logger, new InvalidObjectException("The attestation is not valid"));
     }
     return attEncoded;
   }
@@ -339,7 +340,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     try {
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
   }
 
@@ -355,7 +356,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public String getMessage() {
-    throw new RuntimeException("Not allowed");
+    throw ExceptionUtil.throwException(logger, new RuntimeException("GetMessage is not applicable here"));
   }
 
   @Override

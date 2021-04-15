@@ -1,11 +1,14 @@
 package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -25,6 +28,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     EMAIL
   }
 
+  private static final Logger logger = LogManager.getLogger(IdentifierAttestation.class);
   // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
   public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
 
@@ -43,7 +47,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     setCommitment(AttestationCrypto.makeCommitment(identity, type, secret));
   }
@@ -63,7 +67,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     setCommitment(commitment);
   }
@@ -72,7 +76,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
     super(derEncoding);
     if (!checkValidity()) {
-      throw new IllegalArgumentException("The content is not valid for an identity attestation");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not validate object"));
     }
   }
 
@@ -86,11 +91,11 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       return false;
     }
     if (getVersion() != 18) {
-      System.err.println("The version number is " + getVersion() + ", it must be 18");
+      logger.error("The version number is " + getVersion() + ", it must be 18");
       return false;
     }
     if (getSubject() == null || !getSubject().startsWith("CN=") || !ValidationTools.isAddress(getSubject().substring(3))) {
-      System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
+      logger.error("The subject is supposed to only be an Ethereum address as the Common Name");
       return false;
     }
     // Verify that the subject public key matches the subject common name
@@ -99,11 +104,11 @@ public class IdentifierAttestation extends Attestation implements Validateable {
           .createKey(getSubjectPublicKeyInfo());
       String parsedSubject = "CN=" + SignatureUtility.addressFromKey(parsedSubjectKey);
       if (!parsedSubject.equals(getSubject())) {
-        System.err.println("The subject public key does not match the Ethereum address attested to");
+        logger.error("The subject public key does not match the Ethereum address attested to");
         return false;
       }
     } catch (IOException e) {
-      System.err.println("Could not parse subject public key");
+      logger.error("Could not parse subject public key");
     }
     return true;
   }
@@ -145,11 +150,13 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   @Override
   public void setVersion(int version) {
-    throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
+    throw ExceptionUtil.throwException(logger,
+        new RuntimeException("Not allowed to be manually set in concrete Attestation"));
   }
 
   @Override
   public void setSubject(String subject) {
-    throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
+    throw ExceptionUtil.throwException(logger,
+        new RuntimeException("Not allowed to be manually set in concrete Attestation"));
   }
 }
