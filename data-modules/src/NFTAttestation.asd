@@ -5,12 +5,15 @@
     <namedType name="NFTAttestation">
         <type>
             <sequence>
-                <element name="tokens" type="Tokens">
-                    <annotation>The ERC721 tokens to link to</annotation>
-                </element>
+                <!-- At least one of "tokens" or "nftDigest" MUST be included -->
+                <optional>
+                  <element name="tokens" type="Tokens">
+                      <annotation>The ERC721 tokens to link to</annotation>
+                  </element>
+                </optional>
                 <optional>
                     <element name="nftDigest" type="Digest">
-                        <annotation>Keccak digest of the content (pic/vid) of the NFT</annotation>
+                        <annotation>Digest of the content (pic/vid) of the NFT</annotation>
                     </element>
                 </optional>
                 <element name="creator" type="UriIdAttestation">
@@ -23,7 +26,7 @@
         </type>
     </namedType>
 
-    <!-- A 256 bit Keccak hash digest -->
+    <!-- A hash digest -->
     <namedType name="Digest" type="asnx:OCTET-STRING" minSize="32"/>
 
     <!-- See https://eips.ethereum.org/EIPS/eip-721 for details -->

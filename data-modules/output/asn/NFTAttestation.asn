@@ -8,17 +8,18 @@ IMPORTS
         FROM UriIdAttestation;
 
 NFTAttestation ::= SEQUENCE {
-    tokens               Tokens,
-    -- Keccak digest of the content (pic/vid) of the NFT --
-    autograph            Digest OPTIONAL,
+    -- At least one of "tokens" or "nftDigest" MUST be included --
+    tokens               Tokens OPTIONAL,
+    -- Digest of the content (pic/vid) of the NFT --
+    nftDigest            Digest OPTIONAL,
     creator              UriIdAttestation,
     signatureValue       BIT STRING
 }
 
 Tokens ::= SEQUENCE SIZE (1..MAX) OF ERC721
 
--- A 256 bit Keccak hash digest --
-Digest ::= OCTET STRING (SIZE(32))
+-- A hash digest --
+Digest ::= OCTET STRING (SIZE(32..MAX))
 
 -- See https://eips.ethereum.org/EIPS/eip-721 for details --
 ERC721 ::= SEQUENCE {
