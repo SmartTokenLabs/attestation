@@ -9,7 +9,7 @@
                     <annotation>The ERC721 tokens to link to</annotation>
                 </element>
                 <optional>
-                    <element name="autograph" type="Digest">
+                    <element name="nftDigest" type="Digest">
                         <annotation>Keccak digest of the content (pic/vid) of the NFT</annotation>
                     </element>
                 </optional>
@@ -24,7 +24,7 @@
     </namedType>
 
     <!-- A 256 bit Keccak hash digest -->
-    <namedType name="Digest" type="asnx:OCTET-STRING" minSize="32" maxSize="32"/>
+    <namedType name="Digest" type="asnx:OCTET-STRING" minSize="32"/>
 
     <!-- See https://eips.ethereum.org/EIPS/eip-721 for details -->
     <namedType name="Tokens">
