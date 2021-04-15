@@ -43,7 +43,7 @@
         </type>
     </namedType>
     <!-- The 256 bit non-negative integer uniquely representing the ERC721 token in question in binary -->
-    <namedType name="TokenId" type="asnx:OCTET-STRING" minSize="32" maxSize="32"/>
+    <namedType name="TokenId" type="asnx:INTEGER"/>
     <!-- The binary encoding of the 20 bytes representing an Ethereum address -->
     <namedType name="Address" type="asnx:OCTET-STRING" minSize="32" maxSize="20"/>
 </asnx:module>
