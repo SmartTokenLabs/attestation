@@ -1,0 +1,28 @@
+TransAuthorization
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    TokenId,
+    Address
+        FROM NFTAttestation
+    Identifier
+        FROM UriIdAttestation;
+
+TransAuthorization ::= SEQUENCE {
+    -- Smart contract should look up to find owner based on token Id --
+    tokenId                TokenId,
+    -- The contract where the token is residing --
+    tokenContract          Address,
+    -- The address of contract or individual handling transfer of token --
+    spender                Address,
+    -- NOT DEFINED YET                 --
+    -- recipients          Recipients, --
+    signatureValue         BIT STRING
+}
+
+-- List of permissible identifiers of recipient --
+Recipients ::= SEQUENCE SIZE (1..MAX) OF Identifier
+
+END
