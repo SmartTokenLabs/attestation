@@ -72,14 +72,14 @@ public class TestAttestationRequestWithUsageEip712 {
 
   @Test
   public void referenceJsonFormat() {
-    String request = "{\"signatureInHex\":\"0x101d140f858d8de95f59529fd284a843adb7ebff1f696ecaf0a64a2eb47ddfd3198bed1c8518a2ed64035903a3b5ed8fa11e599a7d5f5b39017661f14aceed021b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationRequestWUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequestWUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIICTQIBATCB_ARBBB62SP-dgZtAemxY0nl4cjxOW0UKyYmDPOz2_YfDFgzeCa3ZVleOniCjeTfuoR9NTatdcoM4IruwzSUv-DniQbcEIB3XFKyiej2YfG15qAI0IYVlTvDdO3FsSirKPPns6LwtBEEEDFVwBw77_sz-3PcHsmrwCbfzlcYJpvrh1dcYJCcxAAQlgxlEE72jadyvtgoUs-ttKmV-pQN0FXiBiBgU0q9vswRSMHg1RjdCRkU3NTJBQzFBNDVGNjc0OTdEOURDREQ5QkJEQTUwQTgzOTU1Sm1UC7EZ7FbQ1gD2qvRqimx8roUC_TlKlL_iMtn-uNsAAAF4fr62ODCCAUcwgfgGByqGSM49AgEwgewCAQEwJQYHKoZIzj0BAjAaAgIBGwYJKoZIzj0BAgMDMAkCAQUCAQcCAQwwTAQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEESQQFAyE_eMpEiD8aO4Fi8YjlU80mXyPBVnoWh2kTsMKsJFhJKDYBzNo4DxyeMY2Q-V0H5UJv6H5FwOgYRpjkWWI2TjQRYXfdIlkCJAH______________________-muLtB1dyZd_3-URR4GHhY8YQIBBANKAAQFK7J9i33xUcv3NBo2Xh82NNDkiqCBaefEwx4sRgxdgUaXmNUHJ8zGwAtvOMuXXHqoJpsCyU_aPLbGNP7o0kTjE75DVoiAbHQ=\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\" and use this to authorize usage of local, temporary keys.\\\",\\\"timestamp\\\":\\\"Mon Mar 29 2021 18:08:52 GMT+0200\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Thu Mar 27 2031 17:08:52 GMT+0100\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.attestation.id\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    String request = "{\"signatureInHex\":\"0x875049259a449add9d53993f43c6a01412e420dd0370b6aab08a84311c0d9d966f68ef440b7416e192be734489f1032e23d3e97784088e742fcacc3c294ab87d1b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationRequestWUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequestWUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIICTQIBATCB_ARBBB62SP-dgZtAemxY0nl4cjxOW0UKyYmDPOz2_YfDFgzeCa3ZVleOniCjeTfuoR9NTatdcoM4IruwzSUv-DniQbcEIAbwqYMw33Q-e3j9i93fOnXwjocNnImLXyFqDFC60mqqBEEEGWaOApm5hzxNHy-vAJIG6OYLK2_F1JKW1x8w7rLJjPEbskdxs8Zjlk7lTxbZvltU1f8VVMhm6lyJvBV-vqaBxARSMFg1RjdCRkU3NTJBQzFBNDVGNjc0OTdEOURDREQ5QkJEQTUwQTgzOTU1Sm1UC7EZ7FbQ1gD2qvRqimx8roUC_TlKlL_iMtn-uNsAAAF41bYriDCCAUcwgfgGByqGSM49AgEwgewCAQEwJQYHKoZIzj0BAjAaAgIBGwYJKoZIzj0BAgMDMAkCAQUCAQcCAQwwTAQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEESQQFAyE_eMpEiD8aO4Fi8YjlU80mXyPBVnoWh2kTsMKsJFhJKDYBzNo4DxyeMY2Q-V0H5UJv6H5FwOgYRpjkWWI2TjQRYXfdIlkCJAH______________________-muLtB1dyZd_3-URR4GHhY8YQIBBANKAAQFK7J9i33xUcv3NBo2Xh82NNDkiqCBaefEwx4sRgxdgUaXmNUHJ8zGwAtvOMuXXHqoJpsCyU_aPLbGNP7o0kTjE75DVoiAbHQ=\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identity\\\\\\\" is the identity hidden in attestation contained in\\\\\\\"payload\\\\\\\" and use this to authorize usage of local, temporary keys.\\\",\\\"timestamp\\\":\\\"Thu Apr 15 2021 15:26:29 GMT+0200\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Sun Apr 13 2031 15:26:29 GMT+0200\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.attestation.id\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
     Eip712AttestationRequestWithUsage eiprequest =
-        new Eip712AttestationRequestWithUsage(DOMAIN, 1000L*60L*60L*24L*365L*10L, 1000L*60L*60L*24L*365L*10L, request);
+        new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.UNLIMITED, Timestamp.UNLIMITED, request);
     assertTrue(eiprequest.verify());
     assertTrue(eiprequest.checkValidity());
     assertTrue(eiprequest.checkTokenValidity());
     Eip712AttestationRequestWithUsage lessValidRequest =
-        new Eip712AttestationRequestWithUsage(DOMAIN, 1000L*10L, 1000L*60L*60L*24L*365L*10L, request);
+        new Eip712AttestationRequestWithUsage(DOMAIN, 1000L*10L, Timestamp.UNLIMITED, request);
     assertTrue(lessValidRequest.verify());
     assertFalse(lessValidRequest.checkValidity());
     assertTrue(lessValidRequest.checkTokenValidity());
@@ -101,8 +101,8 @@ public class TestAttestationRequestWithUsageEip712 {
   }
 
   @Test
-  public void otherTimeLimit() {
-    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN,  1000L*60L, 1000L*60L*60L*24L*365L*10L, MAIL, requestWithUsage, userSigningKey);
+  public void otherTimeLimit() throws Exception {
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN,  1000L*60L, Timestamp.UNLIMITED, MAIL, requestWithUsage, userSigningKey);
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
     assertTrue(request.checkTokenValidity());
@@ -161,7 +161,7 @@ public class TestAttestationRequestWithUsageEip712 {
 
   @Test
   public void expiredToken() throws Exception {
-    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Eip712AttestationRequestWithUsage.DEFAULT_TIME_LIMIT_MS, -1,
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, -1,
         MAIL, requestWithUsage, userSigningKey);
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
@@ -171,7 +171,7 @@ public class TestAttestationRequestWithUsageEip712 {
   @Test
   public void invalidTimestamp() {
     Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, -1,
-        Eip712AttestationRequestWithUsage.DEFAULT_TOKEN_TIME_LIMIT, MAIL, requestWithUsage, userSigningKey);
+        Timestamp.DEFAULT_TOKEN_TIME_LIMIT, MAIL, requestWithUsage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
     assertTrue(request.checkTokenValidity());

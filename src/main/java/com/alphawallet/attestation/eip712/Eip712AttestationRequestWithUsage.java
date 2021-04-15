@@ -1,5 +1,8 @@
 package com.alphawallet.attestation.eip712;
 
+import static com.alphawallet.attestation.eip712.Timestamp.DEFAULT_TIME_LIMIT_MS;
+import static com.alphawallet.attestation.eip712.Timestamp.DEFAULT_TOKEN_TIME_LIMIT;
+
 import com.alphawallet.attestation.AttestationRequestWithUsage;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
@@ -17,9 +20,6 @@ import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequestWithUsage extends Eip712Validator implements JsonEncodable,
     Verifiable, Validateable, TokenValidateable {
-  public static final long DEFAULT_TOKEN_TIME_LIMIT = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
-  public static final long DEFAULT_TIME_LIMIT_MS = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS;
-
   private final long maxTokenValidityInMs;
   private final long acceptableTimeLimit;
   private final AttestationRequestWithUsage attestationRequestWithUsage;

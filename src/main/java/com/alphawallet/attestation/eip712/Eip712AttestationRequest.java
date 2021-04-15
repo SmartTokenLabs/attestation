@@ -15,7 +15,7 @@ import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
-  public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
+
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
   private final String jsonEncoding;
@@ -24,7 +24,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, String identifier,
       AttestationRequest request, AsymmetricKeyParameter signingKey) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey);
+    this(attestorDomain, Timestamp.DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
@@ -44,7 +44,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public Eip712AttestationRequest(String attestorDomain, String jsonEncoding) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, jsonEncoding);
+    this(attestorDomain, Timestamp.DEFAULT_TIME_LIMIT_MS, jsonEncoding);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,

@@ -62,7 +62,7 @@ public class Nonce {
     if (!ValidationTools.isAddress(address)) {
       throw new IllegalArgumentException("Address is not valid");
     }
-    byte[] recomputedKeyDigest = address.getBytes(StandardCharsets.UTF_8);
+    byte[] recomputedKeyDigest = address.toUpperCase().getBytes(StandardCharsets.UTF_8);
     return Arrays.equals(referenceAddress, recomputedKeyDigest);
   }
 

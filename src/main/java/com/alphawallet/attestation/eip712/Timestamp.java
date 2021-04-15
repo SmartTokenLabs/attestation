@@ -8,9 +8,14 @@ import java.util.Date;
 import java.util.Locale;
 
 public class Timestamp {
+  public static final int ALLOWED_ROUNDING = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
   // Timestamp with millisecond accuracy and timezone info
   public static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
-  public static final int ALLOWED_ROUNDING = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
+
+  // See RFC 5282, https://tools.ietf.org/html/rfc5280#section-4.1.2.5, based on the GeneralizedTime value of 99991231235959Z
+  public static final long UNLIMITED = 253402297199000L;
+  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 365; // 1 year
+  public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
 
   private final long time;
   private long validity = 0;

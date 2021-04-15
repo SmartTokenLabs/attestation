@@ -28,7 +28,6 @@ import org.tokenscript.eip712.JsonEncodable;
 public class Eip712AttestationUsage extends Eip712Validator implements JsonEncodable, Verifiable,
     TokenValidateable {
   public static final int PLACEHOLDER_CHAIN_ID = 0;
-  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 365; // 1 year
 
   private final long maxTokenValidityInMs;
   private final UseAttestation useAttestation;
@@ -37,7 +36,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
   private final AsymmetricKeyParameter userPublicKey;
 
   public Eip712AttestationUsage(String attestorDomain, String identifier, UseAttestation useAttestation, AsymmetricKeyParameter signingKey) {
-    this(attestorDomain, DEFAULT_TOKEN_TIME_LIMIT,  PLACEHOLDER_CHAIN_ID, identifier, useAttestation, signingKey);
+    this(attestorDomain, Timestamp.DEFAULT_TOKEN_TIME_LIMIT,  PLACEHOLDER_CHAIN_ID, identifier, useAttestation, signingKey);
   }
 
   public Eip712AttestationUsage(String attestorDomain, long maxTokenValidityInMs, long chainId,
@@ -57,7 +56,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   public Eip712AttestationUsage(String attestorDomain, AsymmetricKeyParameter attestationIssuerVerificationKey,
       String jsonEncoding) {
-    this(attestorDomain, attestationIssuerVerificationKey, DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID,
+    this(attestorDomain, attestationIssuerVerificationKey, Timestamp.DEFAULT_TOKEN_TIME_LIMIT, PLACEHOLDER_CHAIN_ID,
         jsonEncoding);
   }
 
