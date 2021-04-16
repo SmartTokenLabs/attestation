@@ -10,7 +10,7 @@ let sha3 = require("js-sha3");
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
 
-
+// TODO update whole code
 export class Cheque implements Attestable {
     // publicKey: string;
     // riddle: Uint8Array;

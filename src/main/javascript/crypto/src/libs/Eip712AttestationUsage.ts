@@ -5,7 +5,7 @@ import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
 import {Eip712Token} from "./Eip712Token";
 import {UseAttestation} from "./UseAttestation";
-import {base64ToUint8array, hexStringToBase64Url} from "./utils";
+import {base64ToUint8array, hexStringToBase64Url, uint8tohex} from "./utils";
 import {AttestationCrypto, Pedestren_G} from "./AttestationCrypto";
 import {CURVE_BN256, Point} from "./Point";
 import {FullProofOfExponent} from "./FullProofOfExponent";
@@ -40,15 +40,15 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         expirationTime: string,
     }
 
-    constructor(userKey: KeyPair = null) {
+    constructor(userKey: KeyPair = null, maxTokenValidityInMs:number = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT) {
         super();
+        this.maxTokenValidityInMs = maxTokenValidityInMs;
         this.userKey = userKey;
     }
 
     // TODO make signingKey universal
-    public async addData(attestorDomain: string, identifier: string, useAttestation: UseAttestation, maxTokenValidityInMs:number = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT) {
-        this.setDomainAndTimout(attestorDomain);
-        this.maxTokenValidityInMs = maxTokenValidityInMs;
+    public async addData(attestorDomain: string, identifier: string, useAttestation: UseAttestation) {
+        this.setDomain(attestorDomain);
         this.useAttestation = useAttestation;
 
         try {
@@ -70,7 +70,9 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
     }
 
     fillJsonData(json: string, attestorKey: KeyPair = null){
-        if (!json) throw new Error('Empty json');
+        if (!json) {
+            throw new Error('Empty json');
+        }
 
         if (attestorKey !== null) {
             this.attestorKey = attestorKey;
@@ -95,7 +97,14 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         }
 
         if (!this.useAttestation){
-            this.useAttestation = UseAttestation.fromBytes(base64ToUint8array( this.data.payload), this.attestorKey);
+            try {
+                // console.log(uint8tohex(base64ToUint8array(this.data.payload)));
+                this.useAttestation = UseAttestation.fromBytes(base64ToUint8array(this.data.payload), this.attestorKey);
+            } catch (e){
+                let m = "Failed to read UseAttestation. " + e;
+                console.log(m);
+                throw new Error(m);
+            }
         }
 
         this.constructorCheck();
@@ -127,7 +136,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
     proofLinking() {
         let crypto = new AttestationCrypto();
         let candidateExponent = crypto.mapToCurveMultiplier(this.getType(), this.getIdentifier());
-        let commitmentPoint: Point = Point.decodeFromUint8(this.getAttestation().getUnsignedAttestation().getCommitment());
+        let commitmentPoint: Point = Point.decodeFromUint8(this.getAttestation().getUnsignedAttestation().getCommitment(), CURVE_BN256);
         let candidateRiddle: Point = commitmentPoint.subtract(Pedestren_G.multiplyDA(candidateExponent));
         if (!candidateRiddle.equals(this.getPok().getRiddle())) {
             return false;
@@ -156,6 +165,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
     }
 
     checkTokenValidity(): boolean {
+
         let nonceMinTime: number = Timestamp.stringTimestampToLong(this.data.expirationTime) - this.maxTokenValidityInMs;
         let nonceMaxTime: number = Timestamp.stringTimestampToLong(this.data.expirationTime);
 
@@ -196,6 +206,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             console.log('wrong proofLinking');
             return false;
         };
+
         return true;
     }
 
@@ -205,6 +216,10 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             return false;
         }
         return true;
+    }
+
+    public getSessionPublicKey(): KeyPair {
+        return this.useAttestation.getSessionPublicKey();
     }
 
 }

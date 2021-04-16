@@ -16,6 +16,11 @@ import {UseAttestation} from "./libs/UseAttestation";
 import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {PublicKeyInfoValue} from "./asn1/shemas/AttestationFramework";
+import {Verifiable} from "./libs/Verifiable";
+import {TokenValidateable} from "./libs/TokenValidateable";
+import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequestWithUsage";
+import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
+import {Validateable} from "./libs/Validateable";
 
 const { subtle } = require('crypto').webcrypto;
 
@@ -301,13 +306,40 @@ export class Authenticator {
 
     }
 
-    static createAttest( attestorPrivateKeyPEM: string, issuerName: string, validityInMilliseconds: number ,attestRequestJson: string, attestorDomain: string ){
-        let attestorKey = KeyPair.privateFromPEM(attestorPrivateKeyPEM);
-        let attestationRequest: Eip712AttestationRequest = new Eip712AttestationRequest();
-        attestationRequest.setDomain(attestorDomain);
+    // static async constructAttest(
+    //     attestorKey: KeyPair,
+    //     receiverId: string,
+    //     type: string,
+    //     ATTESTOR_DOMAIN: string,
+    //     attestationSecretBase64: string,
+    //     sessionKey: KeyPair,
+    // ){
+    //
+    // }
+
+    static constructAttest(
+        attestorKey: KeyPair,
+        issuerName: string,
+        validityInMilliseconds: number ,
+        attestRequestJson: string,
+        attestorDomain: string ){
+        let att: IdentifierAttestation;
+        let crypto = new AttestationCrypto();
+        let attestationRequest;
+        let commitment;
+
         try {
             // decode JSON and fill publicKey
+            attestationRequest = new Eip712AttestationRequest();
+            attestationRequest.setDomain(attestorDomain);
             attestationRequest.fillJsonData(attestRequestJson);
+
+            Authenticator.checkAttestRequestVerifiability(attestationRequest);
+            Authenticator.checkAttestRequestValidity(attestationRequest);
+            commitment = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
+            att = new IdentifierAttestation();
+            // TODO enable it
+            // att.fromCommitment(commitment, attestationRequest.getUserPublicKey());
         } catch (e){
             let m = "Failed to fill attestation data from json. " + e;
             console.log(m);
@@ -323,10 +355,9 @@ export class Authenticator {
             console.error("Could not validate attestation signing request");
             throw new Error("Validation failed");
         }
-        let crypto = new AttestationCrypto();
-        let commitment: Uint8Array = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
 
-        let att: IdentifierAttestation = new IdentifierAttestation();
+
+        att = new IdentifierAttestation();
         att.fromCommitment(commitment, attestationRequest.getRequestorKeys());
         att.setIssuer("CN=" + issuerName);
         att.setSerialNumber(Math.round(Math.random() * Number.MAX_SAFE_INTEGER) );
@@ -352,7 +383,6 @@ export class Authenticator {
 
         const attestationUint8 = base64ToUint8array(attestationBase64);
         let att = SignedIdentityAttestation.fromBytes(attestationUint8, attestorKey);
-
         let attestationSecret = uint8ToBn(base64ToUint8array(attestationSecretBase64))
 
         let crypto = new AttestationCrypto();
@@ -382,6 +412,120 @@ export class Authenticator {
         }
 
     }
+
+    static checkAttestRequestVerifiability( input:Verifiable) {
+        if (!input.verify()) {
+            console.log("Could not verify attestation signing request");
+            throw new Error("Verification failed");
+        }
+    }
+    static checkAttestRequestValidity( input:Validateable) {
+        if (!input.checkValidity()) {
+            console.log("Could not validate attestation signing request");
+            throw new Error("Validation failed");
+        }
+    }
+
+    static checkUsageVerifiability(input: Verifiable) {
+        if (!input.verify()) {
+            console.error("Could not verify usage request");
+            throw new Error("Verification failed");
+        }
+    }
+    static checkUsageValidity( input: TokenValidateable) {
+        if (!input.checkTokenValidity()) {
+            console.error("Could not validate usage request");
+            throw new Error("Validation failed");
+        }
+    }
+
+    static async verifyUsage(
+        jsonRequest: string,
+        attestorKey: KeyPair,
+        message: string,
+        WEB_DOMAIN: string,
+        signature: Uint8Array){
+
+        let sessionPublicKey: KeyPair;
+
+        try {
+            // console.log('lets create Eip712AttestationUsage from json');
+            let usageRequest: Eip712AttestationUsage = new Eip712AttestationUsage();
+            usageRequest.setDomain(WEB_DOMAIN);
+            usageRequest.fillJsonData( jsonRequest, attestorKey);
+
+            Authenticator.checkUsageVerifiability(usageRequest);
+            Authenticator.checkUsageValidity(usageRequest);
+            sessionPublicKey = usageRequest.getSessionPublicKey();
+
+        } catch (e) {
+            // Try as an  Eip712AttestationRequestWithUsage object instead, which is NOT linked to a specific website
+            console.log('Eip712AttestationUsage failed. '+e);
+            let usageRequest: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage();
+            // usageRequest.fillJsonData( jsonRequest, attestorKey);
+            usageRequest.fillJsonData( jsonRequest );
+
+            Authenticator.checkUsageVerifiability(usageRequest);
+            Authenticator.checkUsageValidity(usageRequest);
+            sessionPublicKey = usageRequest.getSessionPublicKey();
+            console.log('sessionPublicKey from Eip712AttestationRequestWithUsage = '+ sessionPublicKey.getAddress());
+        }
+
+        // Validate signature
+        try {
+            let res = await sessionPublicKey.verifyStringWithSubtle(signature, message);
+            if (!res) {
+                // if (!SignatureUtility.verifySHA256(message.getBytes(StandardCharsets.UTF_8), signature, sessionPublicKey)) {
+                console.error("Could not verify message signature");
+                throw new Error("Signature verification failed");
+            }
+             return "SUCCESSFULLY validated usage request!";
+        } catch (e) {
+            let m = "Cant verify session with subtle. " + e;
+            console.log(m);
+            console.error(e);
+            // console.error(sessionPublicKey);
+            // throw new Error(m);
+        }
+    }
+
+    static async requestAttestAndUsage(
+        userKey: KeyPair,
+        receiverId: string,
+        type: string,
+        ATTESTOR_DOMAIN: string,
+        attestationSecretBase64: string,
+        sessionKey: KeyPair,
+        ){
+        try {
+            let attestationSecret = uint8ToBn(base64ToUint8array(attestationSecretBase64));
+
+            let address;
+            if (userKey) {
+                address = userKey.getAddress();
+            } else {
+                address = await SignatureUtility.connectMetamaskAndGetAddress();
+            }
+
+            let nonce: Uint8Array = await Nonce.makeNonce(address, ATTESTOR_DOMAIN, new Uint8Array(0), Date.now());
+            let crypto = new AttestationCrypto();
+
+            let pok: FullProofOfExponent = crypto.computeAttestationProof(attestationSecret, nonce);
+
+            let attRequest: AttestationRequestWithUsage =  AttestationRequestWithUsage.fromData(crypto.getType(type), pok, sessionKey);
+            let request: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage(userKey);
+            await request.fromData(ATTESTOR_DOMAIN, null, null, receiverId, attRequest);
+            // console.log('request.getJsonEncoding() = ' + request.getJsonEncoding());
+            return request.getJsonEncoding();
+        } catch (e) {
+            let m = "requestAttestAndUsage error. " + e;
+            console.log(m);
+            console.error(e);
+        }
+
+    }
+
+
 /*
     static async signMessageWithSessionKey(message: Uint8Array, sessionKey: Uint8Array = new Uint8Array(0)){
         let privKey, signature;

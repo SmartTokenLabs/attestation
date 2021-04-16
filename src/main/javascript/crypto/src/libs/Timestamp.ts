@@ -60,15 +60,15 @@ export class Timestamp {
     public validateAgainstExpiration(expirationTimeInMs: number): boolean {
         let currentTime = this.getCurrentTime();
         // If timestamp is in the future
-        if (this.time > currentTime + this.ALLOWED_ROUNDING) {
+        if (this.time > (currentTime + this.ALLOWED_ROUNDING)) {
             return false;
         }
         // If token has expired
-        if (expirationTimeInMs < currentTime - this.ALLOWED_ROUNDING) {
+        if (expirationTimeInMs < (currentTime - this.ALLOWED_ROUNDING)) {
             return false;
         }
         // If the token is valid for too long
-        if (expirationTimeInMs - this.time > this.validity + this.ALLOWED_ROUNDING) {
+        if ((expirationTimeInMs - this.time) > (this.validity + this.ALLOWED_ROUNDING)) {
             return false;
         }
         return true;

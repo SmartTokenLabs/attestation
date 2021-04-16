@@ -46,17 +46,28 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
 
     private jsonEncoding: string;
     private userPublicKey: KeyPair;
+    private userKey: KeyPair;
+
+    constructor(userKey: KeyPair = null) {
+        super();
+        this.userKey = userKey;
+    }
+
 
     public async fromData(attestorDomain:string, acceptableTimeLimit:number = Eip712AttestationRequestWithUsage.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Eip712AttestationRequestWithUsage.DEFAULT_TOKEN_TIME_LIMIT  ,identifier:string,
-    attestationRequestWithUsage: AttestationRequestWithUsage, signingKey: KeyPair) {
+    attestationRequestWithUsage: AttestationRequestWithUsage, signingKey: KeyPair = null) {
 
         this.setDomain(attestorDomain);
+        if (signingKey) {
+            this.userKey = signingKey;
+        }
         try {
             this.acceptableTimeLimit = acceptableTimeLimit;
             this.maxTokenValidityInMs = maxTokenValidityInMs;
             this.attestationRequestWithUsage = attestationRequestWithUsage;
-            this.jsonEncoding = await this.makeToken(identifier, attestationRequestWithUsage, signingKey);
+            this.jsonEncoding = await this.makeToken(identifier, attestationRequestWithUsage);
         } catch ( e ) {
+            console.log(e);
             throw new Error("Could not encode object");
         }
 
@@ -98,7 +109,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
-            console.log('restored address: ' + this.requestorKeys.getAddress());
+            // console.log('restored address: ' + this.requestorKeys.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
             console.log(m)
@@ -118,18 +129,11 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         }
     }
 
-// makeToken(identifier:string, attestationRequestWithUsage: AttestationRequestWithUsage,
-//     signingKey: KeyPair):string  {
-//     let encodedUseAttestation:string = hexStringToBase64Url(this.attestationRequestWithUsage.getDerEncoding());
-//     let now = new Timestamp();
-//     let expirationTime = new Timestamp(now.getTime() + this.maxTokenValidityInMs);
-//     // let data = new AttestationRequestWUsageData(
-//     //     encoder.getUsageValue(), identifier, encodedUseAttestation, now, expirationTime);
-//     // return issuer.buildSignedTokenFromJsonObject(data, domain);
-// }
-    async makeToken(identifier: string, attestationRequestWithUsage: AttestationRequestWithUsage, signingKey: KeyPair) {
+    async makeToken(identifier: string, attestationRequestWithUsage: AttestationRequestWithUsage) {
 
-        await SignatureUtility.connectMetamaskAndGetAddress();
+        if (!this.userKey) {
+            await SignatureUtility.connectMetamaskAndGetAddress();
+        }
 
         let ts = new Timestamp().getTimeAsString();
 
@@ -144,7 +148,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         };
 
 
-        return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, this.Eip712UserDataTypes, this.Eip712UserDataPrimaryName );
+        return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, this.Eip712UserDataTypes, this.Eip712UserDataPrimaryName, this.userKey );
     }
 
     public getIdentifier(): string {

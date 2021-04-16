@@ -33,12 +33,12 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         me.attestorKeys = attestorKeys;
         let algorithmEncoded: string = myAttestation.signatureAlgorithm.algorithm;
         me.att = IdentifierAttestation.fromBytes(myAttestation.signedInfo) as IdentifierAttestation;
+
         me.signature = myAttestation.signatureValue;
         if (algorithmEncoded !== me.att.getSigningAlgorithm()) {
             throw new Error("Algorithm specified is not consistent");
         }
-
-        me.constructorCheck(attestorKeys);
+        me.constructorCheck();
         return me;
     }
 
@@ -48,14 +48,14 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         me.att = att;
         me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
         me.signature = attestationSigningKey.signDeterministicSHA256( Array.from(me.att.getPrehash()));
-        me.constructorCheck(attestationSigningKey);
+        me.signature = attestationSigningKey.signRawBytesWithEthereum( Array.from(me.att.getPrehash()));
+        me.constructorCheck();
         return me;
     }
 
     verify(){
         try {
-            // return SignatureUtility.verify(this.att.getDerEncoding(), this.signature, this.attestorKeys);
-            return this.attestorKeys.verifyDeterministicSHA256(hexStringToArray(this.att.getDerEncoding()), uint8tohex(new Uint8Array(this.signature)));
+            return this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), uint8tohex(new Uint8Array(this.signature)));
 
         } catch (e) {
             console.error(e);
@@ -83,7 +83,7 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         }
     }
 
-    constructSignedAttestation(unsignedAtt: IdentifierAttestation, signature: Uint8Array){
+    constructSignedAttestation(unsignedAtt: Attestation, signature: Uint8Array){
 
         let rawAtt: Uint8Array = unsignedAtt.getPrehash();
         let res: string = uint8tohex(rawAtt)
@@ -93,7 +93,7 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         return Asn1Der.encode('SEQUENCE_30', res);
     }
 
-    constructorCheck(attestorKey: KeyPair){
+    constructorCheck(){
         // TODO implement
         // if (!(verificationKey instanceof ECPublicKeyParameters)) {
         //     throw new UnsupportedOperationException("Attestations must be signed with ECDSA key");

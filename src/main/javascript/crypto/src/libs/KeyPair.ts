@@ -17,6 +17,7 @@ import {
     SubjectPublicKeyInfo
 } from "../asn1/shemas/AttestationFramework";
 import {ethers} from "ethers";
+import {Signature} from "../asn1/shemas/Signature";
 // import * as elliptic from "elliptic";
 
 let EC = require("elliptic");
@@ -51,7 +52,8 @@ export class KeyPair {
     private privKey: Uint8Array;
     private pubKey: Uint8Array;
     // private key algorithm name
-    private algorithm: string;
+    // TODO change to private
+    public algorithm: string;
     private ethereumPrefix: string = "\u0019Ethereum Signed Message:\n";
 
     private algorithmASNList: {[index:string]: string} = {
@@ -116,7 +118,14 @@ export class KeyPair {
 
     static publicFromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): KeyPair {
         let me = new this();
-        me.pubKey = spki.value.publicKey;
+        me.pubKey = new Uint8Array(spki.value.publicKey);
+        return me;
+    }
+
+    static publicFromSubjectPublicKeyValue(spki: PublicKeyInfoValue): KeyPair {
+        let me = new this();
+        me.pubKey = new Uint8Array(spki.publicKey);
+        me.algorithm = me.getAlgorithNameFromASN1(uint8tohex(new Uint8Array(spki.algorithm)));
         return me;
     }
 
@@ -284,10 +293,35 @@ export class KeyPair {
     }
 
     verifyDeterministicSHA256(bytes: number[], signature: string): boolean{
-        let sha256 = Array.from(ethers.utils.arrayify(ethers.utils.sha256(bytes)));
-        var key = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
-        let readyHex = uint8tohex( Uint8Array.from( sha256 ) );
-        return key.verify(readyHex, signature);
+        let sha256 = ethers.utils.sha256(bytes).substr(2);
+        let key, sign;
+
+        if (CURVES.hasOwnProperty(this.algorithm) && EC_CURVES_SUBTLE.hasOwnProperty(this.algorithm)) {
+            let curve = new EC.ec(this.algorithm);
+            key = curve.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
+        } else {
+            let m = 'Elliptic.js curve not implemented for that aglorighm - "' + this.algorithm + '"';
+            console.log(m);
+            throw new Error(m);
+        }
+
+        if (signature.length == 128 || signature.length == 130) {
+            var m = signature.match(/([a-f\d]{64})/gi);
+
+            sign = {
+                r: m[0],
+                s: m[1]
+            };
+
+        } else {
+            let signatureAsn1: Signature = AsnParser.parse( uint8toBuffer(hexStringToUint8(signature)), Signature);
+            sign = {
+                r: BigInt(signatureAsn1.r).toString(16).padStart(64,'0'),
+                s: BigInt(signatureAsn1.s).toString(16).padStart(64,'0')
+            };
+
+        }
+        return key.verify(sha256, sign);
     }
 
     verifyHexStringWithEthereum(message: string, signature: string): boolean{
@@ -302,10 +336,28 @@ export class KeyPair {
             s: m[1]
         };
 
-        // let s = {
-        //   r: '5170cdcfb680fa5d7dcb15fa0465be7bc3e75105c986c37ebbab7b1e269b9f41',
-        //   s: '5a52405154b46d1b6a5593e45e4b5dbe40a22a713dcc3b43783ff4aaa465886a'
-        // };
+        return ecKey.verify(encodingHash, sign);
+    }
+
+    signRawBytesWithEthereum(bytes: number[]): boolean{
+        let encodingHash = sha3.keccak256(bytes);
+
+        let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
+
+        return ecKey.sign(encodingHash);
+    }
+
+    verifyBytesWithEthereum(bytes: number[], signature: string): boolean{
+        let encodingHash = sha3.keccak256(bytes);
+
+        let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
+        var m = signature.match(/([a-f\d]{64})/gi);
+
+        let sign = {
+            r: m[0],
+            s: m[1]
+        };
+
         return ecKey.verify(encodingHash, sign);
     }
 
@@ -342,6 +394,7 @@ export class KeyPair {
             ["sign"]
         );
     }
+
     getSubtlePublicKey(){
         let curve = EC_CURVES_SUBTLE[this.algorithm];
         let params = this.getJWTParams();
@@ -358,6 +411,7 @@ export class KeyPair {
             ["verify"]
         );
     }
+
     async signStringWithSubtle(msg: string): Promise<ArrayBuffer>{
         return await subtle.sign(
             {
@@ -371,7 +425,7 @@ export class KeyPair {
         );
     }
 
-    async verifyStringWithSubtle(signature: Uint8Array, msg: string): Promise<ArrayBuffer>{
+    async verifyStringWithSubtle(signature: Uint8Array, msg: string): Promise<boolean>{
         return await subtle.verify(
             {
                 name: "ECDSA",
@@ -381,11 +435,12 @@ export class KeyPair {
             signature,
             Uint8Array.from(stringToArray(msg))
         );
+
     }
 
-    async verifyStringWithSubtleDerSignature(signature: Uint8Array, msg: string): Promise<ArrayBuffer>{
-        const javaSignatureHex = uint8tohex(signature);
-        const javaSignatureHexRaw = javaSignatureHex.substr(8,64) + javaSignatureHex.substr(76,64);
+    async verifyStringWithSubtleDerSignature(signature: Uint8Array, msg: string): Promise<boolean>{
+        let signatureAsn1: Signature = AsnParser.parse( uint8toBuffer(signature), Signature);
+        const javaSignatureHexRaw = BigInt(signatureAsn1.r).toString(16).padStart(64,'0') + BigInt(signatureAsn1.s).toString(16).padStart(64,'0');
         return this.verifyStringWithSubtle(hexStringToUint8( javaSignatureHexRaw), msg);
     }
 }

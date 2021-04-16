@@ -10,6 +10,7 @@ import {
 import {AttestationCrypto} from "./AttestationCrypto";
 import {SignatureUtility} from "./SignatureUtility";
 import {ValidationTools} from "./ValidationTools";
+import {Timestamp} from "./Timestamp";
 
 export class Nonce {
     static LONG_BYTES:number = 8;
@@ -74,12 +75,15 @@ export class Nonce {
     }
 
     validateTimestamp(nonce: Uint8Array, minTime:number, maxTime: number): boolean {
-        let timestamp: number = Nonce.getTimestamp(nonce);
+        let nonceTimeStamp: number = Nonce.getTimestamp(nonce);
+        let nonceStamp = new Timestamp(nonceTimeStamp);
+        nonceStamp.setValidity(maxTime - minTime);
+        return nonceStamp.validateAgainstExpiration(maxTime);
         // let now = Date.now();
-        // console.log('timestamp = ' + timestamp);
+        // console.log('timestamp = ' + nonceStamp);
         // console.log('minTime = ' + minTime);
         // console.log('maxTime = ' + maxTime);
-        return (timestamp > minTime && timestamp < maxTime);
+        // return (nonceStamp > minTime && nonceStamp < maxTime);
     }
 
     validateAddress(nonce: Uint8Array, address: string):boolean {

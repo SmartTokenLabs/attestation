@@ -37,7 +37,7 @@ export function hexStringToBase64Url(str: string = ''): string {
 
 export function mod(a: bigint, b: bigint = CURVE_BN256.P): bigint {
     const result = a % b;
-    return result >= 0 ? result : b + result;
+    return result >= 0n ? result : b + result;
 }
 
 export function invert(number: bigint, modulo: bigint = CURVE_BN256.P) {
@@ -115,6 +115,9 @@ export function uint8merge(list : Uint8Array[]): Uint8Array{
             throw new Error('wrong input values');
         }
         let toAdd = Uint8Array.from(list[i]);
+        if (!toAdd || !toAdd.length){
+            continue;
+        }
         let temp = new Uint8Array(out.length + toAdd.length);
         temp.set(out);
         temp.set(toAdd, out.length);
@@ -124,6 +127,7 @@ export function uint8merge(list : Uint8Array[]): Uint8Array{
 }
 
 export function uint8toString(uint8: Uint8Array): string {
+    if (!uint8) return '';
     let binary = '';
     let len = uint8.byteLength;
     for (let i = 0; i < len; i++) {

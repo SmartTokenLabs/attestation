@@ -145,6 +145,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     public checkValidity(): boolean {
 
         if (this.data.description !== this.Eip712UserDataDescription) {
+            console.log(this.data.description + ' --- ' + this.Eip712UserDataDescription);
             console.log('Description is not correct');
             return false;
         };

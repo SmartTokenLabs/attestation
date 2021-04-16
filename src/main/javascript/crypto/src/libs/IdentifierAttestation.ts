@@ -63,7 +63,7 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         // Verify that the subject public key matches the subject common name
 
         let parsedSubject: string = "CN=" + this.subjectKey.getAddress();
-        if (parsedSubject != this.getSubject()) {
+        if (parsedSubject.toLowerCase() != this.getSubject().toLowerCase()) {
             console.error("The subject public key does not match the Ethereum address attested to");
             return false;
         }

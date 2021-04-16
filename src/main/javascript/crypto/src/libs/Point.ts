@@ -1,4 +1,4 @@
-import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn} from "./utils";
+import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn, hexStringToUint8} from "./utils";
 
 // curve SECP256k1
 export let CURVE_SECP256k1 = {
@@ -142,22 +142,26 @@ export class Point {
         if (hex.length != 130) {
             throw new Error('only decompressed points allowed. 65 bytes.');
         }
-        let p;
-        let type = hex.slice(0,2);
-        switch (type) {
-            case '04':
-                let X = BigInt('0x' + hex.slice(2,66));
-                let Y = BigInt('0x' + hex.slice(66,130));
-                // console.log(X,Y);
-                p = new Point(X, Y, useCurve);
-                break;
-            default:
-                throw new Error('only decompressed points allowed');
-        }
-        if (!p.validate()) {
-            throw new Error(`Point not valid (${p.x},${p.y})`);
-        }
-        return p;
+        return Point.decodeFromUint8(hexStringToUint8(hex), useCurve);
+        // let p;
+        // let type = hex.slice(0,2);
+        // switch (type) {
+        //     case '04':
+        //         let X = BigInt('0x' + hex.slice(2,66));
+        //         let Y = BigInt('0x' + hex.slice(66,130));
+        //         // console.log(X,Y);
+        //         p = new Point(X, Y, useCurve);
+        //         break;
+        //     default:
+        //         throw new Error('only decompressed points allowed');
+        // }
+        // if (!p.validate()) {
+        //     let m = `Point is not valid (${p.x},${p.y})`;
+        //     console.log(m);
+        //     console.log(p);
+        //     throw new Error(m);
+        // }
+        // return p;
     }
 
     static decodeFromUint8(uint: Uint8Array, useCurve: {[index: string]:bigint} = CURVE_SECP256k1){
@@ -168,23 +172,32 @@ export class Point {
         let type = uint[0];
         switch (type) {
             case 4:
-                let X = uint8ToBn(uint.slice(1,34));
-                let Y = uint8ToBn(uint.slice(34));
+                let X = uint8ToBn(uint.slice(1,33));
+                let Y = uint8ToBn(uint.slice(33));
                 p = new Point(X, Y, useCurve);
                 break;
             default:
                 throw new Error('only decompressed points allowed');
         }
         if (!p.validate()) {
-            throw new Error(`Point not valid (${p.x},${p.y})`);
+            let m = `Point is not valid (` + p.x.toString(16) + ',' + p.y.toString(16) + `)`;
+            console.log(m);
+            // console.log(p);
+            throw new Error(m);
         }
         return p;
     }
 
     validate(): boolean{
-        return (
-            mod(this.y * this.y, this.useCurve.P)
-            - mod(BnPowMod(this.x, 3n, this.useCurve.P) + this.x * this.useCurve.A + this.useCurve.B , this.useCurve.P) ) == 0n;
+        // return (
+            // mod(this.y * this.y, this.useCurve.P)
+            // - mod(BnPowMod(this.x, 3n, this.useCurve.P) + this.x * this.useCurve.A + this.useCurve.B , this.useCurve.P) ) == 0n;
+        let res = mod( mod(this.y * this.y, this.useCurve.P) - mod(
+                BnPowMod(this.x, 3n, this.useCurve.P)
+                + mod(this.x * this.useCurve.A, this.useCurve.P) + this.useCurve.B
+                , this.useCurve.P) , this.useCurve.P);
+        // console.log('val res = ' + res);
+        return res == 0n;
     }
 
     negate(): Point {

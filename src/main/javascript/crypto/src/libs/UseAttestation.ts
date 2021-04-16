@@ -23,7 +23,6 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
         me.type = type;
         me.pok = pok;
         me.sessionPublicKey = sessionPublicKey;
-        console.log('before makeEncoding');
         me.encoding = me.makeEncoding(attestation, type, pok, sessionPublicKey);
         me.constructorCheck();
         return me;
@@ -36,16 +35,18 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
         try {
             useAttest = AsnParser.parse( uint8toBuffer(derEncoding), UseAttestationASN);
         } catch (e){
-            throw new Error('Cant parse UseAttestationASN');
+            throw new Error('Cant parse UseAttestationASN. ' + e);
         }
 
         try {
+
             me.attestation = SignedIdentityAttestation.fromASNType(useAttest.attestation, attestationVerificationKey);
+
             me.type = useAttest.type;
-
             me.pok = FullProofOfExponent.fromASNType(useAttest.proof);
-
-            me.sessionPublicKey = KeyPair.publicFromUint(useAttest.sessionKey.publicKey);
+            // console.log('useAttest.sessionKey');
+            // console.log(useAttest.sessionKey);
+            me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(useAttest.sessionKey);
 
         } catch ( e) {
             throw new Error("Cant decode internal data. " + e);
@@ -63,7 +64,7 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     makeEncoding( attestation: SignedIdentityAttestation, type: number, pok: FullProofOfExponent, sessionKey: KeyPair): string {
         let res: string = attestation.getDerEncoding()
         + Asn1Der.encode('INTEGER', type)
-        + Asn1Der.encode('SEQUENCE_30', pok.getDerEncoding())
+        + pok.getDerEncoding()
         + sessionKey.getAsnDerPublic();
 
         return Asn1Der.encode('SEQUENCE_30', res );

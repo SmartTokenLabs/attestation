@@ -33,7 +33,9 @@ export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
         let identity: Identity;
 
         try {
+            console.log(`Identity in hex = ${uint8tohex(asn1)}`);
             identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
+            console.log(identity);
             me.type = identity.type;
             me.sessionPublicKey = KeyPair.publicFromUint(identity.sessionKey.publicKey );
         } catch (e){
