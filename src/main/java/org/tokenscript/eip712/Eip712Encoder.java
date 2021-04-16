@@ -2,14 +2,19 @@ package org.tokenscript.eip712;
 
 import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.encoders.Hex;
 
 public abstract class Eip712Encoder {
+  private static final Logger logger = LogManager.getLogger(Eip712Encoder.class);
+
   protected static final String STRING = "string";
   protected static final String BYTES32 = "bytes32";
   protected static final String UINT64 = "uint64";
@@ -37,7 +42,8 @@ public abstract class Eip712Encoder {
     this.chainId = chainId;
     this.salt = parseSalt(salt);
     if (!ValidationTools.isNullOrAddress(verifyingContract)) {
-      throw new RuntimeException("Not a valid address given as verifying contract");
+      throw ExceptionUtil.throwException(logger,
+          new RuntimeException("Not a valid address given as verifying contract"));
     }
     this.verifyingContract = verifyingContract;
   }
@@ -47,7 +53,7 @@ public abstract class Eip712Encoder {
       if (salt.length == 32) {
         return  "0x" + Hex.toHexString(salt);
       } else {
-        throw new RuntimeException("Salt must be 32 bytes");
+        throw ExceptionUtil.throwException(logger, new RuntimeException("Salt must be 32 bytes"));
       }
     }
     return null;

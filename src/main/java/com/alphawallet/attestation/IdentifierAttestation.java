@@ -88,6 +88,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   @Override
   public boolean checkValidity() {
     if (!super.checkValidity()) {
+      logger.error("Could not check validity of the underlying attestation");
       return false;
     }
     if (getVersion() != 18) {
@@ -109,6 +110,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       }
     } catch (IOException e) {
       logger.error("Could not parse subject public key");
+      return false;
     }
     return true;
   }

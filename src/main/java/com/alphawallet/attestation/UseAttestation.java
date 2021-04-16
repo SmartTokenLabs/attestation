@@ -3,10 +3,13 @@ package com.alphawallet.attestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -16,6 +19,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
+  private static final Logger logger = LogManager.getLogger(UseAttestation.class);
   private final SignedIdentityAttestation attestation;
   private final AttestationType type;
   private final FullProofOfExponent pok;
@@ -43,14 +47,15 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
       this.pok = new FullProofOfExponent(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
       this.sessionPublicKey = SignatureUtility.restoreKeyFromSPKI(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     constructorCheck();
   }
 
   private void constructorCheck() {
     if (!verify()) {
-      throw new IllegalArgumentException("The use attestation object is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not verify object"));
     }
   }
 
@@ -63,7 +68,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
       res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(sessionKey));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
   }
 
@@ -88,11 +93,23 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
 
   @Override
   public boolean verify() {
-    return attestation.verify() && AttestationCrypto.verifyFullProof(pok);
+    if (!attestation.verify()) {
+      logger.error("Could not verify the attestation");
+      return false;
+    }
+    if (!AttestationCrypto.verifyFullProof(pok)) {
+      logger.error("Could not verify proof of knowledge of identifier in the attestation");
+      return false;
+    }
+    return true;
   }
 
   @Override
   public boolean checkValidity() {
-    return attestation.checkValidity();
+    if (!attestation.checkValidity()) {
+      logger.error("Attestation is not valid");
+      return false;
+    }
+    return true;
   }
 }

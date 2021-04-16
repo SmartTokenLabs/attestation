@@ -12,6 +12,8 @@ import java.security.Security;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -45,6 +47,8 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
 
 public class SignatureUtility {
+    private static final Logger logger = LogManager.getLogger(SignatureUtility.class);
+
     public static final String ECDSA_CURVE = "secp256k1";
     public static final String MAC_ALGO = "HmacSHA256";
     public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(ECDSA_CURVE);
@@ -145,7 +149,7 @@ public class SignatureUtility {
             PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(encodedBCKey);
             return ecKeyFac.generatePrivate(pkcs8EncodedKeySpec);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not convert key", e);
         }
     }
 
@@ -157,7 +161,7 @@ public class SignatureUtility {
             X509EncodedKeySpec encodedKey = new X509EncodedKeySpec(spki.getEncoded());
             return ecKeyFac.generatePublic(encodedKey);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not convert key", e);
         }
     }
 
@@ -167,7 +171,8 @@ public class SignatureUtility {
         } else if (key instanceof RSAKeyParameters) {
             return KeyFactory.getInstance("RSA", "BC");
         } else {
-            throw new IllegalArgumentException("Only ECDSA or RSA keys are supported");
+            throw ExceptionUtil.throwException(logger,
+                new IllegalArgumentException("Only ECDSA or RSA keys are supported"));
         }
     }
 
@@ -188,7 +193,7 @@ public class SignatureUtility {
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
             pubKey = spki.getPublicKeyData().getOctets();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not create spki", e);
         }
         //discard the first byte which only tells what kind of key it is //i.e. encoded/un-encoded
         pubKey = Arrays.copyOfRange(pubKey,1,pubKey.length);
@@ -252,7 +257,7 @@ public class SignatureUtility {
             asn1.add(new ASN1Integer(s));
             return new DERSequence(asn1).getEncoded();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
         }
     }
 
@@ -281,6 +286,7 @@ public class SignatureUtility {
         BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
         // Normalize parity in case s needs normalization
         if (!normalizedS.equals(baseS)) {
+            logger.info("Normalizing s value");
             // Flip the bit value
             v = BigInteger.ONE.subtract(v);
         }
@@ -357,11 +363,19 @@ public class SignatureUtility {
         try {
             ECPublicKeyParameters publicKey = recoverEthPublicKeyFromSignature(
                 unsigned, signature);
-            return verifyKeyAgainstAddress(publicKey, address) &&
-                getChainIdFromSignature(signature) == chainId;
+            if (!verifyKeyAgainstAddress(publicKey, address)) {
+                logger.error("Address does not match key");
+                return false;
+            }
+            if (getChainIdFromSignature(signature) != chainId) {
+                logger.error("Chain ID in signature different from expected chain ID");
+                return false;
+            }
         } catch (Exception e) {
+            logger.error("Could not decode signature");
             return false;
         }
+        return true;
     }
 
     public static boolean verifyKeyAgainstAddress(AsymmetricKeyParameter publicKey, String address) {
@@ -395,6 +409,7 @@ public class SignatureUtility {
             signer.init(false, key);
             return signer.verifySignature(digest, r, s);
         } catch (Exception e) {
+            logger.error("Could not decode signature");
             // Something went wrong so the signature cannot be verified
             return false;
         }
@@ -406,7 +421,8 @@ public class SignatureUtility {
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
         BigInteger s = new BigInteger(1, sBytes);
         if (s.compareTo(ECDSAdomain.getN().shiftRight(1)) > 0) {
-            throw new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2");
+            throw ExceptionUtil.throwException(logger,
+                new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
         byte recoveryValue = signature[64];
         byte yParity = (byte) (1 - (recoveryValue % 2));
@@ -444,6 +460,7 @@ public class SignatureUtility {
         // Normalize number s to be the lowest of its two legal values
         BigInteger half_curve = params.getCurve().getOrder().shiftRight(1);
         if (s.compareTo(half_curve) > 0) {
+            logger.info("Inverting s value");
             return params.getN().subtract(s);
         }
         return s;

@@ -3,11 +3,14 @@ package org.devcon.ticket;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -22,6 +25,8 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Ticket implements Attestable {
+  private static final Logger logger = LogManager.getLogger(Ticket.class);
+
   private final BigInteger ticketId;
   private final int ticketClass;
   private final String devconId;
@@ -51,18 +56,19 @@ public class Ticket implements Attestable {
           keys.getPublic());
       this.algorithm = spki.getAlgorithm();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not construct spki", e);
     }
     ASN1Sequence asn1Tic = makeTicket();
     try {
       this.signature = SignatureUtility.signWithEthereum(asn1Tic.getEncoded(), keys.getPrivate());
       this.encoded = encodeSignedTicket(asn1Tic);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode signature", e);
     }
     this.publicKey = keys.getPublic();
     if (!verify()) {
-      throw new IllegalArgumentException("Public and private keys are incorrect");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Signature is invalid"));
     }
   }
 
@@ -76,18 +82,18 @@ public class Ticket implements Attestable {
           publicKey);
       this.algorithm = spki.getAlgorithm();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode spki", e);
     }
     this.signature = signature;
     ASN1Sequence ticket = makeTicket();
     try {
       this.encoded = encodeSignedTicket(ticket);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode ticket", e);
     }
     this.publicKey = publicKey;
     if (!verify()) {
-      throw new IllegalArgumentException("Signature is invalid");
+      throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Signature is invalid"));
     }
   }
 
@@ -121,7 +127,7 @@ public class Ticket implements Attestable {
       signedTicket.add(new DERBitString(signature));
       return new DERSequence(signedTicket).getEncoded();
     } catch (IOException e) {
-      throw new RuntimeException("Could not create public key info");
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not create public key info", e);
     }
   }
 
@@ -142,10 +148,15 @@ public class Ticket implements Attestable {
   public boolean verify() {
     try {
       ASN1Sequence ticket = makeTicket();
-      return SignatureUtility.verifyEthereumSignature(ticket.getEncoded(), signature, this.publicKey);
+      if (!SignatureUtility.verifyEthereumSignature(ticket.getEncoded(), signature, this.publicKey)) {
+        logger.error("Could not verify signature");
+        return false;
+      }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      logger.error("Could not decode signature");
+      return false;
     }
+    return true;
   }
 
   @Override

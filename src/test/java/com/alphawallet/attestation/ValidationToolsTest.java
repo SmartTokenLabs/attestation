@@ -26,7 +26,7 @@ public class ValidationToolsTest {
     // Too short
     assertFalse(ValidationTools.isAddress("0x012345678901234567890123456789012345678"));
     // Wrong prefix
-    assertFalse(ValidationTools.isAddress("0X0123456789012345678901234567890123456789"));
+    assertFalse(ValidationTools.isAddress("0Y0123456789012345678901234567890123456789"));
     // Wrong character
     assertFalse(ValidationTools.isAddress("0x012345678901234567890123456789012345678G"));
   }

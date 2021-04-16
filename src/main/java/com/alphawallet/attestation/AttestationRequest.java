@@ -67,6 +67,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
   @Override
   public boolean verify() {
     if (!AttestationCrypto.verifyFullProof(pok)) {
+      logger.error("Could not verify proof of knowledge");
       return false;
     }
     return true;

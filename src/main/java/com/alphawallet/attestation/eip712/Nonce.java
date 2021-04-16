@@ -2,11 +2,16 @@ package com.alphawallet.attestation.eip712;
 
 import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Nonce {
+  private static final Logger logger = LogManager.getLogger(Nonce.class);
+
   public static final long DEFAULT_NONCE_TIME_LIMIT_MS = 1000*60*20; // 20 min
 
   private static final int senderAddressIndexStart = 0;
@@ -24,7 +29,7 @@ public class Nonce {
   public static byte[] makeNonce(String senderAddress, String receiverIdentifier, Timestamp timestamp, byte[] otherData) {
     // Ensure that the address is valid, since this will throw an exception if not
     if (!ValidationTools.isAddress(senderAddress)) {
-      throw new IllegalArgumentException("Address is not valid");
+      throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Address is not valid"));
     }
     ByteBuffer buffer = ByteBuffer.allocate(otherDataIndexStart + otherData.length);
     // Hash to ensure all variable length components is encoded with constant length
@@ -43,15 +48,19 @@ public class Nonce {
   public static boolean validateNonce(byte[] nonce,
       String senderAddress, String receiverIdentifier, Timestamp minTime, Timestamp maxTime, byte[] otherData) {
     if (!validateAddress(nonce, senderAddress)) {
+      logger.error("Could not validate address");
       return false;
     }
     if (!validateReceiverIdentifier(nonce, receiverIdentifier)) {
+      logger.error("Receiver identifier incorrect");
       return false;
     }
     if (!validateTimestamp(nonce, minTime, maxTime)) {
+      logger.error("Could not validate time stamp");
       return false;
     }
     if (!validateOtherData(nonce, otherData)) {
+      logger.error("Could not validate auxiliary data");
       return false;
     }
     return true;
@@ -60,7 +69,7 @@ public class Nonce {
   static boolean validateAddress(byte[] nonce, String address) {
     byte[] referenceAddress = Arrays.copyOfRange(nonce, senderAddressIndexStart, senderAddressIndexStop);
     if (!ValidationTools.isAddress(address)) {
-      throw new IllegalArgumentException("Address is not valid");
+      throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Address is not valid"));
     }
     byte[] recomputedKeyDigest = address.getBytes(StandardCharsets.UTF_8);
     return Arrays.equals(referenceAddress, recomputedKeyDigest);

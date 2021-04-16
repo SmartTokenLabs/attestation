@@ -185,13 +185,25 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   @Override
   public boolean verify() {
-    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok);
-    if (signature != null) {
-      return result && SignatureUtility
-          .verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey);
-    } else {
-      return result;
+    if (!attestableObject.verify()) {
+      logger.error("Could not verify attestable object");
+      return false;
     }
+    if (!att.verify()) {
+      logger.error("Could not verify attestation");
+      return false;
+    }
+    if (!AttestationCrypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
+      logger.error("Could not verify the consistency between the commitment in the attestation and the attested object");
+      return false;
+    }
+    if (signature != null) {
+      if (!SignatureUtility.verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey)) {
+        logger.error("Could not verify the signature");
+        return false;
+      }
+    }
+    return true;
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {

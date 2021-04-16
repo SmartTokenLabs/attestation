@@ -1,6 +1,5 @@
 package com.alphawallet.attestation.eip712;
 
-import com.alphawallet.attestation.ValidationTools;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -64,12 +63,6 @@ public class Eip712AttestationRequestWithUsageEncoder extends Eip712Encoder {
 
     public void setExpirationTime(String expirationTime) { this.expirationTime = expirationTime; }
 
-    @JsonIgnore
-    private void testAddress(String address) {
-      if (!ValidationTools.isNullOrAddress(address)) {
-        throw new RuntimeException("Not a valid address");
-      }
-    }
     @JsonIgnore
     @Override
     public Eip712AttestationRequestWithUsageEncoder.AttestationRequestWUsageData getSignableVersion() {

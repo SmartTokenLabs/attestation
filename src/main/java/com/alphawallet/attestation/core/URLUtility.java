@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
@@ -15,6 +17,8 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 
 public class URLUtility {
+  private static final Logger logger = LogManager.getLogger(URLUtility.class);
+
   public static String encodeList(List<byte[]> inputs) {
     return encodeData(encodeListHelper(inputs));
   }
@@ -27,7 +31,7 @@ public class URLUtility {
       }
       return new DERSequence(vec).getEncoded();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
   }
 

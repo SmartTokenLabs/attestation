@@ -150,7 +150,7 @@ public class TestAttestationUsageEip712 {
     Mockito.when(mockedUseAttestation.getDerEncoding()).thenReturn(new byte[0]);
     Mockito.when(mockedUseAttestation.verify()).thenReturn(false);
     Exception e = assertThrows(IllegalArgumentException.class, () -> new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation, userSigningKey));
-    assertEquals("Could not verify Eip712 use attestation", e.getMessage());
+    assertEquals("Could not verify object", e.getMessage());
   }
 
   @Test
@@ -246,7 +246,7 @@ public class TestAttestationUsageEip712 {
     // Wrong signing keys
     Exception e = assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationUsage(DOMAIN, MAIL, mockedUseAttestation,
         userSigningKey));
-    assertEquals("Could not encode object", e.getMessage());
+    assertEquals("Could not encode asn1", e.getMessage());
   }
 
   @Test
@@ -257,7 +257,7 @@ public class TestAttestationUsageEip712 {
     String json = request.getJsonEncoding();
     String wrongJson = json.replace(',', '.');
     Exception e = assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationUsage(DOMAIN, attestorKeys.getPublic(), wrongJson));
-    assertEquals("Could not decode object", e.getMessage());
+    assertEquals("Could not decode asn1", e.getMessage());
   }
 
 }

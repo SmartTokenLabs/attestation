@@ -23,6 +23,7 @@ import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 
 public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
   private static final Logger logger = LogManager.getLogger(SignedIdentityAttestation.class);
+
   public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
   private final IdentifierAttestation att;
@@ -104,10 +105,15 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
   @Override
   public boolean verify() {
     try {
-      return SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
+      if (!SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey)) {
+        logger.error("Could not verify signature");
+        return false;
+      }
     } catch (InvalidObjectException e) {
+      logger.error("Could not decode the signature");
       return false;
     }
+    return true;
   }
 
 }

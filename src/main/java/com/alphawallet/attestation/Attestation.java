@@ -248,27 +248,35 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   public boolean isValidX509() {
     if (version.getValue().intValueExact() != 0 && version.getValue().intValueExact() != 1
         && version.getValue().intValueExact() != 2) {
+      logger.error("Incorrect version number");
       return false;
     }
     if (issuer == null || issuer.getRDNs().length == 0) {
+      logger.error("Issuer info not set");
       return false;
     }
     if (notValidBefore == null || notValidAfter == null) {
+      logger.error("Validity period not set");
       return false;
     }
     if (subject == null) {
+      logger.error("Subject info not set");
       return false;
     }
     if (subjectPublicKeyInfo == null) {
+      logger.error("No subject public key info set");
       return false;
     }
     if (smartcontracts != null) {
+      logger.error("Smart contract info set");
       return false;
     }
     if (dataObject != null) {
+      logger.error("Data object set");
       return false;
     }
     if (version == null || serialNumber == null || signingAlgorithm == null) {
+      logger.error("Version, serial number og algorithm missing");
       return false;
     }
     return true;
@@ -312,6 +320,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   @Override
   public byte[] getPrehash() {
     if (!checkValidity()) {
+      logger.error("Attestation is not valid");
       return null;
     }
     ASN1EncodableVector res = new ASN1EncodableVector();
@@ -346,16 +355,19 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public String getOrigin() {
+    logger.error("Method not implemented!");
     return null;
   }
 
   @Override
   public CharSequence getUserMessage() {
+    logger.error("Method not implemented!");
     return null;
   }
 
   @Override
   public String getMessage() {
+    logger.error("Method not implemented!");
     throw ExceptionUtil.throwException(logger, new RuntimeException("GetMessage is not applicable here"));
   }
 
@@ -368,6 +380,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   @Override
   public long getCallbackId() {
     // TODO check that dataObject is actually an Extensions
+    logger.error("Method not implemented!");
     return 0;
   }
 }

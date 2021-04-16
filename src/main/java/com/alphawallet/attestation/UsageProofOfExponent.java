@@ -1,8 +1,11 @@
 package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import java.io.IOException;
 import java.math.BigInteger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -12,6 +15,7 @@ import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.math.ec.ECPoint;
 
 public class UsageProofOfExponent implements ProofOfExponent {
+  private static final Logger logger = LogManager.getLogger(UsageProofOfExponent.class);
   private final ECPoint tPoint;
   private final BigInteger challenge;
   private final byte[] nonce;
@@ -40,7 +44,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
       this.tPoint = AttestationCrypto.decodePoint(tPointEnc.getOctets());
       this.nonce = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
   }
 
@@ -52,7 +56,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
       res.add(new DEROctetString(nonce));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
   }
 
