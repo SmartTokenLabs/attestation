@@ -134,8 +134,10 @@ export class Attestation {
 
     getDerEncoding(): string{
         if (!this.signedInfo) {
-            console.log('this.signedInfo filled with this.getPrehash()!');
             this.signedInfo = this.getPrehash();
+        }
+        if (!this.signedInfo) {
+            throw new Error('Empty Attestaion Der Encoding');
         }
         return uint8tohex(new Uint8Array(this.signedInfo));
     }
@@ -213,6 +215,7 @@ export class Attestation {
         // new DERTaggedObject(true, 0, this.version);
         let res: string = Asn1Der.encode('TAG', Asn1Der.encode('INTEGER', this.version),0)
         + Asn1Der.encode('INTEGER', this.serialNumber)
+            // TODO verify encoding!!!
         + Asn1Der.encodeObjectId(this.signingAlgorithm);
             // res.add(this.issuer == null ? new DERSequence() : this.issuer);
         res += this.issuer ? Asn1Der.encodeName(this.issuer) : Asn1Der.encode('NULL_VALUE','');

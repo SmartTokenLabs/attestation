@@ -1,5 +1,5 @@
 import {
-    base64ToUint8array,
+    base64ToUint8array, bnToUint8,
     hexStringToArray, hexStringToUint8,
     mod,
     stringToArray,
@@ -45,7 +45,7 @@ const EC_CURVES_SUBTLE:{[index:string]: string|null} = {
 const G = new Point(55066263022277343669578718895168534326250603453777594175500187360389116729240n,
     32670510020758816978083085130507043184471273380659243275938904335757337482424n);
 
-
+const DEFAULT_ALGORITHM = 'secp256k1';
 
 export class KeyPair {
     private constructor() {}
@@ -239,12 +239,16 @@ export class KeyPair {
         var pubPoint = this.getPublicKeyAsHexStr();
         // algorithm description hardcoded
         let pubPointTypeDescrDER = '';
-        if (this.algorithmASNList.hasOwnProperty(this.algorithm)){
-            pubPointTypeDescrDER = this.algorithmASNList[this.algorithm];
-        } else {
-            let m = 'algorithm not implemented yet';
+        if (!this.algorithm){
+            // let m = 'algorithm undefined, lets use default.';
+            // console.log(m);
+            pubPointTypeDescrDER = this.algorithmASNList[DEFAULT_ALGORITHM];
+        } else if (!this.algorithmASNList.hasOwnProperty(this.algorithm)){
+            let m = 'Fatal Error. Algorithm not implemented yet - '+this.algorithm;
             console.log(m);
             throw new Error(m);
+        } else {
+            pubPointTypeDescrDER = this.algorithmASNList[this.algorithm];
         }
 
         return Asn1Der.encode('SEQUENCE_30',
@@ -339,26 +343,32 @@ export class KeyPair {
         return ecKey.verify(encodingHash, sign);
     }
 
-    signRawBytesWithEthereum(bytes: number[]): boolean{
+    signRawBytesWithEthereum(bytes: number[]): string{
         let encodingHash = sha3.keccak256(bytes);
-
-        let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
-
-        return ecKey.sign(encodingHash);
+        let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
+        return uint8tohex(Uint8Array.from(ecKey.sign(encodingHash).toDER()));
     }
 
     verifyBytesWithEthereum(bytes: number[], signature: string): boolean{
+        if (!signature || !bytes || !bytes.length) {
+            throw new Error('Missing data to verify');
+        }
         let encodingHash = sha3.keccak256(bytes);
 
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
-        var m = signature.match(/([a-f\d]{64})/gi);
 
-        let sign = {
-            r: m[0],
-            s: m[1]
-        };
+        if (signature.length == 128 || signature.length == 130) {
+            var m = signature.match(/([a-f\d]{64})/gi);
 
-        return ecKey.verify(encodingHash, sign);
+            let sign = {
+                r: m[0],
+                s: m[1]
+            };
+
+            return ecKey.verify(encodingHash, sign);
+        }
+        return ecKey.verify(encodingHash, signature);
+
     }
 
     getJWTParams(){
@@ -426,6 +436,8 @@ export class KeyPair {
     }
 
     async verifyStringWithSubtle(signature: Uint8Array, msg: string): Promise<boolean>{
+        // console.log('pubkey: ' + this.getPublicKeyAsHexStr() + ' msg:' + msg + ' signature:' + uint8tohex(signature));
+        // console.log(await this.getSubtlePublicKey());
         return await subtle.verify(
             {
                 name: "ECDSA",
@@ -443,4 +455,40 @@ export class KeyPair {
         const javaSignatureHexRaw = BigInt(signatureAsn1.r).toString(16).padStart(64,'0') + BigInt(signatureAsn1.s).toString(16).padStart(64,'0');
         return this.verifyStringWithSubtle(hexStringToUint8( javaSignatureHexRaw), msg);
     }
+
+    static anySignatureToRawUint8(derSignature: Uint8Array|string): Uint8Array {
+        let signatureUint8;
+        if (typeof derSignature == "string") {
+            signatureUint8 = hexStringToUint8(derSignature);
+        } else {
+            signatureUint8 = derSignature;
+        }
+
+        if (!signatureUint8 || !signatureUint8.length) {
+            throw new Error('Empty signature received')
+        }
+
+        let output: Uint8Array;
+        switch (signatureUint8.length) {
+            case 64:
+                output = signatureUint8;
+                break;
+            case 65:
+                output = signatureUint8.slice(1);
+                break;
+            case 70:
+            case 71:
+            case 72:
+                let signatureAsn1: Signature = AsnParser.parse( uint8toBuffer(signatureUint8), Signature);
+                output = hexStringToUint8(
+                    BigInt(signatureAsn1.r).toString(16).padStart(64,'0') +
+                    BigInt(signatureAsn1.s).toString(16).padStart(64,'0'));
+                break;
+            default:
+                let m = 'wrong Signature: ' + uint8tohex(signatureUint8);
+                throw new Error(m);
+        }
+        return output;
+    }
+
 }

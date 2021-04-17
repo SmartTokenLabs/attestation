@@ -336,37 +336,33 @@ export class Authenticator {
 
             Authenticator.checkAttestRequestVerifiability(attestationRequest);
             Authenticator.checkAttestRequestValidity(attestationRequest);
-            commitment = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
-            att = new IdentifierAttestation();
-            // TODO enable it
-            // att.fromCommitment(commitment, attestationRequest.getUserPublicKey());
+
         } catch (e){
-            let m = "Failed to fill attestation data from json. " + e;
+            let m = "Failed to fill attestation data from json. " + e + "\nRestores as an Eip712AttestationRequestWithUsage object instead";
             console.log(m);
-            throw new Error(m);
+            try {
+                attestationRequest = new Eip712AttestationRequestWithUsage();
+                attestationRequest.setDomain(attestorDomain);
+                attestationRequest.fillJsonData(attestRequestJson);
+                Authenticator.checkAttestRequestVerifiability(attestationRequest);
+                Authenticator.checkAttestRequestValidity(attestationRequest);
+            } catch (e) {
+                let m = "Failed to parse Eip712AttestationRequestWithUsage. " + e;
+                console.log(m);
+                throw new Error(m);
+            }
         }
 
-        // TODO here is where it should be verified the user actually controls the mail
-        if (!attestationRequest.verify()) {
-            console.error("Could not verify attestation signing request");
-            throw new Error("Verification failed");
-        }
-        if (!attestationRequest.checkValidity()) {
-            console.error("Could not validate attestation signing request");
-            throw new Error("Validation failed");
-        }
-
+        commitment = crypto.makeCommitmentFromHiding(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
 
         att = new IdentifierAttestation();
-        att.fromCommitment(commitment, attestationRequest.getRequestorKeys());
+        att.fromCommitment(commitment, attestationRequest.getUserPublicKey());
         att.setIssuer("CN=" + issuerName);
         att.setSerialNumber(Math.round(Math.random() * Number.MAX_SAFE_INTEGER) );
         let now = Date.now();
         att.setNotValidBefore(now);
         att.setNotValidAfter(now + validityInMilliseconds);
-        console.log('lets add SignedIdentityAttestation');
         let signed: SignedIdentityAttestation = SignedIdentityAttestation.fromData(att, attestorKey);
-        console.log('att filled');
         return signed.getDerEncoding();
     }
 
@@ -460,20 +456,20 @@ export class Authenticator {
 
         } catch (e) {
             // Try as an  Eip712AttestationRequestWithUsage object instead, which is NOT linked to a specific website
-            console.log('Eip712AttestationUsage failed. '+e);
+            console.log('Eip712AttestationUsage failed. ' + e + '. Lets try to verify Eip712AttestationRequestWithUsage');
             let usageRequest: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage();
-            // usageRequest.fillJsonData( jsonRequest, attestorKey);
+            usageRequest.setDomain(WEB_DOMAIN);
             usageRequest.fillJsonData( jsonRequest );
-
             Authenticator.checkUsageVerifiability(usageRequest);
             Authenticator.checkUsageValidity(usageRequest);
             sessionPublicKey = usageRequest.getSessionPublicKey();
-            console.log('sessionPublicKey from Eip712AttestationRequestWithUsage = '+ sessionPublicKey.getAddress());
+            // console.log('sessionPublicKey from Eip712AttestationRequestWithUsage = '+ sessionPublicKey.getAddress());
         }
 
         // Validate signature
         try {
-            let res = await sessionPublicKey.verifyStringWithSubtle(signature, message);
+            // let res = await sessionPublicKey.verifyStringWithSubtleDerSignature(signature, message);
+            let res = await sessionPublicKey.verifyStringWithSubtle(KeyPair.anySignatureToRawUint8(signature) , message);
             if (!res) {
                 // if (!SignatureUtility.verifySHA256(message.getBytes(StandardCharsets.UTF_8), signature, sessionPublicKey)) {
                 console.error("Could not verify message signature");

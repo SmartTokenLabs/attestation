@@ -145,8 +145,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     public checkValidity(): boolean {
 
         if (this.data.description !== this.Eip712UserDataDescription) {
-            console.log(this.data.description + ' --- ' + this.Eip712UserDataDescription);
-            console.log('Description is not correct');
+            console.log('Description is not correct. :' + this.data.description + ' !== ' + this.Eip712UserDataDescription);
             return false;
         };
 
@@ -154,7 +153,8 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         let timestamp: Timestamp = new Timestamp(this.data.timestamp);
         timestamp.setValidity(this.acceptableTimeLimit);
         if (!timestamp.validateTimestamp()) {
-            console.log('timestamp is not correct');
+
+            console.log(`timestamp is not correct. timestamp = ${this.data.timestamp}, acceptableTimeLimit = ${this.acceptableTimeLimit}`);
             return false;
         }
 
@@ -184,7 +184,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         return this.attestationRequest.getPok();
     }
 
-    public getRequestorKeys(): KeyPair {
+    public getUserPublicKey(): KeyPair {
         return this.requestorKeys;
     }
 

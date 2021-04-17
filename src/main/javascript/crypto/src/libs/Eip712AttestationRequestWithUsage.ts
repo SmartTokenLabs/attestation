@@ -108,8 +108,8 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
 
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
-            this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
-            // console.log('restored address: ' + this.requestorKeys.getAddress());
+            this.userPublicKey = KeyPair.fromPublicHex(publicKey.substr(2));
+            // console.log('Eip712 withUsage restored address: ' + this.userPublicKey.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
             console.log(m)

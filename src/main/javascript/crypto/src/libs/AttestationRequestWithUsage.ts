@@ -33,11 +33,11 @@ export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
         let identity: Identity;
 
         try {
-            console.log(`Identity in hex = ${uint8tohex(asn1)}`);
             identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
-            console.log(identity);
             me.type = identity.type;
-            me.sessionPublicKey = KeyPair.publicFromUint(identity.sessionKey.publicKey );
+            me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(identity.sessionKey);
+            // console.log(identity.sessionKey);
+            // console.log(uint8tohex(new Uint8Array(identity.sessionKey.algorithm)));
         } catch (e){
             throw new Error('Cant parse AttestationRequest Identity');
         }

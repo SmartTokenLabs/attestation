@@ -65,5 +65,5 @@ export class MyAttestation {
     @AsnProp({ type: AsnPropTypes.Any }) public signedInfo: Uint8Array = new Uint8Array();
     // @AsnProp({ type: SignedInfo }) public signedInfo:SignedInfo;
     @AsnProp({ type: AlgorithmIdentifierASN }) public signatureAlgorithm: AlgorithmIdentifierASN;
-    @AsnProp({ type: AsnPropTypes.BitString }) public signatureValue: AsnPropTypes.BitString;
+    @AsnProp({ type: AsnPropTypes.BitString }) public signatureValue: Uint8Array;
 }

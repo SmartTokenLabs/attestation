@@ -1,4 +1,4 @@
-import {hexStringToArray} from "./utils";
+import {hexStringToArray, hexStringToUint8, uint8toBuffer} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {ethers} from "ethers";
 import {TypedDataUtils} from "eth-sig-util";
@@ -6,6 +6,8 @@ import {TypedDataUtils} from "eth-sig-util";
 // ethUtils.re
 import {_TypedDataEncoder, recoverPublicKey} from "ethers/lib/utils";
 import {AttestationCrypto} from "./AttestationCrypto";
+import {Signature} from "../asn1/shemas/Signature";
+import {AsnParser} from "@peculiar/asn1-schema";
 
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
@@ -256,5 +258,6 @@ export class SignatureUtility {
         // recovery byte is chainId * 2 + 35 for chainId >= 1
         return (recoveryByte - 35) >> 1;
     }
+
 
 }

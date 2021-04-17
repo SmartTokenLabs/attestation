@@ -11,7 +11,7 @@ import {Asn1Der} from "./DerUtility";
 import {IdentifierAttestation} from "./IdentifierAttestation";
 
 export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
-    private signature: any;
+    private signature: string;
     private att: IdentifierAttestation;
     private commitment: Uint8Array;
     private uint8data: Uint8Array;
@@ -34,7 +34,8 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         let algorithmEncoded: string = myAttestation.signatureAlgorithm.algorithm;
         me.att = IdentifierAttestation.fromBytes(myAttestation.signedInfo) as IdentifierAttestation;
 
-        me.signature = myAttestation.signatureValue;
+        // me.signature = myAttestation.signatureValue;
+        me.signature = uint8tohex(new Uint8Array(myAttestation.signatureValue));
         if (algorithmEncoded !== me.att.getSigningAlgorithm()) {
             throw new Error("Algorithm specified is not consistent");
         }
@@ -46,26 +47,22 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         let me = new this();
         me.attestorKeys = attestationSigningKey;
         me.att = att;
-        me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
-        me.signature = attestationSigningKey.signDeterministicSHA256( Array.from(me.att.getPrehash()));
-        me.signature = attestationSigningKey.signRawBytesWithEthereum( Array.from(me.att.getPrehash()));
+        // me.att.setSigningAlgorithm(SignedIdentityAttestation.ECDSA_WITH_SHA256);
+        // me.signature = attestationSigningKey.signDeterministicSHA256( Array.from(me.att.getPrehash()));
+        me.signature = me.attestorKeys.signRawBytesWithEthereum( Array.from(me.att.getPrehash()));
         me.constructorCheck();
         return me;
     }
 
     verify(){
         try {
-            return this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), uint8tohex(new Uint8Array(this.signature)));
+            return this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), this.signature);
 
         } catch (e) {
             console.error(e);
             return false;
         }
     }
-
-    // getCommitment() {
-    //     return this.att.getCommitment();
-    // }
 
     checkValidity(){
         return this.getUnsignedAttestation().checkValidity();
@@ -83,12 +80,14 @@ export class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
         }
     }
 
-    constructSignedAttestation(unsignedAtt: Attestation, signature: Uint8Array){
+    constructSignedAttestation(unsignedAtt: Attestation, signature: string){
 
         let rawAtt: Uint8Array = unsignedAtt.getPrehash();
-        let res: string = uint8tohex(rawAtt)
-            + Asn1Der.encode('OBJECT_ID', unsignedAtt.getSigningAlgorithm())
-            + Asn1Der.encode('BIT_STRING', uint8tohex(signature));
+        let alg = Asn1Der.encode('OBJECT_ID', unsignedAtt.getSigningAlgorithm());
+
+        let res: string = uint8tohex(rawAtt) +
+            Asn1Der.encode('SEQUENCE_30', alg) +
+            Asn1Der.encode('BIT_STRING', '04' + uint8tohex(KeyPair.anySignatureToRawUint8(signature)));
 
         return Asn1Der.encode('SEQUENCE_30', res);
     }

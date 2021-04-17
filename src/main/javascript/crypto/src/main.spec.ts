@@ -14,7 +14,8 @@ let useAttestRes: string,
     attestorPubKey: KeyPair,
     attestorKey: KeyPair,
     sessionSignature: Uint8Array,
-    useAttestationJson: string;
+    useAttestationJson: string,
+    useRequestAttestationJson: string;
 let sessionMessage = "message";
 let email = "test@test.ts";
 let type = "mail";
@@ -45,6 +46,8 @@ describe("Read keys", () => {
     sessionKey = KeyPair.privateFromPEM(sessionPrivPEM);
 
     useAttestationJson = readFileSync(PREFIX_PATH + 'use-attestation.json', 'utf8');
+
+    useRequestAttestationJson = readFileSync(PREFIX_PATH + 'use-and-request-attestation.json', 'utf8');
 
     test('Read keys test ok', () => {
         expect(userPubKey.getPublicKeyAsHexStr()).toBe(userKey.getPublicKeyAsHexStr());
@@ -101,10 +104,6 @@ describe("Attestation request", () => {
 
     test('Authenticator.requestAttest', async () => {
 
-        const userPrivPEM = readFileSync(PREFIX_PATH + 'user-priv.pem', 'utf8');
-        let userKey = KeyPair.privateFromPEM(userPrivPEM);
-
-
         let secret = BigInt(12345);
         let receiverId = "test@test.com";
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
@@ -114,36 +113,15 @@ describe("Attestation request", () => {
 
 });
 
-describe("Attestation test(disabled)", () => {
-
-    // const receiverPubPEM = readFileSync(PREFIX_PATH + 'receiver-pub.pem', 'utf8');
-
-    const receiverPrivPEM = readFileSync(PREFIX_PATH + 'user-priv.pem', 'utf8');
-    const attestorPrivPEM = readFileSync(PREFIX_PATH + 'attestor-priv.pem', 'utf8');
-    let receiverKey = KeyPair.privateFromPEM(receiverPrivPEM);
+describe("Construct Attestation", () => {
 
     let attestationRequestJson = readFileSync(PREFIX_PATH + 'attestation-request.json', 'utf8');
     attestationRequestJson = attestationRequestJson.split(/\r?\n/).join('');
     let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-    // let attestRes = Authenticator.createAttest(attestorPrivPEM,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
+    let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-    // console.log(attestRes + '-------');
-
-});
-
-describe("useAttest read", () => {
-    test('useAttest read', async () => {
-
-        try {
-            let useAttestRes = new Eip712AttestationUsage();
-            useAttestRes.fillJsonData(useAttestationJson, attestorPubKey);
-        } catch (e) {
-            console.error(e);
-            throw new Error('useAttestRes read failed');
-        }
-        expect(1).toBe(1);
-    });
+    // console.log("attestRes = " + attestRes);
 
 });
 
@@ -187,8 +165,29 @@ describe("executeEipFlow test", () => {
         // console.log(`session signature = ` + uint8tohex(sessionSignature));
     })
 
-    test('executeEipFlow - verify-usage', async () => {
+    test('executeEipFlow - verify-usage(subtle signature)', async () => {
         let res;
+        try {
+            res = await Authenticator.verifyUsage(
+                // useAttestRes,
+                useAttestationJson,
+                attestorPubKey,
+                sessionMessage,
+                WEB_DOMAIN,
+                sessionSignature);
+            // console.log(`verifyUsage result = ${res}`);
+        } catch (e) {
+            console.error(e);
+            throw new Error('verifyUsage failed');
+        }
+        expect(res).toBe("SUCCESSFULLY validated usage request!");
+
+    })
+
+    test('executeEipFlow - verify-usage(external signature)', async () => {
+        let res;
+        const sessionSignatureBin = readFileSync(PREFIX_PATH + 'signature.bin');
+        sessionSignature = new Uint8Array(sessionSignatureBin);
         try {
             res = await Authenticator.verifyUsage(
                 // useAttestRes,
@@ -208,12 +207,14 @@ describe("executeEipFlow test", () => {
 
 });
 
-
 describe("executeCombinedEipFlow", () => {
 
-    test('request-attest-and-usage', async () => {
+    const attestationSecretPEM = readFileSync(PREFIX_PATH + 'attestation-secret.pem', 'utf8');
 
-        const attestationSecretPEM = readFileSync(PREFIX_PATH + 'attestation-secret.pem', 'utf8');
+    const sessionSignatureBin2 = readFileSync(PREFIX_PATH + 'signature2.bin');
+    const sessionSignature2 = new Uint8Array(sessionSignatureBin2);
+
+    test('request-attest-and-usage', async () => {
 
         let requestAttestAndUsage;
         try {
@@ -234,7 +235,7 @@ describe("executeCombinedEipFlow", () => {
         // if no Errors then its OK
         expect(1).toBe(1);
     })
-/*
+
     test('constructAttest', async () => {
 
         // args = new String[]{"construct-attest", PREFIX + "attestor-priv.pem", "AlphaWallet", "3600", PREFIX + "use-and-request-attestation.json", PREFIX + "attestation.crt"};
@@ -250,7 +251,28 @@ describe("executeCombinedEipFlow", () => {
         // if no Errors then its OK
         expect(1).toBe(1);
     })
-*/
+
+    test('verify-usage', async () => {
+        let res;
+        try {
+            res = await Authenticator.verifyUsage(
+                // useAttestRes,
+                useRequestAttestationJson,
+                attestorPubKey,
+                sessionMessage,
+                ATTESTOR_DOMAIN,
+                sessionSignature2);
+            console.log(`verifyUsage result = ${res}`);
+        } catch (e) {
+            console.error(e);
+            throw new Error('verifyUsage failed');
+        }
+        expect(res).toBe("SUCCESSFULLY validated usage request!");
+
+    })
+
 })
+
+
 
 
