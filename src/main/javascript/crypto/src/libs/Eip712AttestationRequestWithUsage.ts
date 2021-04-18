@@ -48,9 +48,12 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
     private userPublicKey: KeyPair;
     private userKey: KeyPair;
 
-    constructor(userKey: KeyPair = null) {
+    constructor(userKey: KeyPair = null, acceptableTimeLimit:number = Eip712AttestationRequestWithUsage.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Eip712AttestationRequestWithUsage.DEFAULT_TOKEN_TIME_LIMIT) {
         super();
         this.userKey = userKey;
+
+        this.acceptableTimeLimit = acceptableTimeLimit;
+        this.maxTokenValidityInMs = maxTokenValidityInMs;
     }
 
 
@@ -136,7 +139,6 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         }
 
         let ts = new Timestamp().getTimeAsString();
-
         let expirationTime = new Timestamp(Date.now() + this.maxTokenValidityInMs).getTimeAsString();
 
         let userData = {
@@ -193,6 +195,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         let time:Timestamp = new Timestamp(this.data.timestamp);
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {
+            console.log('time.validateAgainstExpiration filed');
             return false;
         }
         // Nonce validation must still happen since this also verifies user's address and receiver's domain
@@ -203,6 +206,9 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
     }
 
     private testNonceAndDescription(timeLimit: number): boolean {
+        if (!timeLimit) {
+            throw new Error('timeLimit required');
+        }
         let nonceMinTime: number  = Timestamp.stringTimestampToLong(this.data.timestamp) - timeLimit;
         let nonceMaxTime: number = Timestamp.stringTimestampToLong(this.data.timestamp) + timeLimit;
         if (!new Nonce().validateNonce(

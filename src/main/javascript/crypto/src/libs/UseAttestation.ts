@@ -44,8 +44,6 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
 
             me.type = useAttest.type;
             me.pok = FullProofOfExponent.fromASNType(useAttest.proof);
-            // console.log('useAttest.sessionKey');
-            // console.log(useAttest.sessionKey);
             me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(useAttest.sessionKey);
 
         } catch ( e) {

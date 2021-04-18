@@ -377,9 +377,13 @@ export class Authenticator {
         sessionKey: KeyPair = null,
         userKey: KeyPair = null){
 
+
+
         const attestationUint8 = base64ToUint8array(attestationBase64);
         let att = SignedIdentityAttestation.fromBytes(attestationUint8, attestorKey);
-        let attestationSecret = uint8ToBn(base64ToUint8array(attestationSecretBase64))
+        let attestationSecretDerUint8 = base64ToUint8array(attestationSecretBase64);
+        // remove first 4 bytes because us der encoding
+        let attestationSecret = uint8ToBn(attestationSecretDerUint8.slice(4));
 
         let crypto = new AttestationCrypto();
 
@@ -393,8 +397,6 @@ export class Authenticator {
         let nonce = await Nonce.makeNonce(address, webDomain);
 
         let pok: FullProofOfExponent = crypto.computeAttestationProof(attestationSecret, nonce);
-        // TODO create keyPair for ECDSA
-        // let sessionKeys = null;
 
         try {
             let attUsage: UseAttestation = UseAttestation.fromData(att, crypto.getType(type), pok, sessionKey);
@@ -415,6 +417,7 @@ export class Authenticator {
             throw new Error("Verification failed");
         }
     }
+
     static checkAttestRequestValidity( input:Validateable) {
         if (!input.checkValidity()) {
             console.log("Could not validate attestation signing request");
@@ -428,6 +431,7 @@ export class Authenticator {
             throw new Error("Verification failed");
         }
     }
+
     static checkUsageValidity( input: TokenValidateable) {
         if (!input.checkTokenValidity()) {
             console.error("Could not validate usage request");
@@ -461,6 +465,7 @@ export class Authenticator {
             usageRequest.setDomain(WEB_DOMAIN);
             usageRequest.fillJsonData( jsonRequest );
             Authenticator.checkUsageVerifiability(usageRequest);
+
             Authenticator.checkUsageValidity(usageRequest);
             sessionPublicKey = usageRequest.getSessionPublicKey();
             // console.log('sessionPublicKey from Eip712AttestationRequestWithUsage = '+ sessionPublicKey.getAddress());
@@ -468,10 +473,8 @@ export class Authenticator {
 
         // Validate signature
         try {
-            // let res = await sessionPublicKey.verifyStringWithSubtleDerSignature(signature, message);
             let res = await sessionPublicKey.verifyStringWithSubtle(KeyPair.anySignatureToRawUint8(signature) , message);
             if (!res) {
-                // if (!SignatureUtility.verifySHA256(message.getBytes(StandardCharsets.UTF_8), signature, sessionPublicKey)) {
                 console.error("Could not verify message signature");
                 throw new Error("Signature verification failed");
             }
@@ -510,7 +513,7 @@ export class Authenticator {
 
             let attRequest: AttestationRequestWithUsage =  AttestationRequestWithUsage.fromData(crypto.getType(type), pok, sessionKey);
             let request: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage(userKey);
-            await request.fromData(ATTESTOR_DOMAIN, null, null, receiverId, attRequest);
+            await request.fromData(ATTESTOR_DOMAIN, undefined, undefined, receiverId, attRequest);
             // console.log('request.getJsonEncoding() = ' + request.getJsonEncoding());
             return request.getJsonEncoding();
         } catch (e) {

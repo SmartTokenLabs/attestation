@@ -30,9 +30,10 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     private Eip712UserDataPrimaryName: string = "AttestationRequest";
     private Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
 
-    constructor(userKey: KeyPair = null) {
+    constructor(userKey: KeyPair = null, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS) {
         super();
         this.userKey = userKey;
+        this.acceptableTimeLimit = acceptableTimeLimit;
     }
 
     async addData(attestorDomain: string, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS, identifier: string, request: AttestationRequest) {
@@ -46,17 +47,15 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
 
         try {
             // decode JSON and fill publicKey
-            this.fillJsonData(this.jsonEncoding, acceptableTimeLimit);
+            this.fillJsonData(this.jsonEncoding);
         } catch (e){
             console.log(e);
             return false;
         }
     }
 
-    fillJsonData(json: string, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS){
+    fillJsonData(json: string){
         if (!json) throw new Error('Empty json');
-
-        this.acceptableTimeLimit = acceptableTimeLimit;
 
         this.jsonEncoding = json;
         let tokenData = JSON.parse(json);

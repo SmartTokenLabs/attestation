@@ -357,18 +357,18 @@ export class KeyPair {
 
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
 
-        if (signature.length == 128 || signature.length == 130) {
-            var m = signature.match(/([a-f\d]{64})/gi);
+        // TODO add signature conversion
+        signature = uint8tohex(KeyPair.anySignatureToRawUint8(signature));
 
-            let sign = {
-                r: m[0],
-                s: m[1]
-            };
+        var m = signature.match(/([a-f\d]{64})/gi);
 
-            return ecKey.verify(encodingHash, sign);
-        }
-        return ecKey.verify(encodingHash, signature);
+        let sign = {
+            r: m[0],
+            s: m[1]
+        };
 
+        return ecKey.verify(encodingHash, sign);
+        // return ecKey.verify(encodingHash, signature);
     }
 
     getJWTParams(){
@@ -474,7 +474,8 @@ export class KeyPair {
                 output = signatureUint8;
                 break;
             case 65:
-                output = signatureUint8.slice(1);
+                // remove last byte ( v ) value
+                output = signatureUint8.slice(0,64);
                 break;
             case 70:
             case 71:

@@ -335,8 +335,6 @@ export class AttestationCrypto {
     makeArray(pointArray: Point[]): Uint8Array{
         let output: Uint8Array = new Uint8Array(0);
         pointArray.forEach( (item:Point) => {
-            // console.log('Point.getEncoded');
-            // console.log(item.getEncoded(false));
             output = new Uint8Array([ ...output, ...item.getEncoded(false)]);
         })
         return output;

@@ -134,11 +134,14 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
     }
 
     proofLinking() {
+
         let crypto = new AttestationCrypto();
         let candidateExponent = crypto.mapToCurveMultiplier(this.getType(), this.getIdentifier());
         let commitmentPoint: Point = Point.decodeFromUint8(this.getAttestation().getUnsignedAttestation().getCommitment(), CURVE_BN256);
         let candidateRiddle: Point = commitmentPoint.subtract(Pedestren_G.multiplyDA(candidateExponent));
+
         if (!candidateRiddle.equals(this.getPok().getRiddle())) {
+            console.log('candidateRiddle.equals(this.getPok().getRiddle()) error');
             return false;
         }
         return true;
@@ -166,7 +169,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
 
     checkTokenValidity(): boolean {
 
-        let nonceMinTime: number = Timestamp.stringTimestampToLong(this.data.expirationTime) - this.maxTokenValidityInMs;
+        let nonceMinTime: number = Timestamp.stringTimestampToLong(this.data.expirationTime) - this.maxTokenValidityInMs - 2 * Timestamp.ALLOWED_ROUNDING;
         let nonceMaxTime: number = Timestamp.stringTimestampToLong(this.data.expirationTime);
 
         if (!this.useAttestation.checkValidity()){

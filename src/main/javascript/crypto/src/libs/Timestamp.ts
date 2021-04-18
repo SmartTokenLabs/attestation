@@ -5,6 +5,7 @@ export class Timestamp {
     // Tue Mar 30 2021 21:14:22 GMT+0300
     public static TIMESTAMP_FORMAT:string = "EEE MMM d yyyy HH:mm:ss 'GMT'Z";
     public ALLOWED_ROUNDING: number = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
+    static ALLOWED_ROUNDING: number = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
 
     private time: number;
     private validity: number = 0;

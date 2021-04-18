@@ -4,6 +4,7 @@ import {AsnParser} from "@peculiar/asn1-schema";
 import {base64ToUint8array, bnToUint8, uint8arrayToBase64, uint8ToBn, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
+import {Nonce} from "./Nonce";
 
 export class FullProofOfExponent {
     private riddle: Point;

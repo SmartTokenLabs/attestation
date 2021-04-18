@@ -1,9 +1,6 @@
 import {
-    ethAddressToUint8,
     getInt64Bytes,
     hashStringTo32bytesUint8,
-    hashUint8To32bytesUint8,
-    hexStringToArray,
     stringToArray,
     uint8merge, uint8ToBn, uint8tohex, uint8toString
 } from "./utils";
@@ -20,7 +17,8 @@ export class Nonce {
     private static senderAddressIndexStart: number = 0;
     private static senderAddressIndexStop: number = ValidationTools.ADDRESS_LENGTH_IN_BYTES;
     private static receiverIdentifierIndexStart: number = Nonce.senderAddressIndexStop;
-    private static receiverIdentifierIndexStop: number = Nonce.receiverIdentifierIndexStart + AttestationCrypto.BYTES_IN_DIGEST;
+    // private static receiverIdentifierIndexStop: number = Nonce.receiverIdentifierIndexStart + AttestationCrypto.BYTES_IN_DIGEST;
+    private static receiverIdentifierIndexStop: number = Nonce.receiverIdentifierIndexStart + 256 / 8;//AttestationCrypto.BYTES_IN_DIGEST;
     private static timestampIndexStart: number = Nonce.receiverIdentifierIndexStop;
     private static timestampIndexStop: number = Nonce.timestampIndexStart + Nonce.LONG_BYTES;
     private static otherDataIndexStart: number = Nonce.timestampIndexStop;
@@ -34,6 +32,8 @@ export class Nonce {
         if (!ValidationTools.isAddress(senderAddress)) {
             throw new Error("Address is not valid");
         }
+
+        senderAddress = '0x'+senderAddress.substr(2,40).toUpperCase();
 
         if (!timestampInMs) {
             timestampInMs = Date.now();
@@ -49,7 +49,7 @@ export class Nonce {
 
     validateNonce(nonce: Uint8Array, senderAddress: string, receiverIdentifier: string, minTime:number, maxTime:number, otherData: Uint8Array = new Uint8Array(0)): boolean{
 
-        if (!this.validateAddress(nonce, senderAddress)) {
+        if (!Nonce.validateAddress(nonce, senderAddress)) {
             console.log('validateAddress check failed');
             return false;
         }
@@ -75,18 +75,24 @@ export class Nonce {
     }
 
     validateTimestamp(nonce: Uint8Array, minTime:number, maxTime: number): boolean {
+
         let nonceTimeStamp: number = Nonce.getTimestamp(nonce);
+
         let nonceStamp = new Timestamp(nonceTimeStamp);
         nonceStamp.setValidity(maxTime - minTime);
-        return nonceStamp.validateAgainstExpiration(maxTime);
-        // let now = Date.now();
-        // console.log('timestamp = ' + nonceStamp);
-        // console.log('minTime = ' + minTime);
-        // console.log('maxTime = ' + maxTime);
-        // return (nonceStamp > minTime && nonceStamp < maxTime);
+        let res = nonceStamp.validateAgainstExpiration(maxTime);
+        if (!res) {
+            let now = Date.now();
+            console.log('timestamp = ' + nonceTimeStamp);
+            console.log('minTime = ' + minTime);
+            console.log('maxTime = ' + maxTime);
+        }
+        return res;
+
+
     }
 
-    validateAddress(nonce: Uint8Array, address: string):boolean {
+    static validateAddress(nonce: Uint8Array, address: string):boolean {
         if (address.toLowerCase() === uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop)).toLowerCase()) return true;
         return false;
     }
