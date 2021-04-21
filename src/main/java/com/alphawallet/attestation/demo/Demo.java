@@ -155,7 +155,7 @@ public class Demo {
           // Should use a configuration file and have a certificate to its signing key
           System.out.println("Signing attestation...");
           try {
-            long validity = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS;
+            long validity = Timestamp.DEFAULT_TIME_LIMIT_MS;
             constructAttest(Paths.get(arguments.get(1)), arguments.get(2), validity, Paths.get(arguments.get(4)), Paths.get(arguments.get(5)));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <issuer name> "
