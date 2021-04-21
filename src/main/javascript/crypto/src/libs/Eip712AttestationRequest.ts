@@ -1,4 +1,3 @@
-import {Eip712Validator} from "./Eip712Validator";
 import {Validateable} from "./Validateable";
 import {Verifiable} from "./Verifiable";
 import {JsonEncodable} from "../intefaces/JsonEncodable";
@@ -18,7 +17,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     private userKey: KeyPair;
     // private publicKey: KeyPair;
 
-    static DEFAULT_TIME_LIMIT_MS:number = 1000*60*20; // 20 minutes
+    //static DEFAULT_TIME_LIMIT_MS:number = 1000*60*20; // 20 minutes
 
     private Eip712UserDataTypes: {name: string, type: string}[]  = [
         {name: 'address', type: 'string'},
@@ -30,13 +29,13 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     private Eip712UserDataPrimaryName: string = "AttestationRequest";
     private Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
 
-    constructor(userKey: KeyPair = null, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS) {
+    constructor(userKey: KeyPair = null, acceptableTimeLimit: number = Timestamp.DEFAULT_TIME_LIMIT_MS) {
         super();
         this.userKey = userKey;
         this.acceptableTimeLimit = acceptableTimeLimit;
     }
 
-    async addData(attestorDomain: string, acceptableTimeLimit: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS, identifier: string, request: AttestationRequest) {
+    async addData(attestorDomain: string, acceptableTimeLimit: number = Timestamp.DEFAULT_TIME_LIMIT_MS, identifier: string, request: AttestationRequest) {
         this.setDomain(attestorDomain);
 
         // this.attestationRequest = AttestationRequest.fromData(type,pok);

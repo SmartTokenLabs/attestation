@@ -17,8 +17,8 @@ import {Timestamp} from "./Timestamp";
 
 export class Eip712AttestationRequestWithUsage extends Eip712Token implements JsonEncodable,
     Verifiable, Validateable, TokenValidateable {
-    public static DEFAULT_TOKEN_TIME_LIMIT: number = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
-    public static DEFAULT_TIME_LIMIT_MS: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS;
+    // public static DEFAULT_TOKEN_TIME_LIMIT: number = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT;
+    // public static DEFAULT_TIME_LIMIT_MS: number = Eip712AttestationRequest.DEFAULT_TIME_LIMIT_MS;
 
     private Eip712UserDataTypes: {name: string, type: string}[]  = [
         {name: 'payload', type: 'string'},
@@ -48,7 +48,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
     private userPublicKey: KeyPair;
     private userKey: KeyPair;
 
-    constructor(userKey: KeyPair = null, acceptableTimeLimit:number = Eip712AttestationRequestWithUsage.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Eip712AttestationRequestWithUsage.DEFAULT_TOKEN_TIME_LIMIT) {
+    constructor(userKey: KeyPair = null, acceptableTimeLimit:number = Timestamp.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT) {
         super();
         this.userKey = userKey;
 
@@ -57,7 +57,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
     }
 
 
-    public async fromData(attestorDomain:string, acceptableTimeLimit:number = Eip712AttestationRequestWithUsage.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Eip712AttestationRequestWithUsage.DEFAULT_TOKEN_TIME_LIMIT  ,identifier:string,
+    public async fromData(attestorDomain:string, acceptableTimeLimit:number = Timestamp.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT  ,identifier:string,
     attestationRequestWithUsage: AttestationRequestWithUsage, signingKey: KeyPair = null) {
 
         this.setDomain(attestorDomain);

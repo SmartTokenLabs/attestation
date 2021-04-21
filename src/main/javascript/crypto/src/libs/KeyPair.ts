@@ -1,7 +1,5 @@
 import {
-    base64ToUint8array, bnToUint8,
-    hexStringToArray, hexStringToUint8,
-    mod,
+    base64ToUint8array, hexStringToArray, hexStringToUint8,
     stringToArray,
     uint8arrayToBase64,
     uint8ToBn,
@@ -24,7 +22,6 @@ let EC = require("elliptic");
 const { subtle } = require('crypto').webcrypto;
 
 let ec = new EC.ec('secp256k1');
-// let ecdsa = new EC.ec('p256');
 
 let sha3 = require("js-sha3");
 
@@ -353,7 +350,8 @@ export class KeyPair {
         if (!signature || !bytes || !bytes.length) {
             throw new Error('Missing data to verify');
         }
-        let encodingHash = sha3.keccak256(bytes);
+        // let encodingHash = sha3.keccak256(bytes);
+        let encodingHash = hexStringToArray(ethers.utils.keccak256(bytes));
 
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
 

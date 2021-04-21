@@ -5,7 +5,6 @@ import {AttestationCrypto} from "./AttestationCrypto";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {Identity} from "../asn1/shemas/AttestationRequest";
-import {KeyPair} from "./KeyPair";
 
 export class AttestationRequest {
     private type: number;

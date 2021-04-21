@@ -3,6 +3,7 @@ import {readFileSync} from "fs";
 import {KeyPair} from "./libs/KeyPair";
 import {Authenticator} from "./Authenticator";
 import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
+import {Timestamp} from "./libs/Timestamp";
 
 let EC = require("elliptic");
 
@@ -135,7 +136,7 @@ describe("Attestation request/construct", () => {
 
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-        let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
+        let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', Timestamp.DEFAULT_TIME_LIMIT_MS, attestationRequestJson, ATTESTOR_DOMAIN);
 
         // console.log("attestRes = " + attestRes);
         // OK if no Errors
@@ -204,7 +205,6 @@ describe("executeEipFlow", () => {
         // if no Errors then its OK
         expect(1).toBe(1);
     })
-
 
     test('executeEipFlow - verify-usage(generated JSON and external signature)', async () => {
         let res;
@@ -320,6 +320,8 @@ describe("executeCombinedEipFlow", () => {
     })
 
 })
+
+
 
 
 

@@ -1,6 +1,5 @@
 import {JsonEncodable} from "../intefaces/JsonEncodable";
 import {Verifiable} from "./Verifiable";
-import {Validateable} from "./Validateable";
 import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
 import {Eip712Token} from "./Eip712Token";
@@ -15,7 +14,6 @@ import {Timestamp} from "./Timestamp";
 
 export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable, Verifiable, TokenValidateable {
     public PLACEHOLDER_CHAIN_ID: number = 0;
-    public static DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 7; // 1 week
     public Eip712PrimaryName: string = "AttestationUsage";
     public Eip712Description: string = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\".";
     public Eip712UserTypes: {name: string, type: string}[]  = [
@@ -40,7 +38,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         expirationTime: string,
     }
 
-    constructor(userKey: KeyPair = null, maxTokenValidityInMs:number = Eip712AttestationUsage.DEFAULT_TOKEN_TIME_LIMIT) {
+    constructor(userKey: KeyPair = null, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT) {
         super();
         this.maxTokenValidityInMs = maxTokenValidityInMs;
         this.userKey = userKey;
@@ -185,7 +183,8 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         let time: Timestamp = new Timestamp(this.data.timestamp);
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {
-            console.log('verify timestamp failed');
+
+            console.log('verify timestamp failed.\n' + this.data.timestamp + "\n" + this.maxTokenValidityInMs + "\n" + this.data.expirationTime + "\n" + Timestamp.stringTimestampToLong(this.data.expirationTime) + "\n");
             return false;
         }
 

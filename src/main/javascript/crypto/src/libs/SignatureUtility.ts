@@ -1,13 +1,8 @@
-import {hexStringToArray, hexStringToUint8, uint8toBuffer} from "./utils";
+import {hexStringToArray, hexStringToUint8} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {ethers} from "ethers";
-import {TypedDataUtils} from "eth-sig-util";
-// let ethUtils = require("eth-sig-util");
-// ethUtils.re
 import {_TypedDataEncoder, recoverPublicKey} from "ethers/lib/utils";
-import {AttestationCrypto} from "./AttestationCrypto";
-import {Signature} from "../asn1/shemas/Signature";
-import {AsnParser} from "@peculiar/asn1-schema";
+
 
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
@@ -84,21 +79,31 @@ export class SignatureUtility {
      */
     static recoverPublicKeyFromTypedMessageSignature(messageObj: any, signature: string): string {
 
-        // console.log('messageObj');
-        // console.log(messageObj);
-        // console.log('JSON.stringify(messageObj)');
-        // console.log(JSON.stringify(messageObj));
-        // console.log('messageObj.types');
-        // console.log(messageObj.types);
-
         // let rawPayload = messageObj.message.payload;
         // messageObj.message.payload = sha3.keccak256(rawPayload);
 
-        let message, pubKey;
+        // let completeData: { [index: string]: any } = {
+        //     types: {
+        //         EIP712Domain: SignatureUtility.Eip712domainTypes,
+        //     },
+        //     primaryType: primaryName,
+        //     message: userDataValues,
+        //     domain: domainData,
+        // };
+
+        let messageAsPrefixedHexString, pubKey;
         try {
             let rawPayload = messageObj.message.payload;
-            messageObj.message.payload = sha3.keccak256(rawPayload);
-            message = TypedDataUtils.sign(messageObj);
+            // messageObj.message.payload = sha3.keccak256(rawPayload);
+            // same result:
+            messageObj.message.payload = ethers.utils.id(rawPayload).substr(2);
+
+            // message = TypedDataUtils.sign(messageObj);
+            // same result:
+            let types = messageObj.types;
+            delete types.EIP712Domain;
+            messageAsPrefixedHexString = _TypedDataEncoder.hash(messageObj.domain,types,messageObj.message);
+
             messageObj.message.payload = rawPayload;
         } catch (e){
             const m = 'Cant sign data, possibly wrong format. ' + e
@@ -106,7 +111,7 @@ export class SignatureUtility {
         }
 
         try {
-            pubKey = recoverPublicKey(message, signature);
+            pubKey = recoverPublicKey(hexStringToUint8(messageAsPrefixedHexString.substr(2)), signature);
         } catch (e){
             const m = 'Cant recoverPublicKey. ' + e;
             throw new Error(m);
@@ -188,6 +193,8 @@ export class SignatureUtility {
             // const populated = await _TypedDataEncoder.resolveNames(domainData, dataTypes, userDataValues, (name: string) => {
             //     return window.ethereum.resolveName(name);
             // });
+            // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+            // console.log(domainData, dataTypes, userDataValues, populated);
             //
             // let typedMsg = _TypedDataEncoder.getPayload(populated.domain, dataTypes, populated.value);
             // let msgParams = JSON.stringify(typedMsg);

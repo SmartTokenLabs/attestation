@@ -1,7 +1,5 @@
 import {KeyPair} from "./KeyPair";
 import {AttestationCrypto} from "./AttestationCrypto";
-import {Asn1Der} from "./DerUtility";
-import {uint8tohex} from "./utils";
 import {Attestation} from "./Attestation";
 import {Validateable} from "./Validateable";
 

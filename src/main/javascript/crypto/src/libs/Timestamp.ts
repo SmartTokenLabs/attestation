@@ -7,6 +7,10 @@ export class Timestamp {
     public ALLOWED_ROUNDING: number = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
     static ALLOWED_ROUNDING: number = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
 
+    static UNLIMITED = 253402297199000;
+    static DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 365; // 1 year
+    static DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
+
     private time: number;
     private validity: number = 0;
 
@@ -70,6 +74,7 @@ export class Timestamp {
         }
         // If the token is valid for too long
         if ((expirationTimeInMs - this.time) > (this.validity + this.ALLOWED_ROUNDING)) {
+            console.log(expirationTimeInMs + "\n" + this.time + "\n" + this.validity + "\n" + this.ALLOWED_ROUNDING + "\n" + (expirationTimeInMs - this.time)  + "\n" + (this.validity + this.ALLOWED_ROUNDING) + "\n" );
             return false;
         }
         return true;

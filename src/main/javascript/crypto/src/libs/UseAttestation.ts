@@ -7,7 +7,7 @@ import {SignedIdentityAttestation} from "./SignedIdentityAttestation";
 import {ASNEncodable} from "./ASNEncodable";
 import {UseAttestation as UseAttestationASN} from "../asn1/shemas/UseAttestation";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {uint8toBuffer, uint8tohex} from "./utils";
+import {uint8toBuffer} from "./utils";
 import {Asn1Der} from "./DerUtility";
 
 export class UseAttestation implements ASNEncodable, Verifiable, Validateable {

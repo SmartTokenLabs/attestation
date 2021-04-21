@@ -2,7 +2,6 @@ import {AsnParser} from "@peculiar/asn1-schema";
 import {MyAttestation} from "../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
 import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
-import {SignatureUtility} from "./SignatureUtility";
 import {Attestation} from "./Attestation";
 import {Verifiable} from "./Verifiable";
 import {Validateable} from "./Validateable";

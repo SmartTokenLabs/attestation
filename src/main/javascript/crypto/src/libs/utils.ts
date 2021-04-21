@@ -10,6 +10,9 @@ export function stringToHex(str: string) {
 }
 
 export function hexStringToArray(str: string = '') {
+    if (str.substr(0,2).toLowerCase() === "0x") {
+        str = str.substr(2);
+    }
     let arr = [];
     let strArr = [...str];
     if (strArr.length % 2) strArr.unshift('0');

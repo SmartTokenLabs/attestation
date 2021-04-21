@@ -36,8 +36,6 @@ export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
             identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
             me.type = identity.type;
             me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(identity.sessionKey);
-            // console.log(identity.sessionKey);
-            // console.log(uint8tohex(new Uint8Array(identity.sessionKey.algorithm)));
         } catch (e){
             throw new Error('Cant parse AttestationRequest Identity');
         }

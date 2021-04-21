@@ -36,26 +36,22 @@ class TicketClass {
 
  */
 
-export class Ticket implements Attestable {
-
-    // private mail: string;
-    // private secret: bigint;
-    // private ticketClass: TicketClass;
+export class Ticket extends AttestableObject implements Attestable {
 
     private ticketId: bigint;
     private ticketClass: number;
     private devconId: string;
-    private algorithm: string;
     private magicLinkURLPrefix:string = "https://ticket.devcon.org/";
 
     private signature: string;
-    private commitment: Uint8Array;
+    // private commitment: Uint8Array;
 
     private keys: KeyPair;
-    private encoded: string;
+    // protected encoded: string;
 
 
     constructor() {
+        super();
     }
 
     fromData(devconId: string, ticketId: bigint, ticketClass:number, keys: KeyPair){

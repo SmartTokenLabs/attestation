@@ -1,5 +1,3 @@
-import {KeyPair} from "./KeyPair";
-
 export class AttestableObject {
     protected encoded: string;
     protected commitment: Uint8Array;
@@ -12,5 +10,4 @@ export class AttestableObject {
     public getCommitment(): Uint8Array {
         return this.commitment;
     }
-    public fromBytes(bytes: Uint8Array, issuerKey: KeyPair) {}
 }

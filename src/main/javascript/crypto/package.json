@@ -36,7 +36,6 @@
     "asn1js": "^2.0.26",
     "crypto": "^1.0.1",
     "elliptic": "^6.5.3",
-    "eth-sig-util": "^3.0.1",
     "ethers": "^5.0.31",
     "js-sha3": "^0.8.0",
     "jsonwebtoken": "^8.5.1",

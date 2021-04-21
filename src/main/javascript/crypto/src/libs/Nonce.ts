@@ -4,7 +4,6 @@ import {
     stringToArray,
     uint8merge, uint8ToBn, uint8tohex, uint8toString
 } from "./utils";
-import {AttestationCrypto} from "./AttestationCrypto";
 import {SignatureUtility} from "./SignatureUtility";
 import {ValidationTools} from "./ValidationTools";
 import {Timestamp} from "./Timestamp";
@@ -33,7 +32,8 @@ export class Nonce {
             throw new Error("Address is not valid");
         }
 
-        senderAddress = '0x'+senderAddress.substr(2,40).toUpperCase();
+        // senderAddress = '0x'+senderAddress.substr(2,40).toUpperCase();
+        senderAddress = senderAddress.toUpperCase();
 
         if (!timestampInMs) {
             timestampInMs = Date.now();
@@ -80,20 +80,11 @@ export class Nonce {
 
         let nonceStamp = new Timestamp(nonceTimeStamp);
         nonceStamp.setValidity(maxTime - minTime);
-        let res = nonceStamp.validateAgainstExpiration(maxTime);
-        if (!res) {
-            let now = Date.now();
-            console.log('timestamp = ' + nonceTimeStamp);
-            console.log('minTime = ' + minTime);
-            console.log('maxTime = ' + maxTime);
-        }
-        return res;
-
-
+        return nonceStamp.validateAgainstExpiration(maxTime);
     }
 
     static validateAddress(nonce: Uint8Array, address: string):boolean {
-        if (address.toLowerCase() === uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop)).toLowerCase()) return true;
+        if (address.toUpperCase() === uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop)).toUpperCase()) return true;
         return false;
     }
 
