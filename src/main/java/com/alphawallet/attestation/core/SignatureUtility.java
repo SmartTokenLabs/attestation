@@ -44,6 +44,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
+import org.web3j.utils.Numeric;
 
 public class SignatureUtility {
     public static final String ECDSA_CURVE_NAME = "secp256k1";
@@ -294,10 +295,18 @@ public class SignatureUtility {
         return new BigInteger[] {r, normalizedS, v};
     }
 
-    static byte[] convertToPersonalEthMessage(byte[] msgToSign) {
-        String hexMsg = "0x" + Hex.toHexString(msgToSign);
-        String ethereumMsg = personalMessagePrefix + hexMsg.length() + hexMsg;
-        return ethereumMsg.getBytes(StandardCharsets.UTF_8);
+    static final String MESSAGE_PREFIX = "\u0019Ethereum Signed Message:\n";
+    static byte[] getEthereumMessagePrefix(int messageLength) {
+        return MESSAGE_PREFIX.concat(String.valueOf(messageLength)).getBytes();
+    }
+
+    //code copied from Web3j:
+    public static byte[] convertToPersonalEthMessage(byte[] msgToSign) {
+        byte[] prefix = getEthereumMessagePrefix(msgToSign.length);
+        byte[] result = new byte[prefix.length + msgToSign.length];
+        System.arraycopy(prefix, 0, result, 0, prefix.length);
+        System.arraycopy(msgToSign, 0, result, prefix.length, msgToSign.length);
+        return result;
     }
 
     private static byte[] normalizeAndEncodeEthereumSignature(BigInteger[] signature, int chainID) {
@@ -454,5 +463,32 @@ public class SignatureUtility {
             return params.getN().subtract(s);
         }
         return s;
+    }
+
+    public static AsymmetricKeyParameter rawPublicKeyToKeyParam(BigInteger publicKey) {
+
+        //Required structure to convert to SPKI is this:
+
+        //30 56
+        //  30 10
+        //    06 07 2A8648CE3D0201  // ...  .2.1
+        //    06 05 2B8104000A      // ?
+        //  03 42 00047E7DBFDB22333369FA19BC00865DB1FA2FE36F50819E2661E358D6F3E106544A...  <-- raw public key
+
+        // How to generate?
+
+        AsymmetricKeyParameter keyParam = null;
+        try {
+            //AsymmetricKeyParameter pk = PublicKeyFactory.createKey(publicKey.toByteArray());
+            String keyHex = "3056301006072a8648ce3d020106052b8104000a03420004" + Numeric.toHexStringNoPrefix(publicKey);
+            byte[] spkiBytes = Numeric.hexStringToByteArray(keyHex);
+            keyParam = SignatureUtility.restoreKeyFromSPKI(spkiBytes);
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
+        return keyParam;
     }
 }

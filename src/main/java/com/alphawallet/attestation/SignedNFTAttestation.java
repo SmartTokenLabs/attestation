@@ -18,8 +18,20 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
 
     public SignedNFTAttestation(NFTAttestation att, AsymmetricCipherKeyPair subjectSigningKey) {
         this.att = att;
-        this.signature = SignatureUtility.signWithEthereum(att.getDerEncoding(), subjectSigningKey.getPrivate());
+        this.signature = SignatureUtility.signPersonalMsgWithEthereum(att.getDerEncoding(), subjectSigningKey.getPrivate());
         this.attestationVerificationKey = subjectSigningKey.getPublic();
+        if (!verify()) {
+            throw new IllegalArgumentException("The signature is not valid");
+        }
+    }
+
+    /**
+     * Constructor used for when we supply the signature separately
+     */
+    public SignedNFTAttestation(NFTAttestation att, AsymmetricKeyParameter subjectPublicKey, byte[] signature) {
+        this.att = att;
+        this.signature = signature;
+        this.attestationVerificationKey = subjectPublicKey;
         if (!verify()) {
             throw new IllegalArgumentException("The signature is not valid");
         }
@@ -63,6 +75,6 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
 
     @Override
     public boolean verify() {
-        return SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
+        return SignatureUtility.verifyPersonalEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
     }
 }
