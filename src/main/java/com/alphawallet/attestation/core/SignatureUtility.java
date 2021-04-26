@@ -416,6 +416,11 @@ public class SignatureUtility {
         }
     }
 
+    public static AsymmetricKeyParameter recoverEthPublicKeyFromPersonalSignature(byte[] message, byte[] signature) {
+        byte[] preHash = convertToPersonalEthMessage(message);
+        return recoverEthPublicKeyFromSignature(preHash, signature);
+    }
+
     public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
@@ -463,32 +468,5 @@ public class SignatureUtility {
             return params.getN().subtract(s);
         }
         return s;
-    }
-
-    public static AsymmetricKeyParameter rawPublicKeyToKeyParam(BigInteger publicKey) {
-
-        //Required structure to convert to SPKI is this:
-
-        //30 56
-        //  30 10
-        //    06 07 2A8648CE3D0201  // ...  .2.1
-        //    06 05 2B8104000A      // ?
-        //  03 42 00047E7DBFDB22333369FA19BC00865DB1FA2FE36F50819E2661E358D6F3E106544A...  <-- raw public key
-
-        // How to generate?
-
-        AsymmetricKeyParameter keyParam = null;
-        try {
-            //AsymmetricKeyParameter pk = PublicKeyFactory.createKey(publicKey.toByteArray());
-            String keyHex = "3056301006072a8648ce3d020106052b8104000a03420004" + Numeric.toHexStringNoPrefix(publicKey);
-            byte[] spkiBytes = Numeric.hexStringToByteArray(keyHex);
-            keyParam = SignatureUtility.restoreKeyFromSPKI(spkiBytes);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-
-        return keyParam;
     }
 }
