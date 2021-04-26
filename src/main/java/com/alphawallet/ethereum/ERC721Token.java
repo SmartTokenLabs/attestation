@@ -1,10 +1,10 @@
 package com.alphawallet.ethereum;
 
-import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.core.ASNEncodable;
-import com.alphawallet.token.tools.Numeric;
-import org.bouncycastle.asn1.*;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERSequence;
+import org.web3j.utils.Numeric;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -36,7 +36,7 @@ public class ERC721Token implements ASNEncodable {
     {
         ASN1EncodableVector data = new ASN1EncodableVector();
         data.add(new DEROctetString(Numeric.hexStringToByteArray(address)));
-        data.add(new ASN1Integer(tokenId));
+        data.add(new DEROctetString(tokenId.toByteArray()));
         return data;
     }
 
