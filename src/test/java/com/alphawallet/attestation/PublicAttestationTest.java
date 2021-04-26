@@ -1,16 +1,15 @@
 package com.alphawallet.attestation;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.ethereum.ERC721Token;
+import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.security.SecureRandom;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PublicAttestationTest {
     private static AsymmetricCipherKeyPair subjectKeys;
@@ -73,8 +72,7 @@ public class PublicAttestationTest {
         assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
         byte[] signedEncoded = signed.getDerEncoding();
 
-        //Fails?
-        //SignedAttestation newSigned = new SignedAttestation(signedEncoded, issuerKeys.getPublic());
-        //assertArrayEquals(signed.getDerEncoding(), newSigned.getDerEncoding());
+        SignedAttestation newSigned = new SignedAttestation(signedEncoded, issuerKeys.getPublic());
+        assertArrayEquals(signed.getDerEncoding(), newSigned.getDerEncoding());
     }
 }
