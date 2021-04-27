@@ -1,8 +1,8 @@
-# Attestations Facilitating Cheques (redeemable crypto-assets) on Blockchain
+# Identity Attestations for Web Usage
 
 ## Outline
 
-This document outlines a way of using attestations on an arbitrary user-unique identifier to facilitate sending and redeeming cheques over a blockchain. Specifically, this document describes how to do this with Ethereum using the minimal proof-of-concept demo [release jar file](https://github.com/TokenScript/attestation/releases/).
+This document outlines a way of using attestations on an arbitrary user-unique identifier, linked to a public Ethereum address in order to facilitate sending and redeeming cheques over a blockchain, while keeping the identifier hidden. Specifically, this document describes how to do this with Ethereum using the minimal proof-of-concept demo [release jar file](https://github.com/TokenScript/attestation/releases/).
 
 The document will first describe the overall intuition of the protocol and its security, followed by a minimal demonstration flow using demo jar file.
 
@@ -42,11 +42,11 @@ Because of the randomness used both in the riddle and the attestation, the ident
 However, it will be possible for Alice to see that Bob receives cheques from other parties in the future.
 The attestation can be reused in the future and anyone sending a cheque to Bob *does not* need to know anything about Bob's attestation when they construct the cheque. The only thing they need is his identifier.
 
-The protocol is secure under any composition of senders (Alices) and receivers (Bobs) based on a one-more discrete logarithm-like assumption.
+The protocol is secure under the discrete log problem over the BN256 curve.
 
 ## Using demo jar file
 
-The demo jar file contains all methods needed to run a full demo flow.
+The demo jar file contains all methods needed to run a full demo flow. It also contains methods for facilitating attestation authorization or authentication based on EIP712; see [this description](cli-attestation-demo.md) for details about that flow.
 
 The general syntax for running a command with demo jar file is `java -jar attestation-all.jar <name-of-command>` where `name-of-command` is one of the following: `keys, create-cheque, request-attest, construct-attest, receive-cheque`. 
 We discuss these commands below.

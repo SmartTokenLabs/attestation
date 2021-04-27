@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECCurve.Fp;
@@ -59,6 +60,13 @@ public class AttestationCrypto {
     KECCAK.reset();
     KECCAK.update(toHash);
     return KECCAK.digest();
+  }
+
+  public static byte[] hashWithSHA256(byte[] toHash) {
+    MessageDigest sha256 = new SHA256.Digest();
+    sha256.reset();
+    sha256.update(toHash);
+    return sha256.digest();
   }
 
   /**
@@ -177,7 +185,7 @@ public class AttestationCrypto {
    * @param pok The proof to verify
    * @return True if the proof is OK and false otherwise
    */
-  public static boolean verifyAttestationRequestProof(FullProofOfExponent pok)  {
+  public static boolean verifyFullProof(FullProofOfExponent pok)  {
     BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getNonce());
     return verifyPok(pok, c);
   }

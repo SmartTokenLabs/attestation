@@ -5,6 +5,7 @@ import static org.web3j.protocol.core.methods.request.Transaction.createEthCallT
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.SignedAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -15,12 +16,18 @@ import java.util.concurrent.TimeUnit;
 
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721TokenEth;
+
 import okhttp3.OkHttpClient;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.*;
 import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Bool;
+import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthCall;
@@ -45,7 +52,7 @@ public class SmartContract {
     return callFunction(function);
   }
 
-  public List<Address> getAttestationAddresses(SignedAttestation signedAttestation)
+  public List<Address> getAttestationAddresses(SignedIdentityAttestation signedAttestation)
   {
     Function function = decodeAttestation(signedAttestation.getDerEncoding());
     return callAddrFunction(function);

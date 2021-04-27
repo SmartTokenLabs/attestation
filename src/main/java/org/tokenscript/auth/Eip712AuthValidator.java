@@ -5,9 +5,11 @@ import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
-import org.tokenscript.eip712.FullEip712InternalData;
+import com.alphawallet.attestation.eip712.Nonce;
+import com.alphawallet.attestation.eip712.Timestamp;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Validator;
+import org.tokenscript.eip712.FullEip712InternalData;
 
 /**
  * Class for validating EIP712 tokens containing a useDevconTicket object.
@@ -16,13 +18,15 @@ import org.tokenscript.eip712.Eip712Validator;
 public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
   private final AsymmetricKeyParameter attestorPublicKey;
   private final AttestableObjectDecoder<T> decoder;
+  private final long acceptableTimeLimit;
 
   public Eip712AuthValidator(AttestableObjectDecoder<T> decoder, AuthenticatorEncoder authenticator, AsymmetricKeyParameter attestorPublicKey, String domain) {
-    this(decoder, authenticator, attestorPublicKey, domain, DEFAULT_TIME_LIMIT_MS);
+    this(decoder, authenticator, attestorPublicKey, domain, Nonce.DEFAULT_NONCE_TIME_LIMIT_MS);
   }
 
   public Eip712AuthValidator(AttestableObjectDecoder<T> decoder, AuthenticatorEncoder authenticator, AsymmetricKeyParameter attestorPublicKey, String domain, long acceptableTimeLimit) {
-    super(domain, acceptableTimeLimit, authenticator);
+    super(domain, authenticator);
+    this.acceptableTimeLimit = acceptableTimeLimit;
     this.attestorPublicKey = attestorPublicKey;
     this.decoder = decoder;
   }
@@ -50,18 +54,26 @@ public class Eip712AuthValidator<T extends Attestable> extends Eip712Validator {
   }
 
   private boolean validateAuthentication(FullEip712InternalData authentication) {
-    boolean accept = true;
-    accept &= authentication.getDescription().equals(AuthenticatorEncoder.USAGE_VALUE);
-    accept &= verifyTimeStamp(authentication.getTimestamp());
-    return accept;
+    if (!authentication.getDescription().equals(encoder.getUsageValue())){
+      return false;
+    }
+    Timestamp timestamp = new Timestamp(authentication.getTimestamp());
+    timestamp.setValidity(acceptableTimeLimit);
+    if (!timestamp.validateTimestamp()) {
+      return false;
+    }
+    return true;
   }
 
   private boolean validateAttestedObject(AttestedObject<T> attestedObject) {
-    boolean accept = true;
     // Validate useAttestableObject
-    accept &= attestedObject.verify();
-    accept &= attestedObject.checkValidity();
-    return accept;
+    if (!attestedObject.verify()) {
+      return false;
+    }
+    if (!attestedObject.checkValidity()) {
+      return false;
+    }
+    return true;
   }
 
 }

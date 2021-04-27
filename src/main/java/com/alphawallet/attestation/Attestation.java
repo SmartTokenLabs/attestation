@@ -135,12 +135,12 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     this.serialNumber = new ASN1Integer(serialNumber);
   }
 
-  public String getSigningAlgorithm() {
-    return this.signingAlgorithm.getAlgorithm().getId();
+  public AlgorithmIdentifier getSigningAlgorithm() {
+    return this.signingAlgorithm;
   }
 
   /**
-   * The signingAlgorithm is to be usd in the signature section of the attestation
+   * The signingAlgorithm is to be used in the signature section of the attestation
    * as well as appearing in the TBS (To be signed) data
    */
   public void setSigningAlgorithm(AlgorithmIdentifier signingAlgorithm) {

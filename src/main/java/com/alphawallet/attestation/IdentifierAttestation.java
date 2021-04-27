@@ -16,6 +16,8 @@ import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERIA5String;
+import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x500.RDN;
@@ -35,6 +37,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public static final int NFT_VERSION = 19;
   // SEE RFC 2079
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
+  // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
+  public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
+
 
   /**
    * Constructs a new identifier attestation based on a secret, with unlimited validity by default
@@ -45,7 +50,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
-    super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -65,7 +70,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
-    super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -154,10 +159,35 @@ public class IdentifierAttestation extends Attestation implements Validateable {
           return false;
         }
       } catch (Exception e) {
+
+    /*if (getSubject() == null || !getSubject().startsWith("CN=") || !ValidationTools.isAddress(getSubject().substring(3))) {
+      System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
+      return false;
+    }
+    // Verify that the subject public key matches the subject common name
+    try {
+      AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory
+          .createKey(getSubjectPublicKeyInfo());
+      String parsedSubject = "CN=" + SignatureUtility.addressFromKey(parsedSubjectKey);
+      if (!parsedSubject.equals(getSubject())) {
+        System.err.println("The subject public key does not match the Ethereum address attested to");*/
+
         return false;
       }
     }
     return true;
+  }
+
+  public byte[] getCommitment() {
+    // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
+    ASN1Sequence extensions = DERSequence.getInstance(getExtensions().getObjectAt(0));
+    // Index in the second DER sequence is 2 since the third object in an extension is the actual value
+    return ASN1OctetString.getInstance(extensions.getObjectAt(2)).getOctets();
+  }
+
+  public String getAddress() {
+    // Remove the "CN=" prefix
+    return getSubject().substring(3);
   }
 
   /**
@@ -185,11 +215,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   @Override
   public void setVersion(int version) {
-    throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
-  }
-
-  @Override
-  public void setSigningAlgorithm(AlgorithmIdentifier oid) {
     throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
   }
 

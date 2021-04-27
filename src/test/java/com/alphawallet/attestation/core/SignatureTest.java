@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -20,7 +19,6 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
-import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,10 +41,7 @@ public class SignatureTest {
   @Test
   public void testKeyConversion() throws Exception {
     byte[] message = "test".getBytes(StandardCharsets.UTF_8);
-    MessageDigest sha256 = new SHA256.Digest();
-    sha256.reset();
-    sha256.update(message);
-    byte[] digest = sha256.digest();
+    byte[] digest = AttestationCrypto.hashWithSHA256(message);
     byte[] bcSignature = SignatureUtility.signHashedRandomized(digest, largeKeys.getPrivate());
 
     ECPrivateKey javaPriv = (ECPrivateKey) SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(largeKeys.getPrivate());
@@ -75,8 +70,8 @@ public class SignatureTest {
     message[0] = 42;
     message[514] = 13;
 
-    byte[] signature = SignatureUtility.signDeterministic(message, largeKeys.getPrivate());
-    assertTrue(SignatureUtility.verify(message, signature, largeKeys.getPublic()));
+    byte[] signature = SignatureUtility.signDeterministicSHA256(message, largeKeys.getPrivate());
+    assertTrue(SignatureUtility.verifySHA256(message, signature, largeKeys.getPublic()));
   }
 
   @Test
@@ -119,7 +114,7 @@ public class SignatureTest {
       message[514] = (byte) i;
 
       BigInteger[] ourSig = SignatureUtility
-          .computeInternalSignature(message, (ECPrivateKeyParameters) userKeys.getPrivate());
+          .computeInternalSignature(AttestationCrypto.hashWithKeccak(message), (ECPrivateKeyParameters) userKeys.getPrivate());
       BigInteger[] refSig = signDeterministic(message, userKeys.getPrivate());
       // We need to adjust the s part of the signature if it happens to be
       // less than N/2+1 since these are the only valid Ethereum signatures.

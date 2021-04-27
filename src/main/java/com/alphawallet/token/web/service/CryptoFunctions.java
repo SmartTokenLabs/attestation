@@ -1,14 +1,17 @@
 package com.alphawallet.token.web.service;
 
-import com.alphawallet.token.entity.CryptoFunctionsInterface;
-import com.alphawallet.token.entity.ProviderTypedData;
-import com.alphawallet.token.web.Ethereum.web3j.StructuredDataEncoder;
 import java.math.BigInteger;
 import java.security.SignatureException;
 import java.util.Arrays;
+
+import com.alphawallet.token.entity.CryptoFunctionsInterface;
+import com.alphawallet.token.entity.ProviderTypedData;
+import com.alphawallet.token.web.Ethereum.web3j.StructuredDataEncoder;
+
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
@@ -72,7 +75,6 @@ public class CryptoFunctions implements CryptoFunctionsInterface
         {
             StructuredDataEncoder eip721Object = new StructuredDataEncoder(messageData);
 
-            Object d = eip721Object.parseJSONMessage(messageData);
             HashMap<String, Object> messageMap = (HashMap<String, Object>) eip721Object.jsonMessageObject.getMessage();
             StringBuilder sb = new StringBuilder();
             for (String entry : messageMap.keySet())
@@ -116,9 +118,9 @@ public class CryptoFunctions implements CryptoFunctionsInterface
         catch (Exception e)
         {
             e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
-        return new byte[0];
     }
 
     public static Sign.SignatureData sigFromByteArray(byte[] sig)

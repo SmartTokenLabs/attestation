@@ -32,7 +32,7 @@ public class AttestationRequestTest {
     BigInteger secret = new BigInteger("42");
     FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(type, pok);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(request.getPok()));
+    assertTrue(AttestationCrypto.verifyFullProof(request.getPok()));
     assertTrue(request.verify());
   }
 
@@ -43,7 +43,7 @@ public class AttestationRequestTest {
     FullProofOfExponent pok = crypto.computeAttestationProof(secret);
     AttestationRequest request = new AttestationRequest(type, pok);
     AttestationRequest newRequest = new AttestationRequest(request.getDerEncoding());
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(newRequest.getPok()));
+    assertTrue(AttestationCrypto.verifyFullProof(newRequest.getPok()));
     assertTrue(newRequest.verify());
     assertArrayEquals(request.getPok().getDerEncoding(), newRequest.getPok().getDerEncoding());
     assertArrayEquals(request.getDerEncoding(), newRequest.getDerEncoding());

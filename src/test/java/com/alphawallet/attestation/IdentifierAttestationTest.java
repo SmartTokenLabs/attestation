@@ -15,7 +15,6 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
@@ -82,16 +81,6 @@ public class IdentifierAttestationTest {
     field.set(initial, new X500Name("CN=John Doe"));
     // Common Names are allowed
     assertTrue(initial.checkValidity());
-  }
-
-  @Test
-  public void testInvalidSignature() throws Exception {
-    IdentifierAttestation initial = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.TEN, mail);
-    Field field = initial.getClass().getSuperclass().getDeclaredField("signingAlgorithm");
-    field.setAccessible(true);
-    // Change the signature identifier
-    field.set(initial, new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.0.2.313")));
-    assertFalse(initial.checkValidity());
   }
 
   @Test

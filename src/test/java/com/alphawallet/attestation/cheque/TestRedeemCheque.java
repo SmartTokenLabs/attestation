@@ -10,8 +10,9 @@ import com.alphawallet.attestation.Attestation;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.SignedAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.core.SignatureUtility;
@@ -56,8 +57,8 @@ public class TestRedeemCheque {
   public void makeAttestedCheque() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
-    SignedAttestation signed = new SignedAttestation(att, issuerKeys);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret, crypto);
     assertTrue(attestedCheque.verify());
@@ -99,7 +100,7 @@ public class TestRedeemCheque {
         issuerKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
-    assertTrue(AttestationCrypto.verifyEqualityProof(newRedeem.getAtt().getCommitment(), newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
+    assertTrue(AttestationCrypto.verifyEqualityProof(newRedeem.getAtt().getUnsignedAttestation().getCommitment(), newRedeem.getAttestableObject().getCommitment(), newRedeem.getPok()));
 
     assertArrayEquals(
         attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
@@ -168,7 +169,7 @@ public class TestRedeemCheque {
 
   @Test
   public void testNegativeDifferentKeys() throws Exception {
-    SignedAttestation att = attestedCheque.getAtt();
+    SignedIdentityAttestation att = attestedCheque.getAtt();
     Field field = att.getClass().getDeclaredField("attestationVerificationKey");
     field.setAccessible(true);
     // Change public key
@@ -188,7 +189,7 @@ public class TestRedeemCheque {
     field.set(attestedCheque, newPok);
     // Validation should still pass
     assertTrue(attestedCheque.checkValidity());
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(newPok));
+    assertTrue(AttestationCrypto.verifyFullProof(newPok));
     // Verification should fail since the proof is not for the same identity as the attestation and cheque
     assertFalse(attestedCheque.verify());
   }
@@ -213,8 +214,8 @@ public class TestRedeemCheque {
   public void testNegativeConstruction() {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
-    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "something@google.com");
-    SignedAttestation signed = new SignedAttestation(att, issuerKeys);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "something@google.com");
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     // Wrong mail
     Cheque cheque = new Cheque("something@else.com", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
@@ -230,8 +231,8 @@ public class TestRedeemCheque {
     BigInteger subjectSecret = new BigInteger("42424242");
     BigInteger senderSecret = new BigInteger("112112112");
     String mail = "something@google.com";
-    Attestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, mail);
-    SignedAttestation signed = new SignedAttestation(att, issuerKeys);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, mail);
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
     Cheque cheque = new Cheque(mail, AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
       // Wrong subject secret

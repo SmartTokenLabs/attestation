@@ -44,7 +44,7 @@ import org.web3j.utils.Numeric;
  */
 
 public class StructuredDataEncoder {
-    public final com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message jsonMessageObject;
+    public final StructuredData.EIP712Message jsonMessageObject;
 
     // Matches array declarations like arr[5][10], arr[][], arr[][34][], etc.
     // Doesn't match array declarations where there is a 0 in any dimension.
@@ -76,7 +76,7 @@ public class StructuredDataEncoder {
 
     public Set<String> getDependencies(String primaryType) {
         // Find all the dependencies of a type
-        HashMap<String, List<com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry>> types = jsonMessageObject.getTypes();
+        HashMap<String, List<StructuredData.Entry>> types = jsonMessageObject.getTypes();
         Set<String> deps = new HashSet<>();
 
         if (!types.containsKey(primaryType)) {
@@ -91,7 +91,7 @@ public class StructuredDataEncoder {
             remainingTypes.remove(remainingTypes.size() - 1);
             deps.add(structName);
 
-            for (com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry entry : types.get(primaryType)) {
+            for (StructuredData.Entry entry : types.get(primaryType)) {
                 if (!types.containsKey(entry.getType())) {
                     // Don't expand on non-user defined types
                 } else if (deps.contains(entry.getType())) {
@@ -107,20 +107,14 @@ public class StructuredDataEncoder {
     }
 
     public String encodeStruct(String structName) {
-        HashMap<String, List<com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry>> types = jsonMessageObject.getTypes();
-
+        HashMap<String, List<StructuredData.Entry>> types = jsonMessageObject.getTypes();
         StringBuilder structRepresentation = new StringBuilder(structName + "(");
-        for (com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry entry : types.get(structName)) {
+        for (StructuredData.Entry entry : types.get(structName)) {
             structRepresentation.append(String.format("%s %s,", entry.getType(), entry.getName()));
         }
-
-        //if (structRepresentation.lastIndexOf("(") != (structRepresentation.length()-1))
-        if (types.get(structName).size() > 0)
-        {
-            structRepresentation =
-                    new StringBuilder(
-                            structRepresentation.substring(0, structRepresentation.length() - 1));
-        }
+        structRepresentation =
+            new StringBuilder(
+                structRepresentation.substring(0, structRepresentation.length() - 1));
         structRepresentation.append(")");
 
         return structRepresentation.toString();
@@ -152,8 +146,7 @@ public class StructuredDataEncoder {
         // If any dimension is empty, then it's value is set to -1.
         Matcher arrayTypeMatcher = arrayTypePattern.matcher(declaration);
         arrayTypeMatcher.find();
-        String dimensionsString = arrayTypeMatcher.group(1);
-        Matcher dimensionTypeMatcher = arrayDimensionPattern.matcher(dimensionsString);
+        Matcher dimensionTypeMatcher = arrayDimensionPattern.matcher(declaration);
         List<Integer> dimensions = new ArrayList<>();
         while (dimensionTypeMatcher.find()) {
             String currentDimension = dimensionTypeMatcher.group(1);
@@ -162,10 +155,6 @@ public class StructuredDataEncoder {
             } else {
                 dimensions.add(Integer.parseInt(currentDimension));
             }
-        }
-
-        if (dimensions.size() == 0) {
-            dimensions.add(Integer.parseInt("-1"));
         }
 
         return dimensions;
@@ -192,7 +181,7 @@ public class StructuredDataEncoder {
         List<Pair> depthsAndDimensions = getDepthsAndDimensions(data, 0);
         // groupedByDepth has key as depth and value as List(pair(Depth, Dimension))
         Map<Object, List<Pair>> groupedByDepth =
-                depthsAndDimensions.stream().collect(Collectors.groupingBy(Pair::getFirst));
+            depthsAndDimensions.stream().collect(Collectors.groupingBy(Pair::getFirst));
 
         // depthDimensionsMap is aimed to have key as depth and value as List(Dimension)
         Map<Integer, List<Integer>> depthDimensionsMap = new HashMap<>();
@@ -209,9 +198,9 @@ public class StructuredDataEncoder {
             Set<Integer> setOfDimensionsInParticularDepth = new TreeSet<>(entry.getValue());
             if (setOfDimensionsInParticularDepth.size() != 1) {
                 throw new RuntimeException(
-                        String.format(
-                                "Depth %d of array data has more than one dimensions",
-                                entry.getKey()));
+                    String.format(
+                        "Depth %d of array data has more than one dimensions",
+                        entry.getKey()));
             }
             dimensions.add(setOfDimensionsInParticularDepth.stream().findFirst().get());
         }
@@ -239,22 +228,19 @@ public class StructuredDataEncoder {
     private byte[] convertToEncodedItem(String baseType, Object data) {
         byte[] hashBytes;
         try {
-            if (baseType.toLowerCase().startsWith("uint") || baseType.toLowerCase().startsWith("int")) {
+            if (baseType.toLowerCase().startsWith("uint")
+                || baseType.toLowerCase().startsWith("int")) {
                 hashBytes = convertToBigInt(data).toByteArray();
-            }
-            else if (baseType.equals("string")) {
+            } else if (baseType.equals("string")) {
                 hashBytes = ((String) data).getBytes();
-            }
-            else if (baseType.equals("bytes")) {
+            } else if (baseType.equals("bytes")) {
                 hashBytes = Numeric.hexStringToByteArray((String) data);
-            }
-            else {
+            } else {
                 byte[] b = convertArgToBytes((String) data);
                 BigInteger bi = new BigInteger(1, b);
                 hashBytes = Numeric.toBytesPadded(bi, 32);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             hashBytes = new byte[0];
         }
@@ -262,21 +248,16 @@ public class StructuredDataEncoder {
         return hashBytes;
     }
 
-    private List<Object> getArrayItems(com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry field, Object value)
-    {
-        List<Integer> expectedDimensions =
-                getArrayDimensionsFromDeclaration(field.getType());
+    private List<Object> getArrayItems(StructuredData.Entry field, Object value) {
+        List<Integer> expectedDimensions = getArrayDimensionsFromDeclaration(field.getType());
         // This function will itself give out errors in case
         // that the data is not a proper array
         List<Integer> dataDimensions = getArrayDimensionsFromData(value);
 
         final String format =
-                String.format(
-                        "Array Data %s has dimensions %s, "
-                                + "but expected dimensions are %s",
-                        value.toString(),
-                        dataDimensions.toString(),
-                        expectedDimensions.toString());
+            String.format(
+                "Array Data %s has dimensions %s, " + "but expected dimensions are %s",
+                value.toString(), dataDimensions.toString(), expectedDimensions.toString());
         if (expectedDimensions.size() != dataDimensions.size()) {
             // Ex: Expected a 3d array, but got only a 2d array
             throw new RuntimeException(format);
@@ -296,8 +277,8 @@ public class StructuredDataEncoder {
 
     @SuppressWarnings("unchecked")
     public byte[] encodeData(String primaryType, HashMap<String, Object> data)
-            throws RuntimeException {
-        HashMap<String, List<com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry>> types = jsonMessageObject.getTypes();
+        throws RuntimeException {
+        HashMap<String, List<StructuredData.Entry>> types = jsonMessageObject.getTypes();
 
         List<String> encTypes = new ArrayList<>();
         List<Object> encValues = new ArrayList<>();
@@ -307,7 +288,7 @@ public class StructuredDataEncoder {
         encValues.add(typeHash(primaryType));
 
         // Add field contents
-        for (com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry field : types.get(primaryType)) {
+        for (StructuredData.Entry field : types.get(primaryType)) {
             Object value = data.get(field.getName());
 
             if (value == null) continue;
@@ -322,7 +303,7 @@ public class StructuredDataEncoder {
             } else if (types.containsKey(field.getType())) {
                 // User Defined Type
                 byte[] hashedValue =
-                        sha3(encodeData(field.getType(), (HashMap<String, Object>) value));
+                    sha3(encodeData(field.getType(), (HashMap<String, Object>) value));
                 encTypes.add("bytes32");
                 encValues.add(hashedValue);
             } else if (bytesTypePattern.matcher(field.getType()).find()) {
@@ -336,28 +317,37 @@ public class StructuredDataEncoder {
                 for (Object arrayItem : arrayItems) {
                     byte[] arrayItemEncoding;
                     if (types.containsKey(baseTypeName)) {
-                        arrayItemEncoding = sha3(encodeData(baseTypeName, (HashMap<String, Object>) arrayItem)); //need to hash each user type before adding
-                    }
-                    else {
-                        arrayItemEncoding = convertToEncodedItem(baseTypeName, arrayItem); //add raw item, packed to 32 bytes
+                        arrayItemEncoding =
+                            sha3(
+                                encodeData(
+                                    baseTypeName,
+                                    (HashMap<String, Object>)
+                                        arrayItem)); // need to hash each user type
+                        // before adding
+                    } else {
+                        arrayItemEncoding =
+                            convertToEncodedItem(
+                                baseTypeName,
+                                arrayItem); // add raw item, packed to 32 bytes
                     }
 
                     concatenatedArrayEncodingBuffer.write(
-                            arrayItemEncoding, 0, arrayItemEncoding.length);
+                        arrayItemEncoding, 0, arrayItemEncoding.length);
                 }
 
                 byte[] concatenatedArrayEncodings = concatenatedArrayEncodingBuffer.toByteArray();
                 byte[] hashedValue = sha3(concatenatedArrayEncodings);
                 encTypes.add("bytes32");
                 encValues.add(hashedValue);
-            } else if (field.getType().startsWith("uint")
-                    || field.getType().startsWith("int")) {
+            } else if (field.getType().startsWith("uint") || field.getType().startsWith("int")) {
                 encTypes.add(field.getType());
                 // convert to BigInteger for ABI constructor compatibility
                 try {
                     encValues.add(convertToBigInt(value));
                 } catch (NumberFormatException | NullPointerException e) {
-                    encValues.add(value); // value null or failed to convert, fallback to add string as before
+                    encValues.add(
+                        value); // value null or failed to convert, fallback to add string as
+                    // before
                 }
             } else {
                 encTypes.add(field.getType());
@@ -377,35 +367,36 @@ public class StructuredDataEncoder {
                 try {
                     Class[] parameterTypes = constructor.getParameterTypes();
                     byte[] temp =
-                            Numeric.hexStringToByteArray(
-                                    TypeEncoder.encode(
-                                            typeClazz
-                                                    .getDeclaredConstructor(parameterTypes)
-                                                    .newInstance(encValues.get(i))));
+                        Numeric.hexStringToByteArray(
+                            TypeEncoder.encode(
+                                typeClazz
+                                    .getDeclaredConstructor(parameterTypes)
+                                    .newInstance(encValues.get(i))));
                     baos.write(temp, 0, temp.length);
                     atleastOneConstructorExistsForGivenParametersType = true;
                     break;
                 } catch (IllegalArgumentException
-                        | NoSuchMethodException
-                        | InstantiationException
-                        | IllegalAccessException
-                        | InvocationTargetException ignored) {
+                    | NoSuchMethodException
+                    | InstantiationException
+                    | IllegalAccessException
+                    | InvocationTargetException ignored) {
                 }
             }
 
             if (!atleastOneConstructorExistsForGivenParametersType) {
                 throw new RuntimeException(
-                        String.format(
-                                "Received an invalid argument for which no constructor"
-                                        + " exists for the ABI Class %s",
-                                typeClazz.getSimpleName()));
+                    String.format(
+                        "Received an invalid argument for which no constructor"
+                            + " exists for the ABI Class %s",
+                        typeClazz.getSimpleName()));
             }
         }
 
         return baos.toByteArray();
     }
 
-    private BigInteger convertToBigInt(Object value) throws NumberFormatException, NullPointerException {
+    private BigInteger convertToBigInt(Object value)
+        throws NumberFormatException, NullPointerException {
         if (value.toString().startsWith("0x")) {
             return Numeric.toBigInt(value.toString());
         } else {
@@ -414,7 +405,7 @@ public class StructuredDataEncoder {
     }
 
     public byte[] hashMessage(String primaryType, HashMap<String, Object> data)
-            throws RuntimeException {
+        throws RuntimeException {
         return sha3(encodeData(primaryType, data));
     }
 
@@ -422,50 +413,49 @@ public class StructuredDataEncoder {
     public byte[] hashDomain() throws RuntimeException {
         ObjectMapper oMapper = new ObjectMapper();
         HashMap<String, Object> data =
-                oMapper.convertValue(jsonMessageObject.getDomain(), HashMap.class);
+            oMapper.convertValue(jsonMessageObject.getDomain(), HashMap.class);
 
-        if (data.get("chainId") != null) {
-            data.put("chainId", ((HashMap<String, Object>) data.get("chainId")).get("value"));
-        } else {
+        if (data.get("chainId") == null) {
             data.remove("chainId");
         }
 
-        if (data.get("verifyingContract") != null)
-        {
-            data.put(
-                    "verifyingContract",
-                    ((HashMap<String, Object>) data.get("verifyingContract")).get("value"));
+        if (data.get("verifyingContract") == null) {
+            data.remove("verifyingContract");
+        }
+
+        if (data.get("salt") == null) {
+            data.remove("salt");
         }
         return sha3(encodeData("EIP712Domain", data));
     }
 
-    public void validateStructuredData(com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message jsonMessageObject)
-            throws RuntimeException {
+    public void validateStructuredData(StructuredData.EIP712Message jsonMessageObject)
+        throws RuntimeException {
         for (String structName : jsonMessageObject.getTypes().keySet()) {
-            List<com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry> fields = jsonMessageObject.getTypes().get(structName);
-            for (com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry entry : fields) {
+            List<StructuredData.Entry> fields = jsonMessageObject.getTypes().get(structName);
+            for (StructuredData.Entry entry : fields) {
                 if (!identifierPattern.matcher(entry.getName()).find()) {
                     // raise Error
                     throw new RuntimeException(
-                            String.format(
-                                    "Invalid Identifier %s in %s", entry.getName(), structName));
+                        String.format(
+                            "Invalid Identifier %s in %s", entry.getName(), structName));
                 }
                 if (!typePattern.matcher(entry.getType()).find()) {
                     // raise Error
                     throw new RuntimeException(
-                            String.format("Invalid Type %s in %s", entry.getType(), structName));
+                        String.format("Invalid Type %s in %s", entry.getType(), structName));
                 }
             }
         }
     }
 
-    public com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message parseJSONMessage(String jsonMessageInString)
-            throws IOException, RuntimeException {
+    public StructuredData.EIP712Message parseJSONMessage(String jsonMessageInString)
+        throws IOException, RuntimeException {
         ObjectMapper mapper = new ObjectMapper();
 
         // convert JSON string to EIP712Message object
-        com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message tempJSONMessageObject =
-                mapper.readValue(jsonMessageInString, com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Message.class);
+        StructuredData.EIP712Message tempJSONMessageObject =
+            mapper.readValue(jsonMessageInString, StructuredData.EIP712Message.class);
         validateStructuredData(tempJSONMessageObject);
 
         return tempJSONMessageObject;
@@ -484,47 +474,36 @@ public class StructuredDataEncoder {
         baos.write(domainHash, 0, domainHash.length);
 
         byte[] dataHash =
-                hashMessage(
-                        jsonMessageObject.getPrimaryType(),
-                        (HashMap<String, Object>) jsonMessageObject.getMessage());
+            hashMessage(
+                jsonMessageObject.getPrimaryType(),
+                (HashMap<String, Object>) jsonMessageObject.getMessage());
         baos.write(dataHash, 0, dataHash.length);
 
         return baos.toByteArray();
     }
 
-    public static byte[] convertArgToBytes(String inputValue)
-    {
-        byte[] argBytes = new byte[1];
-        try
-        {
-            String hexValue = inputValue;
-            if (!Numeric.containsHexPrefix(inputValue))
-            {
-                BigInteger value;
-                try
-                {
-                    value = new BigInteger(inputValue);
-                }
-                catch (NumberFormatException e)
-                {
-                    value = new BigInteger(inputValue, 16);
-                }
+    @SuppressWarnings("unchecked")
+    public byte[] hashStructuredData() throws RuntimeException {
+        return sha3(getStructuredData());
+    }
 
-                hexValue = Numeric.toHexStringNoPrefix(value.toByteArray());
-                //fix sign condition
-                if (hexValue.length() > 64 && hexValue.startsWith("00"))
-                {
-                    hexValue = hexValue.substring(2);
-                }
+    private static byte[] convertArgToBytes(String inputValue) throws Exception {
+        String hexValue = inputValue;
+        if (!Numeric.containsHexPrefix(inputValue)) {
+            BigInteger value;
+            try {
+                value = new BigInteger(inputValue);
+            } catch (NumberFormatException e) {
+                value = new BigInteger(inputValue, 16);
             }
 
-            argBytes = Numeric.hexStringToByteArray(hexValue);
-        }
-        catch (Exception e)
-        {
-            //no action
+            hexValue = Numeric.toHexStringNoPrefix(value.toByteArray());
+            // fix sign condition
+            if (hexValue.length() > 64 && hexValue.startsWith("00")) {
+                hexValue = hexValue.substring(2);
+            }
         }
 
-        return argBytes;
+        return Numeric.hexStringToByteArray(hexValue);
     }
 }

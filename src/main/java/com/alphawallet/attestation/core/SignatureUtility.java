@@ -55,10 +55,11 @@ public class SignatureUtility {
         ECDSA_CURVE_PARAMS);
 
     public static final String MAC_ALGO = "HmacSHA256";
-    private static final ASN1ObjectIdentifier OID_SIGNATURE_ALG = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for elliptic curve crypto ecPublicKey
-    public static final AlgorithmIdentifier EC_PUBLIC_KEY_IDENTIFIER = new AlgorithmIdentifier(OID_SIGNATURE_ALG);
-    // See https://tools.ietf.org/html/rfc3279#section-2.3.5
-    private static final AlgorithmIdentifier ECDSA_ALGORITHM_IDENTIFIER = new AlgorithmIdentifier(OID_SIGNATURE_ALG, OID_CURVE_PARAMS);
+    public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(ECDSA_CURVE);
+    public static final ECDomainParameters ECDSAdomain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
+    public static final ASN1ObjectIdentifier OID_ECDSA_PUBLICKEY = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for ECDSA public key
+    public static final AlgorithmIdentifier SECP256K1_DESCRIPTION = new AlgorithmIdentifier(
+        OID_ECDSA_PUBLICKEY, ECDSACurve);
 
     // Special Ethereum personal message Prefix
     private static final String personalMessagePrefix = "\u0019Ethereum Signed Message:\n";
@@ -127,7 +128,7 @@ public class SignatureUtility {
      * @return
      */
     public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
-        return restoreDefaultKey(ECDSA_ALGORITHM_IDENTIFIER, input);
+        return restoreDefaultKey(SECP256K1_DESCRIPTION, input);
     }
 
     /**
@@ -219,21 +220,23 @@ public class SignatureUtility {
         return signWithEthereum(unsigned, 0, signingKey);
     }
 
-    public static byte[] signWithEthereum(byte[] unsigned, int chainID, AsymmetricKeyParameter signingKey) {
-        BigInteger[] signature = computeInternalSignature(unsigned, (ECPrivateKeyParameters) signingKey);
+    public static byte[] signWithEthereum(byte[] unsigned, long chainID, AsymmetricKeyParameter signingKey) {
+        byte[] digest = AttestationCrypto.hashWithKeccak(unsigned);
+        BigInteger[] signature = computeInternalSignature(digest, (ECPrivateKeyParameters) signingKey);
         return normalizeAndEncodeEthereumSignature(signature, chainID);
     }
 
     /**
-     * Constructs a DER encoded, non-malleable deterministic ECDSA signature using Keccak256
-     * That is, n accordance with EIP 2 (the y-coordinate is guaranteed to be <n/2).
+     * Constructs a DER encoded, non-malleable deterministic ECDSA signature using SHA 256
+     * But still in accordance with EIP 2 (the y-coordinate is guaranteed to be <n/2).
      * The deterministic approach used is the one from RFC 6979
      * @param toSign
      * @param key
      * @return
      */
-    public static byte[] signDeterministic(byte[] toSign, AsymmetricKeyParameter key) {
-        BigInteger[] signature = computeInternalSignature(toSign, (ECPrivateKeyParameters) key);
+    public static byte[] signDeterministicSHA256(byte[] toSign, AsymmetricKeyParameter key) {
+        byte[] digest = AttestationCrypto.hashWithSHA256(toSign);
+        BigInteger[] signature = computeInternalSignature(digest, (ECPrivateKeyParameters) key);
         return normalizeAndEncodeDerSignature(signature, ((ECKeyParameters) key).getParameters());
     }
 
@@ -264,13 +267,12 @@ public class SignatureUtility {
     }
 
     /**
-     * Computes a signature as an internal representation.
+     * Computes a signature on data that has already been hashed.
      * Specifically as a BigInteger array containing {r, s, v}, where v is the parity
      * of the y-coordinate of the curve point r is computed from.
      * @return The signature as {r, s, v} where v is the y-parity of R.
      */
-    static BigInteger[] computeInternalSignature(byte[] toSign, ECPrivateKeyParameters key) {
-        byte[] digest = AttestationCrypto.hashWithKeccak(toSign);
+    static BigInteger[] computeInternalSignature(byte[] digest, ECPrivateKeyParameters key) {
         BigInteger z = new BigInteger(1, digest);
 
         HMacDSAKCalculator randomnessProvider = new HMacDSAKCalculator(new KeccakDigest(256));
@@ -309,7 +311,7 @@ public class SignatureUtility {
         return result;
     }
 
-    private static byte[] normalizeAndEncodeEthereumSignature(BigInteger[] signature, int chainID) {
+    private static byte[] normalizeAndEncodeEthereumSignature(BigInteger[] signature, long chainID) {
         byte recoveryVal = computeRecoveryValue(signature[2], chainID);
         byte[] ethereumSignature = new byte[65];
         // This byte array can be up tp 33 bytes since it must contain a sign-bit
@@ -331,7 +333,7 @@ public class SignatureUtility {
      * @param chainID Chain ID, 0, if before EIP155
      * @return 27 or 28 if chain ID = 0, otherwise value > 37
      */
-    private static byte computeRecoveryValue(BigInteger v, int chainID) {
+    private static byte computeRecoveryValue(BigInteger v, long chainID) {
         // Compute parity of y
         byte recoveryValue = v.mod(new BigInteger("2")).byteValueExact();
         // If we are after the fork specified by EIP155 we must also take chain ID into account
@@ -395,8 +397,8 @@ public class SignatureUtility {
         return res;
     }
 
-    public static boolean verify(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
-        byte[] digestBytes = AttestationCrypto.hashWithKeccak(unsigned);
+    public static boolean verifySHA256(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
+        byte[] digestBytes = AttestationCrypto.hashWithSHA256(unsigned);
         return verifyHashed(digestBytes, signature, key);
     }
 

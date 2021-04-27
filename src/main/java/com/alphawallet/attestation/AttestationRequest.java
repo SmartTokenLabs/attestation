@@ -60,7 +60,7 @@ public class AttestationRequest implements ASNEncodable, Verifiable {
 
   @Override
   public boolean verify() {
-    if (!AttestationCrypto.verifyAttestationRequestProof(pok)) {
+    if (!AttestationCrypto.verifyFullProof(pok)) {
       return false;
     }
     return true;
