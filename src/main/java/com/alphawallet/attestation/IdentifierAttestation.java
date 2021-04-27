@@ -1,5 +1,7 @@
 package com.alphawallet.attestation;
 
+import static com.alphawallet.attestation.core.AttestationCrypto.BYTES_IN_DIGEST;
+
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
@@ -14,10 +16,9 @@ import java.util.Locale;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x500.RDN;
@@ -25,6 +26,7 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class IdentifierAttestation extends Attestation implements Validateable {
@@ -39,12 +41,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
   // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
   public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
-
-  public IdentifierAttestation(String subject)
-  {
-    super.setVersion(HIDDEN_IDENTIFIER_VERSION);
-    super.setSubject(subject);
-  }
 
   /**
    * Constructs a new identifier attestation based on a secret, with unlimited validity by default
@@ -154,30 +150,16 @@ public class IdentifierAttestation extends Attestation implements Validateable {
         return false;
       }
     }
-    /*
     if (getVersion() == HIDDEN_IDENTIFIER_VERSION) {
+      // Ensure that there is a commitment as part of the attestation
       try {
-        // Check that the first extension is an octet-string, i.e. a commitment
-        ASN1Sequence firstExtension = ((ASN1Sequence) getExtensions().toArray()[0]);
-        ASN1ObjectIdentifier firstExtensionIdentifier = (ASN1ObjectIdentifier) firstExtension
-            .getObjectAt(0).toASN1Primitive();
-        if (!firstExtensionIdentifier.equals(Attestation.OID_OCTETSTRING)) {
+        if (getCommitment().length < BYTES_IN_DIGEST) {
           return false;
         }
       } catch (Exception e) {
-     */
-
-    /*if (getSubject() == null || !getSubject().startsWith("CN=") || !ValidationTools.isAddress(getSubject().substring(3))) {
-      System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
-      return false;
+        return false;
+      }
     }
-    // Verify that the subject public key matches the subject common name
-    try {
-      AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory
-          .createKey(getSubjectPublicKeyInfo());
-      String parsedSubject = "CN=" + SignatureUtility.addressFromKey(parsedSubjectKey);
-      if (!parsedSubject.equals(getSubject())) {
-        System.err.println("The subject public key does not match the Ethereum address attested to");*/
     return true;
   }
 
@@ -189,8 +171,11 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   public String getAddress() {
-    // Remove the "CN=" prefix
-    return getSubject().substring(3);
+    try {
+      return SignatureUtility.addressFromKey(PublicKeyFactory.createKey(getSubjectPublicKeyInfo()));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**

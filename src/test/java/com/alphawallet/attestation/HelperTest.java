@@ -78,15 +78,10 @@ public class HelperTest {
   }
 
   public static IdentifierAttestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
-    IdentifierAttestation att = new IdentifierAttestation("CN=0x2042424242424564648");
+    IdentifierAttestation att = new IdentifierAttestation("Twitter", "King Midas", key);
     att.setSerialNumber(42);
     att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     att.setIssuer("CN=ALX");
-    Date now = new Date();
-    att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
-    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-    att.setSubjectPublicKeyInfo(spki);
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
@@ -98,8 +93,9 @@ public class HelperTest {
 
   public static Attestation makeMinimalAtt() {
     Attestation att = new Attestation();
-    att.setVersion(18); // Our initial version
+    att.setVersion(IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION); // Our initial version
     att.setSerialNumber(42);
+    att.setSubject("CN="); // Blank subject info
     att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
