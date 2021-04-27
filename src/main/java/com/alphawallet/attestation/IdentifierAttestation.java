@@ -139,7 +139,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The version number is " + getVersion() + ", it must be " + HIDDEN_IDENTIFIER_VERSION + " or " + NFT_VERSION);
       return false;
     }
-    //super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     if (!getSigningAlgorithm().equals(DEFAULT_SIGNING_ALGORITHM)) {
       System.err.println("The signature algorithm is supposed to be " + DEFAULT_SIGNING_ALGORITHM.getAlgorithm().getId());
       return false;
@@ -184,7 +183,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   private void setCommitment(byte[] encodedRiddle) {
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+    extensions.add(Attestation.OID_OCTETSTRING);
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString(encodedRiddle));
     // Double Sequence is needed to be compatible with X509V3

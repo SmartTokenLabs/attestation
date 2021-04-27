@@ -13,8 +13,6 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
@@ -34,7 +32,6 @@ public class SignedAttestationTest {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
     issuerKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 

@@ -78,7 +78,7 @@ public class AttestationTest {
     public void testInvalid() throws Exception {
         Attestation res = HelperTest.makeMinimalAtt();
         ASN1EncodableVector extensions = new ASN1EncodableVector();
-        extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+        extensions.add(Attestation.OID_OCTETSTRING);
         extensions.add(ASN1Boolean.TRUE);
         extensions.add(new DEROctetString(new byte[] {0x42}));
         Field extensionsField = Attestation.class.getDeclaredField("extensions");

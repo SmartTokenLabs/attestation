@@ -11,7 +11,6 @@ import java.util.Date;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -68,7 +67,7 @@ public class HelperTest {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+    extensions.add(Attestation.OID_OCTETSTRING);
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString("hello world".getBytes()));
     // Double Sequence is needed to be compatible with X509V3
