@@ -31,7 +31,7 @@ import org.bouncycastle.asn1.x509.Time;
 
 public class Attestation implements Signable, ASNEncodable, Validateable {
 
-  public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
+  public static final String OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(

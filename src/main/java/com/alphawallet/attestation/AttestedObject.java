@@ -161,28 +161,19 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
     if (signature != null) {
       SubjectPublicKeyInfo spki = getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-      AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
-
-      // CHECK: the Ethereum address on the attestation matches receivers signing key
-      if (!SignatureUtility.addressFromKey(parsedSubjectKey).equals(
-          SignatureUtility.addressFromKey(getUserPublicKey()))) {
-        System.err.println("The attestation is not to the same Ethereum user who is sending this request");
-        return false;
-      }
-
-      // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
-      if (signature != null) {
+      try {
+        AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
         if (!SignatureUtility
-            .verifyPersonalEthereumSignature(this.unsignedEncoding, this.signature,
-                parsedSubjectKey)) {
+            .verifyPersonalEthereumSignature(this.unsignedEncoding, this.signature, parsedSubjectKey)) {
           System.err.println("The signature on RedeemCheque is not valid");
           return false;
         }
+      } catch (IOException e) {
+        System.err.println("The attestation SubjectPublicKey cannot be parsed");
+        return false;
       }
-    } catch (IOException e) {
-      System.err.println("The attestation SubjectPublicKey cannot be parsed");
-      return false;
     }
+
     return true;
   }
 

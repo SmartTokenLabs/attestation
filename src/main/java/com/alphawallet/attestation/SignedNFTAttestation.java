@@ -60,7 +60,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
             byte[] rawAtt = unsignedAtt.getDerEncoding();
             ASN1EncodableVector res = new ASN1EncodableVector();
             res.add(ASN1Primitive.fromByteArray(rawAtt));
-            res.add(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
+            res.add(unsignedAtt.getSigningAlgorithm());
             res.add(new DERBitString(signature));
             return new DERSequence(res).getEncoded();
         } catch (Exception e) {

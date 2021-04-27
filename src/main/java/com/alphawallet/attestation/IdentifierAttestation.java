@@ -40,6 +40,11 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
   public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
 
+  public IdentifierAttestation(String subject)
+  {
+    super.setVersion(HIDDEN_IDENTIFIER_VERSION);
+    super.setSubject(subject);
+  }
 
   /**
    * Constructs a new identifier attestation based on a secret, with unlimited validity by default
@@ -90,7 +95,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(NFT_VERSION);
     super.setSubject(makeLabeledURI(type, identifier));
-    super.setSigningAlgorithm(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER);
+    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -138,9 +143,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       System.err.println("The version number is " + getVersion() + ", it must be " + HIDDEN_IDENTIFIER_VERSION + " or " + NFT_VERSION);
       return false;
     }
-    if (!getSigningAlgorithm().equals(SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER.getAlgorithm().getId())) {
-      System.err.println("The signature algorithm is supposed to be " + SignatureUtility.EC_PUBLIC_KEY_IDENTIFIER
-          .getAlgorithm().getId());
+    //super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
+    if (!getSigningAlgorithm().equals(DEFAULT_SIGNING_ALGORITHM)) {
+      System.err.println("The signature algorithm is supposed to be " + DEFAULT_SIGNING_ALGORITHM.getAlgorithm().getId());
       return false;
     }
     if (getVersion() == NFT_VERSION) {
@@ -149,6 +154,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
         return false;
       }
     }
+    /*
     if (getVersion() == HIDDEN_IDENTIFIER_VERSION) {
       try {
         // Check that the first extension is an octet-string, i.e. a commitment
@@ -159,6 +165,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
           return false;
         }
       } catch (Exception e) {
+     */
 
     /*if (getSubject() == null || !getSubject().startsWith("CN=") || !ValidationTools.isAddress(getSubject().substring(3))) {
       System.err.println("The subject is supposed to only be an Ethereum address as the Common Name");
@@ -171,10 +178,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       String parsedSubject = "CN=" + SignatureUtility.addressFromKey(parsedSubjectKey);
       if (!parsedSubject.equals(getSubject())) {
         System.err.println("The subject public key does not match the Ethereum address attested to");*/
-
-        return false;
-      }
-    }
     return true;
   }
 
@@ -196,7 +199,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    */
   private void setCommitment(byte[] encodedRiddle) {
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(Attestation.OID_OCTETSTRING);
+    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString(encodedRiddle));
     // Double Sequence is needed to be compatible with X509V3

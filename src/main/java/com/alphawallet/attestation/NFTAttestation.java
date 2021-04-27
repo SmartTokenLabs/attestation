@@ -5,15 +5,16 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.ethereum.ERC721Token;
 import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
 import java.io.IOException;
 
 public class NFTAttestation implements ASNEncodable, Validateable {
-    private final SignedAttestation att;
+    private final SignedIdentityAttestation att;
     private final ASN1Sequence token;
 
-    public NFTAttestation(SignedAttestation att, ERC721Token nftToken)
+    public NFTAttestation(SignedIdentityAttestation att, ERC721Token nftToken)
     {
         this.att = att;
         this.token = new DERSequence(nftToken.getTokenVector());
@@ -24,7 +25,7 @@ public class NFTAttestation implements ASNEncodable, Validateable {
         ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
 
         ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
-        this.att = new SignedAttestation(attestationEnc.getEncoded(), signingPublicKey);
+        this.att = new SignedIdentityAttestation(attestationEnc.getEncoded(), signingPublicKey);
         this.token = ASN1Sequence.getInstance(asn1.getObjectAt(1)); //Tokens
     }
 
@@ -38,6 +39,10 @@ public class NFTAttestation implements ASNEncodable, Validateable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public AlgorithmIdentifier getSigningAlgorithm() {
+        return att.getUnsignedAttestation().getSigningAlgorithm();
     }
 
     public byte[] getPreHash() {

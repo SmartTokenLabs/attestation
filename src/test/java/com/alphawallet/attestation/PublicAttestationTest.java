@@ -20,7 +20,11 @@ public class PublicAttestationTest {
     private static AsymmetricCipherKeyPair issuerKeys;
     private static AsymmetricCipherKeyPair attestorKeys;
     private static SecureRandom rand;
-    private SignedAttestation attestation;
+    /*
+        IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
+     */
+    private SignedIdentityAttestation attestation;
     private SignedNFTAttestation nftAttestation;
     private final SmartContract contract = new SmartContract();
     private String attestationIdentifier;
@@ -38,8 +42,8 @@ public class PublicAttestationTest {
     public void makePublicAttestation()
     {
         attestationIdentifier = "@kingmidas TW"; // should correspond to the below identity
-        Attestation att2 = HelperTest.makePublicIdAttestation(subjectKeys.getPublic(), "TW", "@kingmidas");
-        attestation = new SignedAttestation(att2, attestorKeys);
+        IdentifierAttestation att2 = HelperTest.makePublicIdAttestation(subjectKeys.getPublic(), "TW", "@kingmidas");
+        attestation = new SignedIdentityAttestation(att2, attestorKeys);
     }
 
     @Test
@@ -111,8 +115,8 @@ public class PublicAttestationTest {
         //TODO: make a more comprehensive negative test, involving bad attestation subject address etc.
         //TODO: can do this if we remove the 'isValid' check in the constructor
         byte[] attestationBytes = signedNFTAttestation2.getDerEncoding();
-        //modify the signature
-        attestationBytes[380] = (byte)(attestationBytes[380] + 0x01);
+        //modify the signature (10th byte from end will be within the signature)
+        attestationBytes[attestationBytes.length - 10] = (byte)(attestationBytes[attestationBytes.length - 10] + 0x01);
 
         atr = contract.callVeryifyNFTAttestation(attestationBytes, SignatureUtility.addressFromKey(issuerKeys.getPublic()));
         assertFalse(atr.isValid); //should fail
@@ -129,13 +133,13 @@ public class PublicAttestationTest {
 
     @Test
     public void testDecoding() throws Exception {
-        Attestation att = HelperTest.makeMaximalAtt(subjectKeys.getPublic());
-        SignedAttestation signed = new SignedAttestation(att, issuerKeys);
+        IdentifierAttestation att = HelperTest.makeMaximalAtt(subjectKeys.getPublic());
+        SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
         assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
         assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
         byte[] signedEncoded = signed.getDerEncoding();
 
-        SignedAttestation newSigned = new SignedAttestation(signedEncoded, issuerKeys.getPublic());
+        SignedIdentityAttestation newSigned = new SignedIdentityAttestation(signedEncoded, issuerKeys.getPublic());
         assertArrayEquals(signed.getDerEncoding(), newSigned.getDerEncoding());
     }
 }

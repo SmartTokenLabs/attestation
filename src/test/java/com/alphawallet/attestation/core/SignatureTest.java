@@ -12,6 +12,8 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
@@ -24,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class SignatureTest {
-  private static final String SECP384R1 = "secp384r1";
+  private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
   private AsymmetricCipherKeyPair largeKeys;
   private AsymmetricCipherKeyPair userKeys;
   private SecureRandom rand;
@@ -34,7 +36,7 @@ public class SignatureTest {
     Security.addProvider(new BouncyCastleProvider());
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
-    largeKeys = SignatureUtility.constructECKeys(SECP384R1, rand);
+    largeKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
@@ -118,8 +120,8 @@ public class SignatureTest {
       BigInteger[] refSig = signDeterministic(message, userKeys.getPrivate());
       // We need to adjust the s part of the signature if it happens to be
       // less than N/2+1 since these are the only valid Ethereum signatures.
-      if (refSig[1].compareTo(SignatureUtility.ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
-        refSig[1] = SignatureUtility.ECDSA_DOMAIN.getN().subtract(refSig[1]);
+      if (refSig[1].compareTo(SignatureUtility.ECDSAdomain.getN().shiftRight(1)) > 0) {
+        refSig[1] = SignatureUtility.ECDSAdomain.getN().subtract(refSig[1]);
       }
       assertEquals(refSig[0], ourSig[0]);
       assertEquals(refSig[1], ourSig[1]);

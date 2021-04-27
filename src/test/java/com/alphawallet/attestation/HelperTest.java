@@ -38,7 +38,7 @@ public class HelperTest {
     return att;
   }
 
-  public static Attestation makePublicIdAttestation(AsymmetricKeyParameter key, String type, String identifier) {
+  public static IdentifierAttestation makePublicIdAttestation(AsymmetricKeyParameter key, String type, String identifier) {
     IdentifierAttestation att = new IdentifierAttestation(type, identifier, key);
     att.setIssuer("CN=ALPHAWALLET");
     att.setSerialNumber(1);
@@ -47,7 +47,7 @@ public class HelperTest {
   }
   
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
-      AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
+                                                              AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
     IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
     assertTrue(att.checkValidity());
     assertTrue(issuerPublicKey instanceof ECPublicKeyParameters);
@@ -68,7 +68,7 @@ public class HelperTest {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(Attestation.OID_OCTETSTRING);
+    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString("hello world".getBytes()));
     // Double Sequence is needed to be compatible with X509V3
@@ -77,16 +77,14 @@ public class HelperTest {
     return att;
   }
 
-  public static Attestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
-    Attestation att = new Attestation();
-    att.setVersion(18); // Our initial version
+  public static IdentifierAttestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
+    IdentifierAttestation att = new IdentifierAttestation("CN=0x2042424242424564648");
     att.setSerialNumber(42);
     att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
-    att.setSubject("CN=0x2042424242424564648");
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
     att.setSmartcontracts(Arrays.asList(42L, 1337L));

@@ -4,7 +4,6 @@ import static org.web3j.protocol.core.methods.request.Transaction.createEthCallT
 
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.SignedAttestation;
 import com.alphawallet.attestation.SignedIdentityAttestation;
 import java.io.IOException;
 import java.math.BigInteger;
