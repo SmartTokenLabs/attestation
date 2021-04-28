@@ -309,17 +309,6 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     return attEncoded;
   }
 
-  public byte[] getKeyDER()
-  {
-    ASN1EncodableVector res = new ASN1EncodableVector();
-    res.add(this.subjectPublicKeyInfo == null ? DERNull.INSTANCE : this.subjectPublicKeyInfo);
-    try {
-      return new DERSequence(res).getEncoded();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   /**
    * Construct the DER encoded byte array to be signed. Returns null if the Attestation object is
    * not valid

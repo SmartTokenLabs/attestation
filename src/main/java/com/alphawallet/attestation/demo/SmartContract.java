@@ -35,9 +35,7 @@ import org.web3j.protocol.http.HttpService;
 public class SmartContract {
   private static final String ATTESTATION_CHECKING_CONTRACT = "0xBfF9E858796Bc8443dd1026D14Ae018EfBE87aD5";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-  private static final String ATTESTATION_VALIDATION_CONTRACT = "0x229fEdAb1313BB85b61A729e65aE2363A1441878";
-
-  private static final String ATTESTATION_VERIFICATION_CONTRACT = "0x157b8976726177C29341A30176a5a8fa03FE7778";
+  private static final String ATTESTATION_VERIFICATION_CONTRACT = "0x014a60d7400980306FA75bBDB9cb814a39B8D52F";
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
   {
@@ -53,11 +51,11 @@ public class SmartContract {
 
   public List<Address> getAttestationAddresses(SignedIdentityAttestation signedAttestation)
   {
-    Function function = decodeAttestation(signedAttestation.getDerEncoding());
+    Function function = verifyPublicAttestation(signedAttestation.getDerEncoding());
     return callAddrFunction(function);
   }
 
-  public AttestationReturn callVeryifyNFTAttestation(byte[] att, String sender)
+  public AttestationReturn callVerifyNFTAttestation(byte[] att, String sender)
   {
     Web3j web3j = getRinkebyWeb3j();
     Function function = verifyNFTAttestation(att, sender);
@@ -65,25 +63,15 @@ public class SmartContract {
     List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
     AttestationReturn retVal = new AttestationReturn();
 
-    if (responseValues.size() > 0) {
-      for (Type t : responseValues) {
-        switch (t.getTypeAsString())
-        {
-          case "ERC721TokenEth[]":
-            List<ERC721TokenEth> tokens = (List<ERC721TokenEth>)t.getValue();
-            retVal.ercToken = tokens.toArray(new ERC721TokenEth[0]);
-            break;
-          case "string":
-            retVal.identity = t.getValue().toString();
-            break;
-          case "address":
-            retVal.ownerAddress = t.getValue().toString();
-            break;
-          case "bool":
-            retVal.isValid = (boolean)t.getValue();
-            break;
-        }
-      }
+    if (responseValues.size() == 5)
+    {
+      List<ERC721TokenEth> tokens = (List<ERC721TokenEth>)responseValues.get(0).getValue();
+      retVal.ercToken = tokens.toArray(new ERC721TokenEth[0]);
+
+      retVal.identity = responseValues.get(1).getValue().toString();
+      retVal.ownerAddress = responseValues.get(2).getValue().toString();
+      retVal.attestorAddress = responseValues.get(3).getValue().toString();
+      retVal.isValid = (boolean)responseValues.get(4).getValue();
     }
 
     return retVal;
@@ -123,18 +111,18 @@ public class SmartContract {
 
   private List<Address> callAddrFunction(Function function)
   {
-    Web3j web3j = getWeb3j();
+    Web3j web3j = getRinkebyWeb3j();
     List<Address> addrList = new ArrayList<>();
 
     try
     {
-      String responseValue = callSmartContractFunction(web3j, function, ATTESTATION_VALIDATION_CONTRACT);
+      String responseValue = callSmartContractFunction(web3j, function, ATTESTATION_VERIFICATION_CONTRACT);
       List<Type> responseValues = FunctionReturnDecoder.decode(responseValue, function.getOutputParameters());
 
-      if (responseValues.size() == 2 && responseValues.get(0) instanceof Address)
+      if (responseValues.size() == 3 && responseValues.get(0) instanceof Address)
       {
         addrList.add((Address)responseValues.get(0));
-        addrList.add((Address)responseValues.get(1));
+        addrList.add((Address)responseValues.get(2));
       }
     }
     catch (Exception e)
@@ -190,18 +178,11 @@ public class SmartContract {
             Collections.singletonList(new TypeReference<Bool>() {}));
   }
 
-  private static Function decodeAttestation(byte[] encoding) {
-    return new Function(
-            "decodeAttestation",
-            Arrays.asList(new DynamicBytes(encoding)),
-            Arrays.asList(new TypeReference<Address>() {}, new TypeReference<Address>() {}));
-  }
-
   private static Function verifyPublicAttestation(byte[] encoding) {
     return new Function(
             "verifyPublicAttestation",
             Arrays.asList(new DynamicBytes(encoding), new Uint256(BigInteger.ZERO)),
-            Arrays.asList(new TypeReference<Address>() {}, new TypeReference<Utf8String>() {}, new TypeReference<Bool>() {}));
+            Arrays.asList(new TypeReference<Address>() {}, new TypeReference<Utf8String>() {}, new TypeReference<Address>() {}));
   }
 
   private static Function verifyNFTAttestation(byte[] encoding, String sender) {
@@ -209,7 +190,11 @@ public class SmartContract {
             "verifyNFTAttestation",
             Arrays.asList(new DynamicBytes(encoding),
                     new org.web3j.abi.datatypes.Address(160, sender)),
-            Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<ERC721TokenEth>>() {}, new TypeReference<Utf8String>() {}, new TypeReference<Address>() {}, new TypeReference<Bool>() {}));
+            Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<ERC721TokenEth>>() {},
+                    new TypeReference<Utf8String>() {}, //Identifier
+                    new TypeReference<Address>() {},    //subject
+                    new TypeReference<Address>() {},    //attestor
+                    new TypeReference<Bool>() {}));     //valid NFT signature by subject
   }
 
   protected static org.web3j.abi.datatypes.DynamicArray<?> getERC721Array(ERC721TokenEth token)

@@ -4,14 +4,13 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721Token;
-import java.security.SecureRandom;
-
 import com.alphawallet.ethereum.ERC721TokenEth;
-import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.security.SecureRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -103,10 +102,11 @@ public class PublicAttestationTest {
         // which happens in the 'signing step' referenced above.
         // This is so a transaction need not be sent by the 'subjectKeys' account. If it is called by
         // 'subjectKeys' then the verification step is skipped since we have 'subjectKeys' signature from the ethereum transaction
-        AttestationReturn atr = contract.callVeryifyNFTAttestation(nftAttestation.getDerEncoding(), SignatureUtility.addressFromKey(issuerKeys.getPublic()));
+        AttestationReturn atr = contract.callVerifyNFTAttestation(nftAttestation.getDerEncoding(), SignatureUtility.addressFromKey(issuerKeys.getPublic()));
         //check our return
         assertEquals(atr.identity, attestationIdentifier);
         assertEquals(atr.ownerAddress.toLowerCase(), SignatureUtility.addressFromKey(subjectKeys.getPublic()).toLowerCase());
+        assertEquals(atr.attestorAddress.toLowerCase(), SignatureUtility.addressFromKey(attestorKeys.getPublic()).toLowerCase());
         assertTrue(atr.isValid);
         ERC721TokenEth token = atr.ercToken[0];
         assertEquals(token.address.toString().toLowerCase(), myNFT.address.toLowerCase());
@@ -118,9 +118,9 @@ public class PublicAttestationTest {
         //modify the signature (10th byte from end will be within the signature)
         attestationBytes[attestationBytes.length - 10] = (byte)(attestationBytes[attestationBytes.length - 10] + 0x01);
 
-        atr = contract.callVeryifyNFTAttestation(attestationBytes, SignatureUtility.addressFromKey(issuerKeys.getPublic()));
+        atr = contract.callVerifyNFTAttestation(attestationBytes, SignatureUtility.addressFromKey(issuerKeys.getPublic()));
         assertFalse(atr.isValid); //should fail
-        atr = contract.callVeryifyNFTAttestation(attestationBytes, SignatureUtility.addressFromKey(subjectKeys.getPublic()));
+        atr = contract.callVerifyNFTAttestation(attestationBytes, SignatureUtility.addressFromKey(subjectKeys.getPublic()));
         assertTrue(atr.isValid); //should pass, because we don't need to check the wrapping signature is valid if it's sent by the subjectKey
     }
 
