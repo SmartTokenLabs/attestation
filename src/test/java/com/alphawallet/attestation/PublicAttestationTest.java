@@ -5,6 +5,7 @@ import com.alphawallet.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721Token;
 import com.alphawallet.ethereum.ERC721TokenEth;
+import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,8 @@ public class PublicAttestationTest {
         subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
         attestorKeys = SignatureUtility.constructECKeys(rand);
         issuerKeys = SignatureUtility.constructECKeys(rand);
+
+        System.out.println("Subject: " + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
     }
 
     @BeforeEach
@@ -48,10 +51,15 @@ public class PublicAttestationTest {
     @Test
     public void testNFTAttestation() throws Exception
     {
-        ERC721Token myNFT = new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25");
-        NFTAttestation nftAtt = new NFTAttestation(attestation, myNFT);
+        ERC721Token[] myNFTs = new ERC721Token[2];
+        myNFTs[0] = new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25");
+        myNFTs[1] = new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26");
+
+        NFTAttestation nftAtt = new NFTAttestation(attestation, myNFTs);
         //construct SignedNFTAttestation using subject key
         nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+
+        System.out.println("DER: " + Numeric.toHexString(nftAttestation.getDerEncoding()));
 
         //Extract the Ethereum signature
         byte[] sig = nftAttestation.getSignature();
@@ -73,10 +81,15 @@ public class PublicAttestationTest {
     @Test
     public void checkNFTSmartContract() throws Exception
     {
-        ERC721Token myNFT = new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25");
-        NFTAttestation nftAtt = new NFTAttestation(attestation, myNFT);
+        ERC721Token[] myNFTs = new ERC721Token[2];
+        myNFTs[0] = new ERC721Token("0xd9145CCE52D386f254917e481eB44e9943F39138", "1");
+        myNFTs[1] = new ERC721Token("0xd9145CCE52D386f254917e481eB44e9943F39138", "2");
+
+        NFTAttestation nftAtt = new NFTAttestation(attestation, myNFTs);
         //construct SignedNFTAttestation using subject key
         nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys); // <-- signing step, NFT attestation is signed by owner of identity, referenced below
+
+        System.out.println("DER: " + Numeric.toHexString(nftAttestation.getDerEncoding()));
 
         //Extract the Ethereum signature
         byte[] sig = nftAttestation.getSignature();
@@ -108,9 +121,11 @@ public class PublicAttestationTest {
         assertEquals(atr.ownerAddress.toLowerCase(), SignatureUtility.addressFromKey(subjectKeys.getPublic()).toLowerCase());
         assertEquals(atr.attestorAddress.toLowerCase(), SignatureUtility.addressFromKey(attestorKeys.getPublic()).toLowerCase());
         assertTrue(atr.isValid);
-        ERC721TokenEth token = atr.ercToken[0];
-        assertEquals(token.address.toString().toLowerCase(), myNFT.address.toLowerCase());
-        assertEquals(myNFT.tokenId, token.tokenId.getValue());
+        for (int index = 0; index < atr.ercToken.length; index++)
+        {
+            assertEquals(atr.ercToken[index].address.toString().toLowerCase(), myNFTs[index].address.toLowerCase());
+            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].tokenId);
+        }
 
         //TODO: make a more comprehensive negative test, involving bad attestation subject address etc.
         //TODO: can do this if we remove the 'isValid' check in the constructor
