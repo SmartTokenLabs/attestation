@@ -5,23 +5,18 @@
     <namedType name="NFTAttestation">
         <type>
             <sequence>
-                <!-- At least one of "tokens" or "nftDigest" MUST be included -->
-                <optional>
-                  <element name="tokens" type="Tokens">
-                      <annotation>The ERC721 tokens to link to</annotation>
-                  </element>
-                </optional>
+                <element name="creator" type="UriIdAttestation">
+                    <annotation>The X509v3 certificate that is the attestation identifying the creator/signer</annotation>
+                </element>
+                <!-- At least one token or "nftDigest" MUST be included -->
+                <element name="tokens" type="Tokens">
+                    <annotation>The ERC721 tokens to link to</annotation>
+                </element>
                 <optional>
                     <element name="nftDigest" type="Digest">
                         <annotation>Digest of the content (pic/vid) of the NFT</annotation>
                     </element>
                 </optional>
-                <element name="creator" type="UriIdAttestation">
-                    <annotation>The X509v3 certificate that is the attestation identifying the creator/signer</annotation>
-                </element>
-                <element name="signatureValue" type="asnx:BIT-STRING">
-                    <annotation>Algorithm is always ECDSA secp256k1</annotation>
-                </element>
             </sequence>
         </type>
     </namedType>
@@ -32,7 +27,8 @@
     <!-- See https://eips.ethereum.org/EIPS/eip-721 for details -->
     <namedType name="Tokens">
         <type>
-            <sequenceOf minSize="1">
+            <!-- Allowed to be empty if "nftDigest" is included -->
+            <sequenceOf>
                 <element name="item" type="ERC721"/>
             </sequenceOf>
         </type>

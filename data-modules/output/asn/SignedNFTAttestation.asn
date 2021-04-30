@@ -1,0 +1,18 @@
+SignedNFTAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    NFTAttestation
+        FROM NFTAttestation
+    AlgorithmIdentifier
+        FROM AuthenticationFramework;
+
+SignedNFTAttestation ::= SEQUENCE {
+    nftAttestation       NFTAttestation,
+    signingAlgorithm     AlgorithmIdentifier,
+    signatureValue       BIT STRING
+}
+
+END
