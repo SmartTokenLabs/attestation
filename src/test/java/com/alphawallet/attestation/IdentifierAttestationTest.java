@@ -6,8 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.SignatureUtility;
+
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -24,15 +29,34 @@ import org.junit.jupiter.api.Test;
 public class IdentifierAttestationTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair otherKeys;
+
   private static SecureRandom rand;
-  private static final String mail = "test@test.ts";
+  // private identifier
+  final String mail = "test@test.ts";
+  // public identifier
+  final String labeledURI = "https://twitter.com/king_midas";
+
+  public IdentifierAttestationTest() throws NoSuchAlgorithmException {
+  }
 
   @BeforeAll
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG");
     rand.setSeed("seed".getBytes());
+
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     otherKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+  }
+
+
+  @Test
+  public void makePublicIdAttestation() throws IOException
+  {
+    IdentifierAttestation att = HelperTest.makePublicIdAttestation(subjectKeys.getPublic(), "", labeledURI);
+    Path p = Files.createTempFile("x509", ".der");
+    Files.write(p, (new SignedIdentityAttestation(att, otherKeys)).getDerEncoding());
+    System.out.println("To check the X509 attestation, run this:");
+    System.out.println("$ openssl asn1parse -inform DER -in " + p.toString());
   }
 
   @Test

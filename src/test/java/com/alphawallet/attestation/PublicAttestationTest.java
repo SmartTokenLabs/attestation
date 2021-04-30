@@ -4,13 +4,15 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721Token;
-import com.alphawallet.ethereum.ERC721TokenEth;
 import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.SecureRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,10 +26,10 @@ public class PublicAttestationTest {
         IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, issuerKeys);
      */
-    private SignedIdentityAttestation attestation;
+    static SignedIdentityAttestation attestation;
     private SignedNFTAttestation nftAttestation;
     private final SmartContract contract = new SmartContract();
-    private String attestationIdentifier;
+    static final String labeledURI = "https://twitter.com/king_midas";
 
     @BeforeAll
     public static void setupKeys() throws Exception {
@@ -37,15 +39,10 @@ public class PublicAttestationTest {
         attestorKeys = SignatureUtility.constructECKeys(rand);
         issuerKeys = SignatureUtility.constructECKeys(rand);
 
-        System.out.println("Subject: " + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
-    }
+        IdentifierAttestation att = HelperTest.makePublicIdAttestation(subjectKeys.getPublic(), "", labeledURI);
+        attestation = new SignedIdentityAttestation(att, attestorKeys);
 
-    @BeforeEach
-    public void makePublicAttestation()
-    {
-        attestationIdentifier = "@kingmidas TW"; // should correspond to the below identity
-        IdentifierAttestation att2 = HelperTest.makePublicIdAttestation(subjectKeys.getPublic(), "TW", "@kingmidas");
-        attestation = new SignedIdentityAttestation(att2, attestorKeys);
+        System.out.println("SubjectPublicKey's Fingerprint (summarised as Ethereum address):\n" + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
     }
 
     @Test
@@ -58,8 +55,11 @@ public class PublicAttestationTest {
         NFTAttestation nftAtt = new NFTAttestation(attestation, myNFTs);
         //construct SignedNFTAttestation using subject key
         nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+        Path p = Files.createTempFile("unsigned_nftAttestation", ".der");
 
-        System.out.println("DER: " + Numeric.toHexString(nftAttestation.getDerEncoding()));
+        System.out.println("To check the unsigned X509 attestation, run this:");
+        System.out.println("$ openssl asn1parse -inform DER -in " + p.toString());
+        Files.write(p, nftAttestation.getDerEncoding());
 
         //Extract the Ethereum signature
         byte[] sig = nftAttestation.getSignature();
@@ -117,7 +117,7 @@ public class PublicAttestationTest {
         // 'subjectKeys' then the verification step is skipped since we have 'subjectKeys' signature from the ethereum transaction
         AttestationReturn atr = contract.callVerifyNFTAttestation(nftAttestation.getDerEncoding(), SignatureUtility.addressFromKey(issuerKeys.getPublic()));
         //check our return
-        assertEquals(atr.identity, attestationIdentifier);
+        assertEquals(atr.identity, labeledURI);
         assertEquals(atr.ownerAddress.toLowerCase(), SignatureUtility.addressFromKey(subjectKeys.getPublic()).toLowerCase());
         assertEquals(atr.attestorAddress.toLowerCase(), SignatureUtility.addressFromKey(attestorKeys.getPublic()).toLowerCase());
         assertTrue(atr.isValid);
