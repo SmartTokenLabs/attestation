@@ -61,7 +61,7 @@ public class NFTAttestationTest {
         nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
         Path p = Files.createTempFile("unsigned_nftAttestation", ".der");
 
-        System.out.println("To check the unsigned X509 attestation, run this:");
+        System.out.println("To check the unsigned NFT attestation, run this:");
         System.out.println("$ openssl asn1parse -inform DER -in " + p.toString());
         Files.write(p, nftAttestation.getDerEncoding());
 
