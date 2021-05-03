@@ -1,16 +1,17 @@
-package com.alphawallet.attestation;
+package io.alchemynft.attestation;
 
+import com.alphawallet.attestation.HelperTest;
+import com.alphawallet.attestation.IdentifierAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.demo.SmartContract;
-import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721Token;
-import com.alphawallet.token.tools.Numeric;
+import io.alchemynft.attestation.NFTAttestation;
+import io.alchemynft.attestation.SignedNFTAttestation;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;

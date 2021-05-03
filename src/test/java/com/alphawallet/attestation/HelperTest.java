@@ -18,6 +18,10 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
+
+/* created to help other test-cases - James
+ * this class should be refactored away entirely - Weiwu */
+
 public class HelperTest {
 
   public static final long VALIDITY = 1000L*60L*60L*24L*365L*10L; // 10 years

@@ -1,5 +1,6 @@
-package com.alphawallet.attestation;
+package io.alchemynft.attestation;
 
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;

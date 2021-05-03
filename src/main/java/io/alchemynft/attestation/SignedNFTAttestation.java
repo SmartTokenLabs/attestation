@@ -1,9 +1,10 @@
-package com.alphawallet.attestation;
+package io.alchemynft.attestation;
 
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
+import io.alchemynft.attestation.NFTAttestation;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DERBitString;

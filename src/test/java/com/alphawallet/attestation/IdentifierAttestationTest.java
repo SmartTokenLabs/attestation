@@ -26,6 +26,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+/* TODO: this should later be collected into id.attestation package */
 public class IdentifierAttestationTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair otherKeys;
@@ -52,8 +53,14 @@ public class IdentifierAttestationTest {
   @Test
   public void makePublicIdAttestation() throws IOException
   {
-    IdentifierAttestation att = HelperTest.makePublicIdAttestation(subjectKeys.getPublic(), "", labeledURI);
+    IdentifierAttestation att = new IdentifierAttestation("205521676", "https://twitter.com/zhangweiwu", subjectKeys.getPublic());
+
     Path p = Files.createTempFile("x509", ".der");
+
+    att.setIssuer("CN=attestation.id");
+    att.setSerialNumber(1);
+    assertTrue(att.checkValidity());
+
     Files.write(p, (new SignedIdentityAttestation(att, otherKeys)).getDerEncoding());
     System.out.println("To check the X509 attestation, run this:");
     System.out.println("$ openssl asn1parse -inform DER -in " + p.toString());
