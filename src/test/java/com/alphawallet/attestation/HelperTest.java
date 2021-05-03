@@ -37,14 +37,6 @@ public class HelperTest {
     return att;
   }
 
-  public static IdentifierAttestation makePublicIdAttestation(AsymmetricKeyParameter key, String type, String identifier) {
-    IdentifierAttestation att = new IdentifierAttestation(type, identifier, key);
-    att.setIssuer("CN=ALPHAWALLET");
-    att.setSerialNumber(1);
-    assertTrue(att.checkValidity());
-    return att;
-  }
-  
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
                                                               AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
     IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
