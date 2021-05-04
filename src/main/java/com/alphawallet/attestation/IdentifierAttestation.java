@@ -87,11 +87,13 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    * You still need to set the optional fields, that is
    * issuer, smartcontracts
    */
-  public IdentifierAttestation(String label, String URL, AsymmetricKeyParameter key)  {
+  public IdentifierAttestation(String label, String URL, AsymmetricKeyParameter key) {
     super();
     super.setVersion(NFT_VERSION);
     super.setSubject(makeLabeledURI(label, URL));
     super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
+    super.setIssuer("CN=attestation.id");
+    super.setSerialNumber(1);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);

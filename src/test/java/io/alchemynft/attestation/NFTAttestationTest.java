@@ -6,8 +6,6 @@ import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.ERC721Token;
-import io.alchemynft.attestation.NFTAttestation;
-import io.alchemynft.attestation.SignedNFTAttestation;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,7 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NFTAttestationTest {
     private static AsymmetricCipherKeyPair subjectKeys;
@@ -41,8 +40,6 @@ public class NFTAttestationTest {
         issuerKeys = SignatureUtility.constructECKeys(rand);
 
         IdentifierAttestation att = new IdentifierAttestation("205521676", "https://twitter.com/zhangweiwu", subjectKeys.getPublic());
-        att.setIssuer("CN=attestation.id");
-        att.setSerialNumber(1);
         assertTrue(att.checkValidity());
         attestation = new SignedIdentityAttestation(att, attestorKeys);
 
