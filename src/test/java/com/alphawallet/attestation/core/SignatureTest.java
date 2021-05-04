@@ -120,8 +120,8 @@ public class SignatureTest {
       BigInteger[] refSig = signDeterministic(message, userKeys.getPrivate());
       // We need to adjust the s part of the signature if it happens to be
       // less than N/2+1 since these are the only valid Ethereum signatures.
-      if (refSig[1].compareTo(SignatureUtility.ECDSAdomain.getN().shiftRight(1)) > 0) {
-        refSig[1] = SignatureUtility.ECDSAdomain.getN().subtract(refSig[1]);
+      if (refSig[1].compareTo(SignatureUtility.ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
+        refSig[1] = SignatureUtility.ECDSA_DOMAIN.getN().subtract(refSig[1]);
       }
       assertEquals(refSig[0], ourSig[0]);
       assertEquals(refSig[1], ourSig[1]);

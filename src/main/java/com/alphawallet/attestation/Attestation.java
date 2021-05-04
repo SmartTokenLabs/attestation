@@ -18,6 +18,7 @@ import org.bouncycastle.asn1.ASN1GeneralizedTime;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Null;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERNull;
@@ -30,7 +31,7 @@ import org.bouncycastle.asn1.x509.Time;
 
 public class Attestation implements Signable, ASNEncodable, Validateable {
 
-  public static final String OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
+  public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(
@@ -101,19 +102,20 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     currentPos++;
 
     // The optional smartcontracts are included
-    if (asn1.getObjectAt(currentPos) instanceof ASN1Sequence) {
+    if (asn1.size() > currentPos && asn1.getObjectAt(currentPos) instanceof ASN1Sequence) {
       smartcontracts = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos));
       currentPos++;
     }
 
-    ASN1TaggedObject objects = ASN1TaggedObject.getInstance(asn1.getObjectAt(currentPos));
-    currentPos++;
-    if (objects.getTagNo() == 3) {
-      extensions = ASN1Sequence.getInstance(objects.getObject());
-    } else {
-      dataObject = ASN1Sequence.getInstance(objects.getObject());
+    if (asn1.size() > currentPos) {
+      ASN1TaggedObject objects = ASN1TaggedObject.getInstance(asn1.getObjectAt(currentPos));
+      currentPos++;
+      if (objects.getTagNo() == 3) {
+        extensions = ASN1Sequence.getInstance(objects.getObject());
+      } else {
+        dataObject = ASN1Sequence.getInstance(objects.getObject());
+      }
     }
-
   }
 
   public int getVersion() {
@@ -185,11 +187,12 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     return subject.toString();
   }
 
-  /**
-   *
-   */
   public void setSubject(String subject) {
     this.subject = new X500Name(subject);
+  }
+
+  public void setSubject(X500Name subject) {
+    this.subject = subject;
   }
 
   public SubjectPublicKeyInfo getSubjectPublicKeyInfo() {
@@ -268,7 +271,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     if (dataObject != null) {
       return false;
     }
-    if (version == null || serialNumber == null || signingAlgorithm == null) {
+    if (version == null || subject == null || serialNumber == null || signingAlgorithm == null) {
       return false;
     }
     return true;
@@ -276,8 +279,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public boolean checkValidity() {
-    if (version == null || serialNumber == null || signingAlgorithm == null || (extensions == null
-        && dataObject == null)) {
+    if (version == null || subject == null || serialNumber == null || signingAlgorithm == null) {
       return false;
     }
     if (getNotValidBefore() != null && getNotValidAfter() != null) {
@@ -290,6 +292,9 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
           return false;
         }
       }
+    }
+    if (extensions != null && dataObject != null) {
+      return false;
     }
     return true;
   }
@@ -331,9 +336,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     if (this.smartcontracts != null) {
       res.add(this.smartcontracts);
     }
+    // The validity check ensure that only one of "extensions" and "dataObject" is set
     if (this.extensions != null) {
       res.add(new DERTaggedObject(true, 3, this.extensions));
-    } else {
+    }
+    if (this.dataObject != null) {
       res.add(new DERTaggedObject(true, 4, this.dataObject));
     }
     try {
