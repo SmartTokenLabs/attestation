@@ -115,7 +115,6 @@ task packageAttestation(type: Jar) {
     from processResources
     exclude {
         if(it.relativePath.pathString.startsWith('com/alphawallet/attestation/demo')
-           || it.relativePath.pathString.startsWith('com/alphawallet/ethereum')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
            || it.relativePath.pathString.startsWith('id/attestation')
