@@ -1,11 +1,14 @@
 package dk.alexandra.trulioo.issuer;
 
+import com.alphawallet.attestation.core.ExceptionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -32,6 +35,8 @@ import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
 import org.json.JSONObject;
 
 public class Attestor {
+  private static final Logger logger = LogManager.getLogger(Attestor.class);
+
   public static final String OID_ECDSA = "1.2.840.10045.4";
   public static final String OID_SECP256R1 = "1.2.840.10045.3.1.7";
   public static final String OID_SIGNATURE_ALG = "1.2.840.10045.2.1"; // OID for elliptic curve crypto
@@ -62,7 +67,7 @@ public class Attestor {
       BcECContentSignerBuilder contentBuilder = new BcECContentSignerBuilder(serverSigningAlgo, hashIdentifier);
       signer = contentBuilder.build(serverKey.getPrivate());
     } catch (OperatorCreationException e) {
-      throw new RuntimeException("Could not parse server key");
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not parse server key", e);
     }
   }
 
@@ -82,9 +87,10 @@ public class Attestor {
 
   public List<X509CertificateHolder> constructAttestations(String request, JSONObject verifyRecord, byte[] signature, AsymmetricKeyParameter userPK) {
     if (!SignatureUtil.verifySha256(request.getBytes(StandardCharsets.UTF_8), signature, userPK)) {
-      throw new IllegalArgumentException("Request signature verification failed. "
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Request signature verification failed. "
       + "Make sure that your message is unaltered, signature is created by hashing the message with SHA256"
-      + "and using a key of secp256k1 type.");
+      + "and using a key of secp256k1 type."));
     }
     List<X509CertificateHolder> res = new ArrayList<>();
     Parser parser = new Parser(new JSONObject(request), verifyRecord);
@@ -115,9 +121,9 @@ public class Attestor {
         // To ensure that we get a new serial number for every cert
         Thread.sleep(1);
       } catch (IOException e) {
-        throw new RuntimeException("Could not parse server key");
+        throw ExceptionUtil.makeRuntimeException(logger, "Could not parse server key", e);
       } catch (InterruptedException e) {
-        throw new RuntimeException("Could not sleep");
+        throw ExceptionUtil.makeRuntimeException(logger, "Could not sleep", e);
       }
     }
     return res;

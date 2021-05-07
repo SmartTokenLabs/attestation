@@ -116,7 +116,7 @@ public class Eip712Test {
 
   @Test
   public void nullInput() {
-    assertThrows( InvalidObjectException.class, () -> validator.retrieveUnderlyingObject(null, FullEip712InternalData.class));
+    assertThrows( IllegalArgumentException.class, () -> validator.retrieveUnderlyingObject(null, FullEip712InternalData.class));
   }
 
   @Test
@@ -145,7 +145,7 @@ public class Eip712Test {
     // Flip a bit
     tokenBytes[0] ^= 0x01;
     assertFalse(validator.verifySignature(new String(tokenBytes, StandardCharsets.UTF_8), SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
-    assertThrows(InvalidObjectException.class, () -> validator.retrieveUnderlyingObject(new String(tokenBytes, StandardCharsets.UTF_8), FullEip712InternalData.class));
+    assertThrows(IllegalArgumentException.class, () -> validator.retrieveUnderlyingObject(new String(tokenBytes, StandardCharsets.UTF_8), FullEip712InternalData.class));
   }
 
   @Test
@@ -195,7 +195,7 @@ public class Eip712Test {
   public void invalidStringTimestamp() {
     // does not contain ms
     Exception e = assertThrows(RuntimeException.class, () -> Timestamp.stringTimestampToLong("1987.01.01 at 01:00:00 CET"));
-    assertEquals("java.text.ParseException: Unparseable date: \"1987.01.01 at 01:00:00 CET\"", e.getMessage());
+    assertEquals("Could not decode timestamp", e.getMessage());
   }
 
   @Test

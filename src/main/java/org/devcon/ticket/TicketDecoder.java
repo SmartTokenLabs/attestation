@@ -1,10 +1,13 @@
 package org.devcon.ticket;
 
 import com.alphawallet.attestation.AttestableObjectDecoder;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -18,6 +21,8 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
+  private static final Logger logger = LogManager.getLogger(TicketDecoder.class);
+
   private AsymmetricKeyParameter publicKey;
 
   public TicketDecoder(AsymmetricKeyParameter publicKey) {
@@ -69,7 +74,8 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
       // Only the signature is included
       signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
     } else {
-      throw new IllegalArgumentException("Invalid ticket encoding");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Invalid ticket encoding"));
     }
     return signature;
   }
@@ -85,8 +91,8 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
       SubjectPublicKeyInfo referenceSpki = SubjectPublicKeyInfoFactory
           .createSubjectPublicKeyInfo(publicKey);
       if (!Arrays.equals(referenceSpki.getEncoded(), decodedSpki.getEncoded())) {
-        throw new IllegalArgumentException(
-            "The public key is not of the same as supplied as argument");
+        throw ExceptionUtil.throwException(logger, new IllegalArgumentException(
+            "The public key is not of the same as supplied as argument"));
       }
     }
     publicKey = decodedPublicKey;

@@ -1,11 +1,14 @@
 package com.alphawallet.attestation;
 
 import com.alphawallet.attestation.core.ASNEncodable;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -19,6 +22,8 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 
 public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
+  private static final Logger logger = LogManager.getLogger(SignedIdentityAttestation.class);
+
   public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
   private final IdentifierAttestation att;
@@ -44,17 +49,20 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
     this.signature = signatureEnc.getBytes();
     this.attestationVerificationKey = verificationKey;
     if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {
-      throw new IllegalArgumentException("Algorithm specified is not consistent");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Algorithm specified is not consistent"));
     }
     constructorCheck(verificationKey);
   }
 
   void constructorCheck(AsymmetricKeyParameter verificationKey) {
     if (!(verificationKey instanceof ECPublicKeyParameters)) {
-      throw new UnsupportedOperationException("Attestations must be signed with ECDSA key");
+      throw ExceptionUtil.throwException(logger,
+          new UnsupportedOperationException("Attestations must be signed with ECDSA key"));
     }
     if (!verify()) {
-      throw new IllegalArgumentException("The signature is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Signature is not valid"));
     }
   }
 
@@ -85,7 +93,7 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
       res.add(new DERBitString(signature));
       return new DERSequence(res).getEncoded();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
   }
 
@@ -97,10 +105,15 @@ public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Vali
   @Override
   public boolean verify() {
     try {
-      return SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
+      if (!SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey)) {
+        logger.error("Could not verify signature");
+        return false;
+      }
     } catch (InvalidObjectException e) {
+      logger.error("Could not decode the signature");
       return false;
     }
+    return true;
   }
 
 }

@@ -3,12 +3,15 @@ package com.alphawallet.attestation;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
 import java.util.Arrays;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -20,6 +23,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 public class AttestedObject<T extends Attestable> implements ASNEncodable, Verifiable {
+  private static final Logger logger = LogManager.getLogger(AttestedObject.class);
   private final T attestableObject;
   private final SignedIdentityAttestation att;
   private final ProofOfExponent pok;
@@ -51,7 +55,8 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       throw new RuntimeException(e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("The redeem request is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not verify object"));
     }
   }
 
@@ -71,10 +76,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       this.encoding = new DERSequence(vec).getEncoded();
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("The redeem request is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not verify object"));
     }
   }
 
@@ -96,10 +102,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       }
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("The redeem request is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Signature is not valid"));
     }
   }
 
@@ -134,27 +141,27 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       IdentifierAttestation std = new IdentifierAttestation(attEncoded);
       // CHECK: perform the needed checks of an identity attestation
       if (!std.checkValidity()) {
-        System.err.println("The attestation is not a valid standard attestation");
+        logger.error("The attestation is not a valid standard attestation");
         return false;
       }
     } catch (InvalidObjectException e) {
-      System.err.println("The attestation is invalid");
+      logger.error("The attestation is invalid");
       return false;
     } catch (IOException e) {
-      System.err.println("The attestation could not be parsed as a standard attestation");
+      logger.error("The attestation could not be parsed as a standard attestation");
       return false;
     }
 
     // CHECK: that the cheque is still valid
     if (!getAttestableObject().checkValidity()) {
-      System.err.println("Cheque is not valid");
+      logger.error("Cheque is not valid");
       return false;
     }
 
     // CHECK: the Ethereum address on the attestation matches receivers signing key
     String attestationEthereumAddress = getAtt().getUnsignedAttestation().getAddress();
     if (!attestationEthereumAddress.equals(SignatureUtility.addressFromKey(getUserPublicKey()))) {
-      System.err.println("The attestation is not to the same Ethereum user who is sending this request");
+      logger.error("The attestation is not to the same Ethereum user who is sending this request");
       return false;
     }
 
@@ -165,27 +172,38 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
         AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
         if (!SignatureUtility
             .verifyPersonalEthereumSignature(this.unsignedEncoding, this.signature, parsedSubjectKey)) {
-          System.err.println("The signature on RedeemCheque is not valid");
+          logger.error("The signature on RedeemCheque is not valid");
           return false;
         }
       } catch (IOException e) {
-        System.err.println("The attestation SubjectPublicKey cannot be parsed");
+        logger.error("The attestation SubjectPublicKey cannot be parsed");
         return false;
       }
     }
-
     return true;
   }
 
   @Override
   public boolean verify() {
-    boolean result = attestableObject.verify() && att.verify() && AttestationCrypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok);
-    if (signature != null) {
-      return result && SignatureUtility
-          .verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey);
-    } else {
-      return result;
+    if (!attestableObject.verify()) {
+      logger.error("Could not verify attestable object");
+      return false;
     }
+    if (!att.verify()) {
+      logger.error("Could not verify attestation");
+      return false;
+    }
+    if (!AttestationCrypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
+      logger.error("Could not verify the consistency between the commitment in the attestation and the attested object");
+      return false;
+    }
+    if (signature != null) {
+      if (!SignatureUtility.verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey)) {
+        logger.error("Could not verify the signature");
+        return false;
+      }
+    }
+    return true;
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
@@ -193,7 +211,8 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     // We require that the internal attestation is an IdentifierAttestation
     ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
     if (!crypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
-      throw new RuntimeException("The redeem proof did not verify");
+      throw ExceptionUtil.throwException(logger,
+          new RuntimeException("The redeem proof did not verify"));
     }
     return pok;
   }

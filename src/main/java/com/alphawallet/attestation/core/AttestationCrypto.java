@@ -15,6 +15,8 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.SHA256;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -23,6 +25,8 @@ import org.bouncycastle.math.ec.ECCurve.Fp;
 import org.bouncycastle.math.ec.ECPoint;
 
 public class AttestationCrypto {
+  private static final Logger logger = LogManager.getLogger(AttestationCrypto.class);
+
   public static final int BYTES_IN_DIGEST = 256 / 8;
   public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
   // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
@@ -49,7 +53,7 @@ public class AttestationCrypto {
     // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
     // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
     if (curveOrder.compareTo(BigInteger.ONE.shiftLeft(curveOrderBitLength-1)) < 0 || curveOrder.shiftRight(curveOrderBitLength).compareTo(BigInteger.ZERO) > 0) {
-      System.err.println("Curve order is not 254 bits which is required by the current implementation");
+      logger.error("Curve order is not 254 bits which is required by the current implementation");
       return false;
     }
     return true;
@@ -210,6 +214,7 @@ public class AttestationCrypto {
   private static boolean verifyPok(FullProofOfExponent pok, BigInteger c) {
     // Check that the c has been sampled correctly using rejection sampling
     if (c.compareTo(curveOrder) >= 0) {
+      logger.error("Challenge is bigger than curve order");
       return false;
     }
     ECPoint lhs = H.multiply(pok.getChallenge());
@@ -231,7 +236,7 @@ public class AttestationCrypto {
       outputStream.close();
       return res;
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode EC points", e);
     }
   }
 
@@ -245,7 +250,7 @@ public class AttestationCrypto {
       BigInteger resultOf256Bits =  new BigInteger(1, digest);
       return resultOf256Bits.shiftRight(256-curveOrderBitLength);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not map to integer", e);
     }
   }
 

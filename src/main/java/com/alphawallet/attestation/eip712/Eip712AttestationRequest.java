@@ -3,18 +3,22 @@ package com.alphawallet.attestation.eip712;
 import com.alphawallet.attestation.AttestationRequest;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Issuer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
+  private static final Logger logger = LogManager.getLogger(Eip712AttestationRequest.class);
 
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
@@ -38,7 +42,8 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
     } catch (Exception e ) {
-      throw new IllegalArgumentException("Could not encode object");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not encode object"));
     }
     constructorCheck();
   }
@@ -57,14 +62,16 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
       this.attestationRequest = new AttestationRequest(URLUtility.decodeData(data.getPayload()));
     } catch (Exception e ) {
-      throw new IllegalArgumentException("Could not decode object");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not decode object"));
     }
     constructorCheck();
   }
 
   void constructorCheck() throws IllegalArgumentException {
     if (!verify()) {
-      throw new IllegalArgumentException("Could not verify Eip712 AttestationRequest");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not verify Eip712 AttestationRequest"));
     }
   }
 
@@ -101,6 +108,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   @Override
   public boolean verify() {
     if (!attestationRequest.verify()) {
+      logger.error("Could not verify signature");
       return false;
     }
     return true;
@@ -109,17 +117,20 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   @Override
   public boolean checkValidity() {
     if (!data.getDescription().equals(encoder.getUsageValue())){
+      logger.error("Description field is incorrect");
       return false;
     }
     Timestamp timestamp = new Timestamp(data.getTimestamp());
     timestamp.setValidity(acceptableTimeLimit);
     if (!timestamp.validateTimestamp()) {
+      logger.error("Timestamp is not valid");
       return false;
     }
     if (!Nonce.validateNonce(getPok().getNonce(),
         SignatureUtility.addressFromKey(publicKey), domain,
         new Timestamp(Timestamp.stringTimestampToLong(data.getTimestamp())-acceptableTimeLimit),
         new Timestamp(Timestamp.stringTimestampToLong(data.getTimestamp())+acceptableTimeLimit))) {
+      logger.error("Nonce is not valid");
       return false;
     }
     return true;

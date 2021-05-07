@@ -1,6 +1,9 @@
 package dk.alexandra.trulioo.issuer;
 
+import com.alphawallet.attestation.core.ExceptionUtil;
 import java.math.BigInteger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -15,6 +18,8 @@ import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.Keccak.Digest256;
 
 public class SignatureUtil {
+  private static final Logger logger = LogManager.getLogger(SignatureUtil.class);
+
   public static byte[] signKeccak(byte[] toSign, AsymmetricKeyParameter key) {
     Digest256 digest = new Keccak.Digest256();
     byte[] digestBytes = digest.digest(toSign);
@@ -44,7 +49,7 @@ public class SignatureUtil {
       asn1.add(new ASN1Integer(signature[1]));
       return new DERSequence(asn1).getEncoded();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not construct signature", e);
     }
   }
 
@@ -77,7 +82,7 @@ public class SignatureUtil {
       signer.init(false, key);
       return signer.verifySignature(digest, r, s);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not verify signature", e);
     }
   }
 

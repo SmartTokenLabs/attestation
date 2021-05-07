@@ -3,6 +3,7 @@ package com.alphawallet.attestation;
 import static com.alphawallet.attestation.core.AttestationCrypto.BYTES_IN_DIGEST;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
@@ -13,6 +14,8 @@ import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.util.Date;
 import java.util.Locale;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -35,6 +38,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     EMAIL
   }
 
+  private static final Logger logger = LogManager.getLogger(IdentifierAttestation.class);
   public static final int HIDDEN_IDENTIFIER_VERSION = 18;
   public static final int NFT_VERSION = 19;
   // SEE RFC 2079
@@ -56,7 +60,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     setCommitment(AttestationCrypto.makeCommitment(identity, type, secret));
     setUnlimitedValidity();
@@ -76,7 +80,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     setCommitment(commitment);
     setUnlimitedValidity();
@@ -98,7 +102,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     setUnlimitedValidity();
   }
@@ -106,7 +110,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
     super(derEncoding);
     if (!checkValidity()) {
-      throw new IllegalArgumentException("The content is not valid for an identity attestation");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not validate object"));
     }
   }
 
@@ -124,7 +129,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       Date notValidAfter = dateFormat.parse("99991231235959Z");
       super.setNotValidAfter(notValidAfter);
     } catch (ParseException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not parse date", e);
     }
   }
 
@@ -135,19 +140,21 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   @Override
   public boolean checkValidity() {
     if (!super.checkValidity()) {
+      logger.error("Could not check validity of the underlying attestation");
       return false;
     }
     if (getVersion() != HIDDEN_IDENTIFIER_VERSION && getVersion() != NFT_VERSION) {
-      System.err.println("The version number is " + getVersion() + ", it must be " + HIDDEN_IDENTIFIER_VERSION + " or " + NFT_VERSION);
+      logger.error("The version number is " + getVersion() + ", it must be either " + HIDDEN_IDENTIFIER_VERSION + " or " + NFT_VERSION);
       return false;
     }
     if (!getSigningAlgorithm().equals(DEFAULT_SIGNING_ALGORITHM)) {
-      System.err.println("The signature algorithm is supposed to be " + DEFAULT_SIGNING_ALGORITHM.getAlgorithm().getId());
+      logger.error("The subject is supposed to only be an Ethereum address as the Common Name");
       return false;
     }
     if (getVersion() == NFT_VERSION) {
       String subject = getSubject();
       if (!subject.contains(LABELED_URI.getId())) {
+        logger.error("A NFT Identifier attestation must have a labeled uri as subject");
         return false;
       }
     }
@@ -155,9 +162,11 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       // Ensure that there is a commitment as part of the attestation
       try {
         if (getCommitment().length < BYTES_IN_DIGEST) {
+          logger.error("The attestation does not contain a valid commitment");
           return false;
         }
       } catch (Exception e) {
+        logger.error("It was not possible to decode the attestation commitment");
         return false;
       }
     }
@@ -175,7 +184,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     try {
       return SignatureUtility.addressFromKey(PublicKeyFactory.createKey(getSubjectPublicKeyInfo()));
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode the address", e);
     }
   }
 
@@ -204,11 +213,13 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   @Override
   public void setVersion(int version) {
-    throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
+    throw ExceptionUtil.throwException(logger,
+        new RuntimeException("Not allowed to be manually set in concrete Attestation"));
   }
 
   @Override
   public void setSubject(String subject) {
-    throw new RuntimeException("Not allowed to be manually set in concrete Attestation");
+    throw ExceptionUtil.throwException(logger,
+        new RuntimeException("Not allowed to be manually set in concrete Attestation"));
   }
 }
