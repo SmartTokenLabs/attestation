@@ -8,15 +8,15 @@ IMPORTS
         FROM UriIdAttestation;
 
 NFTAttestation ::= SEQUENCE {
-    -- At least one of "tokens" or "nftDigest" MUST be included --
-    tokens               Tokens OPTIONAL,
-    -- Digest of the content (pic/vid) of the NFT --
-    nftDigest            Digest OPTIONAL,
     creator              UriIdAttestation,
-    signatureValue       BIT STRING
+    -- At least one token OR "nftDigest" MUST be included --
+    tokens               Tokens,
+    -- Digest of the content (pic/vid) of the NFT --
+    nftDigest            Digest OPTIONAL
 }
 
-Tokens ::= SEQUENCE SIZE (1..MAX) OF ERC721
+-- Allowed to be empty if "nftDigest" is included --
+Tokens ::= SEQUENCE OF ERC721
 
 -- A hash digest --
 Digest ::= OCTET STRING (SIZE(32..MAX))

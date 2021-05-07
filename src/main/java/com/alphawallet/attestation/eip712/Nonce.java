@@ -33,7 +33,7 @@ public class Nonce {
     }
     ByteBuffer buffer = ByteBuffer.allocate(otherDataIndexStart + otherData.length);
     // Hash to ensure all variable length components is encoded with constant length
-    buffer.put(senderAddress.getBytes(StandardCharsets.UTF_8));
+    buffer.put(senderAddress.toUpperCase().getBytes(StandardCharsets.UTF_8));
     buffer.put(AttestationCrypto.hashWithKeccak(receiverIdentifier.getBytes(StandardCharsets.UTF_8)));
     buffer.put(longToBytes(timestamp.getTime()));
     buffer.put(otherData);
@@ -71,7 +71,7 @@ public class Nonce {
     if (!ValidationTools.isAddress(address)) {
       throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Address is not valid"));
     }
-    byte[] recomputedKeyDigest = address.getBytes(StandardCharsets.UTF_8);
+    byte[] recomputedKeyDigest = address.toUpperCase().getBytes(StandardCharsets.UTF_8);
     return Arrays.equals(referenceAddress, recomputedKeyDigest);
   }
 

@@ -158,8 +158,9 @@ public class TestRedeemCheque {
     assertFalse(Arrays.equals(spki.getEncoded(), att.getSubjectPublicKeyInfo().getEncoded()));
     // Change public key
     field.set(att, spki);
-    // Validation should not fail
-    assertFalse(attestedCheque.getAtt().checkValidity());
+    // Validation should not fail for attestation
+    assertTrue(attestedCheque.getAtt().checkValidity());
+    // However it should for the whole object since the keys no longer match
     assertFalse(attestedCheque.checkValidity());
     // Verification should fail
     assertFalse(attestedCheque.getAtt().verify());

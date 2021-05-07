@@ -2,7 +2,6 @@ package com.alphawallet.attestation.core;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -51,11 +50,12 @@ public class SignatureUtility {
 
     public static final String ECDSA_CURVE = "secp256k1";
     public static final String MAC_ALGO = "HmacSHA256";
-    public static final X9ECParameters ECDSACurve = SECNamedCurves.getByName(ECDSA_CURVE);
-    public static final ECDomainParameters ECDSAdomain = new ECDomainParameters(ECDSACurve.getCurve(), ECDSACurve.getG(), ECDSACurve.getN(), ECDSACurve.getH());
+    public static final X9ECParameters ECDSA_CURVE = SECNamedCurves.getByName("secp256k1");
+    public static final ECDomainParameters ECDSA_DOMAIN = new ECDomainParameters(ECDSA_CURVE.getCurve(), ECDSA_CURVE
+        .getG(), ECDSA_CURVE.getN(), ECDSA_CURVE.getH());
     public static final ASN1ObjectIdentifier OID_ECDSA_PUBLICKEY = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for ECDSA public key
     public static final AlgorithmIdentifier SECP256K1_DESCRIPTION = new AlgorithmIdentifier(
-        OID_ECDSA_PUBLICKEY, ECDSACurve);
+        OID_ECDSA_PUBLICKEY, ECDSA_CURVE);
 
     // Special Ethereum personal message Prefix
     private static final String personalMessagePrefix = "\u0019Ethereum Signed Message:\n";
@@ -86,7 +86,7 @@ public class SignatureUtility {
     public static AsymmetricCipherKeyPair constructECKeysWithSmallestY(SecureRandom rand) {
         AsymmetricCipherKeyPair keys;
         BigInteger yCoord;
-        BigInteger fieldModulo = ECDSAdomain.getCurve().getField()
+        BigInteger fieldModulo = ECDSA_DOMAIN.getCurve().getField()
             .getCharacteristic();
         // If the y coordinate is in the upper half of the field, then sample again until it to the lower half
         do {
@@ -101,7 +101,7 @@ public class SignatureUtility {
      * @param random
      */
     public static AsymmetricCipherKeyPair constructECKeys(SecureRandom random) {
-        return constructECKeys(ECDSAdomain, random);
+        return constructECKeys(ECDSA_DOMAIN, random);
     }
 
     public static AsymmetricCipherKeyPair constructECKeys(X9ECParameters ECDSACurve, SecureRandom random) {
@@ -293,10 +293,18 @@ public class SignatureUtility {
         return new BigInteger[] {r, normalizedS, v};
     }
 
-    static byte[] convertToPersonalEthMessage(byte[] msgToSign) {
-        String hexMsg = "0x" + Hex.toHexString(msgToSign);
-        String ethereumMsg = personalMessagePrefix + hexMsg.length() + hexMsg;
-        return ethereumMsg.getBytes(StandardCharsets.UTF_8);
+    static final String MESSAGE_PREFIX = "\u0019Ethereum Signed Message:\n";
+    static byte[] getEthereumMessagePrefix(int messageLength) {
+        return MESSAGE_PREFIX.concat(String.valueOf(messageLength)).getBytes();
+    }
+
+    //code copied from Web3j:
+    public static byte[] convertToPersonalEthMessage(byte[] msgToSign) {
+        byte[] prefix = getEthereumMessagePrefix(msgToSign.length);
+        byte[] result = new byte[prefix.length + msgToSign.length];
+        System.arraycopy(prefix, 0, result, 0, prefix.length);
+        System.arraycopy(msgToSign, 0, result, prefix.length, msgToSign.length);
+        return result;
     }
 
     private static byte[] normalizeAndEncodeEthereumSignature(BigInteger[] signature, long chainID) {
@@ -415,12 +423,17 @@ public class SignatureUtility {
         }
     }
 
+    public static AsymmetricKeyParameter recoverEthPublicKeyFromPersonalSignature(byte[] message, byte[] signature) {
+        byte[] preHash = convertToPersonalEthMessage(message);
+        return recoverEthPublicKeyFromSignature(preHash, signature);
+    }
+
     public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
         BigInteger s = new BigInteger(1, sBytes);
-        if (s.compareTo(ECDSAdomain.getN().shiftRight(1)) > 0) {
+        if (s.compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
             throw ExceptionUtil.throwException(logger,
                 new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
@@ -433,12 +446,12 @@ public class SignatureUtility {
         byte[] digestBytes = AttestationCrypto.hashWithKeccak(unsignedMessage);
         BigInteger z = new BigInteger(1, digestBytes);
         // Compute y coordinate for the r value
-        ECPoint R = computeY(signature[0], yParity, ECDSAdomain);
-        BigInteger rInverse = signature[0].modInverse(ECDSAdomain.getN());
-        BigInteger u1 = z.multiply(rInverse).mod(ECDSAdomain.getN());
-        BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSAdomain.getN());
-        ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSAdomain.getG().multiply(u1)).normalize();
-        return new ECPublicKeyParameters(publicKeyPoint, ECDSAdomain);
+        ECPoint R = computeY(signature[0], yParity, ECDSA_DOMAIN);
+        BigInteger rInverse = signature[0].modInverse(ECDSA_DOMAIN.getN());
+        BigInteger u1 = z.multiply(rInverse).mod(ECDSA_DOMAIN.getN());
+        BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSA_DOMAIN.getN());
+        ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSA_DOMAIN.getG().multiply(u1)).normalize();
+        return new ECPublicKeyParameters(publicKeyPoint, ECDSA_DOMAIN);
     }
 
     private static ECPoint computeY(BigInteger x, byte yParity, ECDomainParameters params) {

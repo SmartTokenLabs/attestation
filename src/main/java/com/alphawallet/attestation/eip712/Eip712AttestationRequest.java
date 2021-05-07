@@ -29,7 +29,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, String identifier,
       AttestationRequest request, AsymmetricKeyParameter signingKey) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey);
+    this(attestorDomain, Timestamp.DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
@@ -50,7 +50,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public Eip712AttestationRequest(String attestorDomain, String jsonEncoding) {
-    this(attestorDomain, DEFAULT_TIME_LIMIT_MS, jsonEncoding);
+    this(attestorDomain, Timestamp.DEFAULT_TIME_LIMIT_MS, jsonEncoding);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,

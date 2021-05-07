@@ -1,5 +1,8 @@
 package com.alphawallet.attestation.eip712;
 
+import static com.alphawallet.attestation.eip712.Timestamp.DEFAULT_TIME_LIMIT_MS;
+import static com.alphawallet.attestation.eip712.Timestamp.DEFAULT_TOKEN_TIME_LIMIT;
+
 import com.alphawallet.attestation.AttestationRequestWithUsage;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;

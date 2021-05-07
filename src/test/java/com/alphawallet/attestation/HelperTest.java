@@ -11,13 +11,16 @@ import java.util.Date;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+
+
+/* created to help other test-cases - James
+ * this class should be refactored away entirely - Weiwu */
 
 public class HelperTest {
 
@@ -39,7 +42,7 @@ public class HelperTest {
   }
 
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
-      AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
+                                                              AsymmetricKeyParameter issuerPublicKey, BigInteger secret, String mail) {
     IdentifierAttestation att = makeUnsignedStandardAtt(subjectPublicKey, secret, mail);
     assertTrue(att.checkValidity());
     assertTrue(issuerPublicKey instanceof ECPublicKeyParameters);
@@ -60,7 +63,7 @@ public class HelperTest {
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
     att.setSubjectPublicKeyInfo(spki);
     ASN1EncodableVector extensions = new ASN1EncodableVector();
-    extensions.add(new ASN1ObjectIdentifier(Attestation.OID_OCTETSTRING));
+    extensions.add(Attestation.OID_OCTETSTRING);
     extensions.add(ASN1Boolean.TRUE);
     extensions.add(new DEROctetString("hello world".getBytes()));
     // Double Sequence is needed to be compatible with X509V3
@@ -69,18 +72,11 @@ public class HelperTest {
     return att;
   }
 
-  public static Attestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
-    Attestation att = new Attestation();
-    att.setVersion(18); // Our initial version
+  public static IdentifierAttestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
+    IdentifierAttestation att = new IdentifierAttestation("Twitter", "King Midas", key);
     att.setSerialNumber(42);
     att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     att.setIssuer("CN=ALX");
-    Date now = new Date();
-    att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis()+VALIDITY));
-    att.setSubject("CN=0x2042424242424564648");
-    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
-    att.setSubjectPublicKeyInfo(spki);
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
@@ -92,8 +88,9 @@ public class HelperTest {
 
   public static Attestation makeMinimalAtt() {
     Attestation att = new Attestation();
-    att.setVersion(18); // Our initial version
+    att.setVersion(IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION); // Our initial version
     att.setSerialNumber(42);
+    att.setSubject("CN="); // Blank subject info
     att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));

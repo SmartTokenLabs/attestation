@@ -28,10 +28,7 @@ MyAttestation ::=  SEQUENCE  {
      subject              Name,
      subjectPublicKeyInfo SubjectPublicKeyInfo,
      contract             SEQUENCE OF SmartContract OPTIONAL,
-     attestsTo         CHOICE {
-        extensions        [3] EXPLICIT Extensions,
-        dataObject        [4] DataObject -- defined per objectClass
-     }
+     attestsTo            Payload OPTIONAL
    }
 
    SubjectPublicKeyInfo ::= CHOICE {
@@ -48,5 +45,10 @@ MyAttestation ::=  SEQUENCE  {
    SmartContract ::= INTEGER
 
    DataObject ::= INTEGER -- TODO placeholder
+
+   Payload ::= CHOICE {
+      extensions        [3] EXPLICIT Extensions,
+      dataObject        [4] DataObject -- defined per objectClass
+   }
 
 END
