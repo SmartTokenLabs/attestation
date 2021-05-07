@@ -9,14 +9,13 @@ import com.alphawallet.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Logger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.util.Date;
 import java.util.Locale;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -163,7 +162,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       // Ensure that there is a commitment as part of the attestation
       try {
         if (getCommitment().length < BYTES_IN_DIGEST) {
-          logger.error("The attestation does not contain a valid commitment);
+          logger.error("The attestation does not contain a valid commitment");
           return false;
         }
       } catch (Exception e) {

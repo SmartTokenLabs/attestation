@@ -48,7 +48,6 @@ import org.bouncycastle.util.encoders.Hex;
 public class SignatureUtility {
     private static final Logger logger = LogManager.getLogger(SignatureUtility.class);
 
-    public static final String ECDSA_CURVE = "secp256k1";
     public static final String MAC_ALGO = "HmacSHA256";
     public static final X9ECParameters ECDSA_CURVE = SECNamedCurves.getByName("secp256k1");
     public static final ECDomainParameters ECDSA_DOMAIN = new ECDomainParameters(ECDSA_CURVE.getCurve(), ECDSA_CURVE

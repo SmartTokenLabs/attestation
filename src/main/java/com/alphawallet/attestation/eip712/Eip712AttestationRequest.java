@@ -20,7 +20,6 @@ import org.tokenscript.eip712.JsonEncodable;
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
   private static final Logger logger = LogManager.getLogger(Eip712AttestationRequest.class);
 
-  public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
   private final AttestationRequest attestationRequest;
   private final AttestationRequestInternalData data;
   private final String jsonEncoding;

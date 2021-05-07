@@ -34,7 +34,7 @@ import org.bouncycastle.asn1.x509.Time;
 
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
-  public static final String OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
+  public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(
@@ -291,8 +291,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public boolean checkValidity() {
-    if (version == null || subject == null || serialNumber == null || signingAlgorithm == null || (extensions == null
-        && dataObject == null)) {
+    if (version == null || subject == null || serialNumber == null || signingAlgorithm == null) {
       logger.error("Version, serial number, algorithm or extension/dataObject missing");
       return false;
     }
