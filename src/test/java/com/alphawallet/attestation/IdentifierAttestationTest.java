@@ -6,13 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.alphawallet.attestation.core.SignatureUtility;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -36,9 +34,6 @@ public class IdentifierAttestationTest {
   final String mail = "test@test.ts";
   // public identifier
   final String labeledURI = "https://twitter.com/king_midas";
-
-  public IdentifierAttestationTest() throws NoSuchAlgorithmException {
-  }
 
   @BeforeAll
   public static void setupKeys() throws Exception {

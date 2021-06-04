@@ -34,8 +34,23 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class IdentifierAttestation extends Attestation implements Validateable {
   public enum AttestationType {
-    PHONE,
-    EMAIL
+    PHONE ("phone"),
+    EMAIL ("email"),
+    TWITTER ("twitter");
+
+    private final String type;
+
+    private AttestationType(String type) {
+      this.type = type;
+    }
+
+    public boolean equals(String otherType) {
+      return type.equals(otherType);
+    }
+
+    public String toString() {
+      return this.type;
+    }
   }
 
   private static final Logger logger = LogManager.getLogger(IdentifierAttestation.class);
