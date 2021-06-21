@@ -8,29 +8,29 @@ The document will first describe the overall intuition of the protocol and its s
 
 For information about the underlying cryptography used in the protocol, please consult this [document](https://github.com/AlphaWallet/blockchain-attestation/blob/master/use-cases/send-ether-by-identifier-attestation.md).
 
-More specifically, this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using demo jar file). 
+More specifically, this protocol considers 3 distinct parties, Alice, Bob and an Attestor (all of which can be emulated locally using demo jar file).
 
-Concretely we consider an issuer, Alice, who wishes to send some crypto asset to Bob, who might not have an Ethereum address. 
+Concretely we consider an issuer, Alice, who wishes to send some crypto asset to Bob, who might not have an Ethereum address.
 
-Alice, however, knows an identifier of Bob that can be attested to. e.g. Bob’s email address or Bob’s mobile phone number. 
+Alice, however, knows an identifier of Bob that can be attested to. e.g. Bob’s email address or Bob’s mobile phone number.
 
 Bob is able to prove that he has access to this identifier by requesting an attestation to that from an Attestor, e.g. [attestation.id](http://attestation.id).
 
 ### The Flow
 
 Alice starts by constructing a virtual cheque (redeemable crypto asset), based on some newly sampled randomness and Bob's identifier (say his e-mail). This will result in a public riddle, cryptographically linked to Bob's identifier, and a secret solution.
- Alice posts the public riddle to a smart contract along with some ether and sends the secret solution to Bob.
- 
-The smart contract will pay out the ether to anyone who is able to prove that they hold the secret solution for its riddle *and* show an attestation, with a cryptographic linking to this riddle. 
- 
-In order to use the cheque (with a smart contract), Bob must get an attestation to his e-mail which was used in constructing the public riddle. 
+Alice posts the public riddle to a smart contract along with some ether and sends the secret solution to Bob.
+
+The smart contract will pay out the ether to anyone who is able to prove that they hold the secret solution for its riddle *and* show an attestation, with a cryptographic linking to this riddle.
+
+In order to use the cheque (with a smart contract), Bob must get an attestation to his e-mail which was used in constructing the public riddle.
 
 For this he picks some unique and newly sampled randomness to be a secret, only known to him, which will be used in his attestation.
- 
-Based on Bob's secret randomness he contacts an Attester and proves to this that he has access to his email address (the one that the cheque was signed to). 
 
-As a result, he receives a *reusable* and public attestation cryptographically constructed based on his secret randomness. 
- 
+Based on Bob's secret randomness he contacts an Attester and proves to this that he has access to his email address (the one that the cheque was signed to).
+
+As a result, he receives a *reusable* and public attestation cryptographically constructed based on his secret randomness.
+
 Using this attestation, his own randomness and the randomness for the cheque he received from Alice, he can now redeem the cheque from the smart contract by submitting his public attestation, and a proof that he knows the secret solution to the cheque.
 
 ### Security
@@ -48,7 +48,7 @@ The protocol is secure under the discrete log problem over the BN256 curve.
 
 The demo jar file contains all methods needed to run a full demo flow. It also contains methods for facilitating attestation authorization or authentication based on EIP712; see [this description](cli-cheque-demo.md) for details about that flow.
 
-The general syntax for running a command with demo jar file is `java -jar attestation-all.jar <name-of-command>` where `name-of-command` is one of the following: `keys, create-cheque, request-attest, construct-attest, receive-cheque`. 
+The general syntax for running a command with demo jar file is `java -jar attestation-all.jar <name-of-command>` where `name-of-command` is one of the following: `keys, create-cheque, request-attest, construct-attest, receive-cheque`.
 We discuss these commands below.
 
 ### Construct keys
@@ -65,13 +65,13 @@ Specifically the syntax of the command is as follows:
 
 For example:
 
-`java -jar attestation-all.jar keys pub.pem priv.pem` 
+`java -jar attestation-all.jar keys pub.pem priv.pem`
 
 ### Create Cheque
 
 Constructs a cheque of an integer amount, to an identifier of a certain type, which will be valid for a certain amount of seconds, using a private signing key. The command outputs the public and private aspects of the cheque in two separate files.
 This method should be run by Alice.
- 
+
 Specifically the syntax of the command is as follows:
 
 `java -jar attestation-all.jar create-cheque <amount-as-integer> <identifier> <type-of-identifier> <validity> <private-key> <public-riddle> <cheque-secret>`
@@ -147,7 +147,7 @@ For example:
 
 ### Full local execution
 
-To run the full protocol locally execute the following commands: 
+To run the full protocol locally execute the following commands:
 
 `java -jar attestation-all.jar keys Alice-pub.pem Alice-priv.pem`
 
