@@ -204,3 +204,13 @@ In either case, followed by:
 4. `java -jar attestation-all.jar sign-message session-priv.pem "some sort of message" signature.bin`
 
 5. `java -jar attestation-all.jar verify-usage request.json Attestor-pub.pem "some sort of message" signature.bin`
+
+## Magic link utility
+Regardless of the specific flow of usage the commandline utility also offers a handy method for converting any file into a `magic link`.
+Concretely this means taking the potentially binary data of a file and producing an URL compatible Base64 encoding of its content and print it on the command line.
+
+Specifically the syntax of the command is as follows:
+
+`java -jar attestation-all.jar magic-link <input>`
+
+- `input` is the directory of any file which should be turned into a magic link, e.g. `attestation.crt`.

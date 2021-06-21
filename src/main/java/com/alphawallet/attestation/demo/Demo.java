@@ -16,6 +16,7 @@ import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequest;
@@ -200,6 +201,16 @@ public class Demo {
             throw e;
           }
           System.out.println("Finished verifying message");
+          break;
+
+        case "magic-link":
+          System.out.println("The magic link of the content of " + arguments.get(1) + " is:");
+          try {
+            magicLink(Paths.get(arguments.get(1)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <input>");
+            throw e;
+          }
           break;
 
         default:
@@ -429,6 +440,11 @@ public class Demo {
       System.err.println("Could not validate usage request");
       throw new RuntimeException("Validation failed");
     }
+  }
+
+  private static void magicLink(Path inputFile) throws IOException {
+    byte[] signature = Files.readAllBytes(inputFile);
+    System.out.println(URLUtility.encodeData(signature));
   }
 
   private static AttestationType getType(String stringType) throws IllegalArgumentException {
