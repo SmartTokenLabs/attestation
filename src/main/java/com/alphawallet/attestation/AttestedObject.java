@@ -60,6 +60,31 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
+  public AttestedObject(T attestableObject, SignedIdentityAttestation att, AsymmetricKeyParameter userPublicKey,
+                        BigInteger attestationSecret, BigInteger chequeSecret,
+                        AttestationCrypto crypto)
+  {
+    this.attestableObject = attestableObject;
+    this.att = att;
+    this.userPublicKey = userPublicKey;
+
+    try {
+      this.pok = makeProof(attestationSecret, chequeSecret, crypto);
+      ASN1EncodableVector vec = new ASN1EncodableVector();
+      vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
+      vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
+      vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
+      this.unsignedEncoding = new DERSequence(vec).getEncoded();
+      this.signature = null;
+      this.encoding = null;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    if (!verify()) {
+      throw new IllegalArgumentException("The redeem request is not valid");
+    }
+  }
+
   public AttestedObject(T object, SignedIdentityAttestation att, ProofOfExponent pok, byte[] signature) {
     this.attestableObject = object;
     this.att = att;
@@ -81,6 +106,34 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     if (!verify()) {
       throw ExceptionUtil.throwException(logger,
           new IllegalArgumentException("Could not verify object"));
+    }
+  }
+
+  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
+                        AsymmetricKeyParameter publicAttestationSigningKey, byte[] userSignature) {
+    try {
+      ASN1InputStream input = new ASN1InputStream(derEncoding);
+      ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
+      this.att = new SignedIdentityAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
+      this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
+      this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
+      this.signature = userSignature;
+
+      //create full signed encoding
+      ASN1EncodableVector vec = new ASN1EncodableVector();
+      vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
+      vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
+      vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
+      vec.add(new DERBitString(this.signature));
+      this.encoding = new DERSequence(vec).getEncoded();
+
+      this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    if (!verify()) {
+      throw new IllegalArgumentException("The redeem request is not valid");
     }
   }
 
