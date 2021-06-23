@@ -78,10 +78,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       this.signature = null;
       this.encoding = null;
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("The redeem request is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("The redeem request is not valid"));
     }
   }
 
@@ -130,10 +131,11 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("The redeem request is not valid");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("The redeem request is not valid"));
     }
   }
 
