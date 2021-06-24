@@ -23,6 +23,10 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
+
+import com.alphawallet.attestation.demo.SmartContract;
+import com.alphawallet.ethereum.TicketAttestationReturn;
+import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -46,6 +50,7 @@ public class UseTicketTest {
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
   private AttestedObject<Ticket> attestedTicket;
+  private final SmartContract contract = new SmartContract();
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -56,6 +61,10 @@ public class UseTicketTest {
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeys(rand);
     ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
+
+    System.out.println("subject: " + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
+    System.out.println("attestor: " + SignatureUtility.addressFromKey(attestorKeys.getPublic()));
+    System.out.println("ticketIssuer: " + SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
   }
 
   @BeforeEach
@@ -138,6 +147,73 @@ public class UseTicketTest {
     AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
         attestedTicket.getAtt(), attestedTicket.getPok(),
         attestedTicket.getSignature());
+
+    assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
+    assertArrayEquals(newConstructor.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
+  }
+
+  @Test
+  public void testSmartContractDecode() throws Exception {
+    //try building all components
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, attestorKeys);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    AttestedObject<Ticket> unsigned = new AttestedObject<>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
+
+    byte[] userSig = SignatureUtility.signPersonalMsgWithEthereum(unsigned.getDerEncoding(), subjectKeys.getPrivate());
+
+    AttestedObject<Ticket> signedAttestedTicket = new AttestedObject<>(unsigned.getDerEncoding(), new TicketDecoder(
+            ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), userSig);
+
+    //now attempt to dump data from contract:
+    TicketAttestationReturn tar = contract.callVerifyTicketAttestation(signedAttestedTicket.getDerEncodingWithSignature());
+
+    //check returned values
+    assertTrue(tar.subjectAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(subjectKeys.getPublic())));
+    assertTrue(tar.issuerAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic())));
+    assertTrue(tar.attestorAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(attestorKeys.getPublic())));
+  }
+
+  @Test
+  public void testWithExternalSignature() throws InvalidObjectException {
+    //try building all components
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, attestorKeys);
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    AttestedObject<Ticket> unsigned = new AttestedObject<>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
+
+    byte[] userSig = SignatureUtility.signPersonalMsgWithEthereum(unsigned.getDerEncoding(), subjectKeys.getPrivate());
+
+    AttestedObject<Ticket> signedAttestedTicket = new AttestedObject<>(unsigned.getDerEncoding(), new TicketDecoder(
+            ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), userSig);
+
+    assertTrue(signedAttestedTicket.getAttestableObject().verify());  // <----
+    assertTrue(signedAttestedTicket.getAtt().verify());
+
+    signedAttestedTicket.verify();
+
+    //rebuild from original test object, using the unsigned component
+    byte[] unsignedTicket = attestedTicket.getDerEncoding();
+    userSig = SignatureUtility.signPersonalMsgWithEthereum(unsignedTicket, subjectKeys.getPrivate());
+    AttestedObject<Ticket> signedAttestedTicket2 = new AttestedObject<>(unsignedTicket, new TicketDecoder(
+            ticketIssuerKeys.getPublic()), attestorKeys.getPublic(), userSig);
+
+    signedAttestedTicket2.verify();
+
+    assertTrue(AttestationCrypto.verifyEqualityProof(signedAttestedTicket.getAtt().getUnsignedAttestation().getCommitment(), signedAttestedTicket.getAttestableObject().getCommitment(), signedAttestedTicket.getPok()));
+
+    assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
+            signedAttestedTicket2.getAttestableObject().getDerEncoding());
+    assertArrayEquals(attestedTicket.getAtt().getDerEncoding(), signedAttestedTicket2.getAtt().getDerEncoding());
+    assertArrayEquals(attestedTicket.getPok().getDerEncoding(), signedAttestedTicket2.getPok().getDerEncoding());
+    assertArrayEquals(attestedTicket.getSignature(), signedAttestedTicket2.getSignature());
+    assertEquals(attestedTicket.getUserPublicKey(), subjectKeys.getPublic());
+    assertArrayEquals(attestedTicket.getDerEncoding(), signedAttestedTicket2.getDerEncoding());
+    assertArrayEquals(attestedTicket.getDerEncodingWithSignature(), signedAttestedTicket2.getDerEncodingWithSignature());
+
+    AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
+            attestedTicket.getAtt(), attestedTicket.getPok(),
+            attestedTicket.getSignature());
 
     assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
     assertArrayEquals(newConstructor.getDerEncodingWithSignature(), attestedTicket.getDerEncodingWithSignature());
