@@ -20,11 +20,11 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     //static DEFAULT_TIME_LIMIT_MS:number = 1000*60*20; // 20 minutes
 
     private Eip712UserDataTypes: {name: string, type: string}[]  = [
-        {name: 'address', type: 'string'},
-        {name: 'description', type: 'string'},
-        {name: 'identifier', type: 'string'},
+        // {name: 'address', type: 'string'},
         {name: 'payload', type: 'string'},
+        {name: 'description', type: 'string'},
         {name: 'timestamp', type: 'string'},
+        {name: 'identifier', type: 'string'},
     ]
     private Eip712UserDataPrimaryName: string = "AttestationRequest";
     private Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
@@ -97,17 +97,15 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         }
 
 
-        let timestamp = Nonce.getTimestamp(this.attestationRequest.getPok().getNonce());
-        let ts = new Date(timestamp).toString();
-        ts = ts.substr(0, ts.indexOf('(') - 1);
-
+        let nonceTimestamp = Nonce.getTimestamp(this.attestationRequest.getPok().getNonce());
+        let ts = new Timestamp(nonceTimestamp).getTimeAsString();
 
         let userData = {
             payload: hexStringToBase64Url(this.attestationRequest.getDerEncoding()),
             description: this.Eip712UserDataDescription,
             timestamp: ts,
             identifier: identifier,
-            address: userAddress,
+            // address: userAddress,
         };
 
         return await SignatureUtility.signEIP712WithBrowserWallet(this.domain, userData, this.Eip712UserDataTypes, this.Eip712UserDataPrimaryName, this.userKey);

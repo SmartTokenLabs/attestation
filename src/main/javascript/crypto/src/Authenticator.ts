@@ -1,6 +1,6 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn} from "./libs/utils";
+import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString} from "./libs/utils";
 import {SignedIdentityAttestation} from "./libs/SignedIdentityAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
@@ -19,7 +19,14 @@ import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequest
 import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
 
-const { subtle } = require('crypto').webcrypto;
+let subtle:any;
+
+if (crypto && crypto.subtle){
+    subtle = crypto.subtle;
+} else {
+    subtle = require('crypto').webcrypto.subtle;
+}
+
 
 declare global {
     interface Window {
@@ -47,7 +54,15 @@ const ALPHA_CONFIG = {
 export interface devconToken {
     ticketBlob: string,
     ticketSecret: bigint,
+    email?: string,
+    magicLink?: string,
     attestationOrigin: string,
+}
+
+interface postMessageData {
+    force?: boolean,
+    email?: string,
+    magicLink?: string,
 }
 
 export class Authenticator {
@@ -56,6 +71,9 @@ export class Authenticator {
 
     private attestationBlob: string;
     private attestationSecret: bigint;
+
+    private magicLink: string;
+    private email: string;
 
     private attestationOrigin: string;
     private authResultCallback: Function;
@@ -85,6 +103,8 @@ export class Authenticator {
         // unless DevCon changed their tokenscript and moved all tickets to the contract
 
         this.signedTokenBlob = tokenObj.ticketBlob;
+        this.magicLink = tokenObj.magicLink;
+        this.email = tokenObj.email;
         this.signedTokenSecret = tokenObj.ticketSecret;
         this.attestationOrigin = tokenObj.attestationOrigin;
         this.authResultCallback = authResultCallback;
@@ -96,7 +116,8 @@ export class Authenticator {
      *  - Since this token depends on identifier attestation, continue to open iframe to attestation.id who needs to provide the proof
      */
     getIdentifierAttestation() {
-        console.log('getIdentifierAttestation. create iframe.')
+        console.log('getIdentifierAttestation. create iframe with ' + this.attestationOrigin);
+
         // attach postMessage listener and wait for attestation data
         this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
         const iframe = document.createElement('iframe');
@@ -184,7 +205,11 @@ export class Authenticator {
             typeof event.data.ready !== "undefined"
             && event.data.ready === true
         ) {
-            this.iframe.contentWindow.postMessage({force: false}, this.attestationOrigin);
+            let sendData:postMessageData = {force: false};
+            if (this.magicLink) sendData.magicLink = this.magicLink;
+            if (this.email) sendData.email = this.email;
+
+            this.iframe.contentWindow.postMessage(sendData, this.attestationOrigin);
             return;
         }
 
@@ -292,6 +317,7 @@ export class Authenticator {
         }
 
         let nonce = await Nonce.makeNonce(userAddress, attestorDomain);
+        console.log('nonce = ' + uint8tohex(nonce));
 
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);

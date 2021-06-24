@@ -1,9 +1,10 @@
-import {stringToArray, uint8tohex} from './libs/utils';
+import {bnToUint8, hexStringToUint8, stringToArray, uint8arrayToBase64, uint8tohex} from './libs/utils';
 import {readFileSync} from "fs";
 import {KeyPair} from "./libs/KeyPair";
 import {Authenticator} from "./Authenticator";
 import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
 import {Timestamp} from "./libs/Timestamp";
+import {Asn1Der} from "./libs/DerUtility";
 
 let EC = require("elliptic");
 
@@ -108,13 +109,14 @@ describe("Subtle import test", () => {
 
 describe("Attestation request/construct", () => {
 
+
     test("Construct Attestation(from ready attest request)", () => {
 
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-        let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
+        let attestationResult = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        // console.log("attestRes = " + attestRes);
+        // console.log("attestationResult = " + attestationResult);
         // OK if no Errors
         expect(1).toBe(1);
 
@@ -136,15 +138,19 @@ describe("Attestation request/construct", () => {
 
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
 
-        let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', Timestamp.DEFAULT_TIME_LIMIT_MS, attestationRequestJson, ATTESTOR_DOMAIN);
+        let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 24*60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        // console.log("attestRes = " + attestRes);
+        console.log("attestRes = " + attestRes);
+        console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(attestRes)));
+        console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(Asn1Der.encode('SEQUENCE_30',Asn1Der.encode('OCTET_STRING',uint8tohex(bnToUint8(12345n)))) )));
         // OK if no Errors
         expect(1).toBe(1);
 
     });
 
 });
+
+
 
 describe("executeEipFlow", () => {
 
@@ -246,7 +252,7 @@ describe("executeCombinedEipFlow", () => {
 
         let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        // console.log(attestRes + '-------');
+        // console.log(attestRes);
         // if no Errors then its OK
         expect(1).toBe(1);
     })

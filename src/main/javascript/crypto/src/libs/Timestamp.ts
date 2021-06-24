@@ -46,7 +46,7 @@ export class Timestamp {
     }
 
     public getTimeAsString(): string {
-        let preTime = new Date(this.time).toString();
+        let preTime = new Date(this.time).toString();//.replace('GMT',' GMT');
         return preTime.substr(0, preTime.indexOf('(') - 1);
     }
 

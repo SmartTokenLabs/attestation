@@ -17,12 +17,12 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
-public class SignedAttestation implements ASNEncodable, Verifiable, Validateable {
+public class SignedIdentityAttestation implements ASNEncodable, Verifiable, Validateable {
   private final Attestation att;
   private final byte[] signature;
   private final AsymmetricKeyParameter publicKey;
 
-  public SignedAttestation(Attestation att, AsymmetricCipherKeyPair key) {
+  public SignedIdentityAttestation(Attestation att, AsymmetricCipherKeyPair key) {
     this.att = att;
     this.signature = SignatureUtility.signDeterministic(att.getPrehash(), key.getPrivate());
     this.publicKey = key.getPublic();
@@ -31,7 +31,7 @@ public class SignedAttestation implements ASNEncodable, Verifiable, Validateable
     }
   }
 
-  public SignedAttestation(byte[] derEncoding, AsymmetricKeyParameter signingPublicKey) throws IOException {
+  public SignedIdentityAttestation(byte[] derEncoding, AsymmetricKeyParameter signingPublicKey) throws IOException {
     ASN1InputStream input = new ASN1InputStream(derEncoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
     ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));

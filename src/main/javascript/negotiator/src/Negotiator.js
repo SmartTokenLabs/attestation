@@ -9,6 +9,7 @@ export class Negotiator {
             tokensOrigin: "https://devcontickets.herokuapp.com/outlet/",
             tokenUrlName: 'ticket',
             tokenSecretName: 'secret',
+            tokenIdName: 'id',
             unsignedTokenDataName: 'ticket',
             // tokenParserUrl: '',
             tokenParser: SignedDevconTicket,
@@ -23,9 +24,11 @@ export class Negotiator {
         this.attestationOrigin = XMLconfig.attestationOrigin;
         this.tokenUrlName = XMLconfig.tokenUrlName;
         this.tokenSecretName = XMLconfig.tokenSecretName;
+        this.tokenIdName = XMLconfig.tokenIdName;
         this.unsignedTokenDataName = XMLconfig.unsignedTokenDataName;
         this.tokenParser = XMLconfig.tokenParser;
         this.localStorageItemName = XMLconfig.localStorageItemName;
+        this.addTokenIframe = null;
 
         if (options.hasOwnProperty('debug')) this.debug = options.debug;
         if (options.hasOwnProperty('attestationOrigin')) this.attestationOrigin = options.attestationOrigin;
@@ -39,12 +42,23 @@ export class Negotiator {
             let tokensOriginURL = new URL(this.tokensOrigin);
 
             if (currentURL.origin === tokensOriginURL.origin) {
-                console.log('this is tokenOrigin. fire listener and read params');
                 // its tokens website, where tokens saved in localStorage
                 // lets chech url params and save token data to the local storage
                 this.isTokenOriginWebsite = true;
                 this.readMagicUrl();
             }
+
+            this.attachPostMessageListener(event=>{
+                if (event.origin !== tokensOriginURL.origin) {
+                    return;
+                }
+                if (event.data.iframeCommand && event.data.iframeCommand == "closeMe" && this.addTokenIframe){
+                    this.addTokenIframe.remove();
+                    const tokenEvent = new Event('newTokenAdded');
+                    document.body.dispatchEvent(tokenEvent);
+                }
+
+            })
         }
 
         // do we inside iframe?
@@ -59,6 +73,25 @@ export class Negotiator {
             window.parent.postMessage({iframeCommand: "iframeReady", iframeData: ''}, referrer.origin);
         }
     }
+
+    addTokenThroughIframe(magicLink){
+        console.log('createTokenIframe fired for : ' + magicLink);
+        // open iframe and request tokens
+        // this.attachPostMessageListener(this.listenForIframeMessages.bind(this));
+
+        const iframe = document.createElement('iframe');
+        this.addTokenIframe = iframe;
+        iframe.src = magicLink;
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
+        iframe.style.opacity = 0;
+        // let iframeWrap = document.createElement('div');
+        // this.tokenIframeWrap = iframeWrap;
+        // iframeWrap.setAttribute('style', 'width:100%; min-height: 100vh; position: fixed; align-items: center; justify-content: center; display: none; top: 0; left: 0; background: #fffa');
+        // iframeWrap.appendChild(iframe);
+        document.body.appendChild(iframe);
+    }
+
 
     listenForParentMessages(event){
 
@@ -88,6 +121,7 @@ export class Negotiator {
 
         switch (command) {
             case "signToken":
+                // we receive decoded token, we have to find appropriate raw token
                 console.log('let Auth data:', data);
                 if (typeof window.Authenticator === "undefined"){
                     console.log('Authenticator not defined.');
@@ -96,16 +130,21 @@ export class Negotiator {
 
                 let rawTokenData = this.getRawToken(data);
 
-                // console.log('rawTokenData: ',rawTokenData);
+                console.log('rawTokenData: ',rawTokenData);
 
                 let base64ticket = rawTokenData.token;
                 let ticketSecret = rawTokenData.secret;
                 this.authenticator = new Authenticator(this);
-                this.authenticator.getAuthenticationBlob({
+
+                let tokenObj = {
                     ticketBlob: base64ticket,
                     ticketSecret: ticketSecret,
                     attestationOrigin: this.attestationOrigin,
-                },
+                };
+                if (rawTokenData && rawTokenData.id) tokenObj.email = rawTokenData.id;
+                if (rawTokenData && rawTokenData.magic_link) tokenObj.magicLink = rawTokenData.magic_link;
+
+                this.authenticator.getAuthenticationBlob(tokenObj,
                         res => {
                     console.log('sign result:',res);
                     window.parent.postMessage({iframeCommand: "useTokenData", iframeData: {useToken: res, message: '', success: !!res}}, referrer.origin);
@@ -113,7 +152,7 @@ export class Negotiator {
                 break;
             case "tokensList":
                 // TODO update
-                console.log('let return tokens');
+                // console.log('let return tokens');
                 this.returnTokensToParent();
                 break;
 
@@ -146,6 +185,7 @@ export class Negotiator {
         const urlParams = new URLSearchParams(window.location.search);
         const tokenFromQuery = urlParams.get(this.tokenUrlName);
         const secretFromQuery = urlParams.get(this.tokenSecretName);
+        const idFromQuery = urlParams.get(this.tokenIdName);
 
         if (! (tokenFromQuery && secretFromQuery) ) {
             return;
@@ -172,10 +212,23 @@ export class Negotiator {
         // Add ticket if new
         // if (isNewQueryTicket && tokenFromQuery && secretFromQuery) {
         if (isNewQueryTicket) {
-            tokens.push({token: tokenFromQuery, secret: secretFromQuery}); // new raw object
+            tokens.push({
+                token: tokenFromQuery,
+                secret: secretFromQuery,
+                id: idFromQuery,
+                magic_link: window.location.href
+            }); // new raw object
         }
         // Set New tokens list raw only, websters will be decoded each time
         localStorage.setItem(this.localStorageItemName, JSON.stringify(tokens));
+
+        if (window !== window.parent){
+            this.debug && console.log('negotiator: its iframe, lets close it');
+
+            // send ready message to start interaction
+            let referrer = new URL(document.referrer);
+            window.parent.postMessage({iframeCommand: "closeMe"}, referrer.origin);
+        }
     }
 
     /*
@@ -241,10 +294,11 @@ export class Negotiator {
                     // output.tokens = tokens;
                     tokens.forEach(item => {
                         if (item.token && item.secret) {
-                            output.tokens.push({
-                                token: item.token,
-                                secret: item.secret
-                            })
+                            output.tokens.push(item)
+                            // output.tokens.push({
+                            //     token: item.token,
+                            //     secret: item.secret
+                            // })
                         }
                     })
                 }
@@ -271,6 +325,7 @@ export class Negotiator {
             if (rawTokens.length) {
                 rawTokens.forEach(tokenData=> {
                     if (tokenData.token){
+
                         let decodedToken = new this.tokenParser(this.base64ToUint8array(tokenData.token).buffer);
                         if (decodedToken && decodedToken[this.unsignedTokenDataName]) {
                             let decodedTokenData = decodedToken[this.unsignedTokenDataName];
@@ -292,6 +347,8 @@ export class Negotiator {
     }
 
     listenForIframeMessages(event){
+
+        // console.log('listenForIframeMessages fired');
 
         let tokensOriginURL = new URL(this.tokensOrigin);
 
@@ -354,8 +411,11 @@ export class Negotiator {
                 break;
 
             case "iframeReady":
-                event.source.postMessage(this.queuedCommand, event.origin);
-                this.queuedCommand = '';
+                if (event && event.source) {
+                    event.source.postMessage(this.queuedCommand, event.origin);
+                    this.queuedCommand = '';
+                }
+
                 break;
 
             default:
@@ -366,6 +426,8 @@ export class Negotiator {
     }
 
     signToken(unsignedToken, signCallback){
+        console.log('signToken request for:');
+        console.log(unsignedToken);
         this.signCallback = signCallback;
         // open iframe and request tokens
         this.queuedCommand = {parentCommand: 'signToken',parentData: unsignedToken};
@@ -378,11 +440,9 @@ export class Negotiator {
             return false;
         }
 
-        console.log('negotiateCallback added;');
-
         this.negotiateCallback = callBack;
 
-        console.log('attestationOrigin = '+this.attestationOrigin);
+        // console.log('attestationOrigin = '+this.attestationOrigin);
         if (this.attestationOrigin) {
 
             if (window.location.href === this.tokensOrigin) {
@@ -405,7 +465,7 @@ export class Negotiator {
     }
 
     createIframe(){
-        console.log('open iframe');
+        console.log('createIframe fired');
         // open iframe and request tokens
         this.attachPostMessageListener(this.listenForIframeMessages.bind(this));
 

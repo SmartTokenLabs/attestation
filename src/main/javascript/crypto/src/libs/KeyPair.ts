@@ -19,7 +19,15 @@ import {Signature} from "../asn1/shemas/Signature";
 // import * as elliptic from "elliptic";
 
 let EC = require("elliptic");
-const { subtle } = require('crypto').webcrypto;
+// const { subtle } = require('crypto').webcrypto;
+
+let subtle:any;
+
+if (crypto && crypto.subtle){
+    subtle = crypto.subtle;
+} else {
+    subtle = require('crypto').webcrypto.subtle;
+}
 
 let ec = new EC.ec('secp256k1');
 
@@ -258,7 +266,7 @@ export class KeyPair {
         var pubPoint = this.getPublicKeyAsHexStr();
         pubPoint = pubPoint.substr(2);
         let hash = sha3.keccak256(hexStringToArray(pubPoint));
-        return "0x" + hash.substr(-40);
+        return "0x" + hash.substr(-40).toUpperCase();
     }
 
     // signMessage(message: string){}

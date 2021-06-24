@@ -29,17 +29,17 @@
 </head>
 <body>
 
-<a class="token_link" data-ticket="MIGbMA0CAQYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNHADBEAiBwLK_95NPZo0W01HDBfyZisZ2KaNrzoWuxRV-nhjGLMAIgaOP4eVVINH5xM8Cv9OVDdyOG3BxUqyPVQOuDU9PaC9o="
-   data-secret="45845870684" target="_blank">Add test ticket 0</a>
+<a class="token_link" data-ticket="MIGWMA0MATYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNCAOOZKRpcE6tLBuPbfE_SmwPk2wNjbj5vpa6kkD7eqQXvBOCa0WNo8dEHKvipeUGZZEWWjJKxooB44dEYdQO70Vgc"
+   data-secret="45845870684" data-id="mah@mah.com" target="_blank">Add test ticket 0</a>
 
-<a class="token_link" data-ticket="MIGXMAkCAQYCAW8CAQAEQQQollXEwRduRJlkFac1RNf_mJ67wZSp_RvH9rS0E8XpBiyQAFowkFiEM5eyZC3dyyT9N8xnbB2Z9GQrt48I4jaSA0cAMEQCIFavePjptmgxBsVuHp7bZSDxK0ovB8d9URp2VjiGos56AiA9apKTL6Kk74Jgf2H7Mb4EZqlsdwJLXSN23sC6aoRyKg=="
-   data-secret="45845870684" target="_blank">Add test ticket 1</a>
+<a class="token_link" data-ticket="MIGXMA4MAjExAgVhN2qd_gIBAARBBCiWVcTBF25EmWQVpzVE1_-YnrvBlKn9G8f2tLQTxekGLJAAWjCQWIQzl7JkLd3LJP03zGdsHZn0ZCu3jwjiNpIDQgBbJBY1Ctlp_czUwB85yF1e5kpZ-lQ_-UZ7jaCYSFoEx028Jit1HIDLCJezKdsNn9c9IO7-HC-_r2ZLaYQ9GGrbHA=="
+   data-secret="45845870684" data-id="mah@mah.com" target="_blank">Add test ticket 1</a>
 
-<a class="token_link" data-ticket="MIGZMAoCAQYCAgDeAgEBBEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNIADBFAiEAy0hGTGFw_KWyk0EbDFI7y4x8LaplJ6PEPFDb-AQ82GUCIEKP4650eRZyvbgNbTcnjRLaRthc4oIFEn7FVS2nNJ6o"
-   data-secret="45845870684" target="_blank">Add test ticket 2</a>
+<a class="token_link" data-ticket="MIGTMAoMATYCAgDeAgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNCAEZYXbNmWXDsAqIc5uf7SirR-dLCMLdEVN5teFrV93VbcKE_DED8c6jtFQ5LH2SRXwPEtXZqWfEh1c2OHTEYqfwb"
+   data-secret="45845870684" data-id="mah@mah.com" target="_blank">Add test ticket 2</a>
 
-<a class="token_link" data-ticket="MIGYMAoCAQYCAgFNAgECBEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNHADBEAiB4thME54fWjTs1eJ5XseTPk7sqOUa9JzVsDMURBwTlJwIgChH-eU6seNnC8hVDgBvLvUJPpGWviWsQ2WwWrcC7Meg="
-   data-secret="45845870684" target="_blank">Add test ticket 3</a>
+<a class="token_link" data-ticket="MIGSMAkMATECAQECAQAEQQQollXEwRduRJlkFac1RNf_mJ67wZSp_RvH9rS0E8XpBiyQAFowkFiEM5eyZC3dyyT9N8xnbB2Z9GQrt48I4jaSA0IAOf4d0N9shWfPIgRXZPdBRhlRyIARDT0tJwNWYwy2ILVKnIy-qPzFsgdI6sZHm1OY6UsJKuDlp0A7EMC8vS5YhRs="
+   data-secret="45845870684" data-id="mah@mah.com" target="_blank">Add test ticket 3</a>
 
 
 <div id="log"></div>
@@ -59,24 +59,34 @@
             : value // return everything else unchanged
     }
 
-    let tokensURL = "https://devcontickets.herokuapp.com/outlet/";
-    // let tokensURL = "https://alladev.com/outlet/";
+    // let tokensOrigin = "https://devcontickets.herokuapp.com/outlet/";
+    // let tokensOrigin = "https://alladev.com/outlet/";
+    let tokensOrigin = "https://alladev.com/attestation20211001/src/main/javascript/negotiator/outlet.html";
+    let attestationOrigin = "http://localhost:5000";
 
     let buttons = document.querySelectorAll('.token_link');
     if (buttons && buttons.length){
         buttons.forEach(item => {
-            item.href = tokensURL + '?ticket=' + item.dataset.ticket + "&secret=" + item.dataset.secret;
+            item.href = tokensOrigin + '?ticket=' + item.dataset.ticket + "&secret=" + item.dataset.secret  + "&id=" + item.dataset.id;
+            item.addEventListener('click', e => {
+                e.preventDefault();
+                n.addTokenThroughIframe(e.target.href);
+                return false;
+            })
         })
     }
 
     let filter = {'devconId': 6 };
     // let filter = { };
-    let n = new Negotiator(filter
+    let n = new Negotiator(filter,
         // "https://devcontickets.herokuapp.com/outlet/" hardcoded as default value, we can change it if needed
-        , {tokensOrigin: tokensURL}
+            {
+                tokensOrigin,
+                attestationOrigin
+            }
         );
     writeToLog('to start outlet on tokenOrigin site just include negotiator.js and add "<script>let negotiator = new Negotiator();<script>"');
-    writeToLog('Open iframe with outlet for : '+ tokensURL);
+    writeToLog('Open iframe with outlet for : '+ tokensOrigin);
     writeToLog('Debug disabled');
     // writeToLog('Filter = ' + JSON.stringify(filter));
     n.negotiate(tokensOutput => {

@@ -11,7 +11,7 @@ import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
 import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.SignedAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -199,7 +199,7 @@ public class Demo {
     byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
         DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
-    SignedAttestation att = new SignedAttestation(attestationBytes, attestationProviderKey);
+    SignedIdentityAttestation att = new SignedIdentityAttestation(attestationBytes, attestationProviderKey);
 
     if (!cheque.checkValidity()) {
       System.err.println("Could not validate cheque");
@@ -270,7 +270,7 @@ public class Demo {
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
-    SignedAttestation signed = new SignedAttestation(att, keys);
+    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, keys);
     if (!writeFile(attestationDir, DERUtility.printDER(signed.getDerEncoding(), "ATTESTATION"))) {
       System.err.println("Could not write attestation to disc");
       throw new IOException("Could not write file");

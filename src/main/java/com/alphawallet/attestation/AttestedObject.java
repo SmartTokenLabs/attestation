@@ -22,7 +22,7 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 
 public class AttestedObject<T extends Attestable> implements ASNEncodable, Verifiable {
   private final T attestableObject;
-  private final SignedAttestation att;
+  private final SignedIdentityAttestation att;
   private final ProofOfExponent pok;
   private final byte[] signature;
 
@@ -31,7 +31,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private final byte[] unsignedEncoding;
   private final byte[] encoding;
 
-  public AttestedObject(T attestableObject, SignedAttestation att, AsymmetricCipherKeyPair userKeys,
+  public AttestedObject(T attestableObject, SignedIdentityAttestation att, AsymmetricCipherKeyPair userKeys,
       BigInteger attestationSecret, BigInteger chequeSecret,
       AttestationCrypto crypto) {
     this.attestableObject = attestableObject;
@@ -56,7 +56,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
+  public AttestedObject(T object, SignedIdentityAttestation att, ProofOfExponent pok, byte[] signature, AsymmetricKeyParameter publicAttestationSigningKey, AsymmetricKeyParameter userPublicKey) {
     this.attestableObject = object;
     this.att = att;
     this.userPublicKey = userPublicKey;
@@ -86,7 +86,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
-      this.att = new SignedAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
+      this.att = new SignedIdentityAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
       this.pok = new ProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
       this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
@@ -102,7 +102,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return attestableObject;
   }
 
-  public SignedAttestation getAtt() {
+  public SignedIdentityAttestation getAtt() {
     return att;
   }
 

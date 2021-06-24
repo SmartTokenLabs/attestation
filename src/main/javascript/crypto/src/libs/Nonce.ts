@@ -31,8 +31,7 @@ export class Nonce {
         if (!ValidationTools.isAddress(senderAddress)) {
             throw new Error("Address is not valid");
         }
-
-        // senderAddress = '0x'+senderAddress.substr(2,40).toUpperCase();
+        // senderAddress = '0X'+(senderAddress.substr(2).toUpperCase());
         senderAddress = senderAddress.toUpperCase();
 
         if (!timestampInMs) {
@@ -50,7 +49,7 @@ export class Nonce {
     validateNonce(nonce: Uint8Array, senderAddress: string, receiverIdentifier: string, minTime:number, maxTime:number, otherData: Uint8Array = new Uint8Array(0)): boolean{
 
         if (!Nonce.validateAddress(nonce, senderAddress)) {
-            console.log('validateAddress check failed');
+            console.log('validateAddress check failed for ' + senderAddress);
             return false;
         }
 
@@ -84,7 +83,9 @@ export class Nonce {
     }
 
     static validateAddress(nonce: Uint8Array, address: string):boolean {
-        if (address.toUpperCase() === uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop)).toUpperCase()) return true;
+        let nonceAddress = uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop));
+        if (address.toUpperCase() === nonceAddress.toUpperCase()) return true;
+        console.log('nonceAddress = ' + nonceAddress);
         return false;
     }
 
