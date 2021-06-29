@@ -169,6 +169,7 @@ export class Attestation {
     checkValidity(){
         if (this.version == null
             || this.serialNumber == null
+            || this.subject == null
             || this.signingAlgorithm == null
             || (!this.extensions && !this.dataObject && !this.commitment)
         ) {
@@ -180,6 +181,10 @@ export class Attestation {
         let attNotAfter = this.getNotValidAfter();
         if ( attNotBefore && attNotAfter && !(currentTime >= attNotBefore && currentTime < attNotAfter)) {
             console.log("Attestation is no longer valid");
+            return false;
+        }
+        if (this.extensions != null && this.dataObject != null) {
+            console.log("Extensions or dataObject required");
             return false;
         }
         return true;
@@ -244,9 +249,15 @@ export class Attestation {
             // Double Sequence is needed to be compatible with X509V3
             res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensions)),3);
         } else {
+            // TODO implement
+            // if (this.smartcontracts != null) {
+            //     res.add(this.smartcontracts);
+            // }
+            // // The validity check ensure that only one of "extensions" and "dataObject" is set
             // if (this.extensions != null) {
             //     res.add(new DERTaggedObject(true, 3, this.extensions));
-            // } else {
+            // }
+            // if (this.dataObject != null) {
             //     res.add(new DERTaggedObject(true, 4, this.dataObject));
             // }
             throw new Error('dataObject not implemented. We didn\'t use it before.');

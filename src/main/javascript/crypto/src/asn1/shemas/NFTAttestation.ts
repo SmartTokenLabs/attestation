@@ -25,13 +25,14 @@ export class Tokens {
 }
 
 export class NFTAttestation {
+    @AsnProp({ type: UriIdAttestation }) public creator: UriIdAttestation;
     @AsnProp({ type: Tokens, optional: true }) public tokens?: Tokens;
     // -- A hash digest --
     // Digest ::= OCTET STRING (SIZE(32..MAX))
     // @AsnProp({ type: Digest, optional: true }) public nftDigest?: Digest;
+
     @AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public nftDigest?: Uint8Array;
-    @AsnProp({ type: UriIdAttestation }) public creator: UriIdAttestation;
-    @AsnProp({ type: AsnPropTypes.BitString }) public signatureValue: Uint8Array;
+    //@AsnProp({ type: AsnPropTypes.BitString }) public signatureValue: Uint8Array;
 }
 
 

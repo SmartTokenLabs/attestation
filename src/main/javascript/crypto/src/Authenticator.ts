@@ -148,7 +148,7 @@ export class Authenticator {
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.publicFromBase64(base64senderPublicKey));
         if (!ticket.checkValidity()) {
-            console.log("Could not validate cheque");
+            console.log("Could not validate ticket");
             throw new Error("Validation failed");
         }
         if (!ticket.verify()) {
@@ -157,13 +157,8 @@ export class Authenticator {
         }
         console.log('ticked valid (signature OK)');
 
-        // let keyUint8data = base64ToUint8array(base64attestationPublicKey);
-        // let key:SubjectPublicKeyInfo = AsnParser.parse(keyUint8data, SubjectPublicKeyInfo);
-
         // let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.publicKey)));
         let attestorKey = KeyPair.publicFromBase64(base64attestationPublicKey);
-
-        console.log('lets test attestaion:');
 
         let att = SignedIdentityAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
 
@@ -180,14 +175,16 @@ export class Authenticator {
         let redeem: AttestedObject = new AttestedObject();
         redeem.create(ticket, att,
             BigInt(attestationSecret), BigInt(ticketSecret));
-        redeem.setWebDomain(this.webDomain);
+        // redeem.setWebDomain(this.webDomain);
 
         // console.log("redeem.getDerEncodeProof(): ");
         // console.log(redeem.getDerEncodeProof());
         // TODO sign EIP712 with Metamask
-        let signed = await redeem.sign();
-        console.log(signed);
-        return signed;
+        // let signed = await redeem.sign();
+        console.log("redim validation = " + redeem.checkValidity())
+        let unSigned = redeem.getDerEncoding();
+        // console.log(unSigned);
+        return unSigned;
 
     }
 
@@ -198,7 +195,7 @@ export class Authenticator {
             return;
         }
 
-        console.log('postMessageAttestationListener event');
+        console.log('postMessageAttestationListener event (Authenticator)');
         console.log(event)
 
         if (
@@ -236,10 +233,10 @@ export class Authenticator {
         this.attestationBlob = event.data.attestation;
         this.attestationSecret = event.data.requestSecret;
 
-        // console.log('attestation data received.');
-        // console.log(this.attestationBlob);
-        // console.log(this.attestationSecret);
-        // console.log(this.base64attestorPubKey);
+        console.log('attestation data received.');
+        console.log(this.attestationBlob);
+        console.log(this.attestationSecret);
+        console.log(this.base64attestorPubKey);
 
         try {
             this.getUseTicket(
@@ -251,10 +248,10 @@ export class Authenticator {
                 this.base64senderPublicKey,
             ).then(useToken => {
                 if (useToken){
-                    console.log('this.authResultCallback(useToken): ');
+                    console.log('this.authResultCallback( useToken ): ');
                     this.authResultCallback(useToken);
                 } else {
-                    console.log('this.authResultCallback( empty sting ): ');
+                    console.log('this.authResultCallback( empty ): ');
                     this.authResultCallback(useToken);
                 }
 

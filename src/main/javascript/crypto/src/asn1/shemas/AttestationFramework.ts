@@ -30,7 +30,7 @@ export class PrivateKeyInfo {
 }
 
 @AsnType({ type: AsnTypeTypes.Choice })
-export class AttestsTo {
+export class Payload {
     @AsnProp({ type: Extensions, context: 3})
     public extensions?: Extensions;
     // @AsnProp({ type: AsnPropTypes.Any, context: 3})
@@ -57,7 +57,7 @@ export class SignedInfo {
     @AsnProp({ type: Name }) public subject: Name; //  Name,
     @AsnProp({ type: SubjectPublicKeyInfo }) public subjectPublicKeyInfo: SubjectPublicKeyInfo; // SubjectPublicKeyInfo,
     @AsnProp({ type: SmartContract, optional: true }) public contract?: SmartContract; // contract             SEQUENCE OF SmartContract OPTIONAL,
-    @AsnProp({ type: AttestsTo }) public attestsTo: AttestsTo; //attestsTo
+    @AsnProp({ type: Payload, optional: true }) public attestsTo?: Payload; //attestsTo
 }
 
 export class MyAttestation {
