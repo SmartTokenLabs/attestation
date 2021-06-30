@@ -34,7 +34,7 @@ public class UseTicketBundleTest {
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricCipherKeyPair ticketIssuerKeys;
   private static byte[] macKey;
-  private static UnpredictibleNumberTool unt;
+  private static UnpredictableNumberTool unt;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
   private AttestedObject<Ticket> useTicket;
@@ -43,8 +43,6 @@ public class UseTicketBundleTest {
   AttestedObject<Ticket> mockedUseTicket;
   @Mock
   UnpredictableNumberBundle mockedUn;
-  @Mock
-  UnpredictibleNumberTool mockedUnt;
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -56,11 +54,11 @@ public class UseTicketBundleTest {
     attestorKeys = SignatureUtility.constructECKeys(rand);
     ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
     macKey = rand.generateSeed(16);
-    unt = new UnpredictibleNumberTool(macKey, DOMAIN, UnpredictibleNumberTool.DEFAULT_VALIDITY_IN_MS);
+    unt = new UnpredictableNumberTool(macKey, DOMAIN, UnpredictableNumberTool.DEFAULT_VALIDITY_IN_MS);
   }
 
   @BeforeEach
-  public void makeAttestedTicket() {
+  public void makeUseTicket() {
     MockitoAnnotations.initMocks(this);
 
     IdentifierAttestation att = HelperTest
@@ -76,9 +74,6 @@ public class UseTicketBundleTest {
     Mockito.when(mockedUn.getDomain()).thenReturn(DOMAIN);
     Mockito.when(mockedUn.getExpiration()).thenReturn(Long.MAX_VALUE);
     Mockito.when(mockedUn.getNumber()).thenReturn("abcdefghijk");
-
-    Mockito.when(mockedUnt.getDomain()).thenReturn(DOMAIN);
-    Mockito.when(mockedUnt.validateUnpredictableNumber("abcdefghijk", Long.MAX_VALUE)).thenReturn(true);
   }
 
   @Test

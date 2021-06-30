@@ -1,6 +1,5 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.URLUtility;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -12,8 +11,8 @@ import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.tokenscript.eip712.Eip712Common;
 
-public class UnpredictibleNumberTool {
-  private static final Logger logger = LogManager.getLogger(UnpredictibleNumberTool.class);
+public class UnpredictableNumberTool {
+  private static final Logger logger = LogManager.getLogger(UnpredictableNumberTool.class);
   public static final long DEFAULT_VALIDITY_IN_MS = 3600*1000;
   public static final int BYTES_IN_UN = 8; // 64 bits
 
@@ -22,7 +21,7 @@ public class UnpredictibleNumberTool {
   private final long validityInMs;
   private final HMac hmac = new HMac(new KeccakDigest(256));
 
-  public UnpredictibleNumberTool(byte[] key, String domain) {
+  public UnpredictableNumberTool(byte[] key, String domain) {
     this(key, domain, DEFAULT_VALIDITY_IN_MS);
   }
 
@@ -30,7 +29,7 @@ public class UnpredictibleNumberTool {
     return domain;
   }
 
-  public UnpredictibleNumberTool(byte[] key, String domain, long validityInMs) {
+  public UnpredictableNumberTool(byte[] key, String domain, long validityInMs) {
     this.domain = domain.toLowerCase();
     this.validityInMs = validityInMs;
     hmac.init(new KeyParameter(key));
@@ -77,14 +76,5 @@ public class UnpredictibleNumberTool {
   private static byte[] longToBytes(long x) {
     longBuffer.putLong(0, x);
     return longBuffer.array();
-  }
-
-  private static long bytesToLong(byte[] bytes) {
-    if (bytes.length != Long.BYTES) {
-      ExceptionUtil.throwException(logger, new IllegalArgumentException("Long input not of expected length"));
-    }
-    longBuffer.put(bytes, 0, Long.BYTES);
-    longBuffer.flip(); //need flip
-    return longBuffer.getLong();
   }
 }

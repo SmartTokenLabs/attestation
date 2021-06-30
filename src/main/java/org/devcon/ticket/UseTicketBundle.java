@@ -88,7 +88,7 @@ public class UseTicketBundle implements Verifiable {
         signature));
   }
 
-  public boolean validateAndVerify(UnpredictibleNumberTool unt) {
+  public boolean validateAndVerify(UnpredictableNumberTool unt) {
     if (!useTicket.checkValidity()) {
       logger.error("Use ticket is not valid");
       return false;
