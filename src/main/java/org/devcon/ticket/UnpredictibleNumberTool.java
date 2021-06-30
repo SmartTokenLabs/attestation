@@ -61,12 +61,12 @@ public class UnpredictibleNumberTool {
 
   public boolean validateUnpredictibleNumber(String un, long expirationInMs) {
     if (expirationInMs > Clock.systemUTC().millis()) {
-      logger.info("Unpredictible number has expired");
+      logger.error("Unpredictible number has expired");
       return false;
     }
     String expectedNumber = getUnpredictibleNumber(expirationInMs);
     if (!expectedNumber.equals(un)) {
-      logger.info("The unpredictible number is computed incorrectly. Either wrong key or wrong domain");
+      logger.error("The unpredictible number is computed incorrectly. Either wrong key or wrong domain");
       return false;
     }
     return true;

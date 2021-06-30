@@ -1,10 +1,13 @@
 package org.devcon.ticket;
 
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonPropertyOrder({ "number", "domain", "expiration"})
 public class UnpredictableNumberBundle {
-  private final String number;
-  private final String domain;
-  private final long expiration;
+  private String number;
+  private String domain;
+  private long expiration;
 
   public UnpredictableNumberBundle(String number, String domain, long expiration) {
     this.number = number;
@@ -16,11 +19,23 @@ public class UnpredictableNumberBundle {
     return number;
   }
 
+  public void setNumber(String number) {
+    this.number = number;
+  }
+
   public String getDomain() {
     return domain;
   }
 
+  public void setDomain(String domain) {
+    this.domain = domain;
+  }
+
   public long getExpiration() {
     return expiration;
+  }
+
+  public void setExpiration(long expiration) {
+    this.expiration = expiration;
   }
 }

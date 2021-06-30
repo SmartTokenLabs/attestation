@@ -5,51 +5,79 @@ import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Timestamp;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Date;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
 public class UseTicketBundle implements Verifiable, Validateable {
+  private static final Logger logger = LogManager.getLogger(UseTicketBundle.class);
+
   private final AttestedObject useTicket;
   private final UnpredictableNumberBundle un;
   private final byte[] signature;
-  private ObjectMapper jsonMapper;
+  private final byte[] messageToSign;
+
+  private final ObjectMapper jsonMapper;
+  private final UnpredictibleNumberTool unt;
 
   public UseTicketBundle(AttestedObject useTicket, UnpredictibleNumberTool unt, AsymmetricKeyParameter signingKey) {
+    this.jsonMapper = new ObjectMapper();
+    this.unt = unt;
+
     this.useTicket = useTicket;
     this.un = unt.getUnpredictibleNumberBundle();
+    this.messageToSign = computeMessage(un);
     this.signature = SignatureUtility.signPersonalMsgWithEthereum(getMessageToSign(), signingKey);
-    this.jsonMapper = new ObjectMapper();
   }
 
-  public UseTicketBundle(AttestedObject useTicket, UnpredictableNumberBundle un, byte[] signature) {
+  public UseTicketBundle(AttestedObject useTicket, UnpredictableNumberBundle un, byte[] signature, UnpredictibleNumberTool unt) {
+    this.jsonMapper = new ObjectMapper();
+    this.unt = unt;
     this.useTicket = useTicket;
     this.un = un;
+    this.messageToSign = computeMessage(un);
     this.signature = signature;
+  }
+
+  public UseTicketBundle(String jsonBundle, UnpredictibleNumberTool unt, AsymmetricKeyParameter ticketIssuerPublicKey, AsymmetricKeyParameter attestorPublicKey) throws Exception {
     this.jsonMapper = new ObjectMapper();
+    this.unt = unt;
+    JsonUseTicketBundle decodedBundle = (JsonUseTicketBundle) jsonMapper.readValue(jsonBundle, Object.class);
+    this.useTicket = new AttestedObject(decodedBundle.getUseTicketDer(), new TicketDecoder(ticketIssuerPublicKey), attestorPublicKey);
+    this.un = decodedBundle.getUn();
+    this.messageToSign = computeMessage(un);
+    this.signature = decodedBundle.getSignature();
   }
 
-  public UseTicketBundle(String jsonBundle, UnpredictibleNumberTool unt, AsymmetricKeyParameter attestorPublicKey) {
-
-  }
-
-  public byte[] getMessageToSign() {
-    Date expirationDate = new Date(un.getExpiration());
+  private byte[] computeMessage(UnpredictableNumberBundle currentUn) {
+    Date expirationDate = new Date(currentUn.getExpiration());
     String expirationString = Timestamp.TIMESTAMP_FORMAT.format(expirationDate);
-    String messageToSignString =  "Authenticate towards \"" + un.getDomain() + "\" using unpredictable number \"" + un.getNumber()
+    String messageToSignString =  "Authenticate towards \"" + currentUn.getDomain() + "\" using unpredictable number \"" + currentUn.getNumber()
         + "\" for an authentication valid until " + expirationString;
     return messageToSignString.getBytes(StandardCharsets.UTF_8);
   }
 
+  public byte[] getMessageToSign() {
+    return messageToSign;
+  }
+
   public String getJsonBundle() throws Exception {
-    return jsonMapper.writeValueAsString(Arrays.asList(useTicket.getDerEncoding(), un, getMessageToSign(), signature));
+    return jsonMapper.writeValueAsString(new JsonUseTicketBundle(useTicket.getDerEncoding(), un,
+        signature));
   }
 
   @Override
   public boolean checkValidity() {
     if (!useTicket.checkValidity()) {
+      logger.error("Use ticket is not valid");
+      return false;
+    }
+    if (!unt.validateUnpredictibleNumber(un.getNumber(), un.getExpiration())) {
+      logger.error("Unpredictable number is not valid ");
       return false;
     }
     return true;
@@ -58,9 +86,53 @@ public class UseTicketBundle implements Verifiable, Validateable {
   @Override
   public boolean verify() {
     if (!useTicket.verify()) {
+      logger.error("UseTicket could not be verified");
       return false;
     }
-    // verify signature on challenge and that challenge is valid
+    if (!SignatureUtility.verifyPersonalEthereumSignature(computeMessage(un), signature, useTicket.getUserPublicKey())) {
+      logger.error("Signature could not be verified");
+      return false;
+    }
     return false;
+  }
+
+  @JsonPropertyOrder({ "useTicketDer", "un", "signature"})
+  private static class JsonUseTicketBundle {
+    private byte[] useTicketDer;
+    private UnpredictableNumberBundle un;
+    private byte[] signature;
+
+    public JsonUseTicketBundle() {}
+    public JsonUseTicketBundle(byte[] useTicketDer, UnpredictableNumberBundle un,
+        byte[] signature) {
+      this.useTicketDer = useTicketDer;
+      this.un = un;
+      this.signature = signature;
+    }
+
+    public byte[] getUseTicketDer() {
+      return useTicketDer;
+    }
+
+    public void setUseTicketDer(byte[] useTicketDer) {
+      this.useTicketDer = useTicketDer;
+    }
+
+    public UnpredictableNumberBundle getUn() {
+      return un;
+    }
+
+    public void setUn(UnpredictableNumberBundle un) {
+      this.un = un;
+    }
+
+    public byte[] getSignature() {
+      return signature;
+    }
+
+    public void setSignature(byte[] signature) {
+      this.signature = signature;
+    }
+
   }
 }
