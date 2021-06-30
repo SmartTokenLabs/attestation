@@ -1,6 +1,8 @@
 package org.devcon.ticket;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.attestation.AttestedObject;
@@ -15,6 +17,9 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 public class UseTicketBundleTest {
   private static final String DOMAIN = "http://www.hotel-bogota.com";
@@ -32,7 +37,14 @@ public class UseTicketBundleTest {
   private static UnpredictibleNumberTool unt;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
-  private AttestedObject<Ticket> attestedTicket;
+  private AttestedObject<Ticket> useTicket;
+
+  @Mock
+  AttestedObject<Ticket> mockedUseTicket;
+  @Mock
+  UnpredictableNumberBundle mockedUn;
+  @Mock
+  UnpredictibleNumberTool mockedUnt;
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -49,17 +61,30 @@ public class UseTicketBundleTest {
 
   @BeforeEach
   public void makeAttestedTicket() {
+    MockitoAnnotations.initMocks(this);
+
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentityAttestation signed = new SignedIdentityAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    attestedTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+
+    Mockito.when(mockedUseTicket.verify()).thenReturn(true);
+    Mockito.when(mockedUseTicket.getDerEncoding()).thenReturn(new byte[] {0x00});
+    Mockito.when(mockedUseTicket.getUserPublicKey()).thenReturn(subjectKeys.getPublic());
+
+    Mockito.when(mockedUn.getDomain()).thenReturn(DOMAIN);
+    Mockito.when(mockedUn.getExpiration()).thenReturn(Long.MAX_VALUE);
+    Mockito.when(mockedUn.getNumber()).thenReturn("abcdefghijk");
+
+    Mockito.when(mockedUnt.getDomain()).thenReturn(DOMAIN);
+    Mockito.when(mockedUnt.validateUnpredictableNumber("abcdefghijk", Long.MAX_VALUE)).thenReturn(true);
   }
 
   @Test
   public void sunshine() throws Exception {
     UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
-    UseTicketBundle bundle = new UseTicketBundle(attestedTicket, un, subjectKeys.getPrivate());
+    UseTicketBundle bundle = new UseTicketBundle(useTicket, un, subjectKeys.getPrivate());
     assertTrue(bundle.verify());
     assertTrue(bundle.validateAndVerify(unt));
   }
@@ -67,7 +92,7 @@ public class UseTicketBundleTest {
   @Test
   public void testDeEncoding1() throws Exception {
     UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
-    UseTicketBundle bundle = new UseTicketBundle(attestedTicket, un, subjectKeys.getPrivate());
+    UseTicketBundle bundle = new UseTicketBundle(useTicket, un, subjectKeys.getPrivate());
     String refJson = bundle.getJsonBundle();
     UseTicketBundle newBundle = new UseTicketBundle(refJson, ticketIssuerKeys.getPublic(), attestorKeys.getPublic());
     assertTrue(newBundle.verify());
@@ -78,11 +103,55 @@ public class UseTicketBundleTest {
   @Test
   public void testDeEncoding2() throws Exception {
     UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
-    UseTicketBundle bundle = new UseTicketBundle(attestedTicket, un, subjectKeys.getPrivate());
+    UseTicketBundle bundle = new UseTicketBundle(useTicket, un, subjectKeys.getPrivate());
     String refJson = bundle.getJsonBundle();
     UseTicketBundle newBundle = new UseTicketBundle(bundle.getUseTicket(), bundle.getUn(), bundle.getSignature());
     assertTrue(newBundle.verify());
     assertTrue(newBundle.validateAndVerify(unt));
     assertEquals(refJson, newBundle.getJsonBundle());
+  }
+
+  @Test
+  public void unverifiableUseTicketConstructorFailure() throws Exception {
+    Mockito.when(mockedUseTicket.verify()).thenReturn(false);
+
+    UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
+    assertThrows(IllegalArgumentException.class, ()-> new UseTicketBundle(mockedUseTicket, un, subjectKeys.getPrivate()));
+  }
+
+  @Test
+  public void badChallengeSignatureConstructor() throws Exception {
+    // Return wrong key, it is supposed to be the subjectKey
+    Mockito.when(mockedUseTicket.getUserPublicKey()).thenReturn(attestorKeys.getPublic());
+
+    UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
+    assertThrows(IllegalArgumentException.class, ()-> new UseTicketBundle(mockedUseTicket, un, subjectKeys.getPrivate()));
+  }
+
+  @Test
+  public void unverifiableUseTicket() throws Exception {
+    // Return true first to make test in constructor pass
+    Mockito.when(mockedUseTicket.verify()).thenReturn(true).thenReturn(false);
+
+    UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
+    UseTicketBundle bundle = new UseTicketBundle(mockedUseTicket, un, subjectKeys.getPrivate());
+    assertFalse(bundle.verify());
+  }
+
+  @Test
+  public void unvalidatableUseTicket() throws Exception {
+    Mockito.when(mockedUseTicket.checkValidity()).thenReturn(false);
+
+    UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
+    UseTicketBundle bundle = new UseTicketBundle(mockedUseTicket, un, subjectKeys.getPrivate());
+    assertFalse(bundle.validateAndVerify(unt));
+  }
+
+  @Test
+  public void invalidUn() throws Exception {
+    Mockito.when(mockedUn.getNumber()).thenReturn("somethingwrong");
+
+    UseTicketBundle bundle = new UseTicketBundle(useTicket, mockedUn, subjectKeys.getPrivate());
+    assertFalse(bundle.validateAndVerify(unt));
   }
 }
