@@ -156,9 +156,14 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     }
   }
 
-  private X500Name makeLabeledURI(String type, String identifier)  {
-    DERUTF8String labelValue = new DERUTF8String(identifier + " " + type);
-    RDN rdn = new RDN(LABELED_URI, labelValue);
+  /**
+   * @param label the label of the URL, similar to what is inside <a>...</a>
+   * @param URL the URL itself, similar to what is in <a href="...">, note that
+   * it should already be URLencoded therefore not containing space
+   */
+  private X500Name makeLabeledURI(String label, String URL)  {
+    DERUTF8String labeledURLValue = new DERUTF8String(URL + " " + label);
+    RDN rdn = new RDN(LABELED_URI, labeledURLValue);
     return new X500Name(new RDN[] {rdn});
   }
 
