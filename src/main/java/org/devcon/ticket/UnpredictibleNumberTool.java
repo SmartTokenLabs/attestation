@@ -7,20 +7,20 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.crypto.digests.SHA3Digest;
+import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.tokenscript.eip712.Eip712Common;
 
 public class UnpredictibleNumberTool {
   private static final Logger logger = LogManager.getLogger(UnpredictibleNumberTool.class);
-  public static final long DEFAULT_VALIDITY_IN_MS = 3600;
+  public static final long DEFAULT_VALIDITY_IN_MS = 3600*1000;
   public static final int BYTES_IN_UN = 8; // 64 bits
 
   private static final ByteBuffer longBuffer = ByteBuffer.allocate(Long.BYTES);
   private final String domain;
   private final long validityInMs;
-  private final HMac hmac = new HMac(new SHA3Digest(BYTES_IN_UN * 8));
+  private final HMac hmac = new HMac(new KeccakDigest(256));
 
   public UnpredictibleNumberTool(byte[] key, String domain) {
     this(key, domain, DEFAULT_VALIDITY_IN_MS);
@@ -45,28 +45,30 @@ public class UnpredictibleNumberTool {
    * The encoding consists of BYTES_IN_UN bytes
    * ExpirationInMs is computed from current time plus DEFAULT_VALIDITY_IN_MS
    */
-  public UnpredictableNumberBundle getUnpredictibleNumberBundle() {
+  public UnpredictableNumberBundle getUnpredictableNumberBundle() {
     long expiration = Clock.systemUTC().millis() + validityInMs;
-    return new UnpredictableNumberBundle(getUnpredictibleNumber(expiration), domain, expiration);
+    return new UnpredictableNumberBundle(getUnpredictableNumber(expiration), domain, expiration);
   }
 
-  private String getUnpredictibleNumber(long expirationInMs) {
+  private String getUnpredictableNumber(long expirationInMs) {
     hmac.reset();
     hmac.update(longToBytes(expirationInMs), 0, Long.BYTES);
     hmac.update(domain.getBytes(StandardCharsets.UTF_8), 0, domain.getBytes(StandardCharsets.UTF_8).length);
-    byte[] digest = new byte[BYTES_IN_UN];
+    byte[] digest = new byte[256 / 8];
     hmac.doFinal(digest, 0);
-    return URLUtility.encodeData(digest);
+    byte[] result = new byte[BYTES_IN_UN];
+    System.arraycopy(digest, 0, result, 0, BYTES_IN_UN);
+    return URLUtility.encodeData(result);
   }
 
-  public boolean validateUnpredictibleNumber(String un, long expirationInMs) {
-    if (expirationInMs > Clock.systemUTC().millis()) {
-      logger.error("Unpredictible number has expired");
+  public boolean validateUnpredictableNumber(String un, long expirationInMs) {
+    if (Clock.systemUTC().millis() > expirationInMs) {
+      logger.error("Unpredictable number has expired");
       return false;
     }
-    String expectedNumber = getUnpredictibleNumber(expirationInMs);
+    String expectedNumber = getUnpredictableNumber(expirationInMs);
     if (!expectedNumber.equals(un)) {
-      logger.error("The unpredictible number is computed incorrectly. Either wrong key or wrong domain");
+      logger.error("The unpredictable number is computed incorrectly. Either wrong key or wrong domain");
       return false;
     }
     return true;

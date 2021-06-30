@@ -9,6 +9,8 @@ public class UnpredictableNumberBundle {
   private String domain;
   private long expiration;
 
+  public UnpredictableNumberBundle() {}
+
   public UnpredictableNumberBundle(String number, String domain, long expiration) {
     this.number = number;
     this.domain = domain;
