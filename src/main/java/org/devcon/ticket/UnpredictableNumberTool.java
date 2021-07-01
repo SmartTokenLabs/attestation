@@ -1,5 +1,6 @@
 package org.devcon.ticket;
 
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.URLUtility;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +36,7 @@ public class UnpredictableNumberTool {
     hmac.init(new KeyParameter(key));
     // todo should be moved to url utility
     if (!Eip712Common.isDomainValid(domain)) {
-      throw new IllegalArgumentException("Domain is not a valid domain");
+      ExceptionUtil.throwException(logger, new IllegalArgumentException("Domain is not a valid domain"));
     }
   }
 
