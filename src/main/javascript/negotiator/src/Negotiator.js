@@ -1,5 +1,5 @@
 import {SignedDevconTicket} from "../../SignedDevconTicket";
-// import {Authenticator} from "../../crypto/src/Authenticator";
+import {ethers} from "ethers";
 
 export class Negotiator {
     // other code
@@ -13,7 +13,8 @@ export class Negotiator {
             unsignedTokenDataName: 'ticket',
             // tokenParserUrl: '',
             tokenParser: SignedDevconTicket,
-            localStorageItemName: 'dcTokens'
+            localStorageItemName: 'dcTokens',
+            localStorageEthKeyItemName: 'dcEthKeys',
         };
         this.queuedCommand = false;
 
@@ -28,7 +29,12 @@ export class Negotiator {
         this.unsignedTokenDataName = XMLconfig.unsignedTokenDataName;
         this.tokenParser = XMLconfig.tokenParser;
         this.localStorageItemName = XMLconfig.localStorageItemName;
+        this.localStorageEthKeyItemName = XMLconfig.localStorageEthKeyItemName;
         this.addTokenIframe = null;
+
+        this.maxUNlength = 6;
+        this.UNttl = 60*60;
+        this.UNsecret = "0x1234567890abcdef";
 
         if (options.hasOwnProperty('debug')) this.debug = options.debug;
         if (options.hasOwnProperty('attestationOrigin')) this.attestationOrigin = options.attestationOrigin;
@@ -74,6 +80,29 @@ export class Negotiator {
         }
     }
 
+    async connectMetamaskAndGetAddress(){
+
+        if (!window.ethereum){
+            throw new Error('Please install metamask before.');
+        }
+
+        // const userAddresses = await window.ethereum.request({ method: 'eth_accounts' });
+        const userAddresses = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!userAddresses || !userAddresses.length ){
+            throw new Error("Active Wallet required");
+        }
+
+        return userAddresses[0];
+    }
+
+    async signMessageWithBrowserWallet(message){
+        await this.connectMetamaskAndGetAddress();
+
+        let provider = new ethers.providers.Web3Provider(window.ethereum);
+        let signer = provider.getSigner();
+        return await signer.signMessage(message);
+    }
+
     addTokenThroughIframe(magicLink){
         console.log('createTokenIframe fired for : ' + magicLink);
         // open iframe and request tokens
@@ -91,7 +120,6 @@ export class Negotiator {
         // iframeWrap.appendChild(iframe);
         document.body.appendChild(iframe);
     }
-
 
     listenForParentMessages(event){
 
@@ -122,15 +150,12 @@ export class Negotiator {
         switch (command) {
             case "signToken":
                 // we receive decoded token, we have to find appropriate raw token
-                console.log('let Auth data:', data);
                 if (typeof window.Authenticator === "undefined"){
                     console.log('Authenticator not defined.');
                     return;
                 }
 
                 let rawTokenData = this.getRawToken(data);
-
-                console.log('rawTokenData: ',rawTokenData);
 
                 let base64ticket = rawTokenData.token;
                 let ticketSecret = rawTokenData.secret;
@@ -400,12 +425,6 @@ export class Negotiator {
 
                 this.tokenIframeWrap.remove();
 
-                // if (data.success) {
-                //     console.log('useTokenData: ' + data.useToken)
-                // } else {
-                //     console.log('useTokenData error message: ' + data.message)
-                // }
-                console.log('this.signCallback(data)');
                 this.signCallback && this.signCallback(data);
                 this.signCallback = false;
                 break;
@@ -425,21 +444,136 @@ export class Negotiator {
 
     }
 
-    signToken(unsignedToken, signCallback){
-        console.log('signToken request for:');
-        console.log(unsignedToken);
+    authenticate(unsignedToken, unEndPoint = ""){
+        return new Promise(async (resolve, reject) => {
+            await this._authenticate(unsignedToken,unEndPoint,(proof, error) => {
+                if (!proof || !this.useEthKey) return reject(error);
+                resolve({proof, useEthKey: this.useEthKey, status: true});
+            })
+        })
+    }
+
+
+    async _authenticate(unsignedToken, unEndPoint, signCallback){
+        console.log('authenticate request. need to implement UN request/sign');
+        let useEthKey;
+        try {
+            useEthKey = await this.getChallengeSigned();
+        } catch (e) {
+            signCallback(null, e);
+            return;
+        }
+
+        console.log("useEthKey", useEthKey);
+
+        this.useEthKey = useEthKey;
+
         this.signCallback = signCallback;
         // open iframe and request tokens
         this.queuedCommand = {parentCommand: 'signToken',parentData: unsignedToken};
         this.createIframe();
     }
 
-    negotiate(callBack) {
-        // callback function required
-        if (typeof callBack !== "function") {
-            return false;
+    getInt64Bytes( x ){
+        var bytes = [];
+        var i = 8;
+        do {
+            bytes[--i] = x & (255);
+            x = x>>8;
+        } while ( i )
+        return bytes;
+    }
+
+    async getUnpredictableNumber(endPoint){
+        // TODO implement endpoint request
+
+        const expiry = Date.now() + this.UNttl * 1000;
+        let random = Math.floor(Math.random() * (10 ** this.maxUNlength));
+
+        return {
+            UN: random.toString() + this.createHmac(random, expiry),
+            Expiry: expiry
+        }
+    }
+
+    createHmac(random, expiry){
+        let randomAndExpiryAsBytes = this.getInt64Bytes(random).concat(this.getInt64Bytes(expiry));
+        return ethers.utils.computeHmac("sha256", this.UNsecret, randomAndExpiryAsBytes);
+    }
+
+    ethKeyIsValid(ethKey){
+        let random = parseInt(ethKey.UN.substr(0,ethKey.UN.length - 66));
+        let hmac = this.createHmac(random, ethKey.expiry);
+        if (hmac !== ethKey.UN.substr(ethKey.UN.length - 66)) return false;
+        if (ethKey.expiry < Date.now()) return false;
+        return true;
+    }
+
+    async getChallengeSigned(unEndPoint){
+
+        const storageEthKeys = localStorage.getItem(this.localStorageEthKeyItemName);
+        let ethKeys;
+
+        if (storageEthKeys && storageEthKeys.length) {
+            ethKeys = JSON.parse(storageEthKeys);
+        } else {
+            ethKeys = {};
         }
 
+        let address = await this.connectMetamaskAndGetAddress();
+        address = address.toLowerCase();
+
+        let useEthKey;
+
+        if (ethKeys && ethKeys[address] && !this.ethKeyIsValid(ethKeys[address])) {
+            console.log('remove invalid useEthKey');
+            delete ethKeys[address];
+        }
+
+        if (ethKeys && ethKeys[address]) {
+            useEthKey = ethKeys[address];
+        } else {
+            useEthKey = await this.signNewChallenge(unEndPoint);
+            if (useEthKey) {
+                ethKeys[useEthKey.address.toLowerCase()] = useEthKey;
+                localStorage.setItem(this.localStorageEthKeyItemName, JSON.stringify(ethKeys));
+            }
+        }
+        return useEthKey;
+    }
+
+    async signNewChallenge(unEndPoint){
+        const { UN, Expiry } = await this.getUnpredictableNumber(unEndPoint);
+
+        const domain = window.location.hostname;
+
+        const challenge = `This is proof that I am visiting ${domain}, which has presented the following challenge ${UN.toString()} to sign.`;
+
+        let signature = await this.signMessageWithBrowserWallet(challenge);
+        const msgHash = ethers.utils.hashMessage(challenge);
+        const msgHashBytes = ethers.utils.arrayify(msgHash);
+
+        const recoveredAddress = ethers.utils.recoverAddress(msgHashBytes, signature);
+
+        return {
+            address : recoveredAddress,
+            expiry : Expiry,
+            challenge,
+            signature,
+            UN
+        };
+    }
+
+    negotiate(){
+        return new Promise((resolve, reject) => {
+            this._negotiate((tokens) => {
+                if (!tokens) return reject(false)
+                resolve(tokens);
+            })
+        })
+    }
+
+    _negotiate(callBack) {
         this.negotiateCallback = callBack;
 
         // console.log('attestationOrigin = '+this.attestationOrigin);

@@ -58,41 +58,38 @@
             ? value.toString()
             : value // return everything else unchanged
     }
+    (async ()=>{
+        // let tokensOrigin = "https://devcontickets.herokuapp.com/outlet/";
+        // let tokensOrigin = "https://alladev.com/outlet/";
+        let tokensOrigin = "https://alladev.com/attestation20211001/src/main/javascript/negotiator/outlet.html";
+        // let attestationOrigin = "http://localhost:5000";
 
-    // let tokensOrigin = "https://devcontickets.herokuapp.com/outlet/";
-    // let tokensOrigin = "https://alladev.com/outlet/";
-    let tokensOrigin = "https://alladev.com/attestation20211001/src/main/javascript/negotiator/outlet.html";
-    let attestationOrigin = "http://localhost:5000";
-
-    let buttons = document.querySelectorAll('.token_link');
-    if (buttons && buttons.length){
-        buttons.forEach(item => {
-            item.href = tokensOrigin + '?ticket=' + item.dataset.ticket + "&secret=" + item.dataset.secret  + "&id=" + item.dataset.id;
-            item.addEventListener('click', e => {
-                e.preventDefault();
-                n.addTokenThroughIframe(e.target.href);
-                return false;
+        let buttons = document.querySelectorAll('.token_link');
+        if (buttons && buttons.length){
+            buttons.forEach(item => {
+                item.href = tokensOrigin + '?ticket=' + item.dataset.ticket + "&secret=" + item.dataset.secret  + "&id=" + item.dataset.id;
+                item.addEventListener('click', e => {
+                    e.preventDefault();
+                    n.addTokenThroughIframe(e.target.href);
+                    return false;
+                })
             })
-        })
-    }
+        }
 
-    let filter = {'devconId': 6 };
-    // let filter = { };
-    let n = new Negotiator(filter,
-        // "https://devcontickets.herokuapp.com/outlet/" hardcoded as default value, we can change it if needed
+        let filter = {'devconId': 6 };
+        // let filter = { };
+        let n = new Negotiator(filter,
+            // "https://devcontickets.herokuapp.com/outlet/" hardcoded as default value, we can change it if needed
             {
                 tokensOrigin,
-                attestationOrigin
+                // attestationOrigin
             }
         );
-    writeToLog('to start outlet on tokenOrigin site just include negotiator.js and add "<script>let negotiator = new Negotiator();<script>"');
-    writeToLog('Open iframe with outlet for : '+ tokensOrigin);
-    writeToLog('Debug disabled');
-    // writeToLog('Filter = ' + JSON.stringify(filter));
-    n.negotiate(tokensOutput => {
+        writeToLog('to start outlet on tokenOrigin site just include negotiator.js and add "<script>let negotiator = new Negotiator();<script>"');
+        writeToLog('Open iframe with outlet for : '+ tokensOrigin);
+        const tokensOutput = await n.negotiate();
         writeToLog('Recived tokens count: '+  tokensOutput.tokens.length );
-        writeToLog('You can see tokens in console' );
-        console.log( tokensOutput );
+
         writeToLog( JSON.stringify(tokensOutput, bnToStringExtension) );
 
         if (tokensOutput.noTokens) {
@@ -100,15 +97,21 @@
         }
 
         if (tokensOutput.tokens.length) {
-            console.log(tokensOutput.tokens[0]);
-            console.log(JSON.stringify(tokensOutput.tokens[0], bnToStringExtension));
+            // console.log(JSON.stringify(tokensOutput.tokens[0], bnToStringExtension));
             writeToLog('Found token: ' + JSON.stringify(tokensOutput.tokens[0], bnToStringExtension) );
-            n.signToken(tokensOutput.tokens[0], res => {
-                writeToLog('signToken result received. check it in console also. RES=' + JSON.stringify(res, bnToStringExtension) );
-                console.log('res', res);
-            });
+            let proof;
+            try {
+                proof = await n.authenticate(tokensOutput.tokens[0]);
+                writeToLog('signToken result received. check it in console also. RES=' + JSON.stringify(proof, bnToStringExtension) );
+                console.log('proof', proof);
+            } catch (e){
+                console.log("Authenticate error: " , e.message);
+            }
+
         }
-    });
+
+    })();
+
 </script>
 </body>
 </html>

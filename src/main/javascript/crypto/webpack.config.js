@@ -39,7 +39,7 @@ module.exports = {
         ignored: /node_modules/
     },
     optimization: {
-        minimize: false
+        minimize: true
     }
 
 };
