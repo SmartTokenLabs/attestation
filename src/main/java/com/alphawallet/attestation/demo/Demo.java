@@ -16,7 +16,6 @@ import com.alphawallet.attestation.cheque.ChequeDecoder;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.core.Validateable;
 import com.alphawallet.attestation.core.Verifiable;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequest;
@@ -33,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -443,8 +443,9 @@ public class Demo {
   }
 
   private static void magicLink(Path inputFile) throws IOException {
-    byte[] signature = Files.readAllBytes(inputFile);
-    System.out.println(URLUtility.encodeData(signature));
+    byte[] input = Files.readAllBytes(inputFile);
+    String encodedInput = new String(Base64.getUrlEncoder().encode(input));
+    System.out.println(encodedInput);
   }
 
   private static AttestationType getType(String stringType) throws IllegalArgumentException {
