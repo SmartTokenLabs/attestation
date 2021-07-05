@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
@@ -32,9 +31,9 @@ public class SignatureTest {
   private SecureRandom rand;
 
   @BeforeEach
-  public void setupCrypto() throws NoSuchAlgorithmException {
+  public void setupCrypto() throws Exception {
     Security.addProvider(new BouncyCastleProvider());
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     largeKeys = SignatureUtility.constructECKeys(SECP364R1, rand);
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);

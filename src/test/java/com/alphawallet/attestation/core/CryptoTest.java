@@ -13,7 +13,6 @@ import com.alphawallet.attestation.UsageProofOfExponent;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import org.bouncycastle.asn1.DERBitString;
@@ -36,8 +35,8 @@ public class CryptoTest {
   private static final BigInteger SECRET2 = new BigInteger("137957078946249796347561580210756254704202645642012518546347679798121784");
 
   @BeforeEach
-  public void setupCrypto() throws NoSuchAlgorithmException {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+  public void setupCrypto() throws Exception {
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
@@ -332,15 +331,15 @@ public class CryptoTest {
   }
 
   @Test
-  public void testConstructAttRequestProof() throws NoSuchAlgorithmException{
-    SecureRandom rand2 = SecureRandom.getInstance("SHA1PRNG");
+  public void testConstructAttRequestProof() throws Exception {
+    SecureRandom rand2 = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand2.setSeed("otherseed".getBytes());
     AttestationCrypto crypt2 = new AttestationCrypto(rand2);
     FullProofOfExponent pok = crypt2.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyFullProof(pok));
 
     // Check consistency
-    rand2 = SecureRandom.getInstance("SHA1PRNG");
+    rand2 = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand2.setSeed("otherseed".getBytes());
     crypt2 = new AttestationCrypto(rand2);
     FullProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET1);

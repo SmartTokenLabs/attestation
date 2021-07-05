@@ -35,7 +35,7 @@ public class CapabilityTest {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     ticketKeys = SignatureUtility.constructECKeys(SECP384R1, rand);
