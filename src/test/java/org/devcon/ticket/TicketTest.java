@@ -40,7 +40,7 @@ public class TicketTest {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     otherKeys = SignatureUtility.constructECKeysWithSmallestY(rand);

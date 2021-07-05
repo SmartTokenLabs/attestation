@@ -9,7 +9,7 @@ public class TestDemo {
   private static final String PREFIX = "build/test-results/";
   @BeforeAll
   public static void cleanup() throws Exception {
-    SecureRandom rand = SecureRandom.getInstance("SHA1PRNG");
+    SecureRandom rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     // Set the demo to use deterministic randomness
     Demo.crypto = new AttestationCrypto(rand);

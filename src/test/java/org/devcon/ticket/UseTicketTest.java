@@ -16,6 +16,8 @@ import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
 import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.demo.SmartContract;
+import com.alphawallet.ethereum.TicketAttestationReturn;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
@@ -23,10 +25,6 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
-
-import com.alphawallet.attestation.demo.SmartContract;
-import com.alphawallet.ethereum.TicketAttestationReturn;
-import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -54,7 +52,7 @@ public class UseTicketTest {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);

@@ -1,21 +1,20 @@
 package io.alchemynft.attestation;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.ERC721Token;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class NFTAttestationTest {
     private static AsymmetricCipherKeyPair subjectKeys;
@@ -33,7 +32,7 @@ public class NFTAttestationTest {
 
     @BeforeAll
     public static void setupKeys() throws Exception {
-        rand = SecureRandom.getInstance("SHA1PRNG");
+        rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
         rand.setSeed("seed".getBytes());
         subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
         attestorKeys = SignatureUtility.constructECKeys(rand);
