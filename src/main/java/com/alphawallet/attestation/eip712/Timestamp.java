@@ -24,7 +24,7 @@ public class Timestamp {
   public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
 
   static {
-    TIMESTAMP_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT+0100"));
+    TIMESTAMP_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
 
   private final long time;
