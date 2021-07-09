@@ -22,4 +22,5 @@ jobs:
         name: Gradle Build
         uses: eskatos/gradle-command-action@v1
         with:
+          gradle-version: 7.1.1
           arguments: build
