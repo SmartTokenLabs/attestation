@@ -2,7 +2,7 @@ name: gradle-build-main
 
 on:
   push:
-    branches: feature-issue_156-gradle_ci
+    branches: main
 
 jobs:
   gradle:
