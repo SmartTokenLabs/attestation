@@ -13,7 +13,7 @@ See document here: http://tokenscript.org/Attestation.html
 You need the following installed:
 
 - JDK (version 11 or higher)
-- Gradle (version 6.7 is used by our devs)
+- Gradle (version 7.1.1 is used by our devs)
 - node.js (version 15 is used by our devs)
 
 Once you have them installed, run:
