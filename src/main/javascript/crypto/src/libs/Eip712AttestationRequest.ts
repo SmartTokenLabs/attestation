@@ -9,6 +9,7 @@ import {base64ToUint8array, hexStringToBase64Url} from "./utils";
 import {Nonce} from "./Nonce";
 import {Eip712Token} from "./Eip712Token";
 import {Timestamp} from "./Timestamp";
+import {debugLog} from "../config";
 
 export class Eip712AttestationRequest extends Eip712Token implements JsonEncodable, Verifiable, Validateable {
     private jsonEncoding: string;
@@ -141,7 +142,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     public checkValidity(): boolean {
 
         if (this.data.description !== this.Eip712UserDataDescription) {
-            console.log('Description is not correct. :' + this.data.description + ' !== ' + this.Eip712UserDataDescription);
+            if (debugLog) { console.log('Description is not correct. :' + this.data.description + ' !== ' + this.Eip712UserDataDescription);}
             return false;
         };
 

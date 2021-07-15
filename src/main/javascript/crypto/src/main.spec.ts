@@ -5,6 +5,7 @@ import {Authenticator} from "./Authenticator";
 import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
 import {Timestamp} from "./libs/Timestamp";
 import {Asn1Der} from "./libs/DerUtility";
+import {debugLog} from "./config";
 
 let EC = require("elliptic");
 
@@ -140,9 +141,11 @@ describe("Attestation request/construct", () => {
 
         let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 24*60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        console.log("attestRes = " + attestRes);
-        console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(attestRes)));
-        console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(Asn1Der.encode('SEQUENCE_30',Asn1Der.encode('OCTET_STRING',uint8tohex(bnToUint8(12345n)))) )));
+        if (debugLog) {
+            console.log("attestRes = " + attestRes);
+            console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(attestRes)));
+            console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(12345n)))))));
+        }
         // OK if no Errors
         expect(1).toBe(1);
 
@@ -235,6 +238,8 @@ describe("executeEipFlow", () => {
 
 
 
+
+
 });
 
 describe("executeCombinedEipFlow", () => {
@@ -267,7 +272,7 @@ describe("executeCombinedEipFlow", () => {
                 sessionMessage,
                 ATTESTOR_DOMAIN,
                 sessionSignature2);
-            console.log(`verifyUsage result = ${res}`);
+            if (debugLog) { console.log(`verifyUsage result = ${res}`); }
         } catch (e) {
             console.error(e);
             throw new Error('verifyUsage failed');

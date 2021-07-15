@@ -11,6 +11,7 @@ import {FullProofOfExponent} from "./FullProofOfExponent";
 import {Nonce} from "./Nonce";
 import {TokenValidateable} from "./TokenValidateable";
 import {Timestamp} from "./Timestamp";
+import {debugLog} from "../config";
 
 export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable, Verifiable, TokenValidateable {
     public PLACEHOLDER_CHAIN_ID: number = 0;
@@ -100,7 +101,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
                 this.useAttestation = UseAttestation.fromBytes(base64ToUint8array(this.data.payload), this.attestorKey);
             } catch (e){
                 let m = "Failed to read UseAttestation. " + e;
-                console.log(m);
+                if (debugLog) {console.log(m);}
                 throw new Error(m);
             }
         }

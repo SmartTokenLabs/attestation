@@ -18,10 +18,13 @@ import {TokenValidateable} from "./libs/TokenValidateable";
 import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequestWithUsage";
 import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
+import {debugLog} from "./config";
 
 let subtle:any;
 
-if (crypto && crypto.subtle){
+const debug = true;
+
+if (typeof crypto === "object" && crypto.subtle){
     subtle = crypto.subtle;
 } else {
     subtle = require('crypto').webcrypto.subtle;
@@ -314,7 +317,7 @@ export class Authenticator {
         }
 
         let nonce = await Nonce.makeNonce(userAddress, attestorDomain);
-        console.log('nonce = ' + uint8tohex(nonce));
+        if (debugLog) { console.log('nonce = ' + uint8tohex(nonce)); }
 
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
@@ -359,7 +362,7 @@ export class Authenticator {
 
         } catch (e){
             let m = "Failed to fill attestation data from json. " + e + "\nRestores as an Eip712AttestationRequestWithUsage object instead";
-            console.log(m);
+            if (debugLog) { console.log(m); }
             try {
                 attestationRequest = new Eip712AttestationRequestWithUsage();
                 attestationRequest.setDomain(attestorDomain);
@@ -433,14 +436,14 @@ export class Authenticator {
 
     static checkAttestRequestVerifiability( input:Verifiable) {
         if (!input.verify()) {
-            console.log("Could not verify attestation signing request");
+            if (debugLog) { console.log("Could not verify attestation signing request"); }
             throw new Error("Verification failed");
         }
     }
 
     static checkAttestRequestValidity( input:Validateable) {
         if (!input.checkValidity()) {
-            console.log("Could not validate attestation signing request");
+            if (debugLog) { console.log("Could not validate attestation signing request"); }
             throw new Error("Validation failed");
         }
     }
@@ -469,18 +472,15 @@ export class Authenticator {
         let sessionPublicKey: KeyPair;
 
         try {
-            // console.log('lets create Eip712AttestationUsage from json');
             let usageRequest: Eip712AttestationUsage = new Eip712AttestationUsage();
             usageRequest.setDomain(WEB_DOMAIN);
             usageRequest.fillJsonData( jsonRequest, attestorKey);
-
             Authenticator.checkUsageVerifiability(usageRequest);
             Authenticator.checkUsageValidity(usageRequest);
             sessionPublicKey = usageRequest.getSessionPublicKey();
-
         } catch (e) {
             // Try as an  Eip712AttestationRequestWithUsage object instead, which is NOT linked to a specific website
-            console.log('Eip712AttestationUsage failed. ' + e + '. Lets try to verify Eip712AttestationRequestWithUsage');
+            if (debugLog) { console.log('Eip712AttestationUsage failed. ' + e + '. Lets try to verify Eip712AttestationRequestWithUsage'); }
             let usageRequest: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage();
             usageRequest.setDomain(WEB_DOMAIN);
             usageRequest.fillJsonData( jsonRequest );
@@ -493,6 +493,7 @@ export class Authenticator {
 
         // Validate signature
         try {
+
             let res = await sessionPublicKey.verifyStringWithSubtle(KeyPair.anySignatureToRawUint8(signature) , message);
             if (!res) {
                 console.error("Could not verify message signature");

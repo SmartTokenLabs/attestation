@@ -23,7 +23,7 @@ let EC = require("elliptic");
 
 let subtle:any;
 
-if (crypto && crypto.subtle){
+if (typeof crypto === "object" && crypto.subtle){
     subtle = crypto.subtle;
 } else {
     subtle = require('crypto').webcrypto.subtle;
@@ -444,6 +444,7 @@ export class KeyPair {
     async verifyStringWithSubtle(signature: Uint8Array, msg: string): Promise<boolean>{
         // console.log('pubkey: ' + this.getPublicKeyAsHexStr() + ' msg:' + msg + ' signature:' + uint8tohex(signature));
         // console.log(await this.getSubtlePublicKey());
+
         return await subtle.verify(
             {
                 name: "ECDSA",
