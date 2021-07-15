@@ -5,9 +5,10 @@ on:
   pull_request:
     branches:
       - main
+      - issue_159-gradle7_java16
 
 jobs:
-  gradle:
+  gradle7-java11:
     runs-on: ubuntu-latest
     steps:
       -
@@ -20,6 +21,25 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      -
+        name: Gradle Build
+        uses: eskatos/gradle-command-action@v1
+        with:
+          gradle-version: 7.1.1
+          arguments: build
+  gradle7-java16:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+      -
+        name: Set up Java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 16
       -
         name: Gradle Build
         uses: eskatos/gradle-command-action@v1
