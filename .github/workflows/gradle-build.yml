@@ -5,7 +5,6 @@ on:
   pull_request:
     branches:
       - main
-      - issue_159-gradle7_java16
 
 jobs:
   gradle7-java11:
