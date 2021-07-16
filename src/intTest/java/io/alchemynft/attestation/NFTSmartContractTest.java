@@ -34,7 +34,7 @@ public class NFTSmartContractTest {
 
     @BeforeAll
     public static void setupKeys() throws Exception {
-        rand = SecureRandom.getInstance("SHA1PRNG");
+        rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
         rand.setSeed("seed".getBytes());
         subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
         attestorKeys = SignatureUtility.constructECKeys(rand);

@@ -63,10 +63,12 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public static final int NFT_VERSION = 19;
   public static final String HIDDEN_TYPE = "HiddenType";
   public static final String HIDDEN_IDENTIFIER = "HiddenIdentifier";
+
   // SEE RFC 2079
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
   // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
   public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
+
 
   private final String identifier;
   private final String type;
@@ -88,6 +90,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     }
     setCommitment(AttestationCrypto.makeCommitment(identifier, type, secret));
     setUnlimitedValidity();
+
     this.identifier = identifier;
     this.type = type.toString();
   }
@@ -112,6 +115,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     setUnlimitedValidity();
     this.type = HIDDEN_TYPE;
     this.identifier = HIDDEN_IDENTIFIER;
+
   }
 
   /**
@@ -136,6 +140,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     setUnlimitedValidity();
     this.type = label;
     this.identifier = URL;
+
   }
 
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
@@ -156,9 +161,14 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     }
   }
 
-  private X500Name makeLabeledURI(String type, String identifier)  {
-    DERUTF8String labelValue = new DERUTF8String(URLEncoder.encode(identifier + " " + type, StandardCharsets.UTF_8));
-    RDN rdn = new RDN(LABELED_URI, labelValue);
+  /**
+   * @param label the label of the URL, similar to what is inside <a>...</a>
+   * @param URL the URL itself, similar to what is in <a href="...">, note that
+   * it should already be URLencoded therefore not containing space
+   */
+  private X500Name makeLabeledURI(String label, String URL)  {
+    DERUTF8String labeledURLValue = new DERUTF8String(URL + " " + label);
+    RDN rdn = new RDN(LABELED_URI, labeledURLValue);
     return new X500Name(new RDN[] {rdn});
   }
 

@@ -22,7 +22,7 @@ public class NonceTest {
 
   @BeforeAll
   public static void setup() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     AsymmetricKeyParameter key = SignatureUtility.constructECKeys(rand).getPublic();
     address = SignatureUtility.addressFromKey(key);

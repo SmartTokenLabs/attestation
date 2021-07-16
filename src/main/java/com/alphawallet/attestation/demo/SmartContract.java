@@ -1,9 +1,8 @@
 package com.alphawallet.attestation.demo;
 
-import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
-
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.ProofOfExponent;
+
 import com.alphawallet.attestation.SignedIdentifierAttestation;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -15,27 +14,33 @@ import java.util.concurrent.TimeUnit;
 
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721TokenEth;
-
+import com.alphawallet.ethereum.TicketAttestationReturn;
 import okhttp3.OkHttpClient;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.*;
 import org.web3j.abi.datatypes.generated.Uint256;
-import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.Bool;
-import org.web3j.abi.datatypes.DynamicBytes;
-import org.web3j.abi.datatypes.Function;
-import org.web3j.abi.datatypes.Type;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.http.HttpService;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
+
 public class SmartContract {
   private static final String ATTESTATION_CHECKING_CONTRACT = "0xBfF9E858796Bc8443dd1026D14Ae018EfBE87aD5";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   private static final String ATTESTATION_VERIFICATION_CONTRACT = "0xE5Eb8348f5dFcA8D6BF82A0DBcA461110F9FE1c9";
+  private static final String TICKET_VERIFICATION_CONTRACT = "0x5Fc044Dd56e501C5D9094375fEDa0e4256838330";
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
   {
@@ -53,6 +58,25 @@ public class SmartContract {
   {
     Function function = verifyPublicAttestation(signedAttestation.getDerEncoding());
     return callAddrFunction(function);
+  }
+
+  public TicketAttestationReturn callVerifyTicketAttestation(byte[] attestation) throws Exception
+  {
+    Web3j web3j = getRinkebyWeb3j();
+    Function function = verifyTicketAttestation(attestation);
+    String result = callSmartContractFunction(web3j, function, TICKET_VERIFICATION_CONTRACT);
+    List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
+    TicketAttestationReturn retVal = new TicketAttestationReturn();
+
+    if (responseValues.size() == 4)
+    {
+      retVal.subjectAddress = responseValues.get(0).getValue().toString();
+      retVal.ticketId = (byte[])responseValues.get(1).getValue();
+      retVal.issuerAddress = responseValues.get(2).getValue().toString();
+      retVal.attestorAddress = responseValues.get(3).getValue().toString();
+    }
+
+    return retVal;
   }
 
   public AttestationReturn callVerifyNFTAttestation(byte[] att, String sender)
@@ -195,6 +219,18 @@ public class SmartContract {
                     new TypeReference<Address>() {},    //subject
                     new TypeReference<Address>() {},    //attestor
                     new TypeReference<Bool>() {}));     //valid NFT signature by subject
+  }
+
+  //function verifyTicketAttestation(bytes memory attestation) public pure
+  //  returns(address payable subject, bytes memory ticketId, address issuer, address attestor)
+  private static Function verifyTicketAttestation(byte[] encoding) {
+    return new Function(
+            "verifyTicketAttestation",
+            Arrays.asList(new DynamicBytes(encoding)),
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, //Subject
+                    new TypeReference<DynamicBytes>() {}, //TicketId
+                    new TypeReference<Address>() {},      //Issuer
+                    new TypeReference<Address>() {}));    //Attestor
   }
 
   protected static org.web3j.abi.datatypes.DynamicArray<?> getERC721Array(ERC721TokenEth token)

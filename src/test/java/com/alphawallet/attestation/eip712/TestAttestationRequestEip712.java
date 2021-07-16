@@ -15,6 +15,7 @@ import com.alphawallet.attestation.core.URLUtility;
 import com.alphawallet.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Objects;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
@@ -41,7 +42,7 @@ public class TestAttestationRequestEip712 {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
@@ -97,8 +98,9 @@ public class TestAttestationRequestEip712 {
     assertArrayEquals(request.getPok().getDerEncoding(), newRequest.getPok().getDerEncoding());
     assertEquals(request.getJsonEncoding(), newRequest.getJsonEncoding());
     assertEquals(request.getType(), newRequest.getType());
-    assertEquals( ((ECKeyParameters) request.getUserPublicKey()).getParameters(),
-        ((ECKeyParameters) newRequest.getUserPublicKey()).getParameters());
+    ECKeyParameters requestPubKey = (ECKeyParameters) request.getUserPublicKey();
+    ECKeyParameters newRequestPubKey = ((ECKeyParameters) newRequest.getUserPublicKey());
+    assertTrue(Objects.deepEquals(requestPubKey.getParameters(), newRequestPubKey.getParameters()));
   }
 
   @Test

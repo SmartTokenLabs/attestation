@@ -19,7 +19,7 @@ public class AttestationRequestTest {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    SecureRandom rand = SecureRandom.getInstance("SHA1PRNG");
+    SecureRandom rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);

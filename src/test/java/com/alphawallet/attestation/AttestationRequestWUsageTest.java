@@ -30,7 +30,7 @@ public class AttestationRequestWUsageTest {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");

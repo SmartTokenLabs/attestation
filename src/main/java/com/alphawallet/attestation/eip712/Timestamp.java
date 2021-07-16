@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,6 +22,10 @@ public class Timestamp {
   public static final long UNLIMITED = 253402297199000L;
   public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 365; // 1 year
   public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
+
+  static {
+    TIMESTAMP_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+  }
 
   private final long time;
   private long validity = 0;
