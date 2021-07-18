@@ -20,13 +20,13 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
   private static final Logger logger = LogManager.getLogger(UseAttestation.class);
-  private final SignedIdentifierAttestation attestation;
+  private final SignedIdentityAttestation attestation;
   private final AttestationType type;
   private final FullProofOfExponent pok;
   private final AsymmetricKeyParameter sessionPublicKey;
   private final byte[] encoding;
 
-  public UseAttestation(SignedIdentifierAttestation attestation, AttestationType type, FullProofOfExponent pok, AsymmetricKeyParameter sessionPublicKey) {
+  public UseAttestation(SignedIdentityAttestation attestation, AttestationType type, FullProofOfExponent pok, AsymmetricKeyParameter sessionPublicKey) {
     this.attestation = attestation;
     this.type = type;
     this.pok = pok;
@@ -41,7 +41,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       int i = 0;
-      this.attestation = new SignedIdentifierAttestation(asn1.getObjectAt(i++).toASN1Primitive().getEncoded(), attestationVerificationKey);
+      this.attestation = new SignedIdentityAttestation(asn1.getObjectAt(i++).toASN1Primitive().getEncoded(), attestationVerificationKey);
       this.type = AttestationType.values()[
           ASN1Integer.getInstance(asn1.getObjectAt(i++)).getValue().intValueExact()];;
       this.pok = new FullProofOfExponent(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
@@ -59,7 +59,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     }
   }
 
-  private byte[] makeEncoding(SignedIdentifierAttestation attestation, AttestationType type, FullProofOfExponent pok, AsymmetricKeyParameter sessionKey) {
+  private byte[] makeEncoding(SignedIdentityAttestation attestation, AttestationType type, FullProofOfExponent pok, AsymmetricKeyParameter sessionKey) {
     try {
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Sequence.getInstance(attestation.getDerEncoding()));
@@ -72,7 +72,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     }
   }
 
-  public SignedIdentifierAttestation getAttestation() {
+  public SignedIdentityAttestation getAttestation() {
     return attestation;
   }
 

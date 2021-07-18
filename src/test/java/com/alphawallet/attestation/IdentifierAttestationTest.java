@@ -59,7 +59,7 @@ public class IdentifierAttestationTest {
     att.setSerialNumber(1);
     assertTrue(att.checkValidity());
 
-    Files.write(p, (new SignedIdentifierAttestation(att, otherKeys)).getDerEncoding());
+    Files.write(p, (new SignedIdentityAttestation(att, otherKeys)).getDerEncoding());
     System.out.println("To check the X509 attestation, run this:");
     System.out.println("$ openssl asn1parse -inform DER -in " + p.toString());
   }
@@ -178,7 +178,7 @@ public class IdentifierAttestationTest {
   public void testUrlEncodingFromBin() throws Exception {
     IdentifierAttestation initial = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, mail);
     IdentifierAttestation decoded = new IdentifierAttestation(initial.getDerEncoding());
-    assertEquals(initial.getAsUrlWithoutIdentifier() + "&" + IdentifierAttestation.HIDDEN_TYPE + "=" + IdentifierAttestation.HIDDEN_IDENTIFIER, decoded.getAsUrlWithIdentifier());
+    assertEquals(initial.getAsUrlWithoutIdentifier() + "&" + IdentifierAttestation.HIDDEN_TYPE + "=" + IdentifierAttestation.HIDDEN_IDENTITY, decoded.getAsUrlWithIdentifier());
     // Ensure that we get a valid URL
     String decodedWithId = URLDecoder.decode(decoded.getAsUrlWithIdentifier(), StandardCharsets.UTF_8);
     assertEquals(decodedWithId, decoded.getAsUrlWithIdentifier());

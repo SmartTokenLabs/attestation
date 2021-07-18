@@ -3,6 +3,3 @@ out
 build
 .iml
 .gradle
-node_modules
-package-lock.json
-yarn.lock

@@ -1,6 +1,6 @@
 package io.alchemynft.attestation;
 
-import com.alphawallet.attestation.SignedIdentifierAttestation;
+import com.alphawallet.attestation.SignedIdentityAttestation;
 import com.alphawallet.attestation.core.ASNEncodable;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.attestation.core.Validateable;
@@ -12,10 +12,10 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import java.io.IOException;
 
 public class NFTAttestation implements ASNEncodable, Validateable {
-    private final SignedIdentifierAttestation att;
+    private final SignedIdentityAttestation att;
     private final DERSequence tokens;
 
-    public NFTAttestation(SignedIdentifierAttestation att, ERC721Token[] nftTokens)
+    public NFTAttestation(SignedIdentityAttestation att, ERC721Token[] nftTokens)
     {
         this.att = att;
         ASN1EncodableVector asn1 = new ASN1EncodableVector();
@@ -32,7 +32,7 @@ public class NFTAttestation implements ASNEncodable, Validateable {
         ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
 
         ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
-        this.att = new SignedIdentifierAttestation(attestationEnc.getEncoded(), signingPublicKey);
+        this.att = new SignedIdentityAttestation(attestationEnc.getEncoded(), signingPublicKey);
 
         ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
         this.tokens = DERSequence.convert(tokensEnc);

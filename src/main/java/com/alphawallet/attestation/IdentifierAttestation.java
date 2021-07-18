@@ -62,22 +62,20 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public static final int HIDDEN_IDENTIFIER_VERSION = 18;
   public static final int NFT_VERSION = 19;
   public static final String HIDDEN_TYPE = "HiddenType";
-  public static final String HIDDEN_IDENTIFIER = "HiddenIdentifier";
-
+  public static final String HIDDEN_IDENTITY = "HiddenIdentity";
   // SEE RFC 2079
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
   // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
   public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
 
-
-  private final String identifier;
+  private final String identity;
   private final String type;
   /**
    * Constructs a new identifier attestation based on a secret, with unlimited validity by default
    * You still need to set the optional fields, that is
    * issuer, smartcontracts
    */
-  public IdentifierAttestation(String identifier, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
+  public IdentifierAttestation(String identity, AttestationType type, AsymmetricKeyParameter key, BigInteger secret)  {
     super();
     super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
@@ -88,10 +86,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
-    setCommitment(AttestationCrypto.makeCommitment(identifier, type, secret));
+    setCommitment(AttestationCrypto.makeCommitment(identity, type, secret));
     setUnlimitedValidity();
-
-    this.identifier = identifier;
+    this.identity = identity;
     this.type = type.toString();
   }
 
@@ -114,8 +111,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     setCommitment(commitment);
     setUnlimitedValidity();
     this.type = HIDDEN_TYPE;
-    this.identifier = HIDDEN_IDENTIFIER;
-
+    this.identity = HIDDEN_IDENTITY;
   }
 
   /**
@@ -139,8 +135,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     }
     setUnlimitedValidity();
     this.type = label;
-    this.identifier = URL;
-
+    this.identity = URL;
   }
 
   public IdentifierAttestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
@@ -152,12 +147,12 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     if (getVersion() == NFT_VERSION) {
       RDN[] labeledURIRDN = (new X500Name(getSubject())).getRDNs(LABELED_URI);
       DERUTF8String labeledURI = (DERUTF8String) labeledURIRDN[0].getFirst().getValue();
-      String[] typeAndIdentifier = URLDecoder.decode(labeledURI.getString()).split(" ");
-      this.type = typeAndIdentifier[0];
-      this.identifier = typeAndIdentifier[1];
+      String[] typeAndIdentity = URLDecoder.decode(labeledURI.getString()).split(" ");
+      this.type = typeAndIdentity[0];
+      this.identity = typeAndIdentity[1];
     } else {
       this.type = HIDDEN_TYPE;
-      this.identifier = HIDDEN_IDENTIFIER;
+      this.identity = HIDDEN_IDENTITY;
     }
   }
 
@@ -185,7 +180,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   /**
-   * Verifies that the the attestation is in fact a valid identifier attestation, in relation to field values.
+   * Verifies that the the attestation is in fact a valid identity attestation, in relation to field values.
    * @return true if the field values reflect that this is a standard attestation
    */
   @Override
@@ -253,9 +248,9 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   public String getAsUrlWithIdentifier() {
-    String encodedIdentifier = URLEncoder.encode(this.identifier, StandardCharsets.UTF_8);
+    String encodedIdentity = URLEncoder.encode(this.identity, StandardCharsets.UTF_8);
     String encodedType = URLEncoder.encode(this.type, StandardCharsets.UTF_8);
-    return getAsUrlWithoutIdentifier() + "&" + encodedType + "=" + encodedIdentifier;
+    return getAsUrlWithoutIdentifier() + "&" + encodedType + "=" + encodedIdentity;
   }
 
   public String getAsUrlWithoutIdentifier() {

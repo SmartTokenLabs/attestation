@@ -55,46 +55,46 @@ export class AttestationCrypto {
         }
     }
 
-    // makeRiddle(identifier: string, type: number, secret: bigint): Uint8Array {
-    //     let hashedIdentifier = this.hashIdentifier(type, identifier);
-    //     return hashedIdentifier.multiplyDA(secret).getEncoded(false);
+    // makeRiddle(identity: string, type: number, secret: bigint): Uint8Array {
+    //     let hashedIdentity = this.hashIdentifier(type, identity);
+    //     return hashedIdentity.multiplyDA(secret).getEncoded(false);
     // }
 
     /**
      * Construct a Pedersen commitment to an identifier using a specific secret.
-     * @param identifier The common identifier
+     * @param identity The common identifier
      * @param type The type of identifier
      * @param secret The secret randomness to be used in the commitment
      * @return
      */
-    makeCommitment(identifier: string, type: number, secret: bigint): Uint8Array {
-        let hashedIdentifier = this.mapToCurveMultiplier(type, identifier);
+    makeCommitment(identity: string, type: number, secret: bigint): Uint8Array {
+        let hashedIdentity = this.mapToCurveMultiplier(type, identity);
 
-        let commitment: Point = Pedestren_G.multiplyDA(hashedIdentifier).add(Pedestren_H.multiplyDA(secret));
+        let commitment: Point = Pedestren_G.multiplyDA(hashedIdentity).add(Pedestren_H.multiplyDA(secret));
         return commitment.getEncoded(false);
 
         // let hiding:Point = Pedestren_H.multiplyDA(secret);
-        // return this.makeCommitmentFromHiding(identifier, type, hiding);
+        // return this.makeCommitmentFromHiding(identity, type, hiding);
     }
     /**
-     * Constructs a commitment to an identifier based on hidden randomization supplied from a user.
+     * Constructs a commitment to an identity based on hidden randomization supplied from a user.
      * This is used to construct an attestation.
-     * @param identifier The user's identifier.
-     * @param type The type of identifier.
+     * @param identity The user's identity.
+     * @param type The type of identity.
      * @param hiding The hiding the user has picked
      * @return
      */
-    makeCommitmentFromHiding(identifier: string, type: number, hiding: Point): Uint8Array {
-        // let hashedIdentifier:bigint = this.mapToIntegerIntString(type, identifier);
-        let hashedIdentifier:bigint = this.mapToCurveMultiplier(type, identifier);
+    makeCommitmentFromHiding(identity: string, type: number, hiding: Point): Uint8Array {
+        // let hashedIdentity:bigint = this.mapToIntegerIntString(type, identity);
+        let hashedIdentity:bigint = this.mapToCurveMultiplier(type, identity);
         // Construct Pedersen commitment
-        let commitment:Point = Pedestren_G.multiplyDA(hashedIdentifier).add(hiding);
+        let commitment:Point = Pedestren_G.multiplyDA(hashedIdentity).add(hiding);
         return commitment.getEncoded(false);
     }
 
     // TODO use type
-    // hashIdentifier(type: number , identifier: string): Point {
-    //     let idenNum = this.mapToInteger(type, Uint8Array.from(stringToArray(identifier.trim().toLowerCase())));
+    // hashIdentifier(type: number , identity: string): Point {
+    //     let idenNum = this.mapToInteger(type, Uint8Array.from(stringToArray(identity.trim().toLowerCase())));
     //     // console.log(`idenNum(for base point) = ${idenNum}`);
     //     return this.computePoint_bn256(idenNum);
     // }
@@ -108,11 +108,11 @@ export class AttestationCrypto {
         return BigInt('0x' + sha3.keccak256(arr))>>(256n - this.curveOrderBitLength);
     }
 
-    mapToCurveMultiplier(type: number, identifier: string):bigint {
+    mapToCurveMultiplier(type: number, identity: string):bigint {
 
-        let identifierBytes:Uint8Array = Uint8Array.from(stringToArray(identifier.trim().toLowerCase() ) );
+        let identityBytes:Uint8Array = Uint8Array.from(stringToArray(identity.trim().toLowerCase() ) );
 
-        let uintArr:Uint8Array = this.injectIdentifierType(type, identifierBytes);
+        let uintArr:Uint8Array = this.injectIdentifierType(type, identityBytes);
         let sampledVal:bigint = uint8ToBn(uintArr);
         do {
             sampledVal = this.mapToInteger(bnToUint8(sampledVal));
