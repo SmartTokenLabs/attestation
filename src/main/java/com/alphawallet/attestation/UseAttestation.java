@@ -43,7 +43,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
       int i = 0;
       this.attestation = new SignedIdentifierAttestation(asn1.getObjectAt(i++).toASN1Primitive().getEncoded(), attestationVerificationKey);
       this.type = AttestationType.values()[
-          ASN1Integer.getInstance(asn1.getObjectAt(i++)).getValue().intValueExact()];;
+          ASN1Integer.getInstance(asn1.getObjectAt(i++)).getValue().intValueExact()];
       this.pok = new FullProofOfExponent(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
       this.sessionPublicKey = SignatureUtility.restoreKeyFromSPKI(asn1.getObjectAt(i++).toASN1Primitive().getEncoded());
     } catch (IOException e) {
