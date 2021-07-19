@@ -88,7 +88,8 @@ public class Timestamp {
       return false;
     }
     // If the token is valid for too long
-    if (expirationTimeInMs - time > validity + ALLOWED_ROUNDING) {
+    // OG added 2 * ALLOWED_ROUNDING extra time to fix roundings
+    if (expirationTimeInMs - time > validity + 3 * ALLOWED_ROUNDING) {
       logger.error("Lifetime is larger than allowed");
       return false;
     }

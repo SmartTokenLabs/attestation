@@ -54,7 +54,8 @@ public class TimestampTest {
     StaticTime time = new StaticTime(10000);
     time.setValidity(99);
     time.setCurrentTime(time.getTime());
-    long expiration = time.getTime() + 1100;
+    // OG added 2s to fix 2 roundings
+    long expiration = time.getTime() + 3100;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 
