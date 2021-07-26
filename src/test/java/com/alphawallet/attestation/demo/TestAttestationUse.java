@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.SignedIdentityAttestation;
+import com.alphawallet.attestation.SignedIdentifierAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.alphawallet.token.tools.Numeric;
@@ -33,13 +33,13 @@ public class TestAttestationUse {
     private static AsymmetricCipherKeyPair attestorKeys;
     private static SecureRandom rand;
     private static AttestationCrypto crypto;
-    private SignedIdentityAttestation attestation;
+    private SignedIdentifierAttestation attestation;
     private AttestedObject<Ticket> attestedTicket;
     private final SmartContract contract = new SmartContract();
 
     @BeforeAll
     public static void setupKeys() throws Exception {
-        rand = SecureRandom.getInstance("SHA1PRNG");
+        rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
         rand.setSeed("seed".getBytes());
 
         crypto = new AttestationCrypto(rand);
@@ -55,7 +55,7 @@ public class TestAttestationUse {
     public void makeAttestedCheque()
     {
         IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
-        attestation = new SignedIdentityAttestation(att, attestorKeys);
+        attestation = new SignedIdentifierAttestation(att, attestorKeys);
     }
 
     @Test

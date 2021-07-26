@@ -6,21 +6,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.util.*;
-
+import java.util.Base64;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509ContentVerifierProviderBuilder;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentVerifierProvider;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,7 +38,7 @@ public class AttestorTest {
 
   @BeforeAll
   public static void setupAttestor() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     long lifetime = 31536000000l; // one year
     serverKeys = new AsymmetricCipherKeyPair(

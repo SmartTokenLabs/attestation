@@ -26,7 +26,7 @@ public class ProofOfKnowledgeTest {
 
   @BeforeAll
   public static void setupKeys() throws Exception {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
   }

@@ -9,7 +9,7 @@ import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.SignedIdentityAttestation;
+import com.alphawallet.attestation.SignedIdentifierAttestation;
 import com.alphawallet.attestation.UseAttestation;
 import com.alphawallet.attestation.cheque.Cheque;
 import com.alphawallet.attestation.cheque.ChequeDecoder;
@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -202,6 +203,16 @@ public class Demo {
           System.out.println("Finished verifying message");
           break;
 
+        case "magic-link":
+          System.out.println("The magic link of the content of " + arguments.get(1) + " is:");
+          try {
+            magicLink(Paths.get(arguments.get(1)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <input>");
+            throw e;
+          }
+          break;
+
         default:
           System.err.println("First argument must be either \"keys\", \"create-cheque\", \"receive-cheque\", "
               + "\"request-attest\", \"construct-attest\", \"use-attest\", \"sign-message\", \"verify-usage\","
@@ -258,7 +269,7 @@ public class Demo {
     byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
         DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
-    SignedIdentityAttestation att = new SignedIdentityAttestation(attestationBytes, attestationProviderKey);
+    SignedIdentifierAttestation att = new SignedIdentifierAttestation(attestationBytes, attestationProviderKey);
 
     if (!cheque.checkValidity()) {
       System.err.println("Could not validate cheque");
@@ -351,7 +362,7 @@ public class Demo {
     Date now = new Date();
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
-    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, keys);
+    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, keys);
     DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
   }
 
@@ -372,7 +383,7 @@ public class Demo {
       String receiverId, AttestationType type, Path outputSessionPrivKeyDir, Path outputDirRequest) throws IOException {
     AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     AsymmetricKeyParameter attestorKey = PublicKeyFactory.createKey(DERUtility.restoreBytes(Files.readAllLines(attestorVerificationKey)));
-    SignedIdentityAttestation att = new SignedIdentityAttestation(DERUtility.restoreBytes(Files.readAllLines(attestationDir)), attestorKey);
+    SignedIdentifierAttestation att = new SignedIdentifierAttestation(DERUtility.restoreBytes(Files.readAllLines(attestationDir)), attestorKey);
     AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SESSION_KEY_CURVE, rand);
     String address = SignatureUtility.addressFromKey(userKeys.getPublic());
     byte[] nonce = Nonce.makeNonce(address, WEB_DOMAIN, new Timestamp());
@@ -429,6 +440,12 @@ public class Demo {
       System.err.println("Could not validate usage request");
       throw new RuntimeException("Validation failed");
     }
+  }
+
+  private static void magicLink(Path inputFile) throws IOException {
+    byte[] input = Files.readAllBytes(inputFile);
+    String encodedInput = new String(Base64.getUrlEncoder().encode(input));
+    System.out.println(encodedInput);
   }
 
   private static AttestationType getType(String stringType) throws IllegalArgumentException {

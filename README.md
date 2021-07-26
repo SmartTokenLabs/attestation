@@ -8,12 +8,18 @@ In short, an attestation can be likened to a token created off-chain and
 usable on-chain. An example of an attestation would be a Devcon ticket.
 See document here: http://tokenscript.org/Attestation.html
 
+## Code layout
+
+This repo serves as the reference implementation but the productional implementation uses code from various repos. A map here:
+
+![various repos for components](component-layout.svg)
+
 ## Build
 
 You need the following installed:
 
 - JDK (version 11 or higher)
-- Gradle (version 6.7 is used by our devs)
+- Gradle (version 7.1.1 is used by our devs)
 - node.js (version 15 is used by our devs)
 
 Once you have them installed, run:

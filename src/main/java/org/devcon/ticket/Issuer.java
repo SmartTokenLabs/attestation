@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class TicketIssuer {
+public class Issuer {
     static SecureRandom rand = new SecureRandom();
 
     public static void main(String... args) throws java.io.IOException{
@@ -46,7 +46,7 @@ public class TicketIssuer {
             AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
             Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
             String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
-            System.out.printf("?ticket=%s&secret=%s", ticketInUrl, sharedSecret.toString());
+            System.out.printf("?ticket=%s&secret=%s&mail=%s", ticketInUrl, sharedSecret.toString(), mail);
         }
     }
 }

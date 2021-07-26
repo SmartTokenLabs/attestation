@@ -16,6 +16,10 @@ node {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 if(JavaVersion.current() < JavaVersion.VERSION_11){
     throw new GradleException("This build must be run with java 11 or higher.")
 }
