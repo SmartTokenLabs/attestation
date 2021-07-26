@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.alphawallet.attestation.AttestedObject;
 import com.alphawallet.attestation.HelperTest;
 import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.SignedIdentityAttestation;
+import com.alphawallet.attestation.SignedIdentifierAttestation;
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,7 +66,7 @@ public class UseTicketBundleTest {
 
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
-    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, attestorKeys);
+    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
 
