@@ -9,16 +9,12 @@ import com.alphawallet.attestation.core.Verifiable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
-import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 
@@ -27,38 +23,10 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private final T attestableObject;
   private final SignedIdentifierAttestation att;
   private final ProofOfExponent pok;
-  private final byte[] signature;
 
   private final AsymmetricKeyParameter userPublicKey;
 
-  private final byte[] unsignedEncoding;
   private final byte[] encoding;
-
-  public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricCipherKeyPair userKeys,
-      BigInteger attestationSecret, BigInteger chequeSecret,
-      AttestationCrypto crypto) {
-    this.attestableObject = attestableObject;
-    this.att = att;
-    this.userPublicKey = userKeys.getPublic();
-
-    try {
-      this.pok = makeProof(attestationSecret, chequeSecret, crypto);
-      ASN1EncodableVector vec = new ASN1EncodableVector();
-      vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
-      vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
-      vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
-      this.unsignedEncoding = new DERSequence(vec).getEncoded();
-      this.signature = SignatureUtility.signPersonalMsgWithEthereum(this.unsignedEncoding, userKeys.getPrivate());
-      vec.add(new DERBitString(this.signature));
-      this.encoding = new DERSequence(vec).getEncoded();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    if (!verify()) {
-      throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("Could not verify object"));
-    }
-  }
 
   public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
                         BigInteger attestationSecret, BigInteger chequeSecret,
@@ -74,95 +42,51 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
-      this.unsignedEncoding = new DERSequence(vec).getEncoded();
-      this.signature = null;
-      this.encoding = null;
+      this.encoding = new DERSequence(vec).getEncoded();
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
-    if (!verify()) {
-      throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("The redeem request is not valid"));
-    }
+    constructorCheck();
   }
 
-  public AttestedObject(T object, SignedIdentifierAttestation att, ProofOfExponent pok, byte[] signature) {
-
+  public AttestedObject(T object, SignedIdentifierAttestation att, ProofOfExponent pok) {
     this.attestableObject = object;
     this.att = att;
     this.pok = pok;
-    this.signature = signature;
 
     try {
       ASN1EncodableVector vec = new ASN1EncodableVector();
       vec.add(ASN1Sequence.getInstance(object.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
-      this.unsignedEncoding = new DERSequence(vec).getEncoded();
-      vec.add(new DERBitString(this.signature));
       this.encoding = new DERSequence(vec).getEncoded();
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
-    if (!verify()) {
-      throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("Could not verify object"));
-    }
+    constructorCheck();
   }
 
   public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
-                        AsymmetricKeyParameter publicAttestationSigningKey, byte[] userSignature) {
+                        AsymmetricKeyParameter publicAttestationSigningKey) {
+    this.encoding = derEncoding;
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedIdentifierAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
       this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
-      this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
-      this.signature = userSignature;
-
-      //create full signed encoding
-      ASN1EncodableVector vec = new ASN1EncodableVector();
-      vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
-      vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
-      vec.add(ASN1Sequence.getInstance(pok.getDerEncoding()));
-      vec.add(new DERBitString(this.signature));
-      this.encoding = new DERSequence(vec).getEncoded();
-
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
-    if (!verify()) {
-      throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("The redeem request is not valid"));
-    }
+    constructorCheck();
   }
 
-  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
-      AsymmetricKeyParameter attestationVerificationKey) {
-    try {
-      ASN1InputStream input = new ASN1InputStream(derEncoding);
-      ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-      this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
-      this.att = new SignedIdentifierAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), attestationVerificationKey);
-      this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
-      this.unsignedEncoding = new DERSequence(Arrays.copyOfRange(asn1.toArray(), 0, 3)).getEncoded();
-      if (asn1.size() > 3) {
-        this.signature = DERBitString.getInstance(asn1.getObjectAt(3)).getBytes();
-        this.encoding = derEncoding;
-      } else{
-        this.signature = null;
-        this.encoding = unsignedEncoding;
-      }
-      this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
-    } catch (IOException e) {
-      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
-    }
+  private void constructorCheck() {
     if (!verify()) {
       throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("Signature is not valid"));
+          new IllegalArgumentException("Could not verify object"));
     }
   }
 
@@ -176,10 +100,6 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   public ProofOfExponent getPok() {
     return pok;
-  }
-
-  public byte[] getSignature() {
-    return signature;
   }
 
   public AsymmetricKeyParameter getUserPublicKey() {
@@ -220,22 +140,6 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       logger.error("The attestation is not to the same Ethereum user who is sending this request");
       return false;
     }
-
-    // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
-    if (signature != null) {
-      SubjectPublicKeyInfo spki = getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-      try {
-        AsymmetricKeyParameter parsedSubjectKey = PublicKeyFactory.createKey(spki);
-        if (!SignatureUtility
-            .verifyPersonalEthereumSignature(this.unsignedEncoding, this.signature, parsedSubjectKey)) {
-          logger.error("The signature on RedeemCheque is not valid");
-          return false;
-        }
-      } catch (IOException e) {
-        logger.error("The attestation SubjectPublicKey cannot be parsed");
-        return false;
-      }
-    }
     return true;
   }
 
@@ -253,12 +157,6 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       logger.error("Could not verify the consistency between the commitment in the attestation and the attested object");
       return false;
     }
-    if (signature != null) {
-      if (!SignatureUtility.verifyPersonalEthereumSignature(unsignedEncoding, signature, userPublicKey)) {
-        logger.error("Could not verify the signature");
-        return false;
-      }
-    }
     return true;
   }
 
@@ -273,11 +171,9 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return pok;
   }
 
-  public byte[] getDerEncodingWithSignature() { return encoding; }
-
   @Override
   public byte[] getDerEncoding() {
-    return unsignedEncoding;
+    return encoding;
   }
 
   // TODO override equals and hashcode
