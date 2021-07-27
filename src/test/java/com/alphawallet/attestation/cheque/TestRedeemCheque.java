@@ -60,7 +60,7 @@ public class TestRedeemCheque {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), subjectSecret, "test@test.ts" );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
     Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
-    attestedCheque = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret, crypto);
+    attestedCheque = new AttestedObject(cheque, signed, subjectKeys.getPublic(), subjectSecret, senderSecret, crypto);
     assertTrue(attestedCheque.verify());
     assertTrue(attestedCheque.checkValidity());
   }
@@ -96,7 +96,7 @@ public class TestRedeemCheque {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncodingWithSignature(), new ChequeDecoder(),
+    AttestedObject newRedeem = new AttestedObject(attestedCheque.getDerEncoding(), new ChequeDecoder(),
         issuerKeys.getPublic());
     assertTrue(newRedeem.getAttestableObject().verify());
     assertTrue(newRedeem.getAtt().verify());
@@ -106,17 +106,13 @@ public class TestRedeemCheque {
         attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
     assertArrayEquals(attestedCheque.getAtt().getDerEncoding(), newRedeem.getAtt().getDerEncoding());
     assertArrayEquals(attestedCheque.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
-    assertArrayEquals(attestedCheque.getSignature(), newRedeem.getSignature());
     assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
     assertArrayEquals(attestedCheque.getDerEncoding(), newRedeem.getDerEncoding());
-    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newRedeem.getDerEncodingWithSignature());
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque
-        .getAtt(), attestedCheque.getPok(),
-        attestedCheque.getSignature());
+        .getAtt(), attestedCheque.getPok());
 
     assertArrayEquals(attestedCheque.getDerEncoding(), newConstructor.getDerEncoding());
-    assertArrayEquals(attestedCheque.getDerEncodingWithSignature(), newConstructor.getDerEncodingWithSignature());
   }
 
   @Test
@@ -219,7 +215,7 @@ public class TestRedeemCheque {
     // Wrong mail
     Cheque cheque = new Cheque("something@else.com", AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret, crypto);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys.getPublic(), subjectSecret, senderSecret, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong email
@@ -236,14 +232,14 @@ public class TestRedeemCheque {
     Cheque cheque = new Cheque(mail, AttestationType.EMAIL, 1000, 3600000, senderKeys, senderSecret);
     try {
       // Wrong subject secret
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret.add(BigInteger.ONE), senderSecret, crypto);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys.getPublic(), subjectSecret.add(BigInteger.ONE), senderSecret, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
     }
     try {
       // Wrong sender secret
-      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys, subjectSecret, senderSecret.add(BigInteger.ONE), crypto);
+      AttestedObject current = new AttestedObject(cheque, signed, subjectKeys.getPublic(), subjectSecret, senderSecret.add(BigInteger.ONE), crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong secret
