@@ -12,6 +12,8 @@ import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.tokenscript.auth.UnpredictableNumberBundle;
+import org.tokenscript.auth.UnpredictableNumberTool;
 
 public class UseTicketBundle implements Verifiable {
   private static final Logger logger = LogManager.getLogger(UseTicketBundle.class);

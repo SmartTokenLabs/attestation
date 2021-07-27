@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.tokenscript.auth.UnpredictableNumberBundle;
+import org.tokenscript.auth.UnpredictableNumberTool;
 
 public class UseTicketBundleTest {
   private static final String DOMAIN = "http://www.hotel-bogota.com";

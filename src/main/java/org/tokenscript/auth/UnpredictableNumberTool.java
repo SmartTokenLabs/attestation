@@ -1,4 +1,4 @@
-package org.devcon.ticket;
+package org.tokenscript.auth;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.ExceptionUtil;

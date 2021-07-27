@@ -1,4 +1,4 @@
-package org.devcon.ticket;
+package org.tokenscript.auth;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.tokenscript.auth.UnpredictableNumberBundle;
+import org.tokenscript.auth.UnpredictableNumberTool;
 
 public class UnpredictableNumberToolTest {
   private static final String DOMAIN = "http://www.hotel-bogota.com";

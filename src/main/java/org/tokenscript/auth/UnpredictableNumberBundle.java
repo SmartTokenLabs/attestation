@@ -1,4 +1,4 @@
-package org.devcon.ticket;
+package org.tokenscript.auth;
 
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
