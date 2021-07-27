@@ -40,6 +40,7 @@ public class UseTicketTest {
   private static final String CONFERENCE_ID = "Åø"; // Ensure non-number non ASCII can be handled
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
+  private static final byte[] UN = new byte[] { 0x42 };
 
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair attestorKeys;
@@ -133,7 +134,7 @@ public class UseTicketTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
     // TODO @James I have changed this test to compile and not use the signature
     //now attempt to dump data from contract:

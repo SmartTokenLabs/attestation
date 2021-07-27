@@ -29,7 +29,12 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private final byte[] encoding;
 
   public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
-                        BigInteger attestationSecret, BigInteger chequeSecret,
+      BigInteger attestationSecret, BigInteger chequeSecret, AttestationCrypto crypto) {
+    this(attestableObject, att, userPublicKey, attestationSecret, chequeSecret, new byte[0], crypto);
+  }
+
+  public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
+                        BigInteger attestationSecret, BigInteger chequeSecret, byte[] unpredictableNumber,
                         AttestationCrypto crypto)
   {
     this.attestableObject = attestableObject;
@@ -37,7 +42,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     this.userPublicKey = userPublicKey;
 
     try {
-      this.pok = makeProof(attestationSecret, chequeSecret, crypto);
+      this.pok = makeProof(attestationSecret, chequeSecret, unpredictableNumber, crypto);
       ASN1EncodableVector vec = new ASN1EncodableVector();
       vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
@@ -160,10 +165,10 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return true;
   }
 
-  private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
+  private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, byte[] unpredictableNumber, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
     // We require that the internal attestation is an IdentifierAttestation
-    ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
+    ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret, unpredictableNumber);
     if (!crypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
       throw ExceptionUtil.throwException(logger,
           new RuntimeException("The redeem proof did not verify"));

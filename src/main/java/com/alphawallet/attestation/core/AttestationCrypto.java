@@ -161,17 +161,17 @@ public class AttestationCrypto {
    * The method uses rejection sampling to ensure that the t value is sampled s.t. the
    * challenge will always be less than curveOrder.
    */
-  private FullProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengePoints, byte[] nonce) {
+  private FullProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengePoints, byte[] unpredictableNumber) {
     ECPoint t;
     BigInteger hiding, c, d;
     // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
     do {
       hiding = makeSecret();
       t = H.multiply(hiding);
-      c = computeChallenge(t, challengePoints, nonce);
+      c = computeChallenge(t, challengePoints, unpredictableNumber);
     } while (c.compareTo(curveOrder) >= 0);
     d = hiding.add(c.multiply(exponent)).mod(curveOrder);
-    return new FullProofOfExponent(riddle.normalize(), t.normalize(), d, nonce);
+    return new FullProofOfExponent(riddle.normalize(), t.normalize(), d, unpredictableNumber);
   }
 
   private static BigInteger computeChallenge(ECPoint t, List<ECPoint> challengeList, byte[] nonce) {
