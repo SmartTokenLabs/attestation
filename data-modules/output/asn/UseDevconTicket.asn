@@ -14,8 +14,7 @@ IMPORTS
 UseDevconTicket ::= SEQUENCE {
     signedDevconTicket         SignedDevconTicket,
     attestation          MyAttestation,
-    proof                UsageProof,
-    signatureValue       BIT STRING OPTIONAL
+    proof                UsageProof
 }
 
 END
