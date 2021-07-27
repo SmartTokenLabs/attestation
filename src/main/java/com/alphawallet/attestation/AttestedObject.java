@@ -60,9 +60,10 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     }
   }
 
-  public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
-                        BigInteger attestationSecret, BigInteger chequeSecret,
-                        AttestationCrypto crypto)
+  public AttestedObject(T attestableObject, SignedIdentifierAttestation att,
+      AsymmetricKeyParameter userPublicKey,
+      BigInteger attestationSecret, BigInteger chequeSecret,
+      byte[] unpredictableNumber, AttestationCrypto crypto)
   {
     this.attestableObject = attestableObject;
     this.att = att;
