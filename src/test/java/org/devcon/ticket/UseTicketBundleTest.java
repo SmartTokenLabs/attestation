@@ -14,6 +14,7 @@ import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.SignatureUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -70,7 +71,9 @@ public class UseTicketBundleTest {
         .makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    String un = unt.getUnpredictableNumberBundle().getNumber();
+    useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET,
+        TICKET_SECRET, un.getBytes(StandardCharsets.UTF_8), crypto);
 
     Mockito.when(mockedUseTicket.verify()).thenReturn(true);
     Mockito.when(mockedUseTicket.getDerEncoding()).thenReturn(new byte[] {0x00});

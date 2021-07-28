@@ -165,10 +165,10 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return true;
   }
 
-  private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, byte[] unpredictableNumber, AttestationCrypto crypto) {
+  private UsageProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, byte[] unpredictableNumber, AttestationCrypto crypto) {
     // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
     // We require that the internal attestation is an IdentifierAttestation
-    ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret, unpredictableNumber);
+    UsageProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret, unpredictableNumber);
     if (!crypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
       throw ExceptionUtil.throwException(logger,
           new RuntimeException("The redeem proof did not verify"));

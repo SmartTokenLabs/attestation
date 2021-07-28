@@ -107,14 +107,14 @@ public class AttestationCrypto {
    * This is used to convince the attestor that the user knows a secret which the attestor will
    * then use to construct a Pedersen commitment to the user's identifier.
    * @param randomness The randomness used in the commitment
-   * @param nonce A nonce to link the proof to a specific context/challenge
+   * @param unpredictableNumber A unpredictableNumber to link the proof to a specific context/challenge
    * @return
    */
-  public FullProofOfExponent computeAttestationProof(BigInteger randomness, byte[] nonce) {
+  public FullProofOfExponent computeAttestationProof(BigInteger randomness, byte[] unpredictableNumber) {
     // Compute the random part of the commitment, i.e. H^randomness
     ECPoint riddle = H.multiply(randomness);
     List<ECPoint> challengeList = Arrays.asList(H, riddle);
-    return constructSchnorrPOK(riddle, randomness, challengeList, nonce);
+    return constructSchnorrPOK(riddle, randomness, challengeList, unpredictableNumber);
   }
 
   public FullProofOfExponent computeAttestationProof(BigInteger randomness) {
@@ -138,17 +138,17 @@ public class AttestationCrypto {
    * @param commitment2 Second Pedersen commitment to some message m
    * @param randomness1 The randomness used in commitment1
    * @param randomness2 The randomness used in commitment2
-   * @param nonce A nonce to link the proof to a specific context/challenge
+   * @param unpredictableNumber A unpredictable number to link the proof to a specific context/challenge
    * @return
    */
-  public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2, byte[] nonce) {
+  public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2, byte[] unpredictableNumber) {
     ECPoint comPoint1 = decodePoint(commitment1);
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger exponent = randomness1.subtract(randomness2).mod(curveOrder);
     List<ECPoint> challengeList = Arrays.asList(H, comPoint1, comPoint2);
-    return constructSchnorrPOK(riddle, exponent, challengeList, nonce).getUsageProofOfExponent();
+    return constructSchnorrPOK(riddle, exponent, challengeList, unpredictableNumber).getUsageProofOfExponent();
   }
 
   public UsageProofOfExponent computeEqualityProof(byte[] commitment1, byte[] commitment2, BigInteger randomness1, BigInteger randomness2) {
@@ -174,13 +174,13 @@ public class AttestationCrypto {
     return new FullProofOfExponent(riddle.normalize(), t.normalize(), d, unpredictableNumber);
   }
 
-  private static BigInteger computeChallenge(ECPoint t, List<ECPoint> challengeList, byte[] nonce) {
+  private static BigInteger computeChallenge(ECPoint t, List<ECPoint> challengeList, byte[] unpredictableNumber) {
     List<ECPoint> finalChallengeList = new ArrayList<>(challengeList);
     finalChallengeList.add(t);
     byte[] challengePointBytes = makeArray(finalChallengeList);
-    byte[] challengeBytes = new byte[challengePointBytes.length+nonce.length];
+    byte[] challengeBytes = new byte[challengePointBytes.length+unpredictableNumber.length];
     System.arraycopy(challengePointBytes, 0, challengeBytes, 0, challengePointBytes.length);
-    System.arraycopy(nonce, 0, challengeBytes, challengePointBytes.length, nonce.length);
+    System.arraycopy(unpredictableNumber, 0, challengeBytes, challengePointBytes.length, unpredictableNumber.length);
     return mapToInteger(challengeBytes);
   }
 
@@ -190,7 +190,7 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyFullProof(FullProofOfExponent pok)  {
-    BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getNonce());
+    BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getUnpredictableNumber());
     return verifyPok(pok, c);
   }
 
@@ -207,8 +207,8 @@ public class AttestationCrypto {
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute the value the riddle should have
     ECPoint riddle = comPoint1.subtract(comPoint2);
-    BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, comPoint1, comPoint2), pok.getNonce());
-    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge(), pok.getNonce()), c);
+    BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, comPoint1, comPoint2), pok.getUnpredictableNumber());
+    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge(), pok.getUnpredictableNumber()), c);
   }
 
   private static boolean verifyPok(FullProofOfExponent pok, BigInteger c) {

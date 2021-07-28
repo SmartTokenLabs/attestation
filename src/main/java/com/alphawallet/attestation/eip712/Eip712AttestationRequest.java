@@ -78,7 +78,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   String makeToken(String identifier, AsymmetricKeyParameter signingKey) throws JsonProcessingException {
     Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
-    Timestamp timestamp = Nonce.getTimestamp(attestationRequest.getPok().getNonce());
+    Timestamp timestamp = Nonce.getTimestamp(attestationRequest.getPok().getUnpredictableNumber());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         encoder.getUsageValue(), identifier, encodedAttestationRequest, timestamp);
     return issuer.buildSignedTokenFromJsonObject(data, domain);
@@ -126,7 +126,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
       logger.error("Timestamp is not valid");
       return false;
     }
-    if (!Nonce.validateNonce(getPok().getNonce(),
+    if (!Nonce.validateNonce(getPok().getUnpredictableNumber(),
         SignatureUtility.addressFromKey(publicKey), domain,
         new Timestamp(Timestamp.stringTimestampToLong(data.getTimestamp())-acceptableTimeLimit),
         new Timestamp(Timestamp.stringTimestampToLong(data.getTimestamp())+acceptableTimeLimit))) {

@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 public class AttestationRequestWUsageTest {
   public static final BigInteger SECRET1 = new BigInteger("8646810452103546854685768135857");
   private static final AttestationType TYPE = AttestationType.EMAIL;
-  public static final byte[] NONCE = new byte[] {0x66};
+  public static final byte[] UN = new byte[] {0x66};
   private static AsymmetricKeyParameter sessionKey;
 
   private static AttestationCrypto crypto;
@@ -39,14 +39,14 @@ public class AttestationRequestWUsageTest {
 
   @Test
   public void sunshine() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
     AttestationRequestWithUsage useAttestation = new AttestationRequestWithUsage(TYPE, pok, sessionKey);
     assertTrue(useAttestation.verify());
   }
 
   @Test
   public void consistentDecoding() throws Exception {
-    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
     AttestationRequestWithUsage requestWithUsage = new AttestationRequestWithUsage(TYPE, pok, sessionKey);
     AttestationRequestWithUsage otherConstructor = new AttestationRequestWithUsage(requestWithUsage.getDerEncoding());
     assertTrue(otherConstructor.verify());
@@ -56,7 +56,7 @@ public class AttestationRequestWUsageTest {
         SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getSessionPublicKey()).getEncoded());
     assertArrayEquals(requestWithUsage.getDerEncoding(), otherConstructor.getDerEncoding());
     // Internal randomness is used in pok construction
-    FullProofOfExponent otherPok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent otherPok = crypto.computeAttestationProof(SECRET1, UN);
     AttestationRequestWithUsage otherRequestWithUsage = new AttestationRequestWithUsage(TYPE, otherPok, sessionKey);
     assertTrue(otherRequestWithUsage.verify());
     assertFalse(Arrays.equals(requestWithUsage.getDerEncoding(), otherRequestWithUsage.getDerEncoding()));
@@ -64,7 +64,7 @@ public class AttestationRequestWUsageTest {
 
   @Test
   public void badPok() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
     FullProofOfExponent badPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge(), new byte[] {0x01} );
     assertFalse(AttestationCrypto.verifyFullProof(badPok));
     assertThrows(IllegalArgumentException.class, ()-> new AttestationRequestWithUsage(TYPE, badPok, sessionKey));
@@ -72,7 +72,7 @@ public class AttestationRequestWUsageTest {
 
   @Test
   public void badData() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
     AttestationRequestWithUsage requestWithUsage = new AttestationRequestWithUsage(TYPE, pok, sessionKey);
     byte[] encoding = requestWithUsage.getDerEncoding();
     encoding[10] ^= 0x01;

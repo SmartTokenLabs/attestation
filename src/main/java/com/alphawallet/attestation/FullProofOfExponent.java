@@ -19,15 +19,15 @@ public class FullProofOfExponent implements ProofOfExponent {
   private final ECPoint riddle;
   private final ECPoint tPoint;
   private final BigInteger challenge;
-  private final byte[] nonce;
+  private final byte[] unpredictableNumber;
   private final byte[] encoding;
 
-  public FullProofOfExponent(ECPoint riddle, ECPoint tPoint, BigInteger challenge, byte[] nonce) {
+  public FullProofOfExponent(ECPoint riddle, ECPoint tPoint, BigInteger challenge, byte[] unpredictableNumber) {
     this.riddle = riddle;
     this.tPoint = tPoint;
     this.challenge = challenge;
-    this.nonce = nonce;
-    this.encoding = makeEncoding(riddle, tPoint, challenge, nonce);
+    this.unpredictableNumber = unpredictableNumber;
+    this.encoding = makeEncoding(riddle, tPoint, challenge, unpredictableNumber);
   }
 
   public FullProofOfExponent(ECPoint riddle, ECPoint tPoint, BigInteger challenge) {
@@ -46,19 +46,19 @@ public class FullProofOfExponent implements ProofOfExponent {
       this.challenge = new BigInteger(challengeEnc.getOctets());
       ASN1OctetString tPointEnc = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++));
       this.tPoint = AttestationCrypto.decodePoint(tPointEnc.getOctets());
-      this.nonce = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
+      this.unpredictableNumber = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
   }
 
-  private byte[] makeEncoding(ECPoint riddle, ECPoint tPoint, BigInteger challenge, byte[] nonce) {
+  private byte[] makeEncoding(ECPoint riddle, ECPoint tPoint, BigInteger challenge, byte[] unpredictableNumber) {
     try {
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(new DEROctetString(riddle.getEncoded(false)));
       res.add(new DEROctetString(challenge.toByteArray()));
       res.add(new DEROctetString(tPoint.getEncoded(false)));
-      res.add(new DEROctetString(nonce));
+      res.add(new DEROctetString(unpredictableNumber));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
@@ -80,10 +80,10 @@ public class FullProofOfExponent implements ProofOfExponent {
   }
 
   @Override
-  public byte[] getNonce() { return nonce; }
+  public byte[] getUnpredictableNumber() { return unpredictableNumber; }
 
   public UsageProofOfExponent getUsageProofOfExponent() {
-    return new UsageProofOfExponent(tPoint, challenge, nonce);
+    return new UsageProofOfExponent(tPoint, challenge, unpredictableNumber);
   }
 
   @Override

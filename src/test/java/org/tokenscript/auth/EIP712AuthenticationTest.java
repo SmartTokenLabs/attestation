@@ -41,6 +41,7 @@ public class EIP712AuthenticationTest {
   private static final String CONFERENCE_ID = "6";
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
+  private static final byte[] UN = new byte[] { 0x42, 0x42 };
 
   private static AsymmetricCipherKeyPair userKeys, attestorKeys, ticketKeys;
   private static SecureRandom rand;
@@ -67,7 +68,7 @@ public class EIP712AuthenticationTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
-    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, userKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, userKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
     assertTrue(attestedTicket.verify());
     assertTrue(attestedTicket.checkValidity());
     return attestedTicket;
@@ -120,7 +121,7 @@ public class EIP712AuthenticationTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(newKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
-    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));

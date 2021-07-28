@@ -163,7 +163,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       logger.error("Could not verify signature");
       return false;
     }
-    if (!Nonce.validateNonce(useAttestation.getPok().getNonce(),
+    if (!Nonce.validateNonce(useAttestation.getPok().getUnpredictableNumber(),
         (useAttestation.getAttestation().getUnsignedAttestation()).getAddress(), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
       logger.error("Nonce validation failed");
       return false;
