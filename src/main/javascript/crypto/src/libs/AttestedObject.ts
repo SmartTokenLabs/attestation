@@ -9,14 +9,10 @@ declare global {
     interface Window { ethereum: any; }
 }
 
-// TODO public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature,
-//       AsymmetricKeyParameter userPublicKey) {
 export class AttestedObject {
-    private crypto: AttestationCrypto;
+    private readonly crypto: AttestationCrypto;
     private pok: ProofOfExponentInterface;
-    private unsignedEncoding: string;
-    private derEncodedProof: string;
-    private signature: string;
+    private readonly derEncodedProof: string;
     private encoding: string;
     constructor(
         private attestableObject: AttestableObject,
@@ -32,67 +28,9 @@ export class AttestedObject {
             this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
             this.pok.getDerEncoding();
-        this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);
+        this.encoding = Asn1Der.encode('SEQUENCE_30', vec);
     }
-/*
-    public async signFinalObject(){
-        let vec =
-            uint8tohex(this.attestableObject.getDerEncoding()) +
-            uint8tohex(this.att.getDerEncoding())+
-            this.pok.getDerEncoding();
-        this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);
-        const hash = await ethers.utils.keccak256(hexStringToArray(this.unsignedEncoding));
 
-        console.log('hash');
-        console.log(hash);
-
-        // TODO sign by user wallet
-        // this.signature = SignatureUtility.sign(this.unsignedEncoding, userKeys.getPrivate());
-        if (!window.ethereum){
-            throw new Error('Please install metamask before.');
-        }
-
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        if (!signer) throw new Error("Active Wallet required");
-
-        const userAddress = await signer.getAddress();
-
-        console.log('lets sign message');
-        const metamaskEnabled = await window.ethereum.enable();
-
-        if (!metamaskEnabled){
-            throw new Error("Active Wallet required");
-        }
-
-        // console.log(this.unsignedEncoding);
-
-        // let signature = await signer.signMessage(hexStringToArray(this.unsignedEncoding));
-        let signature = await signer.signMessage(ethers.utils.arrayify(hash));
-        console.log('signature');
-        console.log(signature);
-
-        if (!signature){
-            throw new Error("Cant sign data");
-        }
-
-        const ethereumHash = await ethers.utils.keccak256("\x19Ethereum Signed Message:\n" + hash.length + hash);
-        const pk = ethers.utils.recoverPublicKey(ethereumHash, signature);
-        const recoveredAddress = ethers.utils.computeAddress(ethers.utils.arrayify(pk));
-
-        console.log('recoveredAddress');
-        console.log(recoveredAddress);
-
-        //     vec.add(new DERBitString(this.signature));
-        //     this.encoding = new DERSequence(vec).getEncoded();
-        // } catch (IOException e) {
-        //     throw new RuntimeException(e);
-        // }
-        // if (!verify()) {
-        //     throw new IllegalArgumentException("The redeem request is not valid");
-        // }
-    }
-*/
     private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponentInterface {
         // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
         // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
@@ -125,10 +63,8 @@ export class AttestedObject {
         return this.derEncodedProof;
     }
 
-    public getDerEncodingWithSignature() { return this.encoding; }
-
     // TODO type it
     public getDerEncoding() {
-        return this.unsignedEncoding;
+        return this.encoding;
     }
 }
