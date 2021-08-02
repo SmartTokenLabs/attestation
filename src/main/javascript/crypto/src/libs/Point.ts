@@ -60,7 +60,8 @@ export let CURVE_BN256 = {
 };
 
 export class Point {
-    //static ZERO = new Point(0n, 0n); // Point at infinity aka identity point aka zero
+
+    //static ZERO = new Point(0n, 0n); // Point at infinity aka identifier point aka zero
     // constructor(public x: bigint, public y: bigint, public useCurve: {[index: string]:bigint} = CURVE_SECP256k1 ) {}
     constructor(public x: bigint, public y: bigint, public useCurve: {[index: string]:bigint} = CURVES.secp256r1 ) {}
 

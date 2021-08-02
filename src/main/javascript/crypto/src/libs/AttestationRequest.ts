@@ -4,7 +4,7 @@ import { uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {Identity} from "../asn1/shemas/AttestationRequest";
+import {Identifier} from "../asn1/shemas/AttestationRequest";
 
 export class AttestationRequest {
     private type: number;
@@ -15,6 +15,7 @@ export class AttestationRequest {
         let me = new this();
         me.type = type;
         me.pok = pok;
+
         if (!me.verify()) {
             throw new Error("The proof is not valid");
         }
@@ -29,20 +30,20 @@ export class AttestationRequest {
 
     static fromBytes(asn1: Uint8Array): AttestationRequest {
         let me = new this();
-        let identity: Identity;
+        let identifier: Identifier;
 
         try {
-            identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
-            me.type = identity.type;
+            identifier = AsnParser.parse( uint8toBuffer(asn1), Identifier);
+            me.type = identifier.type;
         } catch (e){
-            throw new Error('Cant parse AttestationRequest Identity');
+            throw new Error('Cant parse AttestationRequest Identifier');
         }
 
         try {
-            let riddleEnc = new Uint8Array(identity.proof.riddle);
-            let challengeEnc = new Uint8Array(identity.proof.challengePoint);
-            let tPointEnc = new Uint8Array(identity.proof.responseValue);
-            let nonce = new Uint8Array(identity.proof.nonce);
+            let riddleEnc = new Uint8Array(identifier.proof.riddle);
+            let challengeEnc = new Uint8Array(identifier.proof.challengePoint);
+            let tPointEnc = new Uint8Array(identifier.proof.responseValue);
+            let nonce = new Uint8Array(identifier.proof.nonce);
 
             let riddle = Point.decodeFromHex(uint8tohex(riddleEnc), CURVE_BN256 );
             let challenge = uint8ToBn(challengeEnc);
@@ -51,6 +52,7 @@ export class AttestationRequest {
         } catch (e){
             throw new Error('Cant create FullProofOfExponent');
         }
+
 
         if (!me.verify()) {
             throw new Error("Could not verify the proof");

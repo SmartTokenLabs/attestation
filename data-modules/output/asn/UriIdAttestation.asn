@@ -1,0 +1,52 @@
+UriIdAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    AlgorithmIdentifier,
+    CertificateSerialNumber,
+    Extensions
+        FROM AuthenticationFramework
+    Name
+        FROM InformationFramework;
+
+UriIdAttestation ::=  SEQUENCE  {
+     signedInfo           SignedInfo,
+     signatureAlgorithm   AlgorithmIdentifier,
+     signatureValue       BIT STRING  }
+
+   SignedInfo ::=  SEQUENCE  {
+     version         [0]  EXPLICIT Version,
+     serialNumber         CertificateSerialNumber,
+     signature            AlgorithmIdentifier,
+     issuer               Name,
+     validity             Validity,
+     subject              Subject,
+     subjectPublicKeyInfo SubjectPublicKeyInfo,
+     extensions      [3]  EXPLICIT Extensions
+   }
+
+   Version ::= INTEGER (19)
+
+   Validity ::= SEQUENCE {
+    notBefore       GeneralizedTime,
+    notAfter        GeneralizedTime  ("99991231235959Z") -- Unlimited validity --
+   }
+
+   Subject ::= SEQUENCE SIZE (1) OF Identifier
+
+   Identifier ::= SET SIZE (1) OF IdentifierTypeAndValue
+   IdentifierTypeAndValue ::= SEQUENCE {
+        type     OBJECT IDENTIFIER
+                    -- MUST be labeledURI --
+                    DEFAULT {iso(1) identified-organization(3) dod(6) internet(1) private(4) enterprise(1) 250 1 labeledURI(57)},
+        value    UniversalString -- MUST be an URI, optionally followed by a space character and then a label
+   }
+
+   SubjectPublicKeyInfo ::= SEQUENCE {
+     algorithm              AlgorithmIdentifier,
+     subjectPublicKey       BIT STRING 
+   }
+
+END

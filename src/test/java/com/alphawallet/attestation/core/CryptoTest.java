@@ -4,33 +4,29 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import java.lang.reflect.Field;
+import com.alphawallet.attestation.UsageProofOfExponent;
+import java.io.IOException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
+import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
-import org.junit.jupiter.api.BeforeAll;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
 
 public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
   private AsymmetricCipherKeyPair issuerKeys;
-  private AsymmetricCipherKeyPair senderKeys;
   private SecureRandom rand;
   private AttestationCrypto crypto;
   private static final String ID = "test@test.ts";
@@ -39,14 +35,13 @@ public class CryptoTest {
   private static final BigInteger SECRET2 = new BigInteger("137957078946249796347561580210756254704202645642012518546347679798121784");
 
   @BeforeEach
-  public void setupCrypto() throws NoSuchAlgorithmException {
-    rand = SecureRandom.getInstance("SHA1PRNG");
+  public void setupCrypto() throws Exception {
+    rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = crypto.constructECKeys();
-    issuerKeys = crypto.constructECKeys();
-    senderKeys = crypto.constructECKeys();
+    subjectKeys = SignatureUtility.constructECKeys(SignatureUtility.ECDSA_CURVE, rand);
+    issuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
   @Test
@@ -68,28 +63,48 @@ public class CryptoTest {
   }
 
   @Test
+  public void veryLargeCurveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+    verifyCurveOrder.setAccessible(true);
+    // Set the final curveOrder field to 2^256
+    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(256);
+    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
+  }
+
+  @Test
   public void testAddressFromKey() {
-    String key = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
+    String key = SignatureUtility.addressFromKey(subjectKeys.getPublic());
     assertTrue(key.startsWith("0x"));
     assertEquals(key.length(), 2+2*20); // prefix 0x and two chars per byte
     // Assert consistency
-    String keyAgain = AttestationCrypto.addressFromKey(subjectKeys.getPublic());
+    String keyAgain = SignatureUtility.addressFromKey(subjectKeys.getPublic());
     assertTrue(keyAgain.equals(key));
 
     // Negative test
-    String otherKey = AttestationCrypto.addressFromKey(issuerKeys.getPublic());
+    String otherKey = SignatureUtility.addressFromKey(issuerKeys.getPublic());
     assertFalse(otherKey.equals(key));
+  }
+
+  /**
+   * Reference key found here https://medium.com/@tunatore/how-to-generate-ethereum-addresses-technical-address-generation-explanation-and-online-course-9a56359f139e
+   */
+  @Test
+  public void testAddressWithReferenceKey() throws IOException {
+    String hexKey = "048e66b3e549818ea2cb354fb70749f6c8de8fa484f7530fc447d5fe80a1c424e4f5ae648d648c980ae7095d1efad87161d83886ca4b6c498ac22a93da5099014a";
+    DERBitString derPk = new DERBitString(Hex.decode(hexKey));
+    AsymmetricKeyParameter pk = SignatureUtility.restoreDefaultKey(derPk.getEncoded());
+    String address = SignatureUtility.addressFromKey(pk);
+    assertEquals("0x00B54E93EE2EBA3086A55F4249873E291D1AB06C", address);
   }
 
   @Test
   public void testECKeyWithLowY() {
-    AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(rand);
     for (int i=0; i<10; i++) {
-      AsymmetricCipherKeyPair keys = crypto.constructECKeys();
+      AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
       ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
-      BigInteger yCoord = pk.getQ().getYCoord().toBigInteger();
+      BigInteger yCoord = pk.getQ().getAffineYCoord().toBigInteger();
       System.out.println(yCoord);
-      BigInteger fieldModulo = AttestationCrypto.ECDSAdomain.getCurve().getField().getCharacteristic();
+      BigInteger fieldModulo = SignatureUtility.ECDSA_DOMAIN.getCurve().getField().getCharacteristic();
       assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
     }
   }
@@ -145,33 +160,43 @@ public class CryptoTest {
 
   @Test
   public void testAttestationRequestProof() {
-    ProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
+    assertTrue(AttestationCrypto.verifyFullProof(pok));
     // Test with other randomness
-    ProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
+    assertTrue(AttestationCrypto.verifyFullProof(pok2));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallenge(), pok2.getChallenge());
-    assertEquals(pok.getBase(), pok2.getBase());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other secret
     pok = crypto.computeAttestationProof(BigInteger.ONE);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
+    assertTrue(AttestationCrypto.verifyFullProof(pok));
 
     // Negative tests
     pok = crypto.computeAttestationProof(SECRET1);
-    pok2 = new ProofOfExponent(pok.getBase().add(pok.getBase()), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle().add(pok.getBase()), pok.getPoint(), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    pok2 = new FullProofOfExponent(pok.getRiddle().add(AttestationCrypto.H), pok.getPoint(), pok.getChallenge());
+    assertFalse(AttestationCrypto.verifyFullProof(pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().add(pok.getBase()), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
+    assertFalse(AttestationCrypto.verifyFullProof(pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-    assertFalse(AttestationCrypto.verifyAttestationRequestProof(pok2));
+    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    assertFalse(AttestationCrypto.verifyFullProof(pok2));
+  }
+
+  @Test
+  public void testNonceAttestationProof() {
+    FullProofOfExponent pok1 = crypto.computeAttestationProof(SECRET1);
+    FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1, new byte[0]);
+    assertTrue(AttestationCrypto.verifyFullProof(pok1));
+    assertTrue(AttestationCrypto.verifyFullProof(pok2));
+    // Randomness is used in PoK construction
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok2.getDerEncoding()));
+    FullProofOfExponent pok3 = crypto.computeAttestationProof(SECRET1, new byte[] {0x42} );
+    assertTrue(AttestationCrypto.verifyFullProof(pok3));
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok3.getDerEncoding()));
   }
 
   @Test
@@ -188,8 +213,6 @@ public class CryptoTest {
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallenge(), pok2.getChallenge());
-    assertEquals(pok.getBase(), pok2.getBase());
-    assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other commitment
     BigInteger otherSec = new BigInteger("45864684786789758065458745212314458");
@@ -219,17 +242,25 @@ public class CryptoTest {
     pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok));
 
-    pok2 = new ProofOfExponent(pok.getBase().add(pok.getBase()), pok.getRiddle(), pok.getPoint(), pok.getChallenge());
+    pok2 = new UsageProofOfExponent(pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle().add(pok.getBase()), pok.getPoint(), pok.getChallenge());
+    pok2 = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
+  }
 
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint().add(pok.getBase()), pok.getChallenge());
-    assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
-
-    pok2 = new ProofOfExponent(pok.getBase(), pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
-    assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
+  @Test
+  public void testNonceEqualityProof() {
+    byte[] com1 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET1);
+    byte[] com2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET2);
+    UsageProofOfExponent pok1 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
+    UsageProofOfExponent pok2 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2, new byte[0]);
+    assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok1));
+    // Randomness is used in PoK construction
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok2.getDerEncoding()));
+    UsageProofOfExponent pok3 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2, new byte[] {0x42} );
+    assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok3));
+    assertFalse(Arrays.equals(pok1.getDerEncoding(), pok3.getDerEncoding()));
   }
 
   @Test
@@ -239,7 +270,7 @@ public class CryptoTest {
       byte[] com2 = AttestationCrypto.makeCommitment(ID+i, TYPE, SECRET2.multiply(BigInteger.valueOf(i)));
       ProofOfExponent pok = crypto.computeEqualityProof(com1, com2, SECRET1.add(BigInteger.valueOf(i)),  SECRET2.multiply(BigInteger.valueOf(i)));
       // Compute the c value used in the proof and for proof verification
-      BigInteger c = AttestationCrypto.mapTo256BitInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.G, pok.getBase(), AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
+      BigInteger c = AttestationCrypto.mapToInteger(AttestationCrypto.makeArray(Arrays.asList(AttestationCrypto.H, AttestationCrypto.decodePoint(com1), AttestationCrypto.decodePoint(com2), pok.getPoint())));
       assertTrue(c.compareTo(AttestationCrypto.curveOrder) < 0);
     }
   }
@@ -266,7 +297,6 @@ public class CryptoTest {
     assertFalse(value.equals(AttestationCrypto.fieldSize.subtract(BigInteger.ONE)));
     // This should hold with probability at least 1-2^-30
     assertTrue(value.shiftRight(AttestationCrypto.curveOrderBitLength-30).compareTo(BigInteger.ZERO) > 0);
-
     // Check consistency
     BigInteger value2 = AttestationCrypto.mapToCurveMultiplier(TYPE, ID);
     assertEquals(value, value2);
@@ -301,19 +331,18 @@ public class CryptoTest {
   }
 
   @Test
-  public void testConstructAttRequestProof() throws NoSuchAlgorithmException{
-    SecureRandom rand2 = SecureRandom.getInstance("SHA1PRNG");
+  public void testConstructAttRequestProof() throws Exception {
+    SecureRandom rand2 = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand2.setSeed("otherseed".getBytes());
     AttestationCrypto crypt2 = new AttestationCrypto(rand2);
-    ProofOfExponent pok = crypt2.computeAttestationProof(SECRET1);
-    assertTrue(AttestationCrypto.verifyAttestationRequestProof(pok));
+    FullProofOfExponent pok = crypt2.computeAttestationProof(SECRET1);
+    assertTrue(AttestationCrypto.verifyFullProof(pok));
 
     // Check consistency
-    rand2 = SecureRandom.getInstance("SHA1PRNG");
+    rand2 = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand2.setSeed("otherseed".getBytes());
     crypt2 = new AttestationCrypto(rand2);
-    ProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET1);
-    assertEquals(pok.getBase(), pok2.getBase());
+    FullProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET1);
     assertEquals(pok.getPoint(), pok2.getPoint());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
     assertEquals(pok.getChallenge(), pok2.getChallenge());
@@ -362,7 +391,7 @@ public class CryptoTest {
 
   private BigInteger rejectionSample(BigInteger seed) {
     do {
-      seed = AttestationCrypto.mapTo256BitInteger(seed.toByteArray());
+      seed = AttestationCrypto.mapToInteger(seed.toByteArray());
     } while (seed.compareTo(AttestationCrypto.curveOrder) >= 0);
     return seed;
   }
@@ -395,11 +424,11 @@ public class CryptoTest {
       BigInteger y = ySquare.modPow(magicExp, AttestationCrypto.fieldSize);
       resPoint = AttestationCrypto.curve.createPoint(x, y).normalize();
       // Ensure that we have a consistent choice of which "sign" of y we use. We always use the smallest possible value of y
-      if (resPoint.getYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
+      if (resPoint.getAffineYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
         resPoint = resPoint.negate().normalize();
       }
       referencePoint = resPoint.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize();
-      if (referencePoint.getYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
+      if (referencePoint.getAffineYCoord().toBigInteger().compareTo(AttestationCrypto.fieldSize.shiftRight(1)) > 0) {
         referencePoint = referencePoint.negate().normalize();
       }
       // Verify that the element is a member of the expected (subgroup) by ensuring that it has the right order, through Fermat's little theorem

@@ -2,18 +2,15 @@ package org.devcon.ticket;
 
 import com.alphawallet.attestation.core.AttestationCrypto;
 import com.alphawallet.attestation.core.DERUtility;
-import com.alphawallet.attestation.core.URLUtility;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.Base64;
 
 public class Issuer {
@@ -32,12 +29,12 @@ public class Issuer {
             System.err.println("Commandline Options:");
             System.err.println("{key.pem}\tPath to the PEM file that contains the issuer private key.");
             System.err.println("{mail}\tThe email address of the ticket owner.");
-            System.err.println("{devconID}\tAn integer which is 6 for Devcon 6.");
+            System.err.println("{devconID}\tA string representing the Devcon ID.");
             System.err.println("{ticketID}\tAn integer ticket ID.");
             System.err.println("{ticketClass}\tAn integer representing the ticket class.");
         } else {
             String mail = args[1];
-            int devconID = Integer.parseInt(args[2]);
+            String devconID = args[2];
             BigInteger ticketID = new BigInteger(args[3]);
             int ticketClass = Integer.parseInt(args[4]);
             Path keyFile = Paths.get(args[0]);
@@ -49,7 +46,7 @@ public class Issuer {
             AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
             Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
             String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
-            System.out.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, sharedSecret.toString());
+            System.out.printf("?ticket=%s&secret=%s&mail=%s", ticketInUrl, sharedSecret.toString(), mail);
         }
     }
 }

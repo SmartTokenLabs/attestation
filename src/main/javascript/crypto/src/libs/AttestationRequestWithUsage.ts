@@ -2,7 +2,7 @@ import {KeyPair} from "./KeyPair";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {ASNEncodable} from "./ASNEncodable";
 import {Verifiable} from "./Verifiable";
-import {Identity} from "../asn1/shemas/AttestationRequestWithUsage";
+import {Identifier} from "../asn1/shemas/AttestationRequestWithUsage";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {CURVE_BN256, Point} from "./Point";
@@ -30,21 +30,21 @@ export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
 
     static fromBytes(asn1: Uint8Array): AttestationRequestWithUsage {
         let me = new this();
-        let identity: Identity;
+        let identifier: Identifier;
 
         try {
-            identity = AsnParser.parse( uint8toBuffer(asn1), Identity);
-            me.type = identity.type;
-            me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(identity.sessionKey);
+            identifier = AsnParser.parse( uint8toBuffer(asn1), Identifier);
+            me.type = identifier.type;
+            me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(identifier.sessionKey);
         } catch (e){
-            throw new Error('Cant parse AttestationRequest Identity');
+            throw new Error('Cant parse AttestationRequest Identifier');
         }
 
         try {
-            let riddleEnc = new Uint8Array(identity.proof.riddle);
-            let challengeEnc = new Uint8Array(identity.proof.challengePoint);
-            let tPointEnc = new Uint8Array(identity.proof.responseValue);
-            let nonce = new Uint8Array(identity.proof.nonce);
+            let riddleEnc = new Uint8Array(identifier.proof.riddle);
+            let challengeEnc = new Uint8Array(identifier.proof.challengePoint);
+            let tPointEnc = new Uint8Array(identifier.proof.responseValue);
+            let nonce = new Uint8Array(identifier.proof.nonce);
 
             let riddle = Point.decodeFromHex(uint8tohex(riddleEnc), CURVE_BN256 );
             let challenge = uint8ToBn(challengeEnc);

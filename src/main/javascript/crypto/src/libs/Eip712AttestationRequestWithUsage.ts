@@ -37,7 +37,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
     }
 
     private Eip712UserDataPrimaryName: string = "AttestationRequestWUsage";
-    private Eip712UserDataDescription: string = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\""
+    private Eip712UserDataDescription: string = "Prove that the \"identifier\" is the identifier hidden in attestation contained in\"payload\""
         + " and use this to authorize usage of local, temporary keys.";
 
     private maxTokenValidityInMs: number;

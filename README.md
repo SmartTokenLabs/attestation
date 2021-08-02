@@ -8,12 +8,18 @@ In short, an attestation can be likened to a token created off-chain and
 usable on-chain. An example of an attestation would be a Devcon ticket.
 See document here: http://tokenscript.org/Attestation.html
 
+## Code layout
+
+This repo serves as the reference implementation but the productional implementation uses code from various repos. A map here:
+
+![various repos for components](component-layout.svg)
+
 ## Build
 
 You need the following installed:
 
 - JDK (version 11 or higher)
-- Gradle (version 6.7 is used by our devs)
+- Gradle (version 7.1.1 is used by our devs)
 - node.js (version 15 is used by our devs)
 
 Once you have them installed, run:
@@ -32,7 +38,7 @@ Which will create a jar file that you can run in the commandline
 
     build/libs/attestation-all.jar
 
-There is a walk-through to use the functionalities provided by this library through commandline: [commandline demonstration](cli-demo.md)
+There is a walk-through to use the functionalities provided by this library through commandline: [commandline cheque demonstration](cli-cheque-demo.md) and the  [commandline EIP712 attestation demonstration](cli-attestation-demo.md)
 
 ## Organisation of this repo
 

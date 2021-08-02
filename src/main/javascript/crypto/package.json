@@ -4,14 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "mocha src/**/*.test.ts",
     "build": "webpack",
     "watch": "webpack --watch --progress",
-    "test": "jest"
+    "testjest": "jest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@testdeck/mocha": "^0.1.2",
     "@types/asn1js": "^2.0.0",
     "@types/jest": "^26.0.20",
     "@types/node": "^14.14.28",
@@ -19,11 +21,17 @@
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
     "jest": "^26.6.3",
+    "@types/chai": "^4.2.20",
+    "@types/mocha": "^8.2.3",
+    "chai": "^4.3.4",
+    "mocha": "^9.0.2",
     "source-map-loader": "^1.1.3",
     "stream-browserify": "^3.0.0",
     "ts-jest": "^26.5.1",
     "ts-loader": "^8.0.12",
     "typescript": "^4.1.5",
+    "ts-mockito": "^2.6.1",
+    "ts-node": "^10.0.0",
     "webpack": "^5.10.1",
     "webpack-cli": "^4.2.0"
   },
@@ -39,6 +47,7 @@
     "js-sha3": "^0.8.0",
     "jsonwebtoken": "^8.5.1",
     "string.prototype.matchall": "^4.0.4",
-    "url": "^0.11.0"
+    "url": "^0.11.0",
+    "secure-random": "^1.1.2"
   }
 }

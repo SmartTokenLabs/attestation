@@ -26,10 +26,11 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         this.setCommitment(commitment);
     }
 
-    static fromData(identity: string, type: number, keys: KeyPair, secret: bigint){
+    static fromData(identifier: string, type: number, keys: KeyPair, secret: bigint){
         let crypto = new AttestationCrypto();
-        let commitment = crypto.makeCommitment(identity, type, secret);
+        let commitment = crypto.makeCommitment(identifier, type, secret);
         return (new this()).fromCommitment(commitment, keys);
+        //return new this(riddle, keys);
     }
 
     static fromBytes(bytes: Uint8Array){

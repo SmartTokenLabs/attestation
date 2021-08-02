@@ -1,7 +1,7 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
 import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString} from "./libs/utils";
-import {SignedIdentityAttestation} from "./libs/SignedIdentityAttestation";
+import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
@@ -21,8 +21,6 @@ import {Validateable} from "./libs/Validateable";
 import {debugLog} from "./config";
 
 let subtle:any;
-
-const debug = true;
 
 if (typeof crypto === "object" && crypto.subtle){
     subtle = crypto.subtle;
@@ -163,7 +161,7 @@ export class Authenticator {
         // let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.publicKey)));
         let attestorKey = KeyPair.publicFromBase64(base64attestationPublicKey);
 
-        let att = SignedIdentityAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
+        let att = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
 
         if (!att.checkValidity()) {
             console.log("Could not validate attestation");
@@ -385,7 +383,7 @@ export class Authenticator {
         let now = Date.now();
         att.setNotValidBefore(now);
         att.setNotValidAfter(now + validityInMilliseconds);
-        let signed: SignedIdentityAttestation = SignedIdentityAttestation.fromData(att, attestorKey);
+        let signed: SignedIdentifierAttestation = SignedIdentifierAttestation.fromData(att, attestorKey);
         return signed.getDerEncoding();
     }
 
@@ -403,7 +401,7 @@ export class Authenticator {
 
 
         const attestationUint8 = base64ToUint8array(attestationBase64);
-        let att = SignedIdentityAttestation.fromBytes(attestationUint8, attestorKey);
+        let att = SignedIdentifierAttestation.fromBytes(attestationUint8, attestorKey);
         let attestationSecretDerUint8 = base64ToUint8array(attestationSecretBase64);
         // remove first 4 bytes because us der encoding
         let attestationSecret = uint8ToBn(attestationSecretDerUint8.slice(4));
@@ -493,7 +491,6 @@ export class Authenticator {
 
         // Validate signature
         try {
-
             let res = await sessionPublicKey.verifyStringWithSubtle(KeyPair.anySignatureToRawUint8(signature) , message);
             if (!res) {
                 console.error("Could not verify message signature");

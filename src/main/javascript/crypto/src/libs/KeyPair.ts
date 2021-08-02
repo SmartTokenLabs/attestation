@@ -464,6 +464,12 @@ export class KeyPair {
     }
 
     static anySignatureToRawUint8(derSignature: Uint8Array|string): Uint8Array {
+        // if (typeof derSignature === "string") {
+        //     console.log("raw signature(string):" + derSignature);
+        // } else {
+        //     console.log("raw signature(uint8):" + uint8tohex(derSignature));
+        // }
+
         let signatureUint8;
         if (typeof derSignature == "string") {
             signatureUint8 = hexStringToUint8(derSignature);
@@ -496,6 +502,7 @@ export class KeyPair {
                 let m = 'wrong Signature: ' + uint8tohex(signatureUint8);
                 throw new Error(m);
         }
+        // console.log("ready signature:" + uint8tohex(output));
         return output;
     }
 

@@ -16,7 +16,7 @@ import {debugLog} from "../config";
 export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable, Verifiable, TokenValidateable {
     public PLACEHOLDER_CHAIN_ID: number = 0;
     public Eip712PrimaryName: string = "AttestationUsage";
-    public Eip712Description: string = "Prove that the \"identity\" is the identity hidden in attestation contained in\"payload\".";
+    public Eip712Description: string = "Prove that the \"identifier\" is the identifier hidden in attestation contained in\"payload\".";
     public Eip712UserTypes: {name: string, type: string}[]  = [
         {name: 'description', type: 'string'},
         {name: 'identifier', type: 'string'},
@@ -177,7 +177,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         };
 
         if (this.data.description != this.Eip712Description) {
-            console.log('wrong description');
+            console.log(`wrong description: "${this.data.description}", must be "${this.Eip712Description}"`);
             return false;
         };
 

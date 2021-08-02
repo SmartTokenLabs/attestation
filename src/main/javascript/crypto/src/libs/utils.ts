@@ -149,6 +149,9 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
     } else {
         return window.btoa( binary );
     }
+
+    return btoa( binary );
+
 }
 
 export function base64toBase64Url(base64: string): string {
@@ -221,6 +224,7 @@ export function uint8tohex(uint8: Uint8Array): string {
     return Array.from(uint8).map(i => ('0' + i.toString(16)).slice(-2)).join('');
 }
 
+
 export function uint8toBuffer(uint8: Uint8Array): any {
     if (typeof Buffer != "undefined"){
         // node Buffer
@@ -275,4 +279,12 @@ export function formatGeneralizedDateTime(date: number):string {
         sec = '0' + sec;
 
     return [year, month, day, hour, min, sec].join('') + 'Z';
+}
+export function isDomainValid(domain: string): boolean {
+    try {
+        new URL(domain);
+    } catch (e) {
+        return false;
+    }
+    return true;
 }

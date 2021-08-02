@@ -134,7 +134,7 @@ export class SignatureUtility {
         //     types: {
         //         EIP712Domain: domain,
         //         Bid: bid,
-        //         Identity: identity,
+        //         Identifier: identifier,
         //     },
         //     domain: domainData,
         //     primaryType: "Bid",

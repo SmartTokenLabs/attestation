@@ -1,5 +1,5 @@
 import {AttestationCrypto} from "./AttestationCrypto";
-import {SignedIdentityAttestation} from "./SignedIdentityAttestation";
+import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
 import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
@@ -29,7 +29,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     private signature: string;
     private encoding: string;
     private attestableObject: any;
-    private att: SignedIdentityAttestation;
+    private att: SignedIdentifierAttestation;
     private attestationSecret: bigint ;
     private objectSecret: bigint;
     private userPublicKey: Uint8Array;
@@ -57,7 +57,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     create<T extends Attestable>(
         attestableObject: T ,
-        att: SignedIdentityAttestation,
+        att: SignedIdentifierAttestation,
         attestationSecret: bigint ,
         objectSecret: bigint
     ){
@@ -87,7 +87,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     fromDecodedData<T extends Attestable>(
         attestableObject: T ,
-        att: SignedIdentityAttestation,
+        att: SignedIdentifierAttestation,
         pok: ProofOfExponentInterface ,
         signature: string
     ){
@@ -120,12 +120,12 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     }
 
     public checkValidity(): boolean {
-        // CHECK: that it is an identity attestation otherwise not all the checks of validity needed gets carried out
+        // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
         try {
             let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();
             let std: IdentifierAttestation = IdentifierAttestation.fromBytes(new Uint8Array(hexStringToArray(attEncoded))) as IdentifierAttestation;
 
-            // CHECK: perform the needed checks of an identity attestation
+            // CHECK: perform the needed checks of an identifier attestation
             if (!std.checkValidity()) {
                 console.error("The attestation is not a valid standard attestation");
                 return false;
@@ -196,7 +196,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         me.attestableObject = new attestable();
         me.attestableObject.fromBytes(attested.signedToken, issuerKey);
 
-        me.att = SignedIdentityAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
+        me.att = SignedIdentifierAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
 
         let pok = new UsageProofOfExponent();
         pok.fromBytes( new Uint8Array(attested.proof) ) ;

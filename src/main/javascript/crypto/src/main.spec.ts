@@ -13,6 +13,7 @@ const PREFIX_PATH = '../../../../build/test-results/';
 
 let useAttestRes: string,
     sessionKey: KeyPair,
+    session2Key: KeyPair,
     userKey: KeyPair,
     attestorPubKey: KeyPair,
     attestorKey: KeyPair,
@@ -52,6 +53,9 @@ describe("Read keys and files", () => {
 
     const sessionPrivPEM = readFileSync(PREFIX_PATH + 'session-priv.pem', 'utf8');
     sessionKey = KeyPair.privateFromPEM(sessionPrivPEM);
+
+    const session2PrivPEM = readFileSync(PREFIX_PATH + 'session-priv2.pem', 'utf8');
+    session2Key = KeyPair.privateFromPEM(session2PrivPEM);
 
     useAttestationJson = readFileSync(PREFIX_PATH + 'use-attestation.json', 'utf8');
 
@@ -166,8 +170,10 @@ describe("executeEipFlow", () => {
             // throw new Error('signStringWithSubtle failed');
         }
         expect(1).toBe(1);
-
-        // console.log(`session signature = ` + uint8tohex(sessionSignature));
+        if (debugLog) {
+            console.log(`sessionKey = ` + sessionKey.getAddress());
+            console.log(`session signature = ` + uint8tohex(sessionSignature));
+        }
     })
 
     test('executeEipFlow - verify-usage(external json and subtle signature)', async () => {

@@ -5,8 +5,7 @@ import {PublicKeyInfoValue} from "./AttestationFramework";
 
 // IdentifierType ::= INTEGER { email(0), phone(1)}
 
-// class IdentityPayload {
-export class Identity {
+export class Identifier {
 
     @AsnProp({ type: AsnPropTypes.Integer })
     public type: number;

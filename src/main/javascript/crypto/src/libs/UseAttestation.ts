@@ -3,7 +3,7 @@ import {Verifiable} from "./Verifiable";
 import {Validateable} from "./Validateable";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {AttestationCrypto} from "./AttestationCrypto";
-import {SignedIdentityAttestation} from "./SignedIdentityAttestation";
+import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
 import {ASNEncodable} from "./ASNEncodable";
 import {UseAttestation as UseAttestationASN} from "../asn1/shemas/UseAttestation";
 import {AsnParser} from "@peculiar/asn1-schema";
@@ -11,13 +11,13 @@ import {uint8toBuffer} from "./utils";
 import {Asn1Der} from "./DerUtility";
 
 export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
-    private attestation: SignedIdentityAttestation;
+    private attestation: SignedIdentifierAttestation;
     public type: number;
     private pok: FullProofOfExponent;
     private sessionPublicKey: KeyPair;
     private encoding: string;
 
-    static fromData(attestation: SignedIdentityAttestation, type: number, pok: FullProofOfExponent, sessionPublicKey: KeyPair): UseAttestation {
+    static fromData(attestation: SignedIdentifierAttestation, type: number, pok: FullProofOfExponent, sessionPublicKey: KeyPair): UseAttestation {
         let me = new this();
         me.attestation = attestation;
         me.type = type;
@@ -40,7 +40,7 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
 
         try {
 
-            me.attestation = SignedIdentityAttestation.fromASNType(useAttest.attestation, attestationVerificationKey);
+            me.attestation = SignedIdentifierAttestation.fromASNType(useAttest.attestation, attestationVerificationKey);
 
             me.type = useAttest.type;
             me.pok = FullProofOfExponent.fromASNType(useAttest.proof);
@@ -59,7 +59,7 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
         }
     }
 
-    makeEncoding( attestation: SignedIdentityAttestation, type: number, pok: FullProofOfExponent, sessionKey: KeyPair): string {
+    makeEncoding(attestation: SignedIdentifierAttestation, type: number, pok: FullProofOfExponent, sessionKey: KeyPair): string {
         let res: string = attestation.getDerEncoding()
         + Asn1Der.encode('INTEGER', type)
         + pok.getDerEncoding()
@@ -68,7 +68,7 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
         return Asn1Der.encode('SEQUENCE_30', res );
     }
 
-     getAttestation(): SignedIdentityAttestation {
+     getAttestation(): SignedIdentifierAttestation {
         return this.attestation;
     }
 

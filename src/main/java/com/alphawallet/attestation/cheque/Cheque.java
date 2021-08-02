@@ -3,10 +3,14 @@ package com.alphawallet.attestation.cheque;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
 import com.alphawallet.attestation.core.Attestable;
 import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.ExceptionUtil;
 import com.alphawallet.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.Clock;
 import java.util.Date;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1GeneralizedTime;
@@ -21,6 +25,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Cheque implements Attestable {
+  private static final Logger logger = LogManager.getLogger(Cheque.class);
   private final byte[] commitment;
   private final long amount;
   private final long notValidBefore;
@@ -43,18 +48,19 @@ public class Cheque implements Attestable {
     this.commitment = AttestationCrypto.makeCommitment(identifier, type, secret);
     this.publicKey = keys.getPublic();
     this.amount = amount;
-    long current =  System.currentTimeMillis();
+    long current =  Clock.systemUTC().millis();
     this.notValidBefore = current - (current % 1000); // Round down to nearest second
     this.notValidAfter = this.notValidBefore + validity;
     ASN1Sequence cheque = makeCheque(this.commitment, amount, notValidBefore, notValidAfter);
     try {
-      this.signature = SignatureUtility.signDeterministic(cheque.getEncoded(), keys.getPrivate());
+      this.signature = SignatureUtility.signWithEthereum(cheque.getEncoded(), keys.getPrivate());
       this.encoded = encodeSignedCheque(cheque, this.signature, this.publicKey);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("Public and private keys are incorrect");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not verify object"));
     }
   }
 
@@ -63,7 +69,8 @@ public class Cheque implements Attestable {
     this.publicKey = publicKey;
     this.amount = amount;
     if (notValidBefore % 1000 != 0 || notValidAfter % 1000 != 0) {
-      throw new IllegalArgumentException("Can only support time granularity to the second");
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Can only support time granularity to the second"));
     }
     this.notValidBefore = notValidBefore;
     this.notValidAfter = notValidAfter;
@@ -72,10 +79,10 @@ public class Cheque implements Attestable {
     try {
       this.encoded = encodeSignedCheque(cheque, this.signature, this.publicKey);
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
     }
     if (!verify()) {
-      throw new IllegalArgumentException("Signature is invalid");
+      throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Signature is invalid"));
     }
   }
 
@@ -106,9 +113,9 @@ public class Cheque implements Attestable {
 
   @Override
   public boolean checkValidity() {
-    long currentTime = System.currentTimeMillis();
+    long currentTime = Clock.systemUTC().millis();
     if (!(currentTime >= getNotValidBefore() && currentTime < getNotValidAfter())) {
-      System.err.println("Cheque is no longer valid");
+      logger.error("Cheque is no longer valid");
       return false;
     }
     return true;
@@ -119,10 +126,15 @@ public class Cheque implements Attestable {
     try {
       ASN1Sequence cheque = makeCheque(this.commitment, this.amount, this.getNotValidBefore(),
           this.notValidAfter);
-      return SignatureUtility.verify(cheque.getEncoded(), signature, this.publicKey);
+      if (!SignatureUtility.verifyEthereumSignature(cheque.getEncoded(), signature, this.publicKey)) {
+        logger.error("Could not verify signature");
+        return false;
+      }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      logger.error("Could not decode signature");
+      return false;
     }
+    return true;
   }
 
   @Override

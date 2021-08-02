@@ -1,37 +1,50 @@
 package com.alphawallet.attestation.demo;
 
-import com.alphawallet.attestation.Attestation;
-import com.alphawallet.attestation.cheque.ChequeDecoder;
-import com.alphawallet.attestation.core.AttestationCrypto;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+
 import com.alphawallet.attestation.AttestationRequest;
-import com.alphawallet.attestation.cheque.Cheque;
-import com.alphawallet.attestation.core.AttestationCryptoWithEthereumCharacteristics;
-import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.AttestationRequestWithUsage;
+import com.alphawallet.attestation.AttestedObject;
+import com.alphawallet.attestation.FullProofOfExponent;
 import com.alphawallet.attestation.IdentifierAttestation;
 import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.ProofOfExponent;
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.SignedIdentityAttestation;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import com.alphawallet.attestation.SignedIdentifierAttestation;
+import com.alphawallet.attestation.UseAttestation;
+import com.alphawallet.attestation.cheque.Cheque;
+import com.alphawallet.attestation.cheque.ChequeDecoder;
+import com.alphawallet.attestation.core.AttestationCrypto;
+import com.alphawallet.attestation.core.DERUtility;
+import com.alphawallet.attestation.core.SignatureUtility;
+import com.alphawallet.attestation.core.Validateable;
+import com.alphawallet.attestation.core.Verifiable;
+import com.alphawallet.attestation.eip712.Eip712AttestationRequest;
+import com.alphawallet.attestation.eip712.Eip712AttestationRequestWithUsage;
+import com.alphawallet.attestation.eip712.Eip712AttestationUsage;
+import com.alphawallet.attestation.eip712.Nonce;
+import com.alphawallet.attestation.eip712.Timestamp;
+import com.alphawallet.attestation.eip712.TokenValidateable;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.time.Clock;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.Scanner;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
@@ -39,7 +52,13 @@ import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 public class Demo {
-  static AttestationCrypto crypto = new AttestationCryptoWithEthereumCharacteristics(new SecureRandom());
+  static SecureRandom rand = new SecureRandom();
+  static AttestationCrypto crypto = new AttestationCrypto(rand);
+
+  public static final X9ECParameters SESSION_KEY_CURVE = SECNamedCurves.getByName("secp256r1"); // NIST P-256
+  public static final String ATTESTOR_DOMAIN = "http://wwww.attestation.id";
+  public static final String WEB_DOMAIN = "http://wwww.hotelbogota.com";
+
   public static void main(String args[])  {
     CommandLineParser parser = new DefaultParser();
     CommandLine line;
@@ -50,8 +69,6 @@ public class Demo {
         System.err.println("Could not parse commandline arguments");
         throw e;
       }
-      SecureRandom rand = new SecureRandom();
-      crypto = new AttestationCrypto(rand);
       List<String> arguments = line.getArgList();
       if (arguments.size() == 0) {
         System.err.println("First argument must be either \"keys\", \"create-cheque\", \"receive-cheque\", "
@@ -62,9 +79,9 @@ public class Demo {
         case "keys":
           System.out.println("Constructing key pair...");
           try {
-            createKeys(crypto, arguments.get(1), arguments.get(2));
+            createKeys(Paths.get(arguments.get(1)), Paths.get(arguments.get(2)));
           } catch (Exception e) {
-            System.err.println("Was expecting: <output dir to public key> <output dir to private key>.");
+            System.err.println("Was expecting: <output file to public key> <output file to private key>.");
             throw e;
           }
           System.out.println("Constructed keys");
@@ -78,7 +95,7 @@ public class Demo {
             AttestationType type = getType(arguments.get(3));
             long validity = 1000*Long.parseLong(arguments.get(4)); // Validity in milliseconds
             createCheque(crypto, amount, receiverId, type, validity,
-                Paths.get(arguments.get(5)), arguments.get(6), arguments.get(7));
+                Paths.get(arguments.get(5)), Paths.get(arguments.get(6)), Paths.get(arguments.get(7)));
 
           } catch (Exception e) {
             System.err.println("Was expecting: <integer amount to send> <identifier of the receiver> "
@@ -111,7 +128,7 @@ public class Demo {
           System.out.println("Constructing attestation request");
           try {
             AttestationType type = getType(arguments.get(3));
-            requestAttest(crypto, Paths.get(arguments.get(1)), arguments.get(2), type, arguments.get(4), arguments.get(5));
+            requestAttest(crypto, Paths.get(arguments.get(1)), arguments.get(2), type, Paths.get(arguments.get(4)), Paths.get(arguments.get(5)));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <identifier> "
                 + "<type of ID, Either \"mail\" or \"phone\"> <attestation request output dir> <secret output dir>");
@@ -120,13 +137,27 @@ public class Demo {
           System.out.println("Finished constructing attestation request");
           break;
 
+        case "request-attest-and-usage":
+          System.out.println("Constructing attestation along with usage object");
+          try {
+            AttestationType type = getType(arguments.get(3));
+            requestAndUseAttest(crypto, Paths.get(arguments.get(1)), arguments.get(2), type, Paths.get(arguments.get(4)),
+                Paths.get(arguments.get(5)), Paths.get(arguments.get(6)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <signing key input dir> <identifier> "
+                + "<type of ID, Either \"mail\" or \"phone\"> <private session key output dir> <usage/attestation request output dir> <secret output dir");
+            throw e;
+          }
+          System.out.println("Finished constructing attestation and EIP712 usage object");
+          break;
+
         case "construct-attest":
           // TODO very limited functionality.
           // Should use a configuration file and have a certificate to its signing key
           System.out.println("Signing attestation...");
           try {
-            long validity = 1000*Long.parseLong(arguments.get(3)); // Validity in milliseconds
-            constructAttest(Paths.get(arguments.get(1)), arguments.get(2), validity, Paths.get(arguments.get(4)), arguments.get(5));
+            long validity = Timestamp.DEFAULT_TIME_LIMIT_MS;
+            constructAttest(Paths.get(arguments.get(1)), arguments.get(2), validity, Paths.get(arguments.get(4)), Paths.get(arguments.get(5)));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <issuer name> "
                 + "<validity in seconds> <attestation request input dir> "
@@ -136,59 +167,98 @@ public class Demo {
           System.out.println("Finished signing attestation");
           break;
 
+        case "use-attest":
+          System.out.println("Constructing attestation usage object");
+          try {
+            AttestationType type = getType(arguments.get(6));
+            useAttest(crypto, Paths.get(arguments.get(1)), Paths.get(arguments.get(2)), Paths.get(arguments.get(3)),
+                Paths.get(arguments.get(4)), arguments.get(5), type, Paths.get(arguments.get(7)), Paths.get(arguments.get(8)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <signing key input dir> <attestation dir> <attestation secret input dir> <attestor verification key dir> <identifier> "
+                + "<type of ID, Either \"mail\" or \"phone\"> <private session key output dir> <usage request output dir>");
+            throw e;
+          }
+          System.out.println("Finished constructing usage EIP712");
+          break;
+
+        case "sign-message":
+          System.out.println("Signing a message using session keys");
+          try {
+            signMessage(Paths.get(arguments.get(1)), arguments.get(2), Paths.get(arguments.get(3)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <private session key dir> <message> <signature output dir>");
+            throw e;
+          }
+          System.out.println("Finished signing message");
+          break;
+
+        case "verify-usage":
+          System.out.println("Verifying message usage");
+          try {
+            verifyUsage(Paths.get(arguments.get(1)), Paths.get(arguments.get(2)), arguments.get(3), Paths.get(arguments.get(4)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <usage request dir> <attestor verification key dir> <message> <signature dir>");
+            throw e;
+          }
+          System.out.println("Finished verifying message");
+          break;
+
+        case "magic-link":
+          System.out.println("The magic link of the content of " + arguments.get(1) + " is:");
+          try {
+            magicLink(Paths.get(arguments.get(1)));
+          } catch (Exception e) {
+            System.err.println("Was expecting: <input>");
+            throw e;
+          }
+          break;
+
         default:
           System.err.println("First argument must be either \"keys\", \"create-cheque\", \"receive-cheque\", "
-              + "\"request-attest\" or \"construct-attest\".");
+              + "\"request-attest\", \"construct-attest\", \"use-attest\", \"sign-message\", \"verify-usage\","
+              + " or \"request-attest-and-usage\".");
           throw new IllegalArgumentException("Unknown role");
       }
     }
-    catch( Exception e) {
+    catch(Exception e) {
       System.err.println("FAILURE!");
-      return;
+      throw new RuntimeException(e);
     }
     System.out.println("SUCCESS!");
   }
 
-  private static void createKeys(AttestationCrypto crypto, String pubDir, String privDir) throws IOException {
-    AsymmetricCipherKeyPair keys = crypto.constructECKeys();
-    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
-        .createSubjectPublicKeyInfo(keys.getPublic());
-    byte[] pub = spki.getEncoded();
-    if (!writeFile(pubDir, DERUtility.printDER(pub, "PUBLIC KEY"))) {
-      System.err.println("Could not write public key");
-      throw new IOException("Failed to write file");
-    }
+  private static void createKeys(Path pathPubKey, Path pathPrivKey) throws IOException {
+    AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    writePrivKey(keys.getPrivate(), pathPrivKey);
+    writePubKey(keys.getPublic(), pathPubKey);
+  }
 
-    PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(keys.getPrivate());
-    byte[] priv = privInfo.getEncoded();
-    if (!writeFile(privDir, DERUtility.printDER(priv, "PRIVATE KEY"))) {
-      System.err.println("Could not write private key");
-      throw new IOException("Failed to write file");
-    }
+  private static void writePrivKey(AsymmetricKeyParameter privKey, Path pathPrivKey) throws IOException {
+    PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(privKey);
+    DERUtility.writePEM(privInfo.getEncoded(), "PRIVATE KEY", pathPrivKey);
+  }
+
+  private static void writePubKey(AsymmetricKeyParameter pubKey, Path pathPubKey) throws IOException {
+    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(pubKey);
+    byte[] pub = spki.getEncoded();
+    DERUtility.writePEM(pub, "PUBLIC KEY", pathPubKey);
   }
 
   private static void createCheque(AttestationCrypto crypto, int amount, String receiverId, AttestationType type,
-      long validityInMilliseconds, Path pathInputKey, String outputDirCheque, String outputDirSecret) throws IOException {
+      long validityInMilliseconds, Path pathInputKey, Path outputDirCheque, Path outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathInputKey));
 
     BigInteger secret = crypto.makeSecret();
     Cheque cheque = new Cheque(receiverId, type, amount, validityInMilliseconds, keys, secret);
     byte[] encoding = cheque.getDerEncoding();
 
-    if (!writeFile(outputDirCheque, DERUtility.printDER(encoding, "CHEQUE"))) {
-      System.err.println("Could not write cheque to disc");
-      throw new IOException("Could not write file");
-    }
-
-    if (!writeFile(outputDirSecret, DERUtility.printDER(DERUtility.encodeSecret(secret), "CHEQUE SECRET"))) {
-      System.err.println("Could not write cheque secret to disc");
-      throw new IOException("Could not write file");
-    }
+    DERUtility.writePEM(encoding, "CHEQUE", outputDirCheque);
+    DERUtility.writePEM(DERUtility.encodeSecret(secret), "CHEQUE SECRET", outputDirSecret);
   }
 
   private static void receiveCheque(Path pathUserKey, Path chequeSecretDir,
                                     Path pathAttestationSecret, Path pathCheque, Path pathAttestation, Path pathAttestationKey)
-  throws IOException {
+  throws Exception {
     AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     byte[] chequeSecretBytes = DERUtility.restoreBytes(Files.readAllLines(chequeSecretDir));
     BigInteger chequeSecret = DERUtility.decodeSecret(chequeSecretBytes);
@@ -199,7 +269,7 @@ public class Demo {
     byte[] attestationBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestation));
     AsymmetricKeyParameter attestationProviderKey = PublicKeyFactory.createKey(
         DERUtility.restoreBytes(Files.readAllLines(pathAttestationKey)));
-    SignedIdentityAttestation att = new SignedIdentityAttestation(attestationBytes, attestationProviderKey);
+    SignedIdentifierAttestation att = new SignedIdentifierAttestation(attestationBytes, attestationProviderKey);
 
     if (!cheque.checkValidity()) {
       System.err.println("Could not validate cheque");
@@ -229,52 +299,153 @@ public class Demo {
     }
     // TODO how should this actually be?
     SmartContract sc = new SmartContract();
-    if (!sc.testEncoding(redeem.getPok())) {
+    byte[] attestationCommit = redeem.getAtt().getUnsignedAttestation().getCommitment();
+    if (!sc.verifyEqualityProof(attestationCommit, redeem.getAttestableObject().getCommitment(), redeem.getPok())) {
       System.err.println("Could not submit proof of knowledge to the chain");
       throw new RuntimeException("Chain submission failed");
     }
   }
 
   private static void requestAttest(AttestationCrypto crypto, Path pathUserKey, String receiverId, AttestationType type,
-      String outputDirRequest, String outputDirSecret) throws IOException {
+      Path outputDirRequest, Path outputDirSecret) throws IOException {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
     BigInteger secret = crypto.makeSecret();
-    ProofOfExponent pok = crypto.computeAttestationProof(secret);
-    AttestationRequest request = new AttestationRequest(receiverId, type, pok, keys);
+    String address = SignatureUtility.addressFromKey(keys.getPublic());
+    byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
+    AttestationRequest attRequest = new AttestationRequest(type, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, attRequest, keys.getPrivate());
+    Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
+        CREATE, TRUNCATE_EXISTING);
+    DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
+  }
 
-    if (!writeFile(outputDirRequest, DERUtility.printDER(request.getDerEncoding(), "ATTESTATION REQUEST"))) {
-      System.err.println("Could not write attestation request to disc");
-      throw new IOException("Could not write file");
-    }
-
-    if (!writeFile(outputDirSecret, DERUtility.printDER(DERUtility.encodeSecret(secret), "SECRET"))) {
-      System.err.println("Could not write attestation secret to disc");
-      throw new IOException("Could not write file");
-    }
+  private static void requestAndUseAttest(AttestationCrypto crypto, Path pathUserKey, String receiverId, AttestationType type,
+      Path outputSessionPrivKeyDir, Path outputDirRequest, Path outputDirSecret) throws IOException {
+    AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
+    BigInteger secret = crypto.makeSecret();
+    String address = SignatureUtility.addressFromKey(userKeys.getPublic());
+    byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
+    AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SESSION_KEY_CURVE, rand);
+    AttestationRequestWithUsage attRequest = new AttestationRequestWithUsage(type, pok, sessionKeys.getPublic());
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, receiverId, attRequest, userKeys.getPrivate());
+    Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
+        CREATE, TRUNCATE_EXISTING);
+    DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
+    Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
+        CREATE, TRUNCATE_EXISTING);
+    writePrivKey(sessionKeys.getPrivate(), outputSessionPrivKeyDir);
   }
 
   private static void constructAttest(Path pathAttestorKey, String issuerName,
-      long validityInMilliseconds, Path pathRequest, String attestationDir) throws IOException {
+      long validityInMilliseconds, Path pathRequest, Path attestationDir) throws Exception {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathAttestorKey));
-    byte[] requestBytes = DERUtility.restoreBytes(Files.readAllLines(pathRequest));
-    AttestationRequest request = new AttestationRequest(requestBytes);
-    // TODO here is where it should be verified the user actually controls the mail
-    if (!request.verify()) {
-      System.err.println("Could not verify attestation signing request");
-      throw new RuntimeException("Validation failed");
+    String jsonRequest = String.join("", Files.readAllLines(pathRequest));
+    IdentifierAttestation att = null;
+    try {
+      Eip712AttestationRequest attestationRequest = new Eip712AttestationRequest(ATTESTOR_DOMAIN, jsonRequest);
+      checkAttestRequestVerifiability(attestationRequest);
+      checkAttestRequestValidity(attestationRequest);
+      byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
+      att = new IdentifierAttestation(commitment, attestationRequest.getUserPublicKey());
+    } catch (IllegalArgumentException e) {
+      // Restores as an Eip712AttestationRequestWithUsage object instead
+      Eip712AttestationRequestWithUsage attestationRequest = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, jsonRequest);
+      checkAttestRequestVerifiability(attestationRequest);
+      checkAttestRequestValidity(attestationRequest);
+      byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
+      att = new IdentifierAttestation(commitment, attestationRequest.getUserPublicKey());
     }
-    byte[] commitment = AttestationCrypto.makeCommitment(request.getIdentity(), request.getType(), request.getPok().getRiddle());
-    Attestation att = new IdentifierAttestation(commitment, request.getPublicKey());
     att.setIssuer("CN=" + issuerName);
     att.setSerialNumber(new Random().nextLong());
     Date now = new Date();
     att.setNotValidBefore(now);
-    att.setNotValidAfter(new Date(System.currentTimeMillis() + validityInMilliseconds));
-    SignedIdentityAttestation signed = new SignedIdentityAttestation(att, keys);
-    if (!writeFile(attestationDir, DERUtility.printDER(signed.getDerEncoding(), "ATTESTATION"))) {
-      System.err.println("Could not write attestation to disc");
-      throw new IOException("Could not write file");
+    att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
+    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, keys);
+    DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
+  }
+
+  private static void checkAttestRequestVerifiability(Verifiable input) {
+    if (!input.verify()) {
+      System.err.println("Could not verify attestation signing request");
+      throw new RuntimeException("Verification failed");
     }
+  }
+  private static void checkAttestRequestValidity(Validateable input) {
+    if (!input.checkValidity()) {
+      System.err.println("Could not validate attestation signing request");
+      throw new RuntimeException("Validation failed");
+    }
+  }
+
+  private static void useAttest(AttestationCrypto crypto, Path pathUserKey, Path attestationDir, Path pathAttestationSecret, Path attestorVerificationKey,
+      String receiverId, AttestationType type, Path outputSessionPrivKeyDir, Path outputDirRequest) throws IOException {
+    AsymmetricCipherKeyPair userKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathUserKey));
+    AsymmetricKeyParameter attestorKey = PublicKeyFactory.createKey(DERUtility.restoreBytes(Files.readAllLines(attestorVerificationKey)));
+    SignedIdentifierAttestation att = new SignedIdentifierAttestation(DERUtility.restoreBytes(Files.readAllLines(attestationDir)), attestorKey);
+    AsymmetricCipherKeyPair sessionKeys = SignatureUtility.constructECKeys(SESSION_KEY_CURVE, rand);
+    String address = SignatureUtility.addressFromKey(userKeys.getPublic());
+    byte[] nonce = Nonce.makeNonce(address, WEB_DOMAIN, new Timestamp());
+    byte[] attSecretBytes = DERUtility.restoreBytes(Files.readAllLines(pathAttestationSecret));
+    BigInteger attSecret = DERUtility.decodeSecret(attSecretBytes);
+    FullProofOfExponent pok = crypto.computeAttestationProof(attSecret, nonce);
+    UseAttestation attUsage = new UseAttestation(att, type, pok, sessionKeys.getPublic());
+    Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(WEB_DOMAIN, receiverId, attUsage, userKeys.getPrivate());
+    Files.write(outputDirRequest, usageRequest.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
+        CREATE, TRUNCATE_EXISTING);
+    writePrivKey(sessionKeys.getPrivate(), outputSessionPrivKeyDir);
+  }
+
+  private static void signMessage(Path pathSessionKey, String message, Path signatureOutDir) throws IOException {
+    AsymmetricCipherKeyPair sessionKeys = DERUtility.restoreBase64Keys(Files.readAllLines(pathSessionKey));
+    byte[] signature = SignatureUtility.signDeterministicSHA256(message.getBytes(StandardCharsets.UTF_8), sessionKeys.getPrivate());
+    Files.write(signatureOutDir, signature, CREATE, TRUNCATE_EXISTING);
+  }
+
+  private static void verifyUsage(Path pathRequest,
+      Path attestorVerificationKeyDir, String message, Path signatureDir) throws IOException {
+    AsymmetricKeyParameter attestorKey = PublicKeyFactory.createKey(DERUtility.restoreBytes(Files.readAllLines(attestorVerificationKeyDir)));
+    byte[] signature = Files.readAllBytes(signatureDir);
+    String jsonRequest = Files.readString(pathRequest);
+    AsymmetricKeyParameter sessionPublicKey = null;
+    try {
+      Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(WEB_DOMAIN, attestorKey, jsonRequest);
+      checkUsageVerifiability(usageRequest);
+      checkUsageValidity(usageRequest);
+      sessionPublicKey = usageRequest.getSessionPublicKey();
+    } catch (IllegalArgumentException e) {
+      // Try as an  Eip712AttestationRequestWithUsage object instead, which is NOT linked to a specific website
+      Eip712AttestationRequestWithUsage usageRequest = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, jsonRequest);
+      checkUsageVerifiability(usageRequest);
+      checkUsageValidity(usageRequest);
+      sessionPublicKey = usageRequest.getSessionPublicKey();
+    }
+    // Validate signature
+    if (!SignatureUtility.verifySHA256(message.getBytes(StandardCharsets.UTF_8), signature, sessionPublicKey)) {
+      System.err.println("Could not verify message signature");
+      throw new RuntimeException("Signature verification failed");
+    }
+    System.out.println("SUCCESSFULLY validated usage request!");
+  }
+
+  private static void checkUsageVerifiability(Verifiable input) {
+    if (!input.verify()) {
+      System.err.println("Could not verify usage request");
+      throw new RuntimeException("Verification failed");
+    }
+  }
+  private static void checkUsageValidity(TokenValidateable input) {
+    if (!input.checkTokenValidity()) {
+      System.err.println("Could not validate usage request");
+      throw new RuntimeException("Validation failed");
+    }
+  }
+
+  private static void magicLink(Path inputFile) throws IOException {
+    byte[] input = Files.readAllBytes(inputFile);
+    String encodedInput = new String(Base64.getUrlEncoder().encode(input));
+    System.out.println(encodedInput);
   }
 
   private static AttestationType getType(String stringType) throws IllegalArgumentException {
@@ -292,21 +463,4 @@ public class Demo {
     }
     return type;
   }
-
-  private static boolean writeFile(String dir, String data) {
-    try {
-      File file = new File(dir);
-      if (!file.createNewFile()) {
-        System.out.println("The output file \"" + dir + "\" already exists");
-        return false;
-      }
-      FileWriter writer = new FileWriter(file);
-      writer.write(data);
-      writer.close();
-      return true;
-    } catch (IOException e) {
-      return false;
-    }
-  }
-
 }
