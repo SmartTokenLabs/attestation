@@ -70,7 +70,7 @@ public class UseTicketBundleTest {
         .makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
 
     Mockito.when(mockedUseTicket.verify()).thenReturn(true);
     Mockito.when(mockedUseTicket.getDerEncoding()).thenReturn(new byte[] {0x00});

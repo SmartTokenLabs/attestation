@@ -288,7 +288,7 @@ public class Demo {
       throw new RuntimeException("Verification failed");
     }
 
-    AttestedObject redeem = new AttestedObject(cheque, att, userKeys, attestationSecret, chequeSecret, crypto);
+    AttestedObject redeem = new AttestedObject(cheque, att, userKeys.getPublic(), attestationSecret, chequeSecret, crypto);
     if (!redeem.checkValidity()) {
       System.err.println("Could not validate redeem request");
       throw new RuntimeException("Validation failed");
@@ -297,7 +297,6 @@ public class Demo {
       System.err.println("Could not verify redeem request");
       throw new RuntimeException("Verification failed");
     }
-    // TODO how should this actually be?
     SmartContract sc = new SmartContract();
     byte[] attestationCommit = redeem.getAtt().getUnsignedAttestation().getCommitment();
     if (!sc.verifyEqualityProof(attestationCommit, redeem.getAttestableObject().getCommitment(), redeem.getPok())) {

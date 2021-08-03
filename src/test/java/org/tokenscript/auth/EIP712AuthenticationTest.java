@@ -67,7 +67,7 @@ public class EIP712AuthenticationTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
-    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, userKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, userKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
     assertTrue(attestedTicket.verify());
     assertTrue(attestedTicket.checkValidity());
     return attestedTicket;
@@ -120,7 +120,7 @@ public class EIP712AuthenticationTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(newKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketKeys, TICKET_SECRET);
-    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys, ATTESTATION_SECRET, TICKET_SECRET, crypto);
+    AttestedObject attestedTicket = new AttestedObject<Ticket>(ticket, signed, newKeys.getPublic(), ATTESTATION_SECRET, TICKET_SECRET, crypto);
 
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
     assertFalse(validator.validateRequest(token));

@@ -21,12 +21,11 @@ declare global {
     }
 }
 
+
 export class AttestedObject implements ASNEncodable, Verifiable {
     private crypto: AttestationCrypto;
     private pok: ProofOfExponentInterface;
-    private unsignedEncoding: string;
-    private derEncodedProof: string;
-    private signature: string;
+    private readonly derEncodedProof: string;
     private encoding: string;
     private attestableObject: any;
     private att: SignedIdentifierAttestation;
@@ -82,7 +81,8 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         this.preSignEncoded = this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
             this.pok.getDerEncoding();
-        this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', this.preSignEncoded);
+
+        this.encoding = Asn1Der.encode('SEQUENCE_30', this.preSignEncoded);
     }
 
     fromDecodedData<T extends Attestable>(
@@ -245,10 +245,9 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return this.derEncodedProof;
     }
 
-    public getDerEncodingWithSignature() { return this.encoding; }
-
-    public getDerEncoding():string {
-        return this.unsignedEncoding;
+    // TODO type it
+    public getDerEncoding() {
+        return this.encoding;
     }
 
     public getUserPublicKey() {
