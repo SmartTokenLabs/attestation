@@ -32,8 +32,8 @@ export class Attestation {
 
     constructor(){}
 
-    static fromBytes( uint8bytes: Uint8Array) {
-        const me = new this();
+    fromBytes( uint8bytes: Uint8Array) {
+        const me = this;
         let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8toBuffer(uint8bytes), SignedInfo);
 
         me.signedInfo = uint8bytes;
@@ -100,7 +100,6 @@ export class Attestation {
             // TODO parse dataObject
             //this.extensions = decodedAttestationObj.attestsTo.dataObject;
         }
-        return me;
     }
 
     public isValidX509(): boolean {

@@ -68,8 +68,6 @@ export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
             return false;
         }
 
-        // console.log('VerifyAttestationRequestProof OK');
-
         return true;
     }
 

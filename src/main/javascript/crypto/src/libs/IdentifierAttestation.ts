@@ -6,9 +6,18 @@ import {Validateable} from "./Validateable";
 export class IdentifierAttestation extends Attestation implements Validateable{
     private crypto: AttestationCrypto;
     static OID_OCTETSTRING = "1.3.6.1.4.1.1466.115.121.1.40";
-    private DEFAULT_SIGNING_ALGORITHM = "1.2.840.10045.4.2";
+    // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
+    public static DEFAULT_SIGNING_ALGORITHM = "1.2.840.10045.4.2";
     public static HIDDEN_IDENTIFIER_VERSION = 18;
     public static NFT_VERSION = 19;
+    public static HIDDEN_TYPE = "HiddenType";
+    public static HIDDEN_IDENTIFIER = "HiddenIdentifier";
+
+    // SEE RFC 2079
+    public static LABELED_URI = "1.3.6.1.4.1.250.1.57";
+
+    private type:string;
+    private identifier:string;
 
     constructor() {
         super();
@@ -18,23 +27,84 @@ export class IdentifierAttestation extends Attestation implements Validateable{
 
         this.subjectKey = keys;
         this.setVersion(IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION);
-        // this.setSubject("CN=" + this.subjectKey.getAddress());
         this.setSubject("CN=");
-        this.setSigningAlgorithm(this.DEFAULT_SIGNING_ALGORITHM);
+        this.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
 
         this.setSubjectPublicKeyInfo(keys);
         this.setCommitment(commitment);
+
+        this.type = IdentifierAttestation.HIDDEN_TYPE;
+        this.identifier = IdentifierAttestation.HIDDEN_IDENTIFIER;
+
+        this.setUnlimitedValidity();
+    }
+
+    private setUnlimitedValidity(){
+        super.setNotValidBefore(Date.now());
+        // This is used to indicate unlimited validity, see https://tools.ietf.org/html/rfc5280#section-4.1.2.5
+        super.setNotValidAfter(Date.parse('31 Dec 9999 23:59:59'));
     }
 
     static fromData(identifier: string, type: number, keys: KeyPair, secret: bigint){
         let crypto = new AttestationCrypto();
         let commitment = crypto.makeCommitment(identifier, type, secret);
-        return (new this()).fromCommitment(commitment, keys);
-        //return new this(riddle, keys);
+        let me = new this();
+        me.fromCommitment(commitment, keys);
+        me.type = type.toString();
+        me.identifier = identifier;
+        return me;
+    }
+
+    static fromLabelAndUrl(label: string, URL: string, keys: KeyPair){
+
+        let me = new this();
+
+        me.subjectKey = keys;
+        me.setVersion(IdentifierAttestation.NFT_VERSION);
+        me.setSubject(me.makeLabeledURI(label, URL));
+        me.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
+
+        me.setSubjectPublicKeyInfo(keys);
+        me.setUnlimitedValidity();
+
+        me.type = label;
+        me.identifier = URL;
+        return me;
+    }
+
+    /**
+     * @param label the label of the URL, similar to what is inside <a>...</a>
+     * @param URL the URL itself, similar to what is in <a href="...">, note that
+     * it should already be URLencoded therefore not containing space
+     */
+    private makeLabeledURI(label: string, URL: string): string {
+
+        // TODO implement that. currently we dont use that module with JS, so I skipped implementation. RDN is not very easy to implement.
+        // DERUTF8String labeledURLValue = new DERUTF8String(URL + " " + label);
+        // RDN rdn = new RDN(LABELED_URI, labeledURLValue);
+        // return new X500Name(new RDN[] {rdn});
+
+        return '';
     }
 
     static fromBytes(bytes: Uint8Array){
-        return super.fromBytes(bytes);
+        let me = new this();
+        me.fromBytes(bytes);
+        if (!me.checkValidity()) {
+            throw new Error("Could not validate object");
+        }
+        if (me.getVersion() == IdentifierAttestation.NFT_VERSION) {
+            // RDN[] labeledURIRDN = (new X500Name(getSubject())).getRDNs(LABELED_URI);
+            // DERUTF8String labeledURI = (DERUTF8String) labeledURIRDN[0].getFirst().getValue();
+            // String[] typeAndIdentifier = URLDecoder.decode(labeledURI.getString()).split(" ");
+            // me.type = typeAndIdentifier[0];
+            // me.identifier = typeAndIdentifier[1];
+        } else {
+            me.type = IdentifierAttestation.HIDDEN_TYPE;
+            me.identifier = IdentifierAttestation.HIDDEN_IDENTIFIER;
+        }
+
+        return me;
     }
 
     setSubjectPublicKeyInfo(keys: KeyPair){
@@ -49,30 +119,29 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         if (!super.checkValidity()) {
             return false;
         }
-        if (this.getVersion() != IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION ) {
-            console.error("The version number is " + this.getVersion() + ", its not implemented jet.");
+        if (this.getVersion() != IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION && this.getVersion() != IdentifierAttestation.NFT_VERSION) {
+            console.error("The version number is " + this.getVersion() + ", it must be either " + IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION + " or " + IdentifierAttestation.NFT_VERSION);
             return false;
         }
-        // if (this.getSubject() == null || this.getSubject().length != 45 || !this.getSubject().startsWith("CN=0x")) { // The address is 2*20+5 chars long because it starts with CN=0x
-        //     console.error("The subject is supposed to only be an Ethereum address as the Common Name. subject = " + this.getSubject());
-        //     return false;
-        // }
-        if (this.getCommitment().length < AttestationCrypto.BYTES_IN_DIGEST) {
-            console.error("Wrong commitment length.");
+        if (this.getSigningAlgorithm() !== IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM) {
+            console.error("The subject is supposed to only be an Ethereum address as the Common Name");
             return false;
         }
-        // TODO check if we really need to skip that check
-        // if (this.getSigningAlgorithm() != AttestationCrypto.OID_SIGNATURE_ALG) {
-        //     console.error("The signature algorithm is supposed to be " + AttestationCrypto.OID_SIGNATURE_ALG);
-        //     return false;
-        // }
-        // Verify that the subject public key matches the subject common name
 
-        // let parsedSubject: string = "CN=" + this.subjectKey.getAddress();
-        // if (parsedSubject.toLowerCase() != this.getSubject().toLowerCase()) {
-        //     console.error("The subject public key does not match the Ethereum address attested to");
-        //     return false;
-        // }
+        if (this.getVersion() == IdentifierAttestation.NFT_VERSION) {
+            if (!this.getSubject().includes(IdentifierAttestation.LABELED_URI)) {
+                console.error("A NFT Identifier attestation must have a labeled uri as subject");
+                return false;
+            }
+        }
+
+        if (this.getVersion() == IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION) {
+            // Ensure that there is a commitment as part of the attestation
+            if (this.getCommitment().length < AttestationCrypto.BYTES_IN_DIGEST) {
+                console.error("The attestation does not contain a valid commitment");
+                return false;
+            }
+        }
 
         return true;
     }

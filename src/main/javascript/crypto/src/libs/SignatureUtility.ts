@@ -29,7 +29,6 @@ export class SignatureUtility {
 
     static Eip712Data: {[index: string]:string}  = {
         PROTOCOL_VERSION: "0.1",
-        // JSON_RPC_VER: "2.0",
     }
 
     static Eip712domainTypes = [
@@ -79,18 +78,6 @@ export class SignatureUtility {
      */
     static recoverPublicKeyFromTypedMessageSignature(messageObj: any, signature: string): string {
 
-        // let rawPayload = messageObj.message.payload;
-        // messageObj.message.payload = sha3.keccak256(rawPayload);
-
-        // let completeData: { [index: string]: any } = {
-        //     types: {
-        //         EIP712Domain: SignatureUtility.Eip712domainTypes,
-        //     },
-        //     primaryType: primaryName,
-        //     message: userDataValues,
-        //     domain: domainData,
-        // };
-
         let messageAsPrefixedHexString, pubKey;
         try {
             let rawPayload = messageObj.message.payload;
@@ -98,8 +85,6 @@ export class SignatureUtility {
             // same result:
             messageObj.message.payload = ethers.utils.id(rawPayload).substr(2);
 
-            // message = TypedDataUtils.sign(messageObj);
-            // same result:
             let types = messageObj.types;
             delete types.EIP712Domain;
             messageAsPrefixedHexString = _TypedDataEncoder.hash(messageObj.domain,types,messageObj.message);

@@ -5,13 +5,10 @@ import {KeyPair} from "./KeyPair";
 import {Ticket} from "../Ticket";
 import {Eip712DomainInterface, SignatureUtility} from "./SignatureUtility";
 import {hexStringToUint8} from "./utils";
-const url = require('url');
 
 export class Eip712Validator {
     private XMLConfig: any;
     protected domain: string;
-    // protected acceptableTimeLimitMs: number;
-    // public DEFAULT_TIME_LIMIT_MS = 1000 * 60 * 20; // 20 min
 
     constructor() {
         this.XMLConfig = XMLconfigData;
@@ -50,14 +47,8 @@ export class Eip712Validator {
 
             let authenticationRootNode = JSON.parse(authenticationData.jsonSigned);
 
-            // console.log(authenticationRootNode);
-
             let eip712Domain = authenticationRootNode.domain;
             let eip712Message = authenticationRootNode.message;
-
-            console.log('eip712Domain');
-            console.log(eip712Domain);
-            console.log(eip712Message);
 
             let attestedObject = this.retrieveAttestedObject(eip712Message);
 
@@ -78,8 +69,31 @@ export class Eip712Validator {
     // public boolean verifyTimeStamp(String timestamp) {
 
     validateDomain(domainToCheck: Eip712DomainInterface): boolean {
-        return (domainToCheck.name.toLowerCase() === this.domain.toLowerCase())
-        && (domainToCheck.version === SignatureUtility.Eip712Data['PROTOCOL_VERSION']);
+        if (domainToCheck.name.toLowerCase() !== this.domain.toLowerCase()) {
+            console.error("Domain name is not valid");
+            return false;
+        }
+
+        if (domainToCheck.version !== SignatureUtility.Eip712Data['PROTOCOL_VERSION']) {
+            console.error("Protocol version is wrong");
+            return false;
+        }
+
+        // we dont use that fields at the moment. maybe have to uncomment and fix in the future
+        // if (domainToCheck.chainId !== encoder.getChainId())) {
+        //     console.error("Chain ID is wrong");
+        //     return false;
+        // }
+        // if (domainToCheck.verifyingContract !== encoder.getVerifyingContract()) {
+        //     console.error("Verifying contract is wrong");
+        //     return false;
+        // }
+        // if (domainToCheck.salt !== encoder.getSalt()) {
+        //     console.error("Salt is wrong");
+        //     return false;
+        // }
+        return true;
+
     }
 
     retrieveAttestedObject(auth: any){
