@@ -186,24 +186,6 @@ export class SignedDevconTicket {
         new OctetString({
           name: "commitment",
         }),
-        /* PublicKeyInfo is specified in schema here but not appearing in the constructed data object.
-         * This is because the underlying AlgorithmIdentifier isn't fully implemented and also
-         * that this data is not important for the 1st delivery deadline, won't be read by client anyway.
-         * TODO: add support for PublicKeyInfo https://github.com/TokenScript/attestation/issues/75
-         */
-        // new Sequence( {
-        //   name: "publicKeyInfo",
-        //   optional: true,
-        //   value: [
-        //     PublicKeyInfo.schema(
-        //         names.publicKeyInfo || {
-        //           names: {
-        //             blockName: "publicKeyInfo",
-        //           },
-        //         }
-        //     )
-        //   ]
-        // }),
 
         new BitString({
           name: "signatureValue",

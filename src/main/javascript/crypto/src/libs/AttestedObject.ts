@@ -25,7 +25,7 @@ declare global {
 export class AttestedObject implements ASNEncodable, Verifiable {
     private crypto: AttestationCrypto;
     private pok: ProofOfExponentInterface;
-    private readonly derEncodedProof: string;
+    private derEncodedProof: string;
     private encoding: string;
     private attestableObject: any;
     private att: SignedIdentifierAttestation;
@@ -77,7 +77,6 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     }
 
     fillPresignData(){
-
         this.preSignEncoded = this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
             this.pok.getDerEncoding();
@@ -88,111 +87,56 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     fromDecodedData<T extends Attestable>(
         attestableObject: T ,
         att: SignedIdentifierAttestation,
-        pok: ProofOfExponentInterface ,
-        signature: string
+        pok: ProofOfExponentInterface
     ){
         this.attestableObject = attestableObject;
         this.att = att;
         this.pok = pok;
-        this.signature = signature;
 
         this.fillPresignData();
 
-        let vec = this.preSignEncoded + Asn1Der.encode('BIT_STRING', this.signature)
-
-        this.encoding = Asn1Der.encode('SEQUENCE_30', vec);
         this.userKeyPair = this.att.getUnsignedAttestation().getSubjectPublicKeyInfo();
 
-        if (!this.verify()) {
-            throw new Error("The redeem request is not valid");
-        }
+        this.constructorCheck();
     }
 
 
-    async sign(){
-        let userData = {
-            payload: this.unsignedEncoding,
-            description: AttestedObject.Eip712UserDataDescription,
-            timestamp: new Date().getTime()
-        };
+    // async sign(){
+    //     let userData = {
+    //         payload: this.encoding,
+    //         description: AttestedObject.Eip712UserDataDescription,
+    //         timestamp: new Date().getTime()
+    //     };
+    //
+    //     return await SignatureUtility.signEIP712WithBrowserWallet(this.webDomain, userData, AttestedObject.Eip712UserDataTypes, AttestedObject.Eip712UserDataPrimaryName );
+    // }
 
-        return await SignatureUtility.signEIP712WithBrowserWallet(this.webDomain, userData, AttestedObject.Eip712UserDataTypes, AttestedObject.Eip712UserDataPrimaryName );
-    }
-
-    public checkValidity(): boolean {
-        // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
-        try {
-            let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();
-            let std: IdentifierAttestation = IdentifierAttestation.fromBytes(new Uint8Array(hexStringToArray(attEncoded))) as IdentifierAttestation;
-
-            // CHECK: perform the needed checks of an identifier attestation
-            if (!std.checkValidity()) {
-                console.error("The attestation is not a valid standard attestation");
-                return false;
-            }
-        } catch (e) {
-            console.error("The attestation is invalid");
+    public verify(): boolean{
+        if (!this.attestableObject.verify()) {
+            console.error("Could not verify attestable object");
             return false;
         }
-
-        // CHECK: that the cheque is still valid
-        if (!this.getAttestableObject().checkValidity()) {
-            console.error("Cheque is not valid");
+        if (!this.att.verify()) {
+            console.error("Could not verify attestation");
             return false;
         }
-
-        // CHECK: the Ethereum address on the attestation matches receivers signing key
-        let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
-
-        // TODO implement that check
-        // if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
-        //     console.error("The attestation is not to the same Ethereum user who is sending this request");
-        //     return false;
-        // }
-
-        // CHECK: verify signature on RedeemCheque is from the same party that holds the attestation
-        if (this.signature != null) {
-            let spki = this.getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-            try {
-                if (!spki.verifyHexStringWithEthereum(this.unsignedEncoding, this.signature)) {
-                    console.error("The signature on RedeemCheque is not valid");
-                    return false;
-                }
-            } catch (e) {
-                console.error("The attestation SubjectPublicKey cannot be parsed");
-                return false;
-            }
+        if (!this.crypto.verifyEqualityProof(
+            this.att.getUnsignedAttestation().getCommitment(),
+            this.attestableObject.getCommitment(),
+            this.pok
+        )) {
+            console.error("Could not verify the consistency between the commitment in the attestation and the attested object");
+            return false;
         }
 
         return true;
     }
 
-    verify(): boolean{
-        let result: boolean =
-            this.attestableObject.verify()
-            && this.att.verify()
-            && this.crypto.verifyEqualityProof(
-                this.att.getUnsignedAttestation().getCommitment(),
-                this.attestableObject.getCommitment(),
-                this.pok
-            );
-        if (this.signature != null) {
-            let spki = this.getAtt().getUnsignedAttestation().getSubjectPublicKeyInfo();
-            return result && spki.verifyHexStringWithEthereum(this.unsignedEncoding, this.signature);
-        } else {
-            return result;
-        }
-    }
-
     static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
         let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
 
-        // console.log('attested');
-        // console.log(attested);
-
         let me = new this();
 
-        // let attestableObj: T
         me.attestableObject = new attestable();
         me.attestableObject.fromBytes(attested.signedToken, issuerKey);
 
@@ -245,12 +189,50 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return this.derEncodedProof;
     }
 
-    // TODO type it
-    public getDerEncoding() {
+    public getDerEncoding():string {
         return this.encoding;
     }
 
     public getUserPublicKey() {
         return this.userPublicKey;
+    }
+
+    private constructorCheck() {
+        if (!this.verify()) {
+            throw new Error("The redeem request is not valid");
+        }
+    }
+
+    public checkValidity(): boolean {
+        // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
+        try {
+            let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();
+            let std: IdentifierAttestation = IdentifierAttestation.fromBytes(new Uint8Array(hexStringToArray(attEncoded))) as IdentifierAttestation;
+
+            // CHECK: perform the needed checks of an identifier attestation
+            if (!std.checkValidity()) {
+                console.error("The attestation is not a valid standard attestation");
+                return false;
+            }
+        } catch (e) {
+            console.error("The attestation is invalid");
+            return false;
+        }
+
+        // CHECK: that the cheque is still valid
+        if (!this.getAttestableObject().checkValidity()) {
+            console.error("Cheque is not valid");
+            return false;
+        }
+
+        // CHECK: the Ethereum address on the attestation matches receivers signing key
+        let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
+
+        if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
+            console.error("The attestation is not to the same Ethereum user who is sending this request");
+            return false;
+        }
+
+        return true;
     }
 }

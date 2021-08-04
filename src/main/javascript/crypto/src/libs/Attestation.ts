@@ -104,29 +104,38 @@ export class Attestation {
     }
 
     public isValidX509(): boolean {
-        // if (this.version.getValue().intValueExact() != 0 && version.getValue().intValueExact() != 1  && version.getValue().intValueExact() != 2) {
-        if (this.version != 18) {
+        if (this.version != 0
+            && this.version != 1
+            && this.version != 2) {
+            console.error("Incorrect version number");
             return false;
         }
         if (!this.issuer) {
+            console.error("Issuer info not set");
             return false;
         }
         if (this.notValidBefore == null || this.notValidAfter == null) {
+            console.error("Validity period not set");
             return false;
         }
         if (this.subject == null) {
+            console.error("Subject info not set");
             return false;
         }
         if (!this.subjectKey) {
+            console.error("No subject public key info set");
             return false;
         }
         if (this.smartcontracts != null) {
+            console.error("Smart contract info set");
             return false;
         }
         if (this.dataObject != null) {
+            console.error("Data object set");
             return false;
         }
         if (this.version == null || this.serialNumber == null || this.signingAlgorithm == null) {
+            console.error("Version, serial number, subject or algorithm missing");
             return false;
         }
         return true;

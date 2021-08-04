@@ -22,7 +22,4 @@ export class UseToken {
     @AsnProp({ type: AsnPropTypes.Any })
     public proof: Uint8Array;
 
-    @AsnProp({ type: AsnPropTypes.BitString, optional: true })
-    public signatureValue?: Uint8Array;
-
 }

@@ -1,7 +1,7 @@
 import { AsnProp, AsnPropTypes } from "@peculiar/asn1-schema";
 import {AlgorithmIdentifierASN, Extensions, ValidityValue, Version} from "./AuthenticationFramework";
 import {Name} from "./InformationFramework";
-import {AttestsTo, SmartContract, SubjectPublicKeyInfo} from "./AttestationFramework";
+import {SubjectPublicKeyInfo} from "./AttestationFramework";
 
 // IMPORTS
 // AlgorithmIdentifier,

@@ -40,14 +40,8 @@
     }
 
     function testUseAttest(){
-        // const sessionPrivPEM = readFileSync(PREFIX_PATH + 'session-priv.pem', 'utf8');
-        // let sessionKey = KeyPair.privateFromPEM(sessionPrivPEM);
-        //
-        // const userPrivPEM = "";
-        // let userKey = KeyPair.privateFromPEM(userPrivPEM);
 
         const attestationPEM = "MIICeDCCAh6gAwIBEgIIbeQOqSEKN2swCgYIKoZIzj0EAwIwFjEUMBIGA1UEAwwLQWxwaGFXYWxsZXQwIhgPMjAyMTA0MDcwOTA1MTNaGA8yMDIxMDQwNzA5MjUxM1owNTEzMDEGA1UEAwwqMHg1RjdCRkU3NTJBQzFBNDVGNjc0OTdEOURDREQ5QkJEQTUwQTgzOTU1MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABNNj3+rhhwxBABhmJpTmPZzkcJ6mElV8GFTdL8aGGsseXxiO8jZNWjDMFSqKAPOHT8sVZV66/uNVTxKQgDgZ8/GjVzBVMFMGCysGAQQBizpzeQEoAQH/BEEEIKilq81bkMqQGTE52CDog4p3n71zqyrHze/XuXi+AQMXDwbVA2oNuNwdMifdXFdJFTgtmJb79LIxpJA4mw69CjAKBggqhkjOPQQDAgNIADBFAiEA/fMRdG0t1Ti1ELETjYUsYPNtPfd/SRkmTCKH8hB0UC0CIBaXaudHXwt+rrlCM5zqzIHt8tUCV3mcmRkfPlwpLRTI";
-
 
         const attestorPubPEM = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABOpPjYi/lziShCYFWr6qEndD9VErWApZc0MmkmWS4V2gV6QqQNjGvmV2Itkn34SYivvUWXqpjFb+BffWr6ODGdA=";
 
@@ -76,29 +70,13 @@
         let receiverId = "test@test.com";
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
 
-        // getAttestation() {
-
-        // Request attestation
-        // "user-priv.pem", "test@test.ts", "mail"
-
         let attestJson = await Authenticator.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret);
         writeToLog('attestRequest received:');
         writeToLog(attestJson);
 
-        // Construct attestation
-        // args = new String[]{"construct-attest", PREFIX + "attestor-priv.pem", "AlphaWallet", "3600", PREFIX + "attestation-request.json", PREFIX + "attestation.crt"};
-        // Demo.main(args);
-
-
-        // executeEipFlow
-
-
-
-
         writeToLog('create attestation');
 
         let base64ticket = "MIGbMA0CAQYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNHADBEAiBwLK_95NPZo0W01HDBfyZisZ2KaNrzoWuxRV-nhjGLMAIgaOP4eVVINH5xM8Cv9OVDdyOG3BxUqyPVQOuDU9PaC9o=";
-        // let ticketSecret =45845870611;
         let ticketSecret =45845870684;
 
         writeToLog('base64ticket: ' + base64ticket);
@@ -120,11 +98,7 @@
             "1Fl6qYxW/gX31q+jgxnQ\n" +
             "-----END CHEQUE----- ";
 
-        // Authenticator.createAttest(attestorPrivateKey,'AlphaWallet', 60*60*1000, attestJson, ATTESTOR_DOMAIN);
-
         testUseAttest();
-
-
 
         return;
 
