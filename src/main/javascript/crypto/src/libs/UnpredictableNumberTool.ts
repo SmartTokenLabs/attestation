@@ -1,6 +1,7 @@
 import {Hmac} from 'crypto';
 import {bnToUint8, isDomainValid, uint8arrayToBase64} from "./utils";
 import {UnpredictableNumberBundle} from "./UnpredictableNumberBundle";
+const { TextEncoder } = require('util');
 
 export const DEFAULT_VALIDITY_IN_MS: bigint = BigInt(3600 * 1000);
 export const BYTES_IN_UN: number = 8;

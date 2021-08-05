@@ -69,16 +69,16 @@ public class TestDemo {
   public void executeCombinedEipFlow() {
     String[] args;
     // Request attestation with usage
-    args = new String[]{"request-attest-and-usage", PREFIX + "user-priv.pem", "test@test.ts", "mail",  PREFIX + "session-priv.pem", PREFIX + "use-and-request-attestation.json", PREFIX + "attestation-secret.pem"};
+    args = new String[]{"request-attest-and-usage", PREFIX + "user-priv.pem", "test@test.ts", "mail",  PREFIX + "session-priv2.pem", PREFIX + "use-and-request-attestation.json", PREFIX + "attestation-secret.pem"};
     Demo.main(args);
     // Construct attestation
     args = new String[]{"construct-attest", PREFIX + "attestor-priv.pem", "AlphaWallet", "3600", PREFIX + "use-and-request-attestation.json", PREFIX + "attestation.crt"};
     Demo.main(args);
     // Sign message
-    args = new String[]{"sign-message", PREFIX + "session-priv.pem", "message", PREFIX + "signature.bin"};
+    args = new String[]{"sign-message", PREFIX + "session-priv2.pem", "message", PREFIX + "signature2.bin"};
     Demo.main(args);
     // Verify usage
-    args = new String[]{"verify-usage", PREFIX + "use-and-request-attestation.json", PREFIX + "attestor-pub.pem", "message", PREFIX + "signature.bin"};
+    args = new String[]{"verify-usage", PREFIX + "use-and-request-attestation.json", PREFIX + "attestor-pub.pem", "message", PREFIX + "signature2.bin"};
     Demo.main(args);
   }
 
