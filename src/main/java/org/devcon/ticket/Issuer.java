@@ -45,6 +45,12 @@ public class Issuer {
             // will throw up badly if dataASN1 is not instanceof ASN1Sequence
             AsymmetricCipherKeyPair issuerKeyPair= DERUtility.restoreRFC5915Key(dataASN1);
             Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
+            if (!ticket.checkValidity()) {
+                throw new RuntimeException("Something went wrong and the constructed ticket could not be validated");
+            }
+            if (!ticket.verify()) {
+                throw new RuntimeException("Something went wrong and the constructed ticket could not be verified");
+            }
             String ticketInUrl = new String(Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
             System.out.printf("?ticket=%s&secret=%s&mail=%s", ticketInUrl, sharedSecret.toString(), mail);
         }
