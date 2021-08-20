@@ -34,7 +34,7 @@ public class AttestationAndUsageValidatorTest {
 
   private static byte[] nonce;
   private static FullProofOfExponent pok;
-  private static SignedIdentityAttestation signedAttestation;
+  private static SignedIdentifierAttestation signedAttestation;
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricCipherKeyPair userKeys;
   private static AsymmetricKeyParameter sessionKey;
@@ -54,7 +54,7 @@ public class AttestationAndUsageValidatorTest {
     pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     IdentifierAttestation att = HelperTest
         .makeUnsignedStandardAtt(userKeys.getPublic(), attestorKeys.getPublic(), ATTESTATION_SECRET, MAIL);
-    signedAttestation = new SignedIdentityAttestation(att, attestorKeys);
+    signedAttestation = new SignedIdentifierAttestation(att, attestorKeys);
     X9ECParameters SECT283K1 = SECNamedCurves.getByName("sect283k1");
     sessionKey = SignatureUtility.constructECKeys(SECT283K1, rand).getPublic();
   }
