@@ -60,6 +60,9 @@ Specifically the syntax of the command is as follows:
 
 `java -jar attestation-all.jar keys <public-key-name> <private-key-name>`
 
+- `public-key-name` is the path to where the public key should be placed, e.g. `pub.pem`.
+- `private-key-name` is the path to where the private key should be placed, e.g. `priv.pem`.
+
 For example:
 
 `java -jar attestation-all.jar keys pub.pem priv.pem` 
