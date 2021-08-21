@@ -8,11 +8,15 @@ In short, an attestation can be likened to a token created off-chain and
 usable on-chain. An example of an attestation would be a Devcon ticket.
 See document here: http://tokenscript.org/Attestation.html
 
-## Code layout
+## Where is the code for xxx?
 
-This repo serves as the reference implementation but the productional implementation uses code from various repos. A map here:
+This repo serves as the reference implementation, but it's not the only code repository.
 
-![various repos for components](component-layout.svg)
+### There are 4 repos
+
+The relationship between these 4 repos are demonstrated here. This repo is the first one (upper-left).
+
+![various repos for components](docs/code-layout.svg)
 
 ## Build
 
