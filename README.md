@@ -1,20 +1,24 @@
 # TokenScript - Attestation
 
-This repository host the attestation libraries TokenScript. Discussion goes to the forum https://community.tokenscript.org/
+This repository host the attestation libraries as part of TokenScript. Discussion goes to the forum https://community.tokenscript.org/
 
-## What is attestation
+This repository's library serves 3 use-cases of attestations.
 
-In short, an attestation can be likened to a token created off-chain and
-usable on-chain. An example of an attestation would be a Devcon ticket.
-See document here: http://tokenscript.org/Attestation.html
+| Use-case               | Description                                                  | Protocol                                                     | Cmd Demo                         |
+| ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------- |
+| Identifier attestation | Identifies a person by their Internet identifier such as Twitter Handle and email address. | See below                                                    |                                  |
+| Cheque                 | Cheque: a signed message allows the beneficiary to perform an action, such as withdrawing Ether. | [Send-token-by-identifier](http://tokenscript.org/Cheque/send_token_by_identifier.html) | [demo](cli-attestation-demo.md). |
+| Attestation as token   | An attestation that can be used as a non-fungible token.     |                                                              |                                  |
 
-## Where is the code for xxx?
 
-This repo serves as the reference implementation, but it's not the only code repository.
 
-### There are 4 repos
+## How is the code organised?
 
-The relationship between these 4 repos are demonstrated here. This repo is the first one (upper-left).
+The code is not compartmentalised by use-cases, since they share common components. We provide the common components as library, then, for each use-case, a commandline utility.
+
+Since in most cases these attestations are used on the web, Web-developers should be more interested in attestations being implemented as part of token-neogotiation instead of the basic commandline form. Therefore, **this repository should be more of interest by the protocol developers**. Our JavaScript based token negotiation implementation is at the [token-negotiator repo](https://github.com/TokenScript/token-negotiator).
+
+Together with repos that uses the library code, in total we maintain 4 repos. The relationship between these 4 repos are demonstrated here. This one is the first (the upper-left one).
 
 ![various repos for components](docs/code-layout.svg)
 
