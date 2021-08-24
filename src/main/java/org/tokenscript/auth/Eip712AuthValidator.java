@@ -1,12 +1,12 @@
 package org.tokenscript.auth;
 
-import com.alphawallet.attestation.AttestableObjectDecoder;
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.core.Attestable;
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.URLUtility;
-import com.alphawallet.attestation.eip712.Nonce;
-import com.alphawallet.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.AttestableObjectDecoder;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.core.Attestable;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.URLUtility;
+import org.tokenscript.attestation.eip712.Nonce;
+import org.tokenscript.attestation.eip712.Timestamp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;

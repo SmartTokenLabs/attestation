@@ -1,6 +1,6 @@
 package org.tokenscript.eip712;
 
-import com.alphawallet.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.SignatureUtility;
 import com.alphawallet.token.entity.EthereumTypedMessage;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.EIP712Domain;

@@ -3,11 +3,11 @@ package io.alchemynft.attestation;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.alphawallet.attestation.HelperTest;
-import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.SignedIdentifierAttestation;
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.demo.SmartContract;
+import org.tokenscript.attestation.HelperTest;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.ERC721Token;
 import java.nio.file.Files;
 import java.nio.file.Path;

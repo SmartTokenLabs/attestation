@@ -1,8 +1,8 @@
 package org.tokenscript.auth;
 
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.core.URLUtility;
-import com.alphawallet.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.core.URLUtility;
+import org.tokenscript.attestation.eip712.Timestamp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;

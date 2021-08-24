@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.URLUtility;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.URLUtility;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

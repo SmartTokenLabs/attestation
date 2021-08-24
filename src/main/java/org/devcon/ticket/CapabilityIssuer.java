@@ -1,7 +1,7 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.SignatureUtility;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator.Builder;
 import java.net.MalformedURLException;

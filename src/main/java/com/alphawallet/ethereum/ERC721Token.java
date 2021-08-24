@@ -1,6 +1,6 @@
 package com.alphawallet.ethereum;
 
-import com.alphawallet.attestation.core.ASNEncodable;
+import org.tokenscript.attestation.core.ASNEncodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;

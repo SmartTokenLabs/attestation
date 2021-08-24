@@ -1,11 +1,11 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.IdentifierAttestation.AttestationType;
-import com.alphawallet.attestation.core.Attestable;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.ExceptionUtil;
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.URLUtility;
+import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.core.Attestable;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.URLUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;

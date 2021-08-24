@@ -1,10 +1,10 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.core.ExceptionUtil;
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.Verifiable;
-import com.alphawallet.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.Verifiable;
+import org.tokenscript.attestation.eip712.Timestamp;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;

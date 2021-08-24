@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.SignedIdentifierAttestation;
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.demo.SmartContract;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.ethereum.ERC721Token;
 import com.alphawallet.token.tools.Numeric;

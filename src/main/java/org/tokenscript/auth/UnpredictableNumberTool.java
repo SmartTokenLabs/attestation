@@ -1,8 +1,8 @@
 package org.tokenscript.auth;
 
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.ExceptionUtil;
-import com.alphawallet.attestation.core.URLUtility;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.URLUtility;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;

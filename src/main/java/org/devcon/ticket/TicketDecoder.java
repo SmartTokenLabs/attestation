@@ -1,8 +1,8 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.AttestableObjectDecoder;
-import com.alphawallet.attestation.core.ExceptionUtil;
-import com.alphawallet.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.AttestableObjectDecoder;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
