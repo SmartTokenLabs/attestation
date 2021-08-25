@@ -512,11 +512,11 @@ public class Demo {
       case "phone":
         type = AttestationType.PHONE;
         break;
-      case "twitter":
-        type = AttestationType.TWITTER;
+      case "InetPersona":
+        type = AttestationType.INETPERSONA;
         break;
       default:
-        System.err.println("Could not parse identifier type, must be either \"mail\" or \"phone\"");
+        System.err.println("Could not parse identifier type, must be either \"mail\", \"phone\" or \"InetPersona\"");
         throw new IllegalArgumentException("Wrong type of identifier");
     }
     return type;
