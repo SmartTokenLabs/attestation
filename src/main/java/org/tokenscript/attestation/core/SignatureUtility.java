@@ -222,7 +222,7 @@ public class SignatureUtility {
 
     /**
      * Constructs a DER encoded, non-malleable deterministic ECDSA signature using SHA 256
-     * But still in accordance with EIP 2 (the y-coordinate is guaranteed to be <n/2).
+     * But still in accordance with EIP 2 (the y-coordinate is guaranteed to be less than n/2).
      * The deterministic approach used is the one from RFC 6979
      * @param toSign
      * @param key
@@ -236,7 +236,7 @@ public class SignatureUtility {
 
     /**
      * Constructs a DER encoded indeterministic (randomized) ECDSA signature based on an already hashed value.
-     * Despite being randomized this is done in accordance with EIP 2 (the y-coordinate is guaranteed to be <n/2)
+     * Despite being randomized this is done in accordance with EIP 2 (the y-coordinate is guaranteed to be less than n/2)
      * @param digest The digest to sign
      * @param key The key to use for signing.
      * @return

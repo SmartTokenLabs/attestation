@@ -1,12 +1,17 @@
 buildscript {
+    repositories {
+        jcenter()
+    }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
+        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
     }
 }
 
 plugins {
     id 'java'
     id "com.github.node-gradle.node" version "3.0.0-rc5"
+    id 'io.codearte.nexus-staging' version '0.11.0'
 }
 
 node {
@@ -15,6 +20,7 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.bmuschko.nexus'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -24,8 +30,7 @@ if(JavaVersion.current() < JavaVersion.VERSION_11){
     throw new GradleException("This build must be run with java 11 or higher.")
 }
 
-sourceCompatibility = "1.8"
-targetCompatibility = "1.8"
+
 
 repositories {
     mavenCentral()
@@ -63,21 +68,25 @@ sourceSets {
         java {
             srcDirs = ['src/main/java']
             exclude 'id' // the code is being reworked on
-            exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
+            exclude 'dk/alexandra/trulioo' // Trulioo specific code
+            exclude 'io.alchemynft'
+            exclude 'org.devcon'
         }
     }
     test {
         java {
             srcDirs = ['src/test/java']
             exclude 'id' // the code is being reworked on
-            exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
+            exclude 'dk/alexandra/trulioo' // Trulioo specific code
+            exclude 'io.alchemynft'
+            exclude 'org.devcon'
         }
     }
     intTest {
         java {
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
-	}
+            compileClasspath += sourceSets.main.output
+            runtimeClasspath += sourceSets.main.output
+	      }
     }
 }
 
@@ -124,7 +133,9 @@ task packageAttestation(type: Jar) {
            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
            || it.relativePath.pathString.startsWith('id/attestation')
-           || it.relativePath.pathString.startsWith('dk')){
+           || it.relativePath.pathString.startsWith('dk')
+           || it.relativePath.pathString.startsWith('io')
+           || it.relativePath.pathString.startsWith('org/devcon')){
             return true
         }
     }
@@ -138,6 +149,71 @@ task testJavaScript(type: NodeTask) {
     dependsOn 'test'
     dependsOn 'npmInstall'
     script = file('src/test/javascript/ParserSerializerTest.js')
+}
+
+group = "org.tokenscript"
+archivesBaseName = "attestation"
+version = "0.1"
+
+modifyPom {
+    project {
+        name 'attestation'
+        description 'Library for constructing and verifying both public and private identifier attestations'
+        url 'https://github.com/TokenScript/attestation'
+        inceptionYear '2018'
+
+        scm {
+            url 'https://github.com/TokenScript/attestation'
+            connection 'scm:https://github.com/TokenScript/attestation.git'
+            developerConnection 'scm:git://github.com/TokenScript/attestation.git'
+        }
+
+        licenses {
+            license {
+                name 'MIT'
+                url 'https://opensource.org/licenses/MIT'
+                distribution 'repo'
+            }
+        }
+
+        developers {
+            developer {
+                id 'jot2re'
+                name 'Tore Frederiksen'
+                email 'jot2re@gmail.com'
+            }
+            developer {
+                id 'colourful-land'
+                name 'Weiwu Zhang'
+                email 'weiwu.zhang@alphawallet.com'
+            }
+            developer {
+                id 'oleggrib'
+                name 'Oleg Grib'
+            }
+        }
+    }
+}
+
+extraArchive {
+    sources = true
+    tests = true
+    javadoc = true
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+}
+
+nexus {
+    sign = true
+    repositoryUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+    snapshotRepositoryUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+}
+
+nexusStaging {
+    packageGroup = "org.tokenscript" //optional if packageGroup == project.getGroup()
+    stagingProfileId = "yourStagingProfileId" //when not defined will be got from server using "packageGroup"
 }
 
 build.dependsOn packageAttestation
