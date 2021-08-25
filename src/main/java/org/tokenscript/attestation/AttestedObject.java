@@ -29,7 +29,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   private final byte[] encoding;
 
   public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
-                        BigInteger attestationSecret, BigInteger chequeSecret,
+                        BigInteger attestationSecret, BigInteger objectSecret,
                         AttestationCrypto crypto)
   {
     this.attestableObject = attestableObject;
@@ -37,7 +37,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     this.userPublicKey = userPublicKey;
 
     try {
-      this.pok = makeProof(attestationSecret, chequeSecret, crypto);
+      this.pok = makeProof(attestationSecret, objectSecret, crypto);
       ASN1EncodableVector vec = new ASN1EncodableVector();
       vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
       vec.add(ASN1Sequence.getInstance(att.getDerEncoding()));
@@ -128,9 +128,9 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
       return false;
     }
 
-    // CHECK: that the cheque is still valid
+    // CHECK: that the object is still valid
     if (!getAttestableObject().checkValidity()) {
-      logger.error("Cheque is not valid");
+      logger.error("Object is not valid");
       return false;
     }
 
@@ -161,7 +161,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
   }
 
   private ProofOfExponent makeProof(BigInteger attestationSecret, BigInteger objectSecret, AttestationCrypto crypto) {
-    // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
+    // TODO Bob should actually verify the attestable object is valid before trying to work with on the blockchain it to avoid wasting gas
     // We require that the internal attestation is an IdentifierAttestation
     ProofOfExponent pok = crypto.computeEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), attestationSecret, objectSecret);
     if (!crypto.verifyEqualityProof(att.getUnsignedAttestation().getCommitment(), attestableObject.getCommitment(), pok)) {
