@@ -3,38 +3,28 @@ package org.tokenscript.attestation.demo;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.tokenscript.attestation.AttestedObject;
-import org.tokenscript.attestation.HelperTest;
-import org.tokenscript.attestation.IdentifierAttestation;
-import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.SignatureUtility;
 import com.alphawallet.token.tools.Numeric;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.List;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.devcon.ticket.Ticket;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.tokenscript.attestation.HelperTest;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.core.SignatureUtility;
 import org.web3j.abi.datatypes.Address;
 
 public class TestAttestationUse {
     private static final String MAIL = "test@test.ts";
-    private static final BigInteger TICKET_ID = new BigInteger("546048445646851568430134455064804806");
-    private static final int TICKET_CLASS = 0;  // Regular ticket
-    private static final int CONFERENCE_ID = 6;
-    private static final BigInteger TICKET_SECRET = new BigInteger("48646");
     private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
 
     private static AsymmetricCipherKeyPair subjectKeys;
-    private static AsymmetricCipherKeyPair ticketIssuerKeys;
     private static AsymmetricCipherKeyPair attestorKeys;
     private static SecureRandom rand;
-    private static AttestationCrypto crypto;
     private SignedIdentifierAttestation attestation;
-    private AttestedObject<Ticket> attestedTicket;
     private final SmartContract contract = new SmartContract();
 
     @BeforeAll
@@ -42,10 +32,8 @@ public class TestAttestationUse {
         rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
         rand.setSeed("seed".getBytes());
 
-        crypto = new AttestationCrypto(rand);
         subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
         attestorKeys = SignatureUtility.constructECKeys(rand);
-        ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
 
         System.out.println("Issuer Key Address: " +  SignatureUtility.addressFromKey(attestorKeys.getPublic()));
         System.out.println("Subject Key Address: " +  SignatureUtility.addressFromKey(subjectKeys.getPublic()));

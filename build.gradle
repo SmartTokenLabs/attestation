@@ -6,7 +6,10 @@ buildscript {
 
 plugins {
     id 'java'
-    id "com.github.node-gradle.node" version "3.0.0-rc5"
+    id "com.github.node-gradle.node" version "3.1.0"
+    id 'java-library'
+    id 'signing'
+    id 'maven-publish'
 }
 
 node {
@@ -15,6 +18,9 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -23,9 +29,6 @@ tasks.withType(JavaCompile) {
 if(JavaVersion.current() < JavaVersion.VERSION_11){
     throw new GradleException("This build must be run with java 11 or higher.")
 }
-
-sourceCompatibility = "1.8"
-targetCompatibility = "1.8"
 
 repositories {
     mavenCentral()
@@ -56,6 +59,7 @@ dependencies {
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
     testImplementation 'org.mockito:mockito-core:2.+'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.4'
 }
 
 sourceSets {
@@ -63,26 +67,35 @@ sourceSets {
         java {
             srcDirs = ['src/main/java']
             exclude 'id' // the code is being reworked on
-            exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
+            exclude 'dk/alexandra/trulioo' // Trulioo specific code
+            exclude 'io/alchemynft'
+            exclude 'org/devcon'
         }
     }
     test {
         java {
             srcDirs = ['src/test/java']
             exclude 'id' // the code is being reworked on
-            exclude 'dk/alexandra/stormbird/cheque' // the code depends on objsys library
+            exclude 'dk/alexandra/trulioo' // Trulioo specific code
+            exclude 'io/alchemynft'
+            exclude 'org/devcon'
         }
     }
     intTest {
         java {
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
-	}
+            compileClasspath += sourceSets.main.output
+            runtimeClasspath += sourceSets.main.output
+	      }
     }
 }
 
 test {
     useJUnitPlatform()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 task integrationTest(type: Test) {
@@ -124,7 +137,9 @@ task packageAttestation(type: Jar) {
            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
            || it.relativePath.pathString.startsWith('id/attestation')
-           || it.relativePath.pathString.startsWith('dk')){
+           || it.relativePath.pathString.startsWith('dk')
+           || it.relativePath.pathString.startsWith('io')
+           || it.relativePath.pathString.startsWith('org/devcon')){
             return true
         }
     }
@@ -138,6 +153,96 @@ task testJavaScript(type: NodeTask) {
     dependsOn 'test'
     dependsOn 'npmInstall'
     script = file('src/test/javascript/ParserSerializerTest.js')
+}
+
+group = "org.tokenscript"
+archivesBaseName = "attestation"
+version = "0.1"
+
+// See https://docs.gradle.org/current/userguide/publishing_maven.html for details
+// For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
+// at https://central.sonatype.org/publish/release/
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'attestation'
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+
+            pom {
+                name = 'Attestation'
+                // optionally artifactId can be defined here
+                description = 'Library for constructing and verifying both public and private identifier attestations.'
+                url = 'https://github.com/TokenScript/attestation'
+
+                licenses {
+                  license {
+                    name = 'MIT'
+                    url = 'https://opensource.org/licenses/MIT'
+                  }
+                }
+
+                developers {
+                  developer {
+                    id = 'jot2re'
+                    name = 'Tore Frederiksen'
+                    email = 'jot2re@gmail.com'
+                  }
+                  developer {
+                    id = 'colourful-land'
+                    name = 'Weiwu Zhang'
+                    email = 'weiwu.zhang@alphawallet.com'
+                  }
+                  developer {
+                    id = 'oleggrib'
+                    name = 'Oleg Grib'
+                  }
+                }
+
+                scm {
+                  connection = 'scm:https://github.com/TokenScript/attestation.git'
+                  developerConnection = 'scm:git:https://github.com/TokenScript/attestation.git'
+                  url = 'https://github.com/TokenScript/attestation'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            // TODO add gradle.properties file with the following elements:
+            // ossrhUsername=<username for sonatype nexus>
+            // ossrhPassword=<password>
+            //
+            // signing.keyId=<any gpg key id>
+            // signing.password=<gpg key password>
+            // signing.secretKeyRingFile=<directory to gpg secret key file>
+            // TODO then uncomment the lines below and follow the manual at
+            // https://central.sonatype.org/publish/release/ in order to push an update to maven central
+//             credentials {
+//               username = ossrhUsername
+//               password = ossrhPassword
+//             }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    options.addBooleanOption('html5', true)
 }
 
 build.dependsOn packageAttestation
