@@ -1,16 +1,13 @@
 buildscript {
-    repositories {
-        jcenter()
-    }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
-        classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
     }
 }
 
 plugins {
     id 'java'
-    id "com.github.node-gradle.node" version "3.0.0-rc5"
+    id "com.github.node-gradle.node" version "3.1.0"
+    id 'maven-publish'
 }
 
 node {
