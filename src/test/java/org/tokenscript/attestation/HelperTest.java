@@ -73,7 +73,7 @@ public class HelperTest {
   }
 
   public static IdentifierAttestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
-    IdentifierAttestation att = new IdentifierAttestation("Twitter", "King Midas", key);
+    IdentifierAttestation att = new IdentifierAttestation("205521676", "https://www.deviantart.com/some_user", key);
     att.setSerialNumber(42);
     att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
     att.setIssuer("CN=ALX");

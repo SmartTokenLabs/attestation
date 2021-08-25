@@ -41,7 +41,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public enum AttestationType {
     PHONE ("phone"),
     EMAIL ("email"),
-    TWITTER ("twitter");
+    INETPERSONA("InetPersona");
 
     private final String type;
 
