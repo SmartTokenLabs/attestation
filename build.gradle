@@ -10,9 +10,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'maven-publish'
     id "com.github.node-gradle.node" version "3.0.0-rc5"
-    id 'io.codearte.nexus-staging' version '0.11.0'
 }
 
 node {
@@ -21,7 +19,8 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'com.bmuschko.nexus'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -30,8 +29,6 @@ tasks.withType(JavaCompile) {
 if(JavaVersion.current() < JavaVersion.VERSION_11){
     throw new GradleException("This build must be run with java 11 or higher.")
 }
-
-
 
 repositories {
     mavenCentral()
@@ -70,8 +67,8 @@ sourceSets {
             srcDirs = ['src/main/java']
             exclude 'id' // the code is being reworked on
             exclude 'dk/alexandra/trulioo' // Trulioo specific code
-            exclude 'io.alchemynft'
-            exclude 'org.devcon'
+            exclude 'io/alchemynft'
+            exclude 'org/devcon'
         }
     }
     test {
@@ -79,8 +76,8 @@ sourceSets {
             srcDirs = ['src/test/java']
             exclude 'id' // the code is being reworked on
             exclude 'dk/alexandra/trulioo' // Trulioo specific code
-            exclude 'io.alchemynft'
-            exclude 'org.devcon'
+            exclude 'io/alchemynft'
+            exclude 'org/devcon'
         }
     }
     intTest {
@@ -156,65 +153,80 @@ group = "org.tokenscript"
 archivesBaseName = "attestation"
 version = "0.1"
 
-modifyPom {
-    project {
-        name 'attestation'
-        description 'Library for constructing and verifying both public and private identifier attestations'
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      pom.project {
+        name 'Attestation'
+        packaging 'jar'
+        // optionally artifactId can be defined here
+        description 'Library for constructing and verifying both public and private identifier attestations.'
         url 'https://github.com/TokenScript/attestation'
-        inceptionYear '2018'
 
         scm {
-            url 'https://github.com/TokenScript/attestation'
-            connection 'scm:https://github.com/TokenScript/attestation.git'
-            developerConnection 'scm:git://github.com/TokenScript/attestation.git'
+          connection 'scm:https://github.com/TokenScript/attestation.git'
+          developerConnection 'scm:https://github.com/TokenScript/attestation.git'
+          url 'https://github.com/TokenScript/attestation'
         }
 
         licenses {
-            license {
-                name 'MIT'
-                url 'https://opensource.org/licenses/MIT'
-                distribution 'repo'
-            }
+          license {
+            name 'MIT'
+            url 'https://opensource.org/licenses/MIT'
+          }
         }
 
         developers {
-            developer {
-                id 'jot2re'
-                name 'Tore Frederiksen'
-                email 'jot2re@gmail.com'
-            }
-            developer {
-                id 'colourful-land'
-                name 'Weiwu Zhang'
-                email 'weiwu.zhang@alphawallet.com'
-            }
-            developer {
-                id 'oleggrib'
-                name 'Oleg Grib'
-            }
+          developer {
+            id 'jot2re'
+            name 'Tore Frederiksen'
+            email 'jot2re@gmail.com'
+          }
+          developer {
+            id 'colourful-land'
+            name 'Weiwu Zhang'
+            email 'weiwu.zhang@alphawallet.com'
+          }
+          developer {
+            id 'oleggrib'
+            name 'Oleg Grib'
+          }
         }
+      }
     }
-}
-
-extraArchive {
-    sources = true
-    tests = true
-    javadoc = true
+  }
 }
 
 javadoc {
     options.encoding = 'UTF-8'
-}
-
-nexus {
-    sign = true
-    repositoryUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-    snapshotRepositoryUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
-}
-
-nexusStaging {
-    packageGroup = "org.tokenscript" //optional if packageGroup == project.getGroup()
-    stagingProfileId = "yourStagingProfileId" //when not defined will be got from server using "packageGroup"
 }
 
 build.dependsOn packageAttestation
