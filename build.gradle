@@ -18,7 +18,8 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'maven'
+apply plugin: 'java-library'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 tasks.withType(JavaCompile) {
