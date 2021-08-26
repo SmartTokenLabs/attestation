@@ -67,8 +67,8 @@ sourceSets {
         java {
             srcDirs = ['src/main/java']
             exclude 'id' // the code is being reworked on
-            exclude 'dk/alexandra/trulioo' // Trulioo specific code
-            exclude 'io/alchemynft'
+            exclude 'dk' // Trulioo specific code
+            exclude 'io'
             exclude 'org/devcon'
         }
     }
@@ -76,8 +76,8 @@ sourceSets {
         java {
             srcDirs = ['src/test/java']
             exclude 'id' // the code is being reworked on
-            exclude 'dk/alexandra/trulioo' // Trulioo specific code
-            exclude 'io/alchemynft'
+            exclude 'dk' // Trulioo specific code
+            exclude 'io'
             exclude 'org/devcon'
         }
     }
@@ -219,19 +219,16 @@ publishing {
             def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            // TODO add gradle.properties file with the following elements:
-            // ossrhUsername=<username for sonatype nexus>
-            // ossrhPassword=<password>
-            //
+            // Add gradle.properties file with the following elements and add the correct
+            // environment variables for OSSRHUSERNAME and OSSRHPASSWORD, then follow the manual at
+            // https://central.sonatype.org/publish/release/ in order to push an update to maven central
             // signing.keyId=<any gpg key id>
             // signing.password=<gpg key password>
             // signing.secretKeyRingFile=<directory to gpg secret key file>
-            // TODO then uncomment the lines below and follow the manual at
-            // https://central.sonatype.org/publish/release/ in order to push an update to maven central
-//             credentials {
-//               username = ossrhUsername
-//               password = ossrhPassword
-//             }
+            credentials {
+              username = System.getenv("OSSRHUSERNAME")
+              password = System.getenv("OSSRHPASSWORD")
+            }
         }
     }
 }
