@@ -216,14 +216,22 @@ publishing {
     }
     repositories {
         maven {
-            // change URLs to point to your repos, e.g. http://my.org/repo
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"//layout.buildDirectory.dir('repos/releases')
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            credentials {
-              username = ossrhUsername
-              password = ossrhPassword
-            }
+            // TODO add gradle.properties file with the following elements:
+            // ossrhUsername=<username for sonatype nexus>
+            // ossrhPassword=<password>
+            //
+            // signing.keyId=<any gpg key id>
+            // signing.password=<gpg key password>
+            // signing.secretKeyRingFile=<directory to gpg secret key file>
+            // TODO then uncomment the lines below and follow the manual at
+            // https://central.sonatype.org/publish/release/ in order to push an update to maven central
+//             credentials {
+//               username = ossrhUsername
+//               password = ossrhPassword
+//             }
         }
     }
 }
