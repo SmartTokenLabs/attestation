@@ -7,6 +7,8 @@ buildscript {
 plugins {
     id 'java'
     id "com.github.node-gradle.node" version "3.1.0"
+    id 'java-library'
+    id 'signing'
     id 'maven-publish'
 }
 
@@ -56,6 +58,7 @@ dependencies {
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
     testImplementation 'org.mockito:mockito-core:2.+'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.4'
 }
 
 sourceSets {
@@ -87,6 +90,11 @@ sourceSets {
 
 test {
     useJUnitPlatform()
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 task integrationTest(type: Test) {
@@ -150,80 +158,82 @@ group = "org.tokenscript"
 archivesBaseName = "attestation"
 version = "0.1"
 
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
+// See https://docs.gradle.org/current/userguide/publishing_maven.html for details
+// For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
+// at https://central.sonatype.org/publish/release/
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'attestation'
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
+            pom {
+                name = 'Attestation'
+                // optionally artifactId can be defined here
+                description = 'Library for constructing and verifying both public and private identifier attestations.'
+                url = 'https://github.com/TokenScript/attestation'
 
-artifacts {
-    archives javadocJar, sourcesJar
+                licenses {
+                  license {
+                    name = 'MIT'
+                    url = 'https://opensource.org/licenses/MIT'
+                  }
+                }
+
+                developers {
+                  developer {
+                    id = 'jot2re'
+                    name = 'Tore Frederiksen'
+                    email = 'jot2re@gmail.com'
+                  }
+                  developer {
+                    id = 'colourful-land'
+                    name = 'Weiwu Zhang'
+                    email = 'weiwu.zhang@alphawallet.com'
+                  }
+                  developer {
+                    id = 'oleggrib'
+                    name = 'Oleg Grib'
+                  }
+                }
+
+                scm {
+                  connection = 'scm:https://github.com/TokenScript/attestation.git'
+                  developerConnection = 'scm:git:https://github.com/TokenScript/attestation.git'
+                  url = 'https://github.com/TokenScript/attestation'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            // change URLs to point to your repos, e.g. http://my.org/repo
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"//layout.buildDirectory.dir('repos/releases')
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+              username = ossrhUsername
+              password = ossrhPassword
+            }
+        }
+    }
 }
 
 signing {
-    sign configurations.archives
-}
-
-uploadArchives {
-  repositories {
-    mavenDeployer {
-      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-      repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-        authentication(userName: ossrhUsername, password: ossrhPassword)
-      }
-
-      snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
-        authentication(userName: ossrhUsername, password: ossrhPassword)
-      }
-
-      pom.project {
-        name 'Attestation'
-        packaging 'jar'
-        // optionally artifactId can be defined here
-        description 'Library for constructing and verifying both public and private identifier attestations.'
-        url 'https://github.com/TokenScript/attestation'
-
-        scm {
-          connection 'scm:https://github.com/TokenScript/attestation.git'
-          developerConnection 'scm:https://github.com/TokenScript/attestation.git'
-          url 'https://github.com/TokenScript/attestation'
-        }
-
-        licenses {
-          license {
-            name 'MIT'
-            url 'https://opensource.org/licenses/MIT'
-          }
-        }
-
-        developers {
-          developer {
-            id 'jot2re'
-            name 'Tore Frederiksen'
-            email 'jot2re@gmail.com'
-          }
-          developer {
-            id 'colourful-land'
-            name 'Weiwu Zhang'
-            email 'weiwu.zhang@alphawallet.com'
-          }
-          developer {
-            id 'oleggrib'
-            name 'Oleg Grib'
-          }
-        }
-      }
-    }
-  }
+    sign publishing.publications.mavenJava
 }
 
 javadoc {
     options.encoding = 'UTF-8'
+    options.addBooleanOption('html5', true)
 }
 
 build.dependsOn packageAttestation
