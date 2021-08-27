@@ -67,7 +67,6 @@ sourceSets {
 //             exclude 'org/tokenscript/attestation/demo'
             exclude 'id' // the code is being reworked on
             exclude 'dk' // Trulioo specific code
-            exclude 'io'
             exclude 'org/devcon'
         }
     }
@@ -77,7 +76,6 @@ sourceSets {
 //             exclude 'org/tokenscript/attestation/demo'
             exclude 'id' // the code is being reworked on
             exclude 'dk' // Trulioo specific code
-            exclude 'io'
             exclude 'org/devcon'
         }
     }
@@ -138,7 +136,6 @@ task packageAttestation(type: Jar) {
            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
            || it.relativePath.pathString.startsWith('id/attestation')
            || it.relativePath.pathString.startsWith('dk')
-           || it.relativePath.pathString.startsWith('io')
            || it.relativePath.pathString.startsWith('org/devcon')){
             return true
         }
@@ -157,7 +154,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.1.1"
+version = "0.1.2"
 
 // See https://docs.gradle.org/current/userguide/publishing_maven.html for details
 // For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
