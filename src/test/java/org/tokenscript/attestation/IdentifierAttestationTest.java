@@ -154,13 +154,13 @@ public class IdentifierAttestationTest {
   }
 
   @Test
-  public void testUrlEncoding() {
+  public void testUrlEncoding() throws Exception {
     String mail = "tæst@test.ts";
     IdentifierAttestation initial = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, mail);
     assertEquals( initial.getAsUrlWithoutIdentifier() + "&email=t%C3%A6st%40test.ts", initial.getAsUrlWithIdentifier());
-    assertEquals( initial.getAsUrlWithoutIdentifier() + "&email=" + mail, URLDecoder.decode(initial.getAsUrlWithIdentifier(), StandardCharsets.UTF_8));
+    assertEquals( initial.getAsUrlWithoutIdentifier() + "&email=" + mail, URLDecoder.decode(initial.getAsUrlWithIdentifier(), StandardCharsets.UTF_8.toString()));
     // Ensure that we get a valid URL
-    String decodedWithoutId = URLDecoder.decode(initial.getAsUrlWithoutIdentifier(), StandardCharsets.UTF_8);
+    String decodedWithoutId = URLDecoder.decode(initial.getAsUrlWithoutIdentifier(), StandardCharsets.UTF_8.toString());
     assertEquals(decodedWithoutId, initial.getAsUrlWithoutIdentifier());
   }
 
@@ -168,9 +168,9 @@ public class IdentifierAttestationTest {
   public void testUrlEncodingNFT() throws Exception {
     IdentifierAttestation att = new IdentifierAttestation("205521676", "https://twitter.com/zhangweiwu", subjectKeys.getPublic());
     assertEquals( att.getAsUrlWithoutIdentifier() + "&205521676=https%3A%2F%2Ftwitter.com%2Fzhangweiwu", att.getAsUrlWithIdentifier());
-    assertEquals( att.getAsUrlWithoutIdentifier() + "&205521676=https://twitter.com/zhangweiwu", URLDecoder.decode(att.getAsUrlWithIdentifier(), StandardCharsets.UTF_8));
+    assertEquals( att.getAsUrlWithoutIdentifier() + "&205521676=https://twitter.com/zhangweiwu", URLDecoder.decode(att.getAsUrlWithIdentifier(), StandardCharsets.UTF_8.toString()));
     // Ensure that we get a valid URL
-    String decodedWithoutId = URLDecoder.decode(att.getAsUrlWithoutIdentifier(), StandardCharsets.UTF_8);
+    String decodedWithoutId = URLDecoder.decode(att.getAsUrlWithoutIdentifier(), StandardCharsets.UTF_8.toString());
     assertEquals(decodedWithoutId, att.getAsUrlWithoutIdentifier());
   }
 
@@ -180,7 +180,7 @@ public class IdentifierAttestationTest {
     IdentifierAttestation decoded = new IdentifierAttestation(initial.getDerEncoding());
     assertEquals(initial.getAsUrlWithoutIdentifier() + "&" + IdentifierAttestation.HIDDEN_TYPE + "=" + IdentifierAttestation.HIDDEN_IDENTIFIER, decoded.getAsUrlWithIdentifier());
     // Ensure that we get a valid URL
-    String decodedWithId = URLDecoder.decode(decoded.getAsUrlWithIdentifier(), StandardCharsets.UTF_8);
+    String decodedWithId = URLDecoder.decode(decoded.getAsUrlWithIdentifier(), StandardCharsets.UTF_8.toString());
     assertEquals(decodedWithId, decoded.getAsUrlWithIdentifier());
   }
 

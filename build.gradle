@@ -18,16 +18,14 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
-apply plugin: 'signing'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-if(JavaVersion.current() < JavaVersion.VERSION_11){
-    throw new GradleException("This build must be run with java 11 or higher.")
+java {
+  sourceCompatibility = JavaVersion.VERSION_1_8
+  targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 repositories {
@@ -66,6 +64,7 @@ sourceSets {
     main {
         java {
             srcDirs = ['src/main/java']
+//             exclude 'org/tokenscript/attestation/demo'
             exclude 'id' // the code is being reworked on
             exclude 'dk' // Trulioo specific code
             exclude 'io'
@@ -75,6 +74,7 @@ sourceSets {
     test {
         java {
             srcDirs = ['src/test/java']
+//             exclude 'org/tokenscript/attestation/demo'
             exclude 'id' // the code is being reworked on
             exclude 'dk' // Trulioo specific code
             exclude 'io'
@@ -133,7 +133,7 @@ task packageAttestation(type: Jar) {
     from compileJava
     from processResources
     exclude {
-        if(it.relativePath.pathString.startsWith('com/alphawallet/attestation/demo')
+        if(it.relativePath.pathString.startsWith('org/tokenscript/attestation/demo')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
            || it.relativePath.pathString.startsWith('id/attestation')
@@ -157,7 +157,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.1"
+version = "0.1.1"
 
 // See https://docs.gradle.org/current/userguide/publishing_maven.html for details
 // For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
@@ -239,7 +239,10 @@ signing {
 
 javadoc {
     options.encoding = 'UTF-8'
-    options.addBooleanOption('html5', true)
+    // For the future, if we end up needing a later version of java than 1.8
+    if(JavaVersion.current() > JavaVersion.VERSION_11){
+      options.addBooleanOption('html5', true)
+    }
 }
 
 build.dependsOn packageAttestation

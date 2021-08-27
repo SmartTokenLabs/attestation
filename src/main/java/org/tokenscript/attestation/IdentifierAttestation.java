@@ -253,8 +253,15 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   }
 
   public String getAsUrlWithIdentifier() {
-    String encodedIdentifier = URLEncoder.encode(this.identifier, StandardCharsets.UTF_8);
-    String encodedType = URLEncoder.encode(this.type, StandardCharsets.UTF_8);
+    String encodedIdentifier = null;
+    String encodedType = null;
+    try {
+      encodedIdentifier = URLEncoder.encode(this.identifier,
+          StandardCharsets.UTF_8.toString());
+      encodedType = URLEncoder.encode(this.type, StandardCharsets.UTF_8.toString());
+    } catch (Exception e) {
+      ExceptionUtil.makeRuntimeException(logger, "Could not turn identifier into URL", e);
+    }
     return getAsUrlWithoutIdentifier() + "&" + encodedType + "=" + encodedIdentifier;
   }
 

@@ -446,7 +446,7 @@ public class Demo {
       Path attestorVerificationKeyDir, String message, Path signatureDir) throws IOException {
     AsymmetricKeyParameter attestorKey = PublicKeyFactory.createKey(DERUtility.restoreBytes(Files.readAllLines(attestorVerificationKeyDir)));
     byte[] signature = Files.readAllBytes(signatureDir);
-    String jsonRequest = Files.readString(pathRequest);
+    String jsonRequest = Files.readAllLines(pathRequest).stream().reduce("", String::concat);
     Eip712AttestationUsage usageRequest = new Eip712AttestationUsage(WEB_DOMAIN, attestorKey, jsonRequest);
     checkUsageVerifiability(usageRequest);
     checkUsageValidity(usageRequest);
@@ -463,7 +463,7 @@ public class Demo {
       Path attestorVerificationKeyDir, String message, Path signatureDir) throws IOException {
     AsymmetricKeyParameter attestorKey = PublicKeyFactory.createKey(DERUtility.restoreBytes(Files.readAllLines(attestorVerificationKeyDir)));
     byte[] signature = Files.readAllBytes(signatureDir);
-    String jsonRequest = Files.readString(pathRequest);
+    String jsonRequest = Files.readAllLines(pathRequest).stream().reduce("", String::concat);
     Eip712AttestationRequestWithUsage usageRequest = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, jsonRequest);
     checkUsageVerifiability(usageRequest);
     checkUsageValidity(usageRequest);
