@@ -1,53 +1,57 @@
 package com.alphawallet.ethereum;
 
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
-import org.web3j.utils.Numeric;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.DynamicStruct;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.generated.Uint256;
 
-import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class ERC721Token implements ASNEncodable {
-    public String address;
-    public BigInteger tokenId;
+public class ERC721Token extends DynamicStruct
+{
+    public Address address;
+    public Uint256 tokenId;
+    public DynamicBytes auth;
 
-    public ERC721Token(String address, String tokenId)
+    public ERC721Token(Address address, Uint256 tokenId, DynamicBytes bytes)
     {
-        this.address = address;
-        try
-        {
-            this.tokenId = new BigInteger(tokenId);
-        }
-        catch (Exception e)
-        {
-            this.tokenId = BigInteger.ZERO;
-        }
-    }
-
-    public ERC721Token(String address, BigInteger tokenId)
-    {
+        super(address, tokenId, bytes);
         this.address = address;
         this.tokenId = tokenId;
+        this.auth = bytes;
     }
 
-    public ASN1EncodableVector getTokenVector()
+    public ERC721Token(String address, String tokenId, byte[] bytes)
     {
-        ASN1EncodableVector data = new ASN1EncodableVector();
-        data.add(new DEROctetString(Numeric.hexStringToByteArray(address)));
-        data.add(new DEROctetString(tokenId.toByteArray()));
-        return data;
+        super(new Address(address), new Uint256(new BigInteger(tokenId)), new DynamicBytes(bytes));
+        this.address = new Address(address);
+        this.tokenId = new Uint256(new BigInteger(tokenId));
+        this.auth = new DynamicBytes(bytes);
     }
 
     @Override
-    public byte[] getDerEncoding()
+    public List<Type> getValue()
     {
-        ASN1EncodableVector data = getTokenVector();
-        try {
-            return new DERSequence(data).getEncoded();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        List<Type> tList = new ArrayList<>();
+        tList.add(address);
+        tList.add(tokenId);
+
+        return tList;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Token: " + address.toString() + " ID: " + tokenId.getValue().toString();
+    }
+
+
+    @Override
+    public String getTypeAsString() {
+        return "ERC721Token";
     }
 }

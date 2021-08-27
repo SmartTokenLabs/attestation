@@ -10,7 +10,7 @@ import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.demo.SmartContract;
 import com.alphawallet.ethereum.AttestationReturn;
-import com.alphawallet.ethereum.ERC721Token;
+import org.tokenscript.attestation.ERC721Token;
 import com.alphawallet.token.tools.Numeric;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;

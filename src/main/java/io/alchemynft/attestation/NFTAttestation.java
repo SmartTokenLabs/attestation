@@ -4,7 +4,7 @@ import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.ASNEncodable;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.Validateable;
-import com.alphawallet.ethereum.ERC721Token;
+import org.tokenscript.attestation.ERC721Token;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;

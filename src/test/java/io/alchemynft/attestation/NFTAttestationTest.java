@@ -8,7 +8,7 @@ import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.demo.SmartContract;
-import com.alphawallet.ethereum.ERC721Token;
+import org.tokenscript.attestation.ERC721Token;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;

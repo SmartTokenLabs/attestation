@@ -1,5 +1,6 @@
 package org.tokenscript.attestation.demo;
 
+import com.alphawallet.ethereum.ERC721Token;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.ProofOfExponent;
 
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.alphawallet.ethereum.AttestationReturn;
-import com.alphawallet.ethereum.ERC721TokenEth;
 import com.alphawallet.ethereum.TicketAttestationReturn;
 import okhttp3.OkHttpClient;
 import org.web3j.abi.FunctionEncoder;
@@ -25,14 +25,6 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.http.HttpService;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction;
 
@@ -89,8 +81,8 @@ public class SmartContract {
 
     if (responseValues.size() == 5)
     {
-      List<ERC721TokenEth> tokens = (List<ERC721TokenEth>)responseValues.get(0).getValue();
-      retVal.ercToken = tokens.toArray(new ERC721TokenEth[0]);
+      List<ERC721Token> tokens = (List<ERC721Token>)responseValues.get(0).getValue();
+      retVal.ercToken = tokens.toArray(new ERC721Token[0]);
 
       retVal.identifier = responseValues.get(1).getValue().toString();
       retVal.ownerAddress = responseValues.get(2).getValue().toString();
@@ -214,7 +206,7 @@ public class SmartContract {
             "verifyNFTAttestation",
             Arrays.asList(new DynamicBytes(encoding),
                     new org.web3j.abi.datatypes.Address(160, sender)),
-            Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<ERC721TokenEth>>() {},
+            Arrays.<TypeReference<?>>asList(new TypeReference<DynamicArray<ERC721Token>>() {},
                     new TypeReference<Utf8String>() {}, //Identifier
                     new TypeReference<Address>() {},    //subject
                     new TypeReference<Address>() {},    //attestor
@@ -233,10 +225,10 @@ public class SmartContract {
                     new TypeReference<Address>() {}));    //Attestor
   }
 
-  protected static org.web3j.abi.datatypes.DynamicArray<?> getERC721Array(ERC721TokenEth token)
+  protected static org.web3j.abi.datatypes.DynamicArray<?> getERC721Array(ERC721Token token)
   {
     return new org.web3j.abi.datatypes.DynamicArray<>(
-            ERC721TokenEth.class, Collections.singletonList(token));
+            ERC721Token.class, Collections.singletonList(token));
   }
 
   private OkHttpClient buildClient()
