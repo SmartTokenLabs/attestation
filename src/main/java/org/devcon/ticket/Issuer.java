@@ -60,7 +60,7 @@ public class Issuer {
                 String ticketInUrl = new String(
                     Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
                 System.out.printf("?ticket=%s&secret=%s&mail=%s", ticketInUrl,
-                    sharedSecret.toString(), URLEncoder.encode(mail, StandardCharsets.UTF_8));
+                    sharedSecret.toString(), URLEncoder.encode(mail, StandardCharsets.UTF_8.toString()));
             } catch (Exception e) {
                 System.err.println("Something went wrong. Please check the supplied arguments again and ensure that the private key is an elliptic curve key in RFC 5915 format.");
                 throw new RuntimeException("Could not produce magic link", e);

@@ -65,18 +65,20 @@ sourceSets {
         java {
             srcDirs = ['src/main/java']
 //             exclude 'org/tokenscript/attestation/demo'
-            exclude 'id' // the code is being reworked on
+//             exclude 'com/alphawallet/token/tools'
+//             exclude 'com/alphawallet/token/util'
             exclude 'dk' // Trulioo specific code
-            exclude 'org/devcon'
+//             exclude 'org/devcon'
         }
     }
     test {
         java {
             srcDirs = ['src/test/java']
 //             exclude 'org/tokenscript/attestation/demo'
-            exclude 'id' // the code is being reworked on
+//             exclude 'com/alphawallet/token/tools'
+//             exclude 'com/alphawallet/token/util'
             exclude 'dk' // Trulioo specific code
-            exclude 'org/devcon'
+//             exclude 'org/devcon'
         }
     }
     intTest {
@@ -131,12 +133,13 @@ task packageAttestation(type: Jar) {
     from compileJava
     from processResources
     exclude {
-        if(it.relativePath.pathString.startsWith('org/tokenscript/attestation/demo')
-           || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
-           || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
-           || it.relativePath.pathString.startsWith('id/attestation')
-           || it.relativePath.pathString.startsWith('dk')
-           || it.relativePath.pathString.startsWith('org/devcon')){
+        if(it.relativePath.pathString.startsWith('dk')
+//            || it.relativePath.pathString.startsWith('org/tokenscript/attestation/demo')
+//            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
+//            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
+//            || it.relativePath.pathString.startsWith('org/devcon'))
+         )
+           {
             return true
         }
     }
@@ -154,7 +157,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.1.2"
+version = "0.1.3"
 
 // See https://docs.gradle.org/current/userguide/publishing_maven.html for details
 // For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual

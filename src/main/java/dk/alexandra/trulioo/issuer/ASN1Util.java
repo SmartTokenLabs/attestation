@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -40,15 +39,9 @@ public class ASN1Util {
    * @param input
    * @return
    */
-  public static AsymmetricKeyParameter restoreBase64PrivateKey(String input) throws IOException {
-    List<String> lines = input.lines().collect(Collectors.toList());
-    // skip first and last line
-    List<String> arr = lines.subList(1, lines.size()-1);
-    StringBuffer buf = new StringBuffer();
-    for (int i = 0; i < arr.size(); i++) {
-      buf.append(arr.get(i));
-    }
-    return PrivateKeyFactory.createKey(Base64.getDecoder().decode(buf.toString()));
+  public static AsymmetricKeyParameter restoreBase64PrivateKey(List<String> input) throws IOException {
+    String concatenatedString = String.join("", input.subList(1, input.size()-1));
+    return PrivateKeyFactory.createKey(Base64.getDecoder().decode(concatenatedString));
   }
 
   /**
@@ -56,15 +49,9 @@ public class ASN1Util {
    * @param input
    * @return
    */
-  public static AsymmetricKeyParameter restoreBase64PublicKey(String input) throws IOException {
-    List<String> lines = input.lines().collect(Collectors.toList());
-    // skip first and last line
-    List<String> arr = lines.subList(1, lines.size()-1);
-    StringBuffer buf = new StringBuffer();
-    for (int i = 0; i < arr.size(); i++) {
-      buf.append(arr.get(i));
-    }
-    return PublicKeyFactory.createKey(Base64.getDecoder().decode(buf.toString()));
+  public static AsymmetricKeyParameter restoreBase64PublicKey(List<String> input) throws IOException {
+    String concatenatedString = String.join("", input.subList(1, input.size()-1));
+    return PublicKeyFactory.createKey(Base64.getDecoder().decode(concatenatedString));
   }
 
   public static String printDER(byte[] input, String type) {

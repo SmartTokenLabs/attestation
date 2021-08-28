@@ -3,7 +3,7 @@ package dk.alexandra.trulioo.issuer;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Base64;
@@ -42,10 +42,14 @@ public class AttestorTest {
     rand.setSeed("seed".getBytes());
     long lifetime = 31536000000l; // one year
     serverKeys = new AsymmetricCipherKeyPair(
-        ASN1Util.restoreBase64PublicKey(Files.readString(Path.of("src/test/data/IssuerPublicKey.pem"))),
-        ASN1Util.restoreBase64PrivateKey(Files.readString(Path.of("src/test/data/IssuerPrivateKey.pem"))));
+        ASN1Util.restoreBase64PublicKey(
+            Files.readAllLines(Paths.get("src/test/data/IssuerPublicKey.pem"))),
+        ASN1Util.restoreBase64PrivateKey(
+            Files.readAllLines(Paths.get("src/test/data/IssuerPrivateKey.pem"))));
     attestor = new Attestor(serverKeys, new X500Name("CN=Stormbird"), lifetime);
-    JSONObject response = new JSONObject(Files.readString(Path.of("src/test/data/verification_response.json")));
+    JSONObject response = new JSONObject(
+        Files.readAllLines(Paths.get("src/test/data/verification_response.json"))
+            .stream().reduce("", String::concat));
     record = response.getJSONObject("Record");
   }
 
@@ -59,7 +63,8 @@ public class AttestorTest {
     //System.out.println(ASN1Util.printDER(userPK, "PUBLIC KEY"));
 
     /* signing verifyRequest */
-    request = Files.readString(Path.of("src/test/data/verification_request.json"));
+    request = Files.readAllLines(Paths.get("src/test/data/verification_request.json"))
+        .stream().reduce("", String::concat);
     Security.addProvider(new BouncyCastleProvider());
     byte[] signature = SignatureUtil
         .signSha256(request.getBytes(StandardCharsets.UTF_8), userKeys.getPrivate());
