@@ -18,16 +18,18 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
-apply plugin: 'signing'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
 if(JavaVersion.current() < JavaVersion.VERSION_11){
+    // Weiwu mentioned that this is needed to prevent a issue
     throw new GradleException("This build must be run with java 11 or higher.")
+}
+java {
+  sourceCompatibility = JavaVersion.VERSION_11
+  targetCompatibility = JavaVersion.VERSION_11
 }
 
 repositories {
@@ -66,19 +68,21 @@ sourceSets {
     main {
         java {
             srcDirs = ['src/main/java']
-            exclude 'id' // the code is being reworked on
+//             exclude 'org/tokenscript/attestation/demo'
+//             exclude 'com/alphawallet/token/tools'
+//             exclude 'com/alphawallet/token/util'
             exclude 'dk' // Trulioo specific code
-            exclude 'io'
-            exclude 'org/devcon'
+//             exclude 'org/devcon'
         }
     }
     test {
         java {
             srcDirs = ['src/test/java']
-            exclude 'id' // the code is being reworked on
+//             exclude 'org/tokenscript/attestation/demo'
+//             exclude 'com/alphawallet/token/tools'
+//             exclude 'com/alphawallet/token/util'
             exclude 'dk' // Trulioo specific code
-            exclude 'io'
-            exclude 'org/devcon'
+//             exclude 'org/devcon'
         }
     }
     intTest {
@@ -133,13 +137,13 @@ task packageAttestation(type: Jar) {
     from compileJava
     from processResources
     exclude {
-        if(it.relativePath.pathString.startsWith('com/alphawallet/attestation/demo')
-           || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
-           || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
-           || it.relativePath.pathString.startsWith('id/attestation')
-           || it.relativePath.pathString.startsWith('dk')
-           || it.relativePath.pathString.startsWith('io')
-           || it.relativePath.pathString.startsWith('org/devcon')){
+        if(it.relativePath.pathString.startsWith('dk')
+//            || it.relativePath.pathString.startsWith('org/tokenscript/attestation/demo')
+//            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
+//            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
+//            || it.relativePath.pathString.startsWith('org/devcon'))
+         )
+           {
             return true
         }
     }
@@ -157,7 +161,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.1"
+version = "0.1.3"
 
 // See https://docs.gradle.org/current/userguide/publishing_maven.html for details
 // For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
@@ -239,7 +243,10 @@ signing {
 
 javadoc {
     options.encoding = 'UTF-8'
-    options.addBooleanOption('html5', true)
+    // For the future, if we end up needing an earlier version of java than 11
+    if(JavaVersion.current() > JavaVersion.VERSION_11){
+      options.addBooleanOption('html5', true)
+    }
 }
 
 build.dependsOn packageAttestation
