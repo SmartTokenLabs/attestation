@@ -243,7 +243,7 @@ signing {
 
 javadoc {
     options.encoding = 'UTF-8'
-    // For the future, if we end up needing a later version of java than 1.8
+    // For the future, if we end up needing an earlier version of java than 11
     if(JavaVersion.current() > JavaVersion.VERSION_11){
       options.addBooleanOption('html5', true)
     }
