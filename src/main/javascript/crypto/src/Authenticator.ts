@@ -1,6 +1,6 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString} from "./libs/utils";
+import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString, logger} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
@@ -18,7 +18,6 @@ import {TokenValidateable} from "./libs/TokenValidateable";
 import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequestWithUsage";
 import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
-import {debugLog} from "./config";
 
 let subtle:any;
 
@@ -117,7 +116,7 @@ export class Authenticator {
      *  - Since this token depends on identifier attestation, continue to open iframe to attestation.id who needs to provide the proof
      */
     getIdentifierAttestation() {
-        console.log('getIdentifierAttestation. create iframe with ' + this.attestationOrigin);
+        logger(3,'getIdentifierAttestation. create iframe with ' + this.attestationOrigin);
 
         // attach postMessage listener and wait for attestation data
         this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
@@ -146,46 +145,65 @@ export class Authenticator {
         base64senderPublicKey: string
     )
     {
+        let ticket: Ticket;
+        let att: SignedIdentifierAttestation;
+
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
-        let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.publicFromBase64(base64senderPublicKey));
-        if (!ticket.checkValidity()) {
-            console.log("Could not validate ticket");
-            throw new Error("Validation failed");
+        try {
+            ticket = Ticket.fromBase64(base64ticket, KeyPair.publicFromBase64(base64senderPublicKey));
+            if (!ticket.checkValidity()) {
+                logger(1,"Could not validate ticket");
+                throw new Error("Validation failed");
+            }
+            if (!ticket.verify()) {
+                logger(1,"Could not verify ticket");
+                throw new Error("Verification failed");
+            }
+            logger(2,'ticked valid (signature OK)');
+        } catch (e) {
+            logger(2,'getUseTicket: ticket validation failed',e);
+            throw new Error("getUseTicket: ticked validation failed");
         }
-        if (!ticket.verify()) {
-            console.log("Could not verify ticket");
-            throw new Error("Verification failed");
+
+        try {
+            // let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.publicKey)));
+            let attestorKey = KeyPair.publicFromBase64(base64attestationPublicKey);
+
+            att = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
+
+            if (!att.checkValidity()) {
+                logger(1,"Could not validate attestation");
+                throw new Error("Validation failed");
+            }
+            if (!att.verify()) {
+                logger(1,"Could not verify attestation");
+                throw new Error("Verification failed");
+            }
+            logger(3,'attestaion valid');
+        } catch (e) {
+            logger(1,'getUseTicket: attestation validation failed');
+            logger(2,e);
+            throw new Error("getUseTicket: attestation validation failed");
         }
-        console.log('ticked valid (signature OK)');
 
-        // let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.publicKey)));
-        let attestorKey = KeyPair.publicFromBase64(base64attestationPublicKey);
 
-        let att = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
+        try {
+            let redeem: AttestedObject = new AttestedObject();
+            redeem.create(ticket, att,
+                BigInt(attestationSecret), BigInt(ticketSecret));
 
-        if (!att.checkValidity()) {
-            console.log("Could not validate attestation");
-            throw new Error("Validation failed");
+            // redeem.setWebDomain(this.webDomain);
+            // let signed = await redeem.sign();
+
+            let unSigned = redeem.getDerEncoding();
+            logger(3,unSigned);
+            return unSigned;
+        } catch (e) {
+            logger(1,'getUseTicket: redeem failed');
+            logger(2,e);
+            throw new Error("getUseTicket: redeem failed");
         }
-        if (!att.verify()) {
-            console.log("Could not verify attestation");
-            throw new Error("Verification failed");
-        }
-        console.log('attestaion valid');
 
-        let redeem: AttestedObject = new AttestedObject();
-        redeem.create(ticket, att,
-            BigInt(attestationSecret), BigInt(ticketSecret));
-        // redeem.setWebDomain(this.webDomain);
-
-        // console.log("redeem.getDerEncodeProof(): ");
-        // console.log(redeem.getDerEncodeProof());
-        // TODO sign EIP712 with Metamask
-        // let signed = await redeem.sign();
-        console.log("redim validation = " + redeem.checkValidity())
-        let unSigned = redeem.getDerEncoding();
-        // console.log(unSigned);
-        return unSigned;
 
     }
 
@@ -196,8 +214,7 @@ export class Authenticator {
             return;
         }
 
-        console.log('postMessageAttestationListener event (Authenticator)');
-        console.log(event)
+        logger(3,'postMessageAttestationListener event (Authenticator)',event);
 
         if (
             typeof event.data.ready !== "undefined"
@@ -219,8 +236,15 @@ export class Authenticator {
                 this.iframeWrap.style.display = 'flex';
                 this.negotiator && this.negotiator.commandDisplayIframe();
             } else {
+
+                if (event.data.error){
+                    logger(1, "Error received from the iframe: " + event.data.error);
+                    this.authResultCallback(null, event.data.error);
+                }
+
                 this.iframeWrap.style.display = 'none';
                 this.negotiator && this.negotiator.commandHideIframe();
+
             }
         }
 
@@ -234,10 +258,10 @@ export class Authenticator {
         this.attestationBlob = event.data.attestation;
         this.attestationSecret = event.data.requestSecret;
 
-        console.log('attestation data received.');
-        console.log(this.attestationBlob);
-        console.log(this.attestationSecret);
-        console.log(this.base64attestorPubKey);
+        logger(3,'attestation data received.');
+        logger(3,this.attestationBlob);
+        logger(3,this.attestationSecret);
+        logger(3,this.base64attestorPubKey);
 
         try {
             this.getUseTicket(
@@ -249,10 +273,10 @@ export class Authenticator {
                 this.base64senderPublicKey,
             ).then(useToken => {
                 if (useToken){
-                    console.log('this.authResultCallback( useToken ): ');
+                    logger(3,'this.authResultCallback( useToken ): ');
                     this.authResultCallback(useToken);
                 } else {
-                    console.log('this.authResultCallback( empty ): ');
+                    logger(3,'this.authResultCallback( empty ): ');
                     this.authResultCallback(useToken);
                 }
 
@@ -260,7 +284,7 @@ export class Authenticator {
 
 
         } catch (e){
-            console.log(`UseDevconTicket. Something went wrong. ${e}`);
+            logger(1,`UseDevconTicket. Something went wrong. ${e}`);
             this.authResultCallback(false);
         }
         // construct UseDevconTicket, see
@@ -309,13 +333,14 @@ export class Authenticator {
             try {
                 userAddress = await SignatureUtility.connectMetamaskAndGetAddress();
             } catch (e){
-                console.log('Cant find user Ethereum Address. Please check Metamask. ' + e);
+                logger(1,'Cant find user Ethereum Address. Please check Metamask. ' + e);
+                logger(2,e);
                 return;
             }
         }
 
         let nonce = await Nonce.makeNonce(userAddress, attestorDomain);
-        if (debugLog) { console.log('nonce = ' + uint8tohex(nonce)); }
+        logger(3,'nonce = ' + uint8tohex(nonce));
 
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
@@ -360,7 +385,7 @@ export class Authenticator {
 
         } catch (e){
             let m = "Failed to fill attestation data from json. " + e + "\nRestores as an Eip712AttestationRequestWithUsage object instead";
-            if (debugLog) { console.log(m); }
+            logger(2,m);
             try {
                 attestationRequest = new Eip712AttestationRequestWithUsage();
                 attestationRequest.setDomain(attestorDomain);
@@ -369,7 +394,8 @@ export class Authenticator {
                 Authenticator.checkAttestRequestValidity(attestationRequest);
             } catch (e) {
                 let m = "Failed to parse Eip712AttestationRequestWithUsage. " + e;
-                console.log(m);
+                logger(1,m);
+                logger(2,e);
                 throw new Error(m);
             }
         }
@@ -427,35 +453,35 @@ export class Authenticator {
             // console.log('usageRequest.getJsonEncoding() = ' + usageRequest.getJsonEncoding());
             return usageRequest.getJsonEncoding();
         } catch (e) {
-            console.error(e);
+            logger(1,e);
         }
 
     }
 
     static checkAttestRequestVerifiability( input:Verifiable) {
         if (!input.verify()) {
-            if (debugLog) { console.log("Could not verify attestation signing request"); }
+            logger(2,"Could not verify attestation signing request");
             throw new Error("Verification failed");
         }
     }
 
     static checkAttestRequestValidity( input:Validateable) {
         if (!input.checkValidity()) {
-            if (debugLog) { console.log("Could not validate attestation signing request"); }
+            logger(3,"Could not validate attestation signing request");
             throw new Error("Validation failed");
         }
     }
 
     static checkUsageVerifiability(input: Verifiable) {
         if (!input.verify()) {
-            console.error("Could not verify usage request");
+            logger(1,"Could not verify usage request");
             throw new Error("Verification failed");
         }
     }
 
     static checkUsageValidity( input: TokenValidateable) {
         if (!input.checkTokenValidity()) {
-            console.error("Could not validate usage request");
+            logger(1,"Could not validate usage request");
             throw new Error("Validation failed");
         }
     }
@@ -478,7 +504,7 @@ export class Authenticator {
             sessionPublicKey = usageRequest.getSessionPublicKey();
         } catch (e) {
             // Try as an  Eip712AttestationRequestWithUsage object instead, which is NOT linked to a specific website
-            if (debugLog) { console.log('Eip712AttestationUsage failed. ' + e + '. Lets try to verify Eip712AttestationRequestWithUsage'); }
+            logger(2,'Eip712AttestationUsage failed. ' + e + '. Lets try to verify Eip712AttestationRequestWithUsage');
             let usageRequest: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage();
             usageRequest.setDomain(WEB_DOMAIN);
             usageRequest.fillJsonData( jsonRequest );
@@ -493,14 +519,14 @@ export class Authenticator {
         try {
             let res = await sessionPublicKey.verifyStringWithSubtle(KeyPair.anySignatureToRawUint8(signature) , message);
             if (!res) {
-                console.error("Could not verify message signature");
+                logger(2,"Could not verify message signature");
                 throw new Error("Signature verification failed");
             }
              return "SUCCESSFULLY validated usage request!";
         } catch (e) {
             let m = "Cant verify session with subtle. " + e;
-            console.log(m);
-            console.error(e);
+            logger(1,m);
+            logger(2,e);
             // console.error(sessionPublicKey);
             // throw new Error(m);
         }
@@ -536,8 +562,8 @@ export class Authenticator {
             return request.getJsonEncoding();
         } catch (e) {
             let m = "requestAttestAndUsage error. " + e;
-            console.log(m);
-            console.error(e);
+            logger(1,m);
+            logger(2,e);
         }
 
     }

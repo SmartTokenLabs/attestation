@@ -4,6 +4,7 @@ import {SignedInfo} from "../asn1/shemas/AttestationFramework";
 import {Extensions} from "../asn1/shemas/AuthenticationFramework";
 import {KeyPair} from "./KeyPair";
 import {Asn1Der} from "./DerUtility";
+import {Timestamp} from "./Timestamp";
 
 export class Attestation {
     static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
@@ -187,14 +188,22 @@ export class Attestation {
         let currentTime = Date.now();
         let attNotBefore = this.getNotValidBefore();
         let attNotAfter = this.getNotValidAfter();
-        if ( attNotBefore && attNotAfter && !(currentTime >= attNotBefore && currentTime < attNotAfter)) {
-            console.log("Attestation is no longer valid");
+
+        if ( attNotAfter && !(currentTime < attNotAfter)) {
+            console.log("Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
             return false;
         }
+
+        if ( attNotBefore && !(currentTime >= (attNotBefore - Timestamp.ALLOWED_ROUNDING))) {
+            console.log("Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
+            return false;
+        }
+
         if (this.extensions != null && this.dataObject != null) {
             console.log("Extensions or dataObject required");
             return false;
         }
+
         return true;
     }
 

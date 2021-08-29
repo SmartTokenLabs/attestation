@@ -219,17 +219,33 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             return false;
         }
 
-        // CHECK: that the cheque is still valid
-        if (!this.getAttestableObject().checkValidity()) {
-            console.error("Cheque is not valid");
+        try {
+            // CHECK: that the cheque is still valid
+            if (!this.getAttestableObject().checkValidity()) {
+                console.error("Cheque is not valid");
+                return false;
+            }
+        } catch (e) {
+            console.error("Cheque validation failed");
             return false;
         }
 
-        // CHECK: the Ethereum address on the attestation matches receivers signing key
-        let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
+        try {
 
-        if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
-            console.error("The attestation is not to the same Ethereum user who is sending this request");
+            // CHECK: the Ethereum address on the attestation matches receivers signing key
+            // let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
+            let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getAddress();
+            console.log('attestationEthereumAddress: ' + attestationEthereumAddress);
+            console.log(this.getUserPublicKey());
+            console.log('this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
+
+            if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
+                console.error("The attestation is not to the same Ethereum user who is sending this request");
+                return false;
+            }
+        } catch (e) {
+            console.error("Address validation failed");
+            console.error(e);
             return false;
         }
 
