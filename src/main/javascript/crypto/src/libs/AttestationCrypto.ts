@@ -4,7 +4,7 @@ import {
     mod,
     uint8merge,
     stringToArray,
-    BnPowMod,  bnToUint8, uint8ToBn
+    BnPowMod,  bnToUint8, uint8ToBn, logger
 } from "./utils";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
@@ -39,9 +39,8 @@ export class AttestationCrypto {
         // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
         // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
         let curveOrderBitLength: bigint = BigInt(curveOrder.toString(2).length);
-        // console.log(`curve length = ${curveOrderBitLength}`);
         if (curveOrder < (1n << (curveOrderBitLength-1n)) || (curveOrder >> curveOrderBitLength) > 0n) {
-            console.log("Curve order is not 253 bits which is required by the current implementation");
+            logger(1, "Curve order is not 253 bits which is required by the current implementation");
             return false;
         }
         return true;
@@ -53,6 +52,8 @@ export class AttestationCrypto {
                 return ATTESTATION_TYPE.mail;
             case "phone":
                 return ATTESTATION_TYPE.phone;
+            case "InetPersona":
+                return ATTESTATION_TYPE.InetPersona;
             default:
                 throw new Error("Wrong type of identifier");
         }
@@ -170,7 +171,6 @@ export class AttestationCrypto {
         do {
             do {
                 x = mod(x + 1n);
-                // console.log('x = ' + x );
                 ySquare = mod(BnPowMod(x, 3n, fieldSize) + CURVE_BN256.A * x + CURVE_BN256.B);
                 quadraticResidue = BnPowMod(ySquare, quadraticResidueExp, fieldSize);
             } while (quadraticResidue !== 1n);

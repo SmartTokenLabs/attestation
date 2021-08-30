@@ -4,7 +4,7 @@ import {XMLconfigData} from "../data/tokenData";
 import {KeyPair} from "./KeyPair";
 import {Ticket} from "../Ticket";
 import {Eip712DomainInterface, SignatureUtility} from "./SignatureUtility";
-import {hexStringToUint8} from "./utils";
+import {hexStringToUint8, logger} from "./utils";
 
 export class Eip712Validator {
     private XMLConfig: any;
@@ -20,7 +20,7 @@ export class Eip712Validator {
         try {
             parsedUrl = new URL(domain);
         } catch (e) {
-            console.log('cant construct url. Error:' + e);
+            logger(1, 'cant construct url. Error:', e);
             return false;
         }
 
@@ -59,8 +59,7 @@ export class Eip712Validator {
             // accept &= validateAttestedObject(attestedObject);
             // return accept;
         } catch (e) {
-            console.error('Validate error!');
-            console.error(e);
+            logger(1, 'Validate error!', e);
             return false;
         }
     }
@@ -70,12 +69,12 @@ export class Eip712Validator {
 
     validateDomain(domainToCheck: Eip712DomainInterface): boolean {
         if (domainToCheck.name.toLowerCase() !== this.domain.toLowerCase()) {
-            console.error("Domain name is not valid");
+            logger(1, "Domain name is not valid");
             return false;
         }
 
         if (domainToCheck.version !== SignatureUtility.Eip712Data['PROTOCOL_VERSION']) {
-            console.error("Protocol version is wrong");
+            logger(1, "Protocol version is wrong");
             return false;
         }
 
@@ -116,11 +115,11 @@ export class Eip712Validator {
         let userKey = KeyPair.fromPublicHex(publicKey.substr(2));
 
         if (pkAddress.toLowerCase() !== jsonSigned.message.address.toLowerCase()){
-            console.log('message.address is not equal pkAddress');
+            logger(1, 'message.address is not equal pkAddress');
             return false;
         }
         if (pkAddress.toLowerCase() !== userKey.getAddress().toLowerCase()){
-            console.log('Recovered address is not equal pkAddress');
+            logger(1, 'Recovered address is not equal pkAddress');
             return false;
         }
         return true;

@@ -1,5 +1,5 @@
 import {
-    base64ToUint8array, hexStringToArray, hexStringToUint8,
+    base64ToUint8array, hexStringToArray, hexStringToUint8, logger,
     stringToArray,
     uint8arrayToBase64,
     uint8ToBn,
@@ -138,7 +138,7 @@ export class KeyPair {
         let me = new this();
 
         if (key.byteLength != 65) {
-            console.error('Wrong public key length');
+            logger(1, 'Wrong public key length');
             throw new Error('Wrong public key length');
         }
         me.pubKey = new Uint8Array(key);
@@ -167,7 +167,7 @@ export class KeyPair {
             return algEncodings[alg];
         } else {
             let m = "Unknown algorithm.";
-            console.error(m);
+            logger(1, m);
             throw new Error(m);
         }
     }
@@ -233,7 +233,7 @@ export class KeyPair {
                 return key.getPublic('hex').toString();
             } else {
                 let m = 'Private -> Public key not implemented for that aglorighm - "' + this.algorithm + '"';
-                console.log(m);
+                logger(1, m);
                 throw new Error(m);
             }
 
@@ -245,12 +245,12 @@ export class KeyPair {
         // algorithm description hardcoded
         let pubPointTypeDescrDER = '';
         if (!this.algorithm){
-            // let m = 'algorithm undefined, lets use default.';
-            // console.log(m);
+            let m = 'algorithm undefined, lets use default.';
+            logger(4, m);
             pubPointTypeDescrDER = this.algorithmASNList[DEFAULT_ALGORITHM];
         } else if (!this.algorithmASNList.hasOwnProperty(this.algorithm)){
             let m = 'Fatal Error. Algorithm not implemented yet - '+this.algorithm;
-            console.log(m);
+            logger(1, m);
             throw new Error(m);
         } else {
             pubPointTypeDescrDER = this.algorithmASNList[this.algorithm];
@@ -310,7 +310,7 @@ export class KeyPair {
             key = curve.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
         } else {
             let m = 'Elliptic.js curve not implemented for that aglorighm - "' + this.algorithm + '"';
-            console.log(m);
+            logger(1, m);
             throw new Error(m);
         }
 
@@ -381,7 +381,7 @@ export class KeyPair {
         let curve = EC_CURVES_SUBTLE[this.algorithm];
         if (!curve) {
             let m = `Cant create subtleCrypto key for curve '${this.algorithm}'`;
-            console.error(m);
+            logger(1, m);
             throw new Error(m);
         }
         let pub = this.getPublicKeyAsHexStr();
@@ -442,8 +442,8 @@ export class KeyPair {
     }
 
     async verifyStringWithSubtle(signature: Uint8Array, msg: string): Promise<boolean>{
-        // console.log('pubkey: ' + this.getPublicKeyAsHexStr() + ' msg:' + msg + ' signature:' + uint8tohex(signature));
-        // console.log(await this.getSubtlePublicKey());
+        logger(4, 'pubkey: ' + this.getPublicKeyAsHexStr() + ' msg:' + msg + ' signature:' + uint8tohex(signature));
+        logger(4, await this.getSubtlePublicKey());
 
         return await subtle.verify(
             {
@@ -464,11 +464,6 @@ export class KeyPair {
     }
 
     static anySignatureToRawUint8(derSignature: Uint8Array|string): Uint8Array {
-        // if (typeof derSignature === "string") {
-        //     console.log("raw signature(string):" + derSignature);
-        // } else {
-        //     console.log("raw signature(uint8):" + uint8tohex(derSignature));
-        // }
 
         let signatureUint8;
         if (typeof derSignature == "string") {
@@ -502,7 +497,7 @@ export class KeyPair {
                 let m = 'wrong Signature: ' + uint8tohex(signatureUint8);
                 throw new Error(m);
         }
-        // console.log("ready signature:" + uint8tohex(output));
+        logger(4, "ready signature:" + uint8tohex(output));
         return output;
     }
 

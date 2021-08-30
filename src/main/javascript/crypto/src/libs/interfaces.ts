@@ -7,7 +7,8 @@ export interface keyPair {
 
 export const ATTESTATION_TYPE: {[index: string]:number} = {
     phone: 0,
-    mail: 1
+    mail: 1,
+    InetPersona: 2
 }
 
 

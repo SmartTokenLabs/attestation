@@ -2,6 +2,7 @@ import {KeyPair} from "./KeyPair";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {Attestation} from "./Attestation";
 import {Validateable} from "./Validateable";
+import {logger} from "./utils";
 
 export class IdentifierAttestation extends Attestation implements Validateable{
     private crypto: AttestationCrypto;
@@ -120,17 +121,17 @@ export class IdentifierAttestation extends Attestation implements Validateable{
             return false;
         }
         if (this.getVersion() != IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION && this.getVersion() != IdentifierAttestation.NFT_VERSION) {
-            console.error("The version number is " + this.getVersion() + ", it must be either " + IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION + " or " + IdentifierAttestation.NFT_VERSION);
+            logger(1, "The version number is " + this.getVersion() + ", it must be either " + IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION + " or " + IdentifierAttestation.NFT_VERSION);
             return false;
         }
         if (this.getSigningAlgorithm() !== IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM) {
-            console.error("The subject is supposed to only be an Ethereum address as the Common Name");
+            logger(1, "The subject is supposed to only be an Ethereum address as the Common Name");
             return false;
         }
 
         if (this.getVersion() == IdentifierAttestation.NFT_VERSION) {
             if (!this.getSubject().includes(IdentifierAttestation.LABELED_URI)) {
-                console.error("A NFT Identifier attestation must have a labeled uri as subject");
+                logger(1, "A NFT Identifier attestation must have a labeled uri as subject");
                 return false;
             }
         }
@@ -138,7 +139,7 @@ export class IdentifierAttestation extends Attestation implements Validateable{
         if (this.getVersion() == IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION) {
             // Ensure that there is a commitment as part of the attestation
             if (this.getCommitment().length < AttestationCrypto.BYTES_IN_DIGEST) {
-                console.error("The attestation does not contain a valid commitment");
+                logger(1, "The attestation does not contain a valid commitment");
                 return false;
             }
         }

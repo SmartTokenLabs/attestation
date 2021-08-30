@@ -1,4 +1,4 @@
-import {hexStringToUint8, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToUint8, uint8toBuffer, uint8tohex, logger} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedInfo} from "../asn1/shemas/AttestationFramework";
 import {Extensions} from "../asn1/shemas/AuthenticationFramework";
@@ -107,35 +107,35 @@ export class Attestation {
         if (this.version != 0
             && this.version != 1
             && this.version != 2) {
-            console.error("Incorrect version number");
+            logger(1,"Incorrect version number");
             return false;
         }
         if (!this.issuer) {
-            console.error("Issuer info not set");
+            logger(1,"Issuer info not set");
             return false;
         }
         if (this.notValidBefore == null || this.notValidAfter == null) {
-            console.error("Validity period not set");
+            logger(1,"Validity period not set");
             return false;
         }
         if (this.subject == null) {
-            console.error("Subject info not set");
+            logger(1,"Subject info not set");
             return false;
         }
         if (!this.subjectKey) {
-            console.error("No subject public key info set");
+            logger(1, "No subject public key info set");
             return false;
         }
         if (this.smartcontracts != null) {
-            console.error("Smart contract info set");
+            logger(1, "Smart contract info set");
             return false;
         }
         if (this.dataObject != null) {
-            console.error("Data object set");
+            logger(1, "Data object set");
             return false;
         }
         if (this.version == null || this.serialNumber == null || this.signingAlgorithm == null) {
-            console.error("Version, serial number, subject or algorithm missing");
+            logger(1, "Version, serial number, subject or algorithm missing");
             return false;
         }
         return true;
@@ -182,7 +182,7 @@ export class Attestation {
             || this.signingAlgorithm == null
             || (!this.extensions && !this.dataObject && !this.commitment)
         ) {
-            console.log("Some attest data missed");
+            logger(1, "Some attest data missed");
             return false;
         }
         let currentTime = Date.now();
@@ -190,17 +190,17 @@ export class Attestation {
         let attNotAfter = this.getNotValidAfter();
 
         if ( attNotAfter && !(currentTime < attNotAfter)) {
-            console.log("Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
+            logger(1, "Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
             return false;
         }
 
         if ( attNotBefore && !(currentTime >= (attNotBefore - Timestamp.ALLOWED_ROUNDING))) {
-            console.log("Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
+            logger(1, "Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
             return false;
         }
 
         if (this.extensions != null && this.dataObject != null) {
-            console.log("Extensions or dataObject required");
+            logger(1, "Extensions or dataObject required");
             return false;
         }
 

@@ -1,6 +1,6 @@
 import {AttestationCrypto} from "./AttestationCrypto";
 import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
-import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {KeyPair} from "./KeyPair";
@@ -9,7 +9,6 @@ import {UseToken} from "../asn1/shemas/UseToken";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 import {IdentifierAttestation} from "./IdentifierAttestation";
 import {Attestable} from "./Attestable";
-import {SignatureUtility} from "./SignatureUtility";
 import {Verifiable} from "./Verifiable";
 import {ASNEncodable} from "./ASNEncodable";
 import {AttestableObject} from "./AttestableObject";
@@ -113,11 +112,11 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     public verify(): boolean{
         if (!this.attestableObject.verify()) {
-            console.error("Could not verify attestable object");
+            logger(1, "Could not verify attestable object");
             return false;
         }
         if (!this.att.verify()) {
-            console.error("Could not verify attestation");
+            logger(1, "Could not verify attestation");
             return false;
         }
         if (!this.crypto.verifyEqualityProof(
@@ -125,7 +124,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             this.attestableObject.getCommitment(),
             this.pok
         )) {
-            console.error("Could not verify the consistency between the commitment in the attestation and the attested object");
+            logger(1, "Could not verify the consistency between the commitment in the attestation and the attested object");
             return false;
         }
 
@@ -211,22 +210,22 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
             // CHECK: perform the needed checks of an identifier attestation
             if (!std.checkValidity()) {
-                console.error("The attestation is not a valid standard attestation");
+                logger(1, "The attestation is not a valid standard attestation");
                 return false;
             }
         } catch (e) {
-            console.error("The attestation is invalid");
+            logger(1, "The attestation is invalid");
             return false;
         }
 
         try {
             // CHECK: that the cheque is still valid
             if (!this.getAttestableObject().checkValidity()) {
-                console.error("Cheque is not valid");
+                logger(1, "Cheque is not valid");
                 return false;
             }
         } catch (e) {
-            console.error("Cheque validation failed");
+            logger(1, "Cheque validation failed");
             return false;
         }
 
@@ -235,17 +234,17 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             // CHECK: the Ethereum address on the attestation matches receivers signing key
             // let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
             let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getAddress();
-            console.log('attestationEthereumAddress: ' + attestationEthereumAddress);
-            console.log(this.getUserPublicKey());
-            console.log('this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
+            logger(3, 'attestationEthereumAddress: ' + attestationEthereumAddress);
+            logger(3, this.getUserPublicKey());
+            logger(3, 'this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
 
             if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
-                console.error("The attestation is not to the same Ethereum user who is sending this request");
+                logger(1, "The attestation is not to the same Ethereum user who is sending this request");
                 return false;
             }
         } catch (e) {
-            console.error("Address validation failed");
-            console.error(e);
+            logger(1, "Address validation failed");
+            logger(2, e);
             return false;
         }
 

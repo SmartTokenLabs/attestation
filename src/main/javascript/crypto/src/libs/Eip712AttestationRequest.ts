@@ -5,7 +5,7 @@ import {AttestationRequest} from "./AttestationRequest";
 import {KeyPair} from "./KeyPair";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {SignatureUtility} from "./SignatureUtility";
-import {base64ToUint8array, hexStringToBase64Url} from "./utils";
+import {base64ToUint8array, hexStringToBase64Url, logger} from "./utils";
 import {Nonce} from "./Nonce";
 import {Eip712Token} from "./Eip712Token";
 import {Timestamp} from "./Timestamp";
@@ -49,7 +49,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
             // decode JSON and fill publicKey
             this.fillJsonData(this.jsonEncoding);
         } catch (e){
-            console.log(e);
+            logger(1, e);
             return false;
         }
     }
@@ -68,10 +68,10 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
-            // console.log('restored address: ' + this.requestorKeys.getAddress());
+            logger(3, 'restored address: ' + this.requestorKeys.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
-            console.log(m)
+            logger(1, m, e);
             throw new Error(m);
         }
 
@@ -86,7 +86,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         if (!this.verify()) {
             throw new Error("Could not verify Eip712 AttestationRequest");
         }
-        // console.log('verify OK');
+        logger(3, 'Eip712 Attestaion Request verify OK');
     }
 
     async makeToken(identifier: string) {
@@ -142,7 +142,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     public checkValidity(): boolean {
 
         if (this.data.description !== this.Eip712UserDataDescription) {
-            if (debugLog) { console.log('Description is not correct. :' + this.data.description + ' !== ' + this.Eip712UserDataDescription);}
+            logger(2,'Description is not correct. :' + this.data.description + ' !== ' + this.Eip712UserDataDescription);
             return false;
         };
 
@@ -151,7 +151,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         timestamp.setValidity(this.acceptableTimeLimit);
         if (!timestamp.validateTimestamp()) {
 
-            console.log(`timestamp is not correct. timestamp = ${this.data.timestamp}, acceptableTimeLimit = ${this.acceptableTimeLimit}`);
+            logger(1, `timestamp is not correct. timestamp = ${this.data.timestamp}, acceptableTimeLimit = ${this.acceptableTimeLimit}`);
             return false;
         }
 
@@ -161,7 +161,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
             this.domain,
             Timestamp.stringTimestampToLong(this.data.timestamp)-this.acceptableTimeLimit,
             Timestamp.stringTimestampToLong(this.data.timestamp)+this.acceptableTimeLimit)) {
-            console.log('nonce is not correct');
+            logger(1, 'nonce is not correct');
             return false;
         }
 

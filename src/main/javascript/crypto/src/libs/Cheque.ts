@@ -1,7 +1,7 @@
 import {ATTESTATION_TYPE} from "./interfaces";
 import {Asn1Der} from "./DerUtility";
 import { AttestationCrypto } from "./AttestationCrypto";
-import {hexStringToArray, uint8tohex} from "./utils";
+import {hexStringToArray, logger, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
 import {Attestable} from "./Attestable";
@@ -121,12 +121,12 @@ export class Cheque implements Attestable {
     public checkValidity(): boolean {
         let now: number = Date.now();
         if ( this.notValidBefore > now ) {
-            console.log("Cheque is no longer valid");
+            logger(1, "Cheque is no longer valid");
             return false;
         }
 
         if ( this.notValidAfter < now ) {
-            console.log("Cheque expired");
+            logger(1, "Cheque expired");
             return false;
         }
 

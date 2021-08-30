@@ -1,4 +1,4 @@
-import {base64ToUint8array, uint8tohex} from "./utils";
+import {base64ToUint8array, logger, uint8tohex} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedCheque} from "../asn1/shemas/SignedCheque";
 import {KeyPair} from "./KeyPair";
@@ -14,7 +14,7 @@ export class ChequeDecoder {
         let amount: number = signedCheque.cheque.amount;
         let notValidBefore: number = signedCheque.cheque.validity.notBefore.generalizedTime.getTime();
         let notValidAfter: number = signedCheque.cheque.validity.notAfter.generalizedTime.getTime();
-        // console.log('signedCheque',signedCheque);
+        logger(3, 'signedCheque',signedCheque);
 
         let commitment = new Uint8Array(signedCheque.cheque.commitment);
         let publicKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(signedCheque.publicKey)))

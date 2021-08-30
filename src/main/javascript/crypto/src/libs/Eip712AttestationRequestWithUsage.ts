@@ -7,7 +7,7 @@ import {TokenValidateable} from "./TokenValidateable";
 import {Eip712AttestationRequest} from "./Eip712AttestationRequest";
 import { AttestationRequestWithUsage } from "./AttestationRequestWithUsage";
 import {KeyPair} from "./KeyPair";
-import {base64ToUint8array, hexStringToBase64Url} from "./utils";
+import {base64ToUint8array, hexStringToBase64Url, logger} from "./utils";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {SignatureUtility} from "./SignatureUtility";
 import {Nonce} from "./Nonce";
@@ -70,7 +70,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
             this.attestationRequestWithUsage = attestationRequestWithUsage;
             this.jsonEncoding = await this.makeToken(identifier, attestationRequestWithUsage);
         } catch ( e ) {
-            console.log(e);
+            logger(1, e);
             throw new Error("Could not encode object");
         }
 
@@ -93,7 +93,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
             this.fillJsonData(this.jsonEncoding);
 
         } catch ( e ) {
-            console.log(e);
+            logger(1,e);
             throw new Error("Could not decode object");
         }
     }
@@ -112,10 +112,10 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.userPublicKey = KeyPair.fromPublicHex(publicKey.substr(2));
-            // console.log('Eip712 withUsage restored address: ' + this.userPublicKey.getAddress());
+            logger(3, 'Eip712 withUsage restored address: ' + this.userPublicKey.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
-            console.log(m)
+            logger(1, m, e)
             throw new Error(m);
         }
 
@@ -195,7 +195,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         let time:Timestamp = new Timestamp(this.data.timestamp);
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {
-            console.log('time.validateAgainstExpiration filed');
+            logger(1, 'time.validateAgainstExpiration filed');
             return false;
         }
         // Nonce validation must still happen since this also verifies user's address and receiver's domain
