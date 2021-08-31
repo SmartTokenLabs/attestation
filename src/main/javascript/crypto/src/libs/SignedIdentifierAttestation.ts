@@ -1,13 +1,14 @@
 import {AsnParser} from "@peculiar/asn1-schema";
 import {MyAttestation} from "../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
-import {hexStringToArray, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
 import {Attestation} from "./Attestation";
 import {Verifiable} from "./Verifiable";
 import {Validateable} from "./Validateable";
 import {ASNEncodable} from "./ASNEncodable";
 import {Asn1Der} from "./DerUtility";
 import {IdentifierAttestation} from "./IdentifierAttestation";
+import {DEBUGLEVEL} from "../config";
 
 export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Validateable {
     private signature: string;
@@ -58,7 +59,7 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
             return this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), this.signature);
 
         } catch (e) {
-            console.error(e);
+            logger(DEBUGLEVEL.LOW, e);
             return false;
         }
     }

@@ -1,7 +1,8 @@
-import {hexStringToArray, hexStringToUint8} from "./utils";
+import {hexStringToArray, hexStringToUint8, logger} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {ethers} from "ethers";
 import {_TypedDataEncoder, recoverPublicKey} from "ethers/lib/utils";
+import {DEBUGLEVEL} from "../config";
 
 
 let EC = require("elliptic");
@@ -222,7 +223,7 @@ export class SignatureUtility {
             };
             return JSON.stringify(externalAuthenticationData);
         } catch (e){
-            console.error('Cant sign eip712 data. Error: '+ e);
+            logger(DEBUGLEVEL.LOW, 'Cant sign eip712 data. Error: '+ e);
             return '';
         }
     }

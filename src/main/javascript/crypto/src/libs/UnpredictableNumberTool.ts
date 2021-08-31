@@ -1,6 +1,7 @@
 import {Hmac} from 'crypto';
-import {bnToUint8, isDomainValid, uint8arrayToBase64} from "./utils";
+import {bnToUint8, isDomainValid, logger, uint8arrayToBase64} from "./utils";
 import {UnpredictableNumberBundle} from "./UnpredictableNumberBundle";
+import {DEBUGLEVEL} from "../config";
 const { TextEncoder } = require('util');
 
 export const DEFAULT_VALIDITY_IN_MS: bigint = BigInt(3600 * 1000);
@@ -45,12 +46,12 @@ export class UnpredictableNumberTool {
 
   validateUnpredictableNumber(un: string, randomness: Uint8Array, expirationInMs: bigint): boolean {
     if (new Date().getUTCMilliseconds() > expirationInMs) {
-      console.error('Unpredictable number has expired');
+      logger(DEBUGLEVEL.LOW, 'Unpredictable number has expired');
       return false;
     }
     const expectedNumber = this.getUnpredictableNumber(randomness, expirationInMs);
     if (expectedNumber !== un) {
-      console.error('The unpredictable number is computed incorrectly. Either wrong key or wrong domain');
+      logger(DEBUGLEVEL.LOW, 'The unpredictable number is computed incorrectly. Either wrong key or wrong domain');
       return false;
     }
     return true;

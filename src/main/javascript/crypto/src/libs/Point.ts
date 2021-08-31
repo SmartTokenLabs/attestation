@@ -1,4 +1,5 @@
-import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn, hexStringToUint8} from "./utils";
+import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn, hexStringToUint8, logger} from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 // curve SECP256k1
 export let CURVE_SECP256k1 = {
@@ -182,22 +183,17 @@ export class Point {
         }
         if (!p.validate()) {
             let m = `Point is not valid (` + p.x.toString(16) + ',' + p.y.toString(16) + `)`;
-            console.log(m);
-            // console.log(p);
+            logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         }
         return p;
     }
 
     validate(): boolean{
-        // return (
-            // mod(this.y * this.y, this.useCurve.P)
-            // - mod(BnPowMod(this.x, 3n, this.useCurve.P) + this.x * this.useCurve.A + this.useCurve.B , this.useCurve.P) ) == 0n;
         let res = mod( mod(this.y * this.y, this.useCurve.P) - mod(
                 BnPowMod(this.x, 3n, this.useCurve.P)
                 + mod(this.x * this.useCurve.A, this.useCurve.P) + this.useCurve.B
                 , this.useCurve.P) , this.useCurve.P);
-        // console.log('val res = ' + res);
         return res == 0n;
     }
 

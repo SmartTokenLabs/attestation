@@ -1,4 +1,12 @@
-import {stringToHex, hexStringToArray, base64ToUint8array, uint8tohex, formatGeneralizedDateTime} from "./utils";
+import {
+    stringToHex,
+    hexStringToArray,
+    base64ToUint8array,
+    uint8tohex,
+    formatGeneralizedDateTime,
+    logger
+} from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 const matchAll = require('string.prototype.matchall');
 
@@ -256,13 +264,14 @@ export class Asn1Der {
         let typeTag:number = derArr.shift();
         let len:number = this.lenEncoded(derArr);
         let typeTagName:string = Asn1DerTagById[typeTag];
-        // console.log(typeTagName);
+        logger(DEBUGLEVEL.VERBOSE, "Der utility typeTagName:" + typeTagName);
         let content: number[] = [];
 
         for (let i = 0; i < len; i++){
             content.push(derArr.shift());
         }
-        // console.log(content);
+        logger(DEBUGLEVEL.VERBOSE, "Der Utility content");
+        logger(DEBUGLEVEL.VERBOSE, content);
         let outputStr = '';
         switch (typeTagName) {
             case "SEQUENCE_30":

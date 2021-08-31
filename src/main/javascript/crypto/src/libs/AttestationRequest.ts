@@ -1,10 +1,11 @@
 import {CURVE_BN256, Point} from "./Point";
 import { Asn1Der } from "./DerUtility";
-import { uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {logger, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {Identifier} from "../asn1/shemas/AttestationRequest";
+import {DEBUGLEVEL} from "../config";
 
 export class AttestationRequest {
     private type: number;
@@ -57,7 +58,7 @@ export class AttestationRequest {
         if (!me.verify()) {
             throw new Error("Could not verify the proof");
         }
-        // console.log('proof OK');
+        logger(DEBUGLEVEL.HIGH, 'proof OK');
         return me;
     }
 
@@ -69,7 +70,7 @@ export class AttestationRequest {
             return false;
         }
 
-        // console.log('VerifyAttestationRequestProof OK');
+        logger(DEBUGLEVEL.HIGH, 'VerifyAttestationRequestProof OK');
 
         return true;
     }

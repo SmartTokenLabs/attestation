@@ -1,9 +1,11 @@
-import {hexStringToUint8, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToUint8, uint8toBuffer, uint8tohex, logger} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedInfo} from "../asn1/shemas/AttestationFramework";
 import {Extensions} from "../asn1/shemas/AuthenticationFramework";
 import {KeyPair} from "./KeyPair";
 import {Asn1Der} from "./DerUtility";
+import {Timestamp} from "./Timestamp";
+import {DEBUGLEVEL} from "../config";
 
 export class Attestation {
     static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
@@ -106,35 +108,35 @@ export class Attestation {
         if (this.version != 0
             && this.version != 1
             && this.version != 2) {
-            console.error("Incorrect version number");
+            logger(DEBUGLEVEL.LOW,"Incorrect version number");
             return false;
         }
         if (!this.issuer) {
-            console.error("Issuer info not set");
+            logger(DEBUGLEVEL.LOW,"Issuer info not set");
             return false;
         }
         if (this.notValidBefore == null || this.notValidAfter == null) {
-            console.error("Validity period not set");
+            logger(DEBUGLEVEL.LOW,"Validity period not set");
             return false;
         }
         if (this.subject == null) {
-            console.error("Subject info not set");
+            logger(DEBUGLEVEL.LOW,"Subject info not set");
             return false;
         }
         if (!this.subjectKey) {
-            console.error("No subject public key info set");
+            logger(DEBUGLEVEL.LOW, "No subject public key info set");
             return false;
         }
         if (this.smartcontracts != null) {
-            console.error("Smart contract info set");
+            logger(DEBUGLEVEL.LOW, "Smart contract info set");
             return false;
         }
         if (this.dataObject != null) {
-            console.error("Data object set");
+            logger(DEBUGLEVEL.LOW, "Data object set");
             return false;
         }
         if (this.version == null || this.serialNumber == null || this.signingAlgorithm == null) {
-            console.error("Version, serial number, subject or algorithm missing");
+            logger(DEBUGLEVEL.LOW, "Version, serial number, subject or algorithm missing");
             return false;
         }
         return true;
@@ -181,20 +183,28 @@ export class Attestation {
             || this.signingAlgorithm == null
             || (!this.extensions && !this.dataObject && !this.commitment)
         ) {
-            console.log("Some attest data missed");
+            logger(DEBUGLEVEL.LOW, "Some attest data missed");
             return false;
         }
         let currentTime = Date.now();
         let attNotBefore = this.getNotValidBefore();
         let attNotAfter = this.getNotValidAfter();
-        if ( attNotBefore && attNotAfter && !(currentTime >= attNotBefore && currentTime < attNotAfter)) {
-            console.log("Attestation is no longer valid");
+
+        if ( attNotAfter && !(currentTime < (attNotAfter + Timestamp.ALLOWED_ROUNDING))) {
+            logger(DEBUGLEVEL.LOW, "Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
             return false;
         }
+
+        if ( attNotBefore && !(currentTime >= (attNotBefore - Timestamp.ALLOWED_ROUNDING))) {
+            logger(DEBUGLEVEL.LOW, "Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
+            return false;
+        }
+
         if (this.extensions != null && this.dataObject != null) {
-            console.log("Extensions or dataObject required");
+            logger(DEBUGLEVEL.LOW, "Extensions or dataObject required");
             return false;
         }
+
         return true;
     }
 

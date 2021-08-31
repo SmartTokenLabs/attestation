@@ -1,12 +1,13 @@
 import {
     getInt64Bytes,
-    hashStringTo32bytesUint8,
+    hashStringTo32bytesUint8, logger,
     stringToArray,
     uint8merge, uint8ToBn, uint8tohex, uint8toString
 } from "./utils";
 import {SignatureUtility} from "./SignatureUtility";
 import {ValidationTools} from "./ValidationTools";
 import {Timestamp} from "./Timestamp";
+import {DEBUGLEVEL} from "../config";
 
 export class Nonce {
     static LONG_BYTES:number = 8;
@@ -49,22 +50,22 @@ export class Nonce {
     validateNonce(nonce: Uint8Array, senderAddress: string, receiverIdentifier: string, minTime:number, maxTime:number, otherData: Uint8Array = new Uint8Array(0)): boolean{
 
         if (!Nonce.validateAddress(nonce, senderAddress)) {
-            console.log('validateAddress check failed for ' + senderAddress);
+            logger(DEBUGLEVEL.LOW, 'validateAddress check failed for ' + senderAddress);
             return false;
         }
 
         if (!this.validateReceiverIdentifier(nonce, receiverIdentifier)) {
-            console.log('validateReceiverIdentifier check failed');
+            logger(DEBUGLEVEL.LOW, 'validateReceiverIdentifier check failed');
             return false;
         }
 
         if (!this.validateTimestamp(nonce, minTime, maxTime)) {
-            console.log('timestamp check failed');
+            logger(DEBUGLEVEL.LOW, 'timestamp check failed');
             return false;
         }
 
         if (!this.validateOtherData(nonce, otherData)) {
-            console.log('otherData check failed');
+            logger(DEBUGLEVEL.LOW, 'otherData check failed');
             return false;
         }
 
@@ -85,7 +86,7 @@ export class Nonce {
     static validateAddress(nonce: Uint8Array, address: string):boolean {
         let nonceAddress = uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop));
         if (address.toUpperCase() === nonceAddress.toUpperCase()) return true;
-        console.log('nonceAddress = ' + nonceAddress);
+        logger(DEBUGLEVEL.LOW, 'nonceAddress = ' + nonceAddress);
         return false;
     }
 
@@ -102,8 +103,6 @@ export class Nonce {
     static getTimestamp(nonce: Uint8Array): number {
         let time = nonce.slice(Nonce.timestampIndexStart,Nonce.timestampIndexStop);
         let bn = uint8ToBn(time);
-        // console.log('time in uint8' + uint8tohex(time));
-        // console.log('time in bn' + bn);
         if (bn > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('timestamp value bigger than MAX_SAFE_INTEGER');
         return Number(bn);
     }

@@ -1,8 +1,6 @@
 import {AttestationCrypto} from "./libs/AttestationCrypto";
 import {KeyPair} from "./libs/KeyPair";
-import {ATTESTATION_TYPE} from "./libs/interfaces";
 import {Asn1Der} from "./libs/DerUtility";
-import {SignatureUtility} from "./libs/SignatureUtility";
 import {AttestableObject} from "./libs/AttestableObject";
 import {base64ToUint8array, hexStringToArray, uint8toBuffer, uint8tohex} from "./libs/utils";
 import {SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
