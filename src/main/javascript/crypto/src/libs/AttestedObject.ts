@@ -12,6 +12,7 @@ import {Attestable} from "./Attestable";
 import {Verifiable} from "./Verifiable";
 import {ASNEncodable} from "./ASNEncodable";
 import {AttestableObject} from "./AttestableObject";
+import {DEBUGLEVEL} from "../config";
 
 declare global {
     interface Window {
@@ -112,11 +113,11 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
     public verify(): boolean{
         if (!this.attestableObject.verify()) {
-            logger(1, "Could not verify attestable object");
+            logger(DEBUGLEVEL.LOW, "Could not verify attestable object");
             return false;
         }
         if (!this.att.verify()) {
-            logger(1, "Could not verify attestation");
+            logger(DEBUGLEVEL.LOW, "Could not verify attestation");
             return false;
         }
         if (!this.crypto.verifyEqualityProof(
@@ -124,7 +125,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             this.attestableObject.getCommitment(),
             this.pok
         )) {
-            logger(1, "Could not verify the consistency between the commitment in the attestation and the attested object");
+            logger(DEBUGLEVEL.LOW, "Could not verify the consistency between the commitment in the attestation and the attested object");
             return false;
         }
 
@@ -210,22 +211,22 @@ export class AttestedObject implements ASNEncodable, Verifiable {
 
             // CHECK: perform the needed checks of an identifier attestation
             if (!std.checkValidity()) {
-                logger(1, "The attestation is not a valid standard attestation");
+                logger(DEBUGLEVEL.LOW, "The attestation is not a valid standard attestation");
                 return false;
             }
         } catch (e) {
-            logger(1, "The attestation is invalid");
+            logger(DEBUGLEVEL.LOW, "The attestation is invalid");
             return false;
         }
 
         try {
             // CHECK: that the cheque is still valid
             if (!this.getAttestableObject().checkValidity()) {
-                logger(1, "Cheque is not valid");
+                logger(DEBUGLEVEL.LOW, "Cheque is not valid");
                 return false;
             }
         } catch (e) {
-            logger(1, "Cheque validation failed");
+            logger(DEBUGLEVEL.LOW, "Cheque validation failed");
             return false;
         }
 
@@ -234,17 +235,17 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             // CHECK: the Ethereum address on the attestation matches receivers signing key
             // let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
             let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getAddress();
-            logger(3, 'attestationEthereumAddress: ' + attestationEthereumAddress);
-            logger(3, this.getUserPublicKey());
-            logger(3, 'this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
+            logger(DEBUGLEVEL.HIGH, 'attestationEthereumAddress: ' + attestationEthereumAddress);
+            logger(DEBUGLEVEL.HIGH, this.getUserPublicKey());
+            logger(DEBUGLEVEL.HIGH, 'this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
 
             if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
-                logger(1, "The attestation is not to the same Ethereum user who is sending this request");
+                logger(DEBUGLEVEL.LOW, "The attestation is not to the same Ethereum user who is sending this request");
                 return false;
             }
         } catch (e) {
-            logger(1, "Address validation failed");
-            logger(2, e);
+            logger(DEBUGLEVEL.LOW, "Address validation failed");
+            logger(DEBUGLEVEL.MEDIUM, e);
             return false;
         }
 

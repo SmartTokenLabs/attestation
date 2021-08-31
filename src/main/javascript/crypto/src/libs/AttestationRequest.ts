@@ -5,6 +5,7 @@ import {AttestationCrypto} from "./AttestationCrypto";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {Identifier} from "../asn1/shemas/AttestationRequest";
+import {DEBUGLEVEL} from "../config";
 
 export class AttestationRequest {
     private type: number;
@@ -57,7 +58,7 @@ export class AttestationRequest {
         if (!me.verify()) {
             throw new Error("Could not verify the proof");
         }
-        logger(3, 'proof OK');
+        logger(DEBUGLEVEL.HIGH, 'proof OK');
         return me;
     }
 
@@ -69,7 +70,7 @@ export class AttestationRequest {
             return false;
         }
 
-        logger(3, 'VerifyAttestationRequestProof OK');
+        logger(DEBUGLEVEL.HIGH, 'VerifyAttestationRequestProof OK');
 
         return true;
     }

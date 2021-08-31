@@ -11,7 +11,7 @@ import {FullProofOfExponent} from "./FullProofOfExponent";
 import {Nonce} from "./Nonce";
 import {TokenValidateable} from "./TokenValidateable";
 import {Timestamp} from "./Timestamp";
-import {debugLog} from "../config";
+import {DEBUGLEVEL} from "../config";
 
 export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable, Verifiable, TokenValidateable {
     public PLACEHOLDER_CHAIN_ID: number = 0;
@@ -53,7 +53,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         try {
             this.jsonEncoding = await this.makeToken(identifier, useAttestation);
         } catch ( e ) {
-            logger(1, e);
+            logger(DEBUGLEVEL.LOW, e);
             throw new Error("Could not encode object. " + e);
         }
 
@@ -61,7 +61,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             // decode JSON and fill publicKey
             this.fillJsonData(this.jsonEncoding);
         } catch (e){
-            logger(1, e);
+            logger(DEBUGLEVEL.LOW, e);
             return false;
         }
 
@@ -88,20 +88,20 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.requestorKeys = KeyPair.fromPublicHex(publicKey.substr(2));
-            logger(3, 'restored address: ' + this.requestorKeys.getAddress());
+            logger(DEBUGLEVEL.HIGH, 'restored address: ' + this.requestorKeys.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
-            logger(1, m, e);
+            logger(DEBUGLEVEL.LOW, m, e);
             throw new Error(m);
         }
 
         if (!this.useAttestation){
             try {
-                logger(4, uint8tohex(base64ToUint8array(this.data.payload)));
+                logger(DEBUGLEVEL.VERBOSE, uint8tohex(base64ToUint8array(this.data.payload)));
                 this.useAttestation = UseAttestation.fromBytes(base64ToUint8array(this.data.payload), this.attestorKey);
             } catch (e){
                 let m = "Failed to read UseAttestation. " + e;
-                logger(1, m, e);
+                logger(DEBUGLEVEL.LOW, m, e);
                 throw new Error(m);
             }
         }
@@ -140,7 +140,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         let candidateRiddle: Point = commitmentPoint.subtract(Pedestren_G.multiplyDA(candidateExponent));
 
         if (!candidateRiddle.equals(this.getPok().getRiddle())) {
-            logger(1, 'candidateRiddle.equals(this.getPok().getRiddle()) error');
+            logger(DEBUGLEVEL.LOW, 'candidateRiddle.equals(this.getPok().getRiddle()) error');
             return false;
         }
         return true;
@@ -172,12 +172,12 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         let nonceMaxTime: number = Timestamp.stringTimestampToLong(this.data.expirationTime);
 
         if (!this.useAttestation.checkValidity()){
-            logger(1, 'useAttestation.checkValidity failed');
+            logger(DEBUGLEVEL.LOW, 'useAttestation.checkValidity failed');
             return false;
         };
 
         if (this.data.description != this.Eip712Description) {
-            logger(1, `wrong description: "${this.data.description}", must be "${this.Eip712Description}"`);
+            logger(DEBUGLEVEL.LOW, `wrong description: "${this.data.description}", must be "${this.Eip712Description}"`);
             return false;
         };
 
@@ -185,12 +185,12 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {
 
-            logger(1, 'verify timestamp failed.\n' + this.data.timestamp + "\n" + this.maxTokenValidityInMs + "\n" + this.data.expirationTime + "\n" + Timestamp.stringTimestampToLong(this.data.expirationTime) + "\n");
+            logger(DEBUGLEVEL.LOW, 'verify timestamp failed.\n' + this.data.timestamp + "\n" + this.maxTokenValidityInMs + "\n" + this.data.expirationTime + "\n" + Timestamp.stringTimestampToLong(this.data.expirationTime) + "\n");
             return false;
         }
 
         if (this.requestorKeys.getAddress().toLowerCase() !== this.useAttestation.getAttestation().getUnsignedAttestation().getAddress().toLowerCase()) {
-            logger(1, 'wrong address');
+            logger(DEBUGLEVEL.LOW, 'wrong address');
             return false;
         };
 
@@ -201,12 +201,12 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             nonceMinTime,
             nonceMaxTime
         ))) {
-            logger(1, 'wrong Nonce');
+            logger(DEBUGLEVEL.LOW, 'wrong Nonce');
             return false;
         };
 
         if (!this.proofLinking()) {
-            logger(1, 'wrong proofLinking');
+            logger(DEBUGLEVEL.LOW, 'wrong proofLinking');
             return false;
         };
 

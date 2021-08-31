@@ -1,4 +1,5 @@
 import {logger} from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 export class ValidationTools {
     static ADDRESS_LENGTH_IN_BYTES:number = 42;
@@ -15,7 +16,7 @@ export class ValidationTools {
 
     static isAddress(address: string): boolean {
         if (address.toLowerCase().match(/^0x[a-f0-9]{40}$/i) === null) {
-            logger(1, 'Wrong Ethereum Address');
+            logger(DEBUGLEVEL.LOW, 'Wrong Ethereum Address');
             return false;
         }
         return true;

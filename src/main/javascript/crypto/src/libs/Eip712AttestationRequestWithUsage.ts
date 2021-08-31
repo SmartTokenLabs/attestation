@@ -14,6 +14,7 @@ import {Nonce} from "./Nonce";
 import {AttestationRequest} from "./AttestationRequest";
 import {Eip712Token} from "./Eip712Token";
 import {Timestamp} from "./Timestamp";
+import {DEBUGLEVEL} from "../config";
 
 export class Eip712AttestationRequestWithUsage extends Eip712Token implements JsonEncodable,
     Verifiable, Validateable, TokenValidateable {
@@ -70,7 +71,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
             this.attestationRequestWithUsage = attestationRequestWithUsage;
             this.jsonEncoding = await this.makeToken(identifier, attestationRequestWithUsage);
         } catch ( e ) {
-            logger(1, e);
+            logger(DEBUGLEVEL.LOW, e);
             throw new Error("Could not encode object");
         }
 
@@ -93,7 +94,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
             this.fillJsonData(this.jsonEncoding);
 
         } catch ( e ) {
-            logger(1,e);
+            logger(DEBUGLEVEL.LOW,e);
             throw new Error("Could not decode object");
         }
     }
@@ -112,10 +113,10 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         try {
             let publicKey = SignatureUtility.recoverPublicKeyFromTypedMessageSignature(jsonSigned, signatureInHex);
             this.userPublicKey = KeyPair.fromPublicHex(publicKey.substr(2));
-            logger(3, 'Eip712 withUsage restored address: ' + this.userPublicKey.getAddress());
+            logger(DEBUGLEVEL.HIGH, 'Eip712 withUsage restored address: ' + this.userPublicKey.getAddress());
         } catch (e){
             let m = "Recover Address failed with error:" + e;
-            logger(1, m, e)
+            logger(DEBUGLEVEL.LOW, m, e)
             throw new Error(m);
         }
 
@@ -195,7 +196,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         let time:Timestamp = new Timestamp(this.data.timestamp);
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {
-            logger(1, 'time.validateAgainstExpiration filed');
+            logger(DEBUGLEVEL.LOW, 'time.validateAgainstExpiration filed');
             return false;
         }
         // Nonce validation must still happen since this also verifies user's address and receiver's domain

@@ -1,5 +1,5 @@
 import {CURVE_BN256, CURVE_SECP256k1} from "./Point";
-import {debugLevel} from "../config";
+import {displayDebugLevel, testsDisplayDebugLevel} from "../config";
 let sha3 = require("js-sha3");
 
 export function stringToHex(str: string) {
@@ -291,6 +291,11 @@ export function isDomainValid(domain: string): boolean {
 }
 
 export function logger(level:number, ...args: any){
-    if (level > debugLevel) return;
+    if (level > displayDebugLevel) return;
+    console.log(...args);
+}
+
+export function testsLogger(level:number, ...args: any){
+    if (level > testsDisplayDebugLevel) return;
     console.log(...args);
 }

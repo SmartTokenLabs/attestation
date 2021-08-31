@@ -5,6 +5,7 @@ import {hexStringToArray, logger, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
 import {Attestable} from "./Attestable";
+import {DEBUGLEVEL} from "../config";
 
 let sha3 = require("js-sha3");
 let EC = require("elliptic");
@@ -121,12 +122,12 @@ export class Cheque implements Attestable {
     public checkValidity(): boolean {
         let now: number = Date.now();
         if ( this.notValidBefore > now ) {
-            logger(1, "Cheque is no longer valid");
+            logger(DEBUGLEVEL.LOW, "Cheque is no longer valid");
             return false;
         }
 
         if ( this.notValidAfter < now ) {
-            logger(1, "Cheque expired");
+            logger(DEBUGLEVEL.LOW, "Cheque expired");
             return false;
         }
 

@@ -1,11 +1,16 @@
-import {bnToUint8, hexStringToUint8, stringToArray, uint8arrayToBase64, uint8tohex} from './libs/utils';
+import {
+    bnToUint8,
+    hexStringToUint8,
+    stringToArray,
+    uint8arrayToBase64,
+    uint8tohex,
+    testsLogger
+} from './libs/utils';
 import {readFileSync} from "fs";
 import {KeyPair} from "./libs/KeyPair";
 import {Authenticator} from "./Authenticator";
-import {Eip712AttestationUsage} from "./libs/Eip712AttestationUsage";
-import {Timestamp} from "./libs/Timestamp";
 import {Asn1Der} from "./libs/DerUtility";
-import {debugLog} from "./config";
+import {DEBUGLEVEL} from "./config";
 
 let EC = require("elliptic");
 
@@ -75,10 +80,9 @@ describe("Subtle import test", () => {
         try {
             let subtleSignature = new Uint8Array( await sessionKey.signStringWithSubtle(messageToSign) );
              res = await sessionKey.verifyStringWithSubtle(subtleSignature, messageToSign);
-             // console.log('direct sign-verify state: ' + res + ', signature = ' + uint8tohex(subtleSignature) );
+            testsLogger(DEBUGLEVEL.HIGH, 'direct sign-verify state: ' + res + ', signature = ' + uint8tohex(subtleSignature) );
         } catch (e){
-            console.error('Import key Error. '+e);
-            // throw new Error(e);
+            testsLogger(DEBUGLEVEL.LOW, 'Import key Error. ',e);
         }
 
         expect(res).toBe(true);
@@ -91,8 +95,7 @@ describe("Subtle import test", () => {
             res = sessionKey.verifyDeterministicSHA256(stringToArray(messageToSign), uint8tohex(new Uint8Array(signatureBin)));
         } catch (e) {
             let m = 'verifyDeterministicSHA256 Error. '+e;
-            console.error(m);
-            // throw new Error(m);
+            testsLogger(DEBUGLEVEL.LOW, m);
         }
 
         expect(res).toBe(true);
@@ -104,7 +107,7 @@ describe("Subtle import test", () => {
             res = await sessionKey.verifyStringWithSubtleDerSignature(Uint8Array.from(signatureBin), messageToSign);
         } catch (e) {
             let m = 'verifyStringWithSubtleDerSignature Error. '+e;
-            console.error(m);
+            testsLogger(DEBUGLEVEL.LOW, m);
             // throw new Error(m);
         }
 
@@ -121,7 +124,7 @@ describe("Attestation request/construct", () => {
 
         let attestationResult = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        // console.log("attestationResult = " + attestationResult);
+        testsLogger(DEBUGLEVEL.HIGH, "attestationResult = " + attestationResult);
         // OK if no Errors
         expect(1).toBe(1);
 
@@ -134,7 +137,7 @@ describe("Attestation request/construct", () => {
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
         let attestJson = await Authenticator.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret, userKey);
         attestationRequestJson = attestJson;
-        // console.log(`attestJson = ${attestJson}`);
+        testsLogger(DEBUGLEVEL.HIGH, `attestJson = ${attestJson}`);
         // OK if no Errors
         expect(1).toBe(1);
     })
@@ -145,11 +148,9 @@ describe("Attestation request/construct", () => {
 
         let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 24*60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        if (debugLog) {
-            console.log("attestRes = " + attestRes);
-            console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(attestRes)));
-            console.log("base64 = " + uint8arrayToBase64(hexStringToUint8(Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(12345n)))))));
-        }
+        testsLogger(DEBUGLEVEL.MEDIUM, "attestRes = " + attestRes);
+        testsLogger(DEBUGLEVEL.MEDIUM, "base64 = " + uint8arrayToBase64(hexStringToUint8(attestRes)));
+        testsLogger(DEBUGLEVEL.MEDIUM, "base64 = " + uint8arrayToBase64(hexStringToUint8(Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(12345n)))))));
         // OK if no Errors
         expect(1).toBe(1);
 
@@ -166,14 +167,13 @@ describe("executeEipFlow", () => {
         try {
             sessionSignature = new Uint8Array(await sessionKey.signStringWithSubtle(sessionMessage));
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             // throw new Error('signStringWithSubtle failed');
         }
         expect(1).toBe(1);
-        if (debugLog) {
-            console.log(`sessionKey = ` + sessionKey.getAddress());
-            console.log(`session signature = ` + uint8tohex(sessionSignature));
-        }
+        testsLogger(DEBUGLEVEL.MEDIUM, `sessionKey = ` + sessionKey.getAddress());
+        testsLogger(DEBUGLEVEL.MEDIUM, `session signature = ` + uint8tohex(sessionSignature));
+
     })
 
     test('executeEipFlow - verify-usage(external json and subtle signature)', async () => {
@@ -186,9 +186,9 @@ describe("executeEipFlow", () => {
                 sessionMessage,
                 WEB_DOMAIN,
                 sessionSignature);
-            // console.log(`verifyUsage result = ${res}`);
+            testsLogger(DEBUGLEVEL.HIGH, `verifyUsage result = ${res}`);
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('verifyUsage failed');
         }
         expect(res).toBe("SUCCESSFULLY validated usage request!");
@@ -211,9 +211,9 @@ describe("executeEipFlow", () => {
                 sessionKey,
                 userKey);
             useAttestationJson = useAttestRes;
-            // console.log(`useAttestRes = ${useAttestRes}`);
+            testsLogger(DEBUGLEVEL.HIGH, `useAttestRes = ${useAttestRes}`);
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('useAttestRes failed');
         }
 
@@ -233,9 +233,9 @@ describe("executeEipFlow", () => {
                 sessionMessage,
                 WEB_DOMAIN,
                 sessionSignature);
-            // console.log(`verifyUsage result = ${res}`);
+            testsLogger(DEBUGLEVEL.HIGH, `verifyUsage result = ${res}`);
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('verifyUsage failed');
         }
         expect(res).toBe("SUCCESSFULLY validated usage request!");
@@ -263,7 +263,7 @@ describe("executeCombinedEipFlow", () => {
 
         let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
 
-        // console.log(attestRes);
+        testsLogger(DEBUGLEVEL.VERBOSE, attestRes);
         // if no Errors then its OK
         expect(1).toBe(1);
     })
@@ -278,9 +278,9 @@ describe("executeCombinedEipFlow", () => {
                 sessionMessage,
                 ATTESTOR_DOMAIN,
                 sessionSignature2);
-            if (debugLog) { console.log(`verifyUsage result = ${res}`); }
+            testsLogger(DEBUGLEVEL.MEDIUM, `verifyUsage result = ${res}`);
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('verifyUsage failed');
         }
         expect(res).toBe("SUCCESSFULLY validated usage request!");
@@ -298,9 +298,9 @@ describe("executeCombinedEipFlow", () => {
                 attestationSecretPEM,
                 sessionKey
             );
-            // console.log(`requestAttestAndUsage = ${requestAttestAndUsage}`);
+            testsLogger(DEBUGLEVEL.VERBOSE, `requestAttestAndUsage = ${requestAttestAndUsage}`);
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('requestAttestAndUsage failed');
         }
 
@@ -312,7 +312,6 @@ describe("executeCombinedEipFlow", () => {
 
         let attestRes = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, requestAttestAndUsage, ATTESTOR_DOMAIN);
 
-        // console.log(attestRes + '-------');
         // if no Errors then its OK
         expect(1).toBe(1);
     })
@@ -327,9 +326,9 @@ describe("executeCombinedEipFlow", () => {
                 sessionMessage,
                 ATTESTOR_DOMAIN,
                 sessionSignature);
-            // console.log(`verifyUsage result = ${res}`);
+            testsLogger(DEBUGLEVEL.VERBOSE, `verifyUsage result = ${res}`);
         } catch (e) {
-            console.error(e);
+            testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('verifyUsage failed');
         }
         expect(res).toBe("SUCCESSFULLY validated usage request!");

@@ -9,6 +9,7 @@ import {
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
+import {DEBUGLEVEL} from "../config";
 
 const crypto = require('crypto');
 
@@ -40,7 +41,7 @@ export class AttestationCrypto {
         // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
         let curveOrderBitLength: bigint = BigInt(curveOrder.toString(2).length);
         if (curveOrder < (1n << (curveOrderBitLength-1n)) || (curveOrder >> curveOrderBitLength) > 0n) {
-            logger(1, "Curve order is not 253 bits which is required by the current implementation");
+            logger(DEBUGLEVEL.LOW, "Curve order is not 253 bits which is required by the current implementation");
             return false;
         }
         return true;

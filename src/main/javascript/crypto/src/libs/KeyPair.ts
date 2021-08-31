@@ -16,6 +16,7 @@ import {
 } from "../asn1/shemas/AttestationFramework";
 import {ethers} from "ethers";
 import {Signature} from "../asn1/shemas/Signature";
+import {DEBUGLEVEL} from "../config";
 // import * as elliptic from "elliptic";
 
 let EC = require("elliptic");
@@ -138,7 +139,7 @@ export class KeyPair {
         let me = new this();
 
         if (key.byteLength != 65) {
-            logger(1, 'Wrong public key length');
+            logger(DEBUGLEVEL.LOW, 'Wrong public key length');
             throw new Error('Wrong public key length');
         }
         me.pubKey = new Uint8Array(key);
@@ -167,7 +168,7 @@ export class KeyPair {
             return algEncodings[alg];
         } else {
             let m = "Unknown algorithm.";
-            logger(1, m);
+            logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         }
     }
@@ -233,7 +234,7 @@ export class KeyPair {
                 return key.getPublic('hex').toString();
             } else {
                 let m = 'Private -> Public key not implemented for that aglorighm - "' + this.algorithm + '"';
-                logger(1, m);
+                logger(DEBUGLEVEL.LOW, m);
                 throw new Error(m);
             }
 
@@ -246,11 +247,11 @@ export class KeyPair {
         let pubPointTypeDescrDER = '';
         if (!this.algorithm){
             let m = 'algorithm undefined, lets use default.';
-            logger(4, m);
+            logger(DEBUGLEVEL.VERBOSE, m);
             pubPointTypeDescrDER = this.algorithmASNList[DEFAULT_ALGORITHM];
         } else if (!this.algorithmASNList.hasOwnProperty(this.algorithm)){
             let m = 'Fatal Error. Algorithm not implemented yet - '+this.algorithm;
-            logger(1, m);
+            logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         } else {
             pubPointTypeDescrDER = this.algorithmASNList[this.algorithm];
@@ -310,7 +311,7 @@ export class KeyPair {
             key = curve.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
         } else {
             let m = 'Elliptic.js curve not implemented for that aglorighm - "' + this.algorithm + '"';
-            logger(1, m);
+            logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         }
 
@@ -381,7 +382,7 @@ export class KeyPair {
         let curve = EC_CURVES_SUBTLE[this.algorithm];
         if (!curve) {
             let m = `Cant create subtleCrypto key for curve '${this.algorithm}'`;
-            logger(1, m);
+            logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         }
         let pub = this.getPublicKeyAsHexStr();
@@ -442,8 +443,8 @@ export class KeyPair {
     }
 
     async verifyStringWithSubtle(signature: Uint8Array, msg: string): Promise<boolean>{
-        logger(4, 'pubkey: ' + this.getPublicKeyAsHexStr() + ' msg:' + msg + ' signature:' + uint8tohex(signature));
-        logger(4, await this.getSubtlePublicKey());
+        logger(DEBUGLEVEL.VERBOSE, 'pubkey: ' + this.getPublicKeyAsHexStr() + ' msg:' + msg + ' signature:' + uint8tohex(signature));
+        logger(DEBUGLEVEL.VERBOSE, await this.getSubtlePublicKey());
 
         return await subtle.verify(
             {
@@ -497,7 +498,7 @@ export class KeyPair {
                 let m = 'wrong Signature: ' + uint8tohex(signatureUint8);
                 throw new Error(m);
         }
-        logger(4, "ready signature:" + uint8tohex(output));
+        logger(DEBUGLEVEL.VERBOSE, "ready signature:" + uint8tohex(output));
         return output;
     }
 

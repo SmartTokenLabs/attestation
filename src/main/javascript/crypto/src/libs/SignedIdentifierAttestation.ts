@@ -8,6 +8,7 @@ import {Validateable} from "./Validateable";
 import {ASNEncodable} from "./ASNEncodable";
 import {Asn1Der} from "./DerUtility";
 import {IdentifierAttestation} from "./IdentifierAttestation";
+import {DEBUGLEVEL} from "../config";
 
 export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Validateable {
     private signature: string;
@@ -58,7 +59,7 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
             return this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), this.signature);
 
         } catch (e) {
-            logger(1, e);
+            logger(DEBUGLEVEL.LOW, e);
             return false;
         }
     }

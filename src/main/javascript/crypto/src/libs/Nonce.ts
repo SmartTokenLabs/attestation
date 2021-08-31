@@ -7,6 +7,7 @@ import {
 import {SignatureUtility} from "./SignatureUtility";
 import {ValidationTools} from "./ValidationTools";
 import {Timestamp} from "./Timestamp";
+import {DEBUGLEVEL} from "../config";
 
 export class Nonce {
     static LONG_BYTES:number = 8;
@@ -49,22 +50,22 @@ export class Nonce {
     validateNonce(nonce: Uint8Array, senderAddress: string, receiverIdentifier: string, minTime:number, maxTime:number, otherData: Uint8Array = new Uint8Array(0)): boolean{
 
         if (!Nonce.validateAddress(nonce, senderAddress)) {
-            logger(1, 'validateAddress check failed for ' + senderAddress);
+            logger(DEBUGLEVEL.LOW, 'validateAddress check failed for ' + senderAddress);
             return false;
         }
 
         if (!this.validateReceiverIdentifier(nonce, receiverIdentifier)) {
-            logger(1, 'validateReceiverIdentifier check failed');
+            logger(DEBUGLEVEL.LOW, 'validateReceiverIdentifier check failed');
             return false;
         }
 
         if (!this.validateTimestamp(nonce, minTime, maxTime)) {
-            logger(1, 'timestamp check failed');
+            logger(DEBUGLEVEL.LOW, 'timestamp check failed');
             return false;
         }
 
         if (!this.validateOtherData(nonce, otherData)) {
-            logger(1, 'otherData check failed');
+            logger(DEBUGLEVEL.LOW, 'otherData check failed');
             return false;
         }
 
@@ -85,7 +86,7 @@ export class Nonce {
     static validateAddress(nonce: Uint8Array, address: string):boolean {
         let nonceAddress = uint8toString(nonce.slice(Nonce.senderAddressIndexStart, Nonce.senderAddressIndexStop));
         if (address.toUpperCase() === nonceAddress.toUpperCase()) return true;
-        logger(1, 'nonceAddress = ' + nonceAddress);
+        logger(DEBUGLEVEL.LOW, 'nonceAddress = ' + nonceAddress);
         return false;
     }
 

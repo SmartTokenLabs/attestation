@@ -5,6 +5,7 @@ import {Extensions} from "../asn1/shemas/AuthenticationFramework";
 import {KeyPair} from "./KeyPair";
 import {Asn1Der} from "./DerUtility";
 import {Timestamp} from "./Timestamp";
+import {DEBUGLEVEL} from "../config";
 
 export class Attestation {
     static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
@@ -107,35 +108,35 @@ export class Attestation {
         if (this.version != 0
             && this.version != 1
             && this.version != 2) {
-            logger(1,"Incorrect version number");
+            logger(DEBUGLEVEL.LOW,"Incorrect version number");
             return false;
         }
         if (!this.issuer) {
-            logger(1,"Issuer info not set");
+            logger(DEBUGLEVEL.LOW,"Issuer info not set");
             return false;
         }
         if (this.notValidBefore == null || this.notValidAfter == null) {
-            logger(1,"Validity period not set");
+            logger(DEBUGLEVEL.LOW,"Validity period not set");
             return false;
         }
         if (this.subject == null) {
-            logger(1,"Subject info not set");
+            logger(DEBUGLEVEL.LOW,"Subject info not set");
             return false;
         }
         if (!this.subjectKey) {
-            logger(1, "No subject public key info set");
+            logger(DEBUGLEVEL.LOW, "No subject public key info set");
             return false;
         }
         if (this.smartcontracts != null) {
-            logger(1, "Smart contract info set");
+            logger(DEBUGLEVEL.LOW, "Smart contract info set");
             return false;
         }
         if (this.dataObject != null) {
-            logger(1, "Data object set");
+            logger(DEBUGLEVEL.LOW, "Data object set");
             return false;
         }
         if (this.version == null || this.serialNumber == null || this.signingAlgorithm == null) {
-            logger(1, "Version, serial number, subject or algorithm missing");
+            logger(DEBUGLEVEL.LOW, "Version, serial number, subject or algorithm missing");
             return false;
         }
         return true;
@@ -182,25 +183,25 @@ export class Attestation {
             || this.signingAlgorithm == null
             || (!this.extensions && !this.dataObject && !this.commitment)
         ) {
-            logger(1, "Some attest data missed");
+            logger(DEBUGLEVEL.LOW, "Some attest data missed");
             return false;
         }
         let currentTime = Date.now();
         let attNotBefore = this.getNotValidBefore();
         let attNotAfter = this.getNotValidAfter();
 
-        if ( attNotAfter && !(currentTime < attNotAfter)) {
-            logger(1, "Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
+        if ( attNotAfter && !(currentTime < (attNotAfter + Timestamp.ALLOWED_ROUNDING))) {
+            logger(DEBUGLEVEL.LOW, "Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
             return false;
         }
 
         if ( attNotBefore && !(currentTime >= (attNotBefore - Timestamp.ALLOWED_ROUNDING))) {
-            logger(1, "Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
+            logger(DEBUGLEVEL.LOW, "Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
             return false;
         }
 
         if (this.extensions != null && this.dataObject != null) {
-            logger(1, "Extensions or dataObject required");
+            logger(DEBUGLEVEL.LOW, "Extensions or dataObject required");
             return false;
         }
 

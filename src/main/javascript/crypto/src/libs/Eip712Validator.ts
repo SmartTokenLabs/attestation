@@ -5,6 +5,7 @@ import {KeyPair} from "./KeyPair";
 import {Ticket} from "../Ticket";
 import {Eip712DomainInterface, SignatureUtility} from "./SignatureUtility";
 import {hexStringToUint8, logger} from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 export class Eip712Validator {
     private XMLConfig: any;
@@ -20,7 +21,7 @@ export class Eip712Validator {
         try {
             parsedUrl = new URL(domain);
         } catch (e) {
-            logger(1, 'cant construct url. Error:', e);
+            logger(DEBUGLEVEL.LOW, 'cant construct url. Error:', e);
             return false;
         }
 
@@ -59,7 +60,7 @@ export class Eip712Validator {
             // accept &= validateAttestedObject(attestedObject);
             // return accept;
         } catch (e) {
-            logger(1, 'Validate error!', e);
+            logger(DEBUGLEVEL.LOW, 'Validate error!', e);
             return false;
         }
     }
@@ -69,12 +70,12 @@ export class Eip712Validator {
 
     validateDomain(domainToCheck: Eip712DomainInterface): boolean {
         if (domainToCheck.name.toLowerCase() !== this.domain.toLowerCase()) {
-            logger(1, "Domain name is not valid");
+            logger(DEBUGLEVEL.LOW, "Domain name is not valid");
             return false;
         }
 
         if (domainToCheck.version !== SignatureUtility.Eip712Data['PROTOCOL_VERSION']) {
-            logger(1, "Protocol version is wrong");
+            logger(DEBUGLEVEL.LOW, "Protocol version is wrong");
             return false;
         }
 
@@ -115,11 +116,11 @@ export class Eip712Validator {
         let userKey = KeyPair.fromPublicHex(publicKey.substr(2));
 
         if (pkAddress.toLowerCase() !== jsonSigned.message.address.toLowerCase()){
-            logger(1, 'message.address is not equal pkAddress');
+            logger(DEBUGLEVEL.LOW, 'message.address is not equal pkAddress');
             return false;
         }
         if (pkAddress.toLowerCase() !== userKey.getAddress().toLowerCase()){
-            logger(1, 'Recovered address is not equal pkAddress');
+            logger(DEBUGLEVEL.LOW, 'Recovered address is not equal pkAddress');
             return false;
         }
         return true;

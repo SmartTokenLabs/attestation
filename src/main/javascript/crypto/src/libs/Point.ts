@@ -1,4 +1,5 @@
 import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn, hexStringToUint8, logger} from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 // curve SECP256k1
 export let CURVE_SECP256k1 = {
@@ -182,7 +183,7 @@ export class Point {
         }
         if (!p.validate()) {
             let m = `Point is not valid (` + p.x.toString(16) + ',' + p.y.toString(16) + `)`;
-            logger(1, m);
+            logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         }
         return p;

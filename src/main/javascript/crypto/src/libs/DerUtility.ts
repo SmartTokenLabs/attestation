@@ -6,6 +6,7 @@ import {
     formatGeneralizedDateTime,
     logger
 } from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 const matchAll = require('string.prototype.matchall');
 
@@ -263,14 +264,14 @@ export class Asn1Der {
         let typeTag:number = derArr.shift();
         let len:number = this.lenEncoded(derArr);
         let typeTagName:string = Asn1DerTagById[typeTag];
-        logger(4, "Der utility typeTagName:" + typeTagName);
+        logger(DEBUGLEVEL.VERBOSE, "Der utility typeTagName:" + typeTagName);
         let content: number[] = [];
 
         for (let i = 0; i < len; i++){
             content.push(derArr.shift());
         }
-        logger(4, "Der Utility content");
-        logger(4, content);
+        logger(DEBUGLEVEL.VERBOSE, "Der Utility content");
+        logger(DEBUGLEVEL.VERBOSE, content);
         let outputStr = '';
         switch (typeTagName) {
             case "SEQUENCE_30":

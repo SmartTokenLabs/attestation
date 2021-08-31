@@ -1,4 +1,5 @@
 import {logger} from "./utils";
+import {DEBUGLEVEL} from "../config";
 
 export class Timestamp {
     // Timestamp with millisecond accuracy and timezone info
@@ -75,7 +76,7 @@ export class Timestamp {
         }
         // If the token is valid for too long
         if ((expirationTimeInMs - this.time) > (this.validity + 3 * this.ALLOWED_ROUNDING)) {
-            logger(1, expirationTimeInMs + "\n" + this.time + "\n" + this.validity + "\n" + this.ALLOWED_ROUNDING + "\n" + (expirationTimeInMs - this.time)  + "\n" + (this.validity + this.ALLOWED_ROUNDING) + "\n" );
+            logger(DEBUGLEVEL.LOW, expirationTimeInMs + "\n" + this.time + "\n" + this.validity + "\n" + this.ALLOWED_ROUNDING + "\n" + (expirationTimeInMs - this.time)  + "\n" + (this.validity + this.ALLOWED_ROUNDING) + "\n" );
             return false;
         }
         return true;
