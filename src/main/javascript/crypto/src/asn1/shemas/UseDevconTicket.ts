@@ -1,20 +1,23 @@
 import { AsnProp, AsnPropTypes } from "@peculiar/asn1-schema";
 import {SignedDevconTicket} from "./SignedDevconTicket";
-import {MyAttestation, SmartContract} from "./AttestationFramework";
+import {MyAttestation} from "./AttestationFramework";
 import {UsageProof} from "./ProofOfExponentASN";
 
 export class UseDevconTicket {
 
-    @AsnProp({ type: SignedDevconTicket })
-    public signedDevconTicket: SignedDevconTicket;
+    // stay it as Uint8Array to save original encoding for future verification and object decoding
+    @AsnProp({ type: AsnPropTypes.Any })
+    public signedDevconTicket: Uint8Array;
 
-    @AsnProp({ type: MyAttestation })
-    public attestation: MyAttestation;
+    // stay it as Uint8Array to save original encoding for future verification and object decoding
+    // @AsnProp({ type: MyAttestation })
+    // public attestation: MyAttestation;
+    @AsnProp({ type: AsnPropTypes.Any })
+    public attestation: Uint8Array;
 
-    @AsnProp({ type: UsageProof })
-    public proof: UsageProof;
-
-    @AsnProp({ type: AsnPropTypes.BitString, optional: true })
-    public signatureValue?: Uint8Array;
+    // @AsnProp({ type: UsageProof })
+    // public proof: UsageProof;
+    @AsnProp({ type: AsnPropTypes.Any })
+    public proof: Uint8Array;
 
 }

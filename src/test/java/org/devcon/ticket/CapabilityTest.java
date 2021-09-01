@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.SecureRandom;

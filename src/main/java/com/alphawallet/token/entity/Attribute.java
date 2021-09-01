@@ -1,14 +1,11 @@
 package com.alphawallet.token.entity;
 
+import static org.w3c.dom.Node.ELEMENT_NODE;
+
 import com.alphawallet.token.tools.Numeric;
 import com.alphawallet.token.tools.TokenDefinition;
 import com.alphawallet.token.util.DateTime;
 import com.alphawallet.token.util.DateTimeFactory;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.text.ParseException;
@@ -17,8 +14,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import static org.w3c.dom.Node.ELEMENT_NODE;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * Created by James on 9/05/2019.
@@ -337,7 +336,7 @@ public class Attribute {
 
     /**
      * Converts bitshifted/masked token numeric data into corresponding string.
-     * eg. Attr is 'venue'; choices are "1" -> "Kaliningrad Stadium", "2" -> "Volgograd Arena" etc.
+     * eg. Attr is 'venue'; choices are "1" -&gt; "Kaliningrad Stadium", "2" -&lt; "Volgograd Arena" etc.
      * NB 'time' is Unix EPOCH, which is also a mapping.
      * Since the value may not have a corresponding mapping, but is a valid time we should still return the time value
      * and interpret it as a local time

@@ -6,12 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.alphawallet.attestation.AttestedObject;
-import com.alphawallet.attestation.HelperTest;
-import com.alphawallet.attestation.IdentifierAttestation;
-import com.alphawallet.attestation.SignedIdentifierAttestation;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.SignatureUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.HelperTest;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.auth.UnpredictableNumberBundle;
 import org.tokenscript.auth.UnpredictableNumberTool;
 

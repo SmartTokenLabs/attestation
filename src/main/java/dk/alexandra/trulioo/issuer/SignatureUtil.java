@@ -1,6 +1,6 @@
 package dk.alexandra.trulioo.issuer;
 
-import com.alphawallet.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.ExceptionUtil;
 import java.math.BigInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,6 +1,6 @@
 package org.tokenscript.eip712;
 
-import com.alphawallet.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.eip712.Timestamp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 

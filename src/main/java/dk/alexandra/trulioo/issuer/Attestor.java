@@ -1,6 +1,6 @@
 package dk.alexandra.trulioo.issuer;
 
-import com.alphawallet.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.ExceptionUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

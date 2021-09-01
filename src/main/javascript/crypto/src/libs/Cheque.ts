@@ -1,16 +1,18 @@
 import {ATTESTATION_TYPE} from "./interfaces";
 import {Asn1Der} from "./DerUtility";
 import { AttestationCrypto } from "./AttestationCrypto";
-import {hexStringToArray, uint8tohex} from "./utils";
+import {hexStringToArray, logger, uint8tohex} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
+import {Attestable} from "./Attestable";
+import {DEBUGLEVEL} from "../config";
 
 let sha3 = require("js-sha3");
 let EC = require("elliptic");
 let ec = new EC.ec('secp256k1');
 
-
-export class Cheque {
+// TODO update whole code
+export class Cheque implements Attestable {
     // publicKey: string;
     // riddle: Uint8Array;
     private commitment: Uint8Array;
@@ -24,7 +26,7 @@ export class Cheque {
     private notValidBefore: number;
     private notValidAfter: number;
     private signature: Uint8Array;
-    // TODO code it
+
     constructor() {}
 
     static fromData(commitment: Uint8Array, amount: number, notValidBefore: number, notValidAfter: number, signature: Uint8Array, keys: KeyPair) {
@@ -99,8 +101,8 @@ export class Cheque {
 
     makeCheque(){
         let timeList =
-            Asn1Der.encode('GENERALIZED_TIME', formatGeneralizedDateTime(this.notValidBefore)) +
-            Asn1Der.encode('GENERALIZED_TIME', formatGeneralizedDateTime(this.notValidAfter));
+            Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore) +
+            Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
         let fullSequence =
             Asn1Der.encode('INTEGER', this.amount) +
             Asn1Der.encode('SEQUENCE_30', timeList) +
@@ -114,19 +116,18 @@ export class Cheque {
         return SignatureUtility.verify(cheque, uint8tohex(this.signature), this.keys);
     }
 
-    // TODO code it
-    getDerEncoding(): Uint8Array{
-        return Uint8Array.from([]);
+    getDerEncoding(): string{
+        return this.encoded;
     }
     public checkValidity(): boolean {
         let now: number = Date.now();
         if ( this.notValidBefore > now ) {
-            console.log("Cheque is no longer valid");
+            logger(DEBUGLEVEL.LOW, "Cheque is no longer valid");
             return false;
         }
 
         if ( this.notValidAfter < now ) {
-            console.log("Cheque expired");
+            logger(DEBUGLEVEL.LOW, "Cheque expired");
             return false;
         }
 
@@ -139,26 +140,3 @@ export class Cheque {
 
 }
 
-// TODO add timezone
-function formatGeneralizedDateTime(date: any):string {
-    var d = new Date(date),
-        month = '' + (d.getUTCMonth() + 1),
-        day = '' + d.getUTCDate(),
-        year = d.getUTCFullYear();
-    let hour = '' + d.getUTCHours(),
-        min = '' + d.getUTCMinutes(),
-        sec = '' + d.getUTCSeconds()
-
-    if (month.length < 2)
-        month = '0' + month;
-    if (day.length < 2)
-        day = '0' + day;
-    if (hour.length < 2)
-        hour = '0' + hour;
-    if (min.length < 2)
-        min = '0' + min;
-    if (sec.length < 2)
-        sec = '0' + sec;
-
-    return [year, month, day, hour, min, sec].join('') + 'Z';
-}

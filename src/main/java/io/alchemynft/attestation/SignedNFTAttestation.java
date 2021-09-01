@@ -1,9 +1,9 @@
 package io.alchemynft.attestation;
 
-import com.alphawallet.attestation.core.ASNEncodable;
-import com.alphawallet.attestation.core.SignatureUtility;
-import com.alphawallet.attestation.core.Validateable;
-import com.alphawallet.attestation.core.Verifiable;
+import org.tokenscript.attestation.core.ASNEncodable;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.Validateable;
+import org.tokenscript.attestation.core.Verifiable;
 import io.alchemynft.attestation.NFTAttestation;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Primitive;

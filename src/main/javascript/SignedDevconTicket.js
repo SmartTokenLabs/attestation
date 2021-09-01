@@ -4,7 +4,7 @@ import {
   Integer,
   OctetString,
   Sequence,
-  fromBER
+  fromBER, Utf8String
 } from "asn1js";
 import { getParametersValue, clearProps, bufferToHexCodes } from "pvutils";
 import AlgorithmIdentifier from "./AlgorithmIdentifier.js";
@@ -47,7 +47,7 @@ export class DevconTicket {
     return new Sequence({
       name: names.blockName || "ticket",
       value: [
-        new Integer({
+        new Utf8String({
           name: names.devconId || "devconId",
         }),
         new Integer({
@@ -87,12 +87,11 @@ export class DevconTicket {
     // noinspection JSUnresolvedVariable
 
     if ("devconId" in asn1.result) {
-      const devconId = asn1.result["devconId"].valueBlock._valueHex;
-      this.devconId = BigInt("0x" + bufferToHexCodes(devconId));
+      this.devconId = asn1.result["devconId"].valueBlock.value;
     }
 
     if ("ticketId" in asn1.result) {
-      const ticketId = asn1.result["ticketId"].valueBlock._valueHex
+      const ticketId = asn1.result["ticketId"].valueBlock._valueHex;
       this.ticketId = BigInt("0x" + bufferToHexCodes(ticketId));
     }
 
@@ -132,6 +131,7 @@ export class SignedDevconTicket {
       }
       
     }
+
     if (source instanceof ArrayBuffer) {
       const asn1 = fromBER(source);
       this.fromSchema(asn1.result);
@@ -185,24 +185,6 @@ export class SignedDevconTicket {
         DevconTicket.schema(parameters),
         new OctetString({
           name: "commitment",
-        }),
-        /* PublicKeyInfo is specified in schema here but not appearing in the constructed data object.
-         * This is because the underlying AlgorithmIdentifier isn't fully implemented and also
-         * that this data is not important for the 1st delivery deadline, won't be read by client anyway.
-         * TODO: add support for PublicKeyInfo https://github.com/TokenScript/attestation/issues/75
-         */
-        new Sequence( {
-          name: "publicKeyInfo",
-          optional: true,
-          value: [
-            PublicKeyInfo.schema(
-                names.publicKeyInfo || {
-                  names: {
-                    blockName: "publicKeyInfo",
-                  },
-                }
-            )
-          ]
         }),
 
         new BitString({

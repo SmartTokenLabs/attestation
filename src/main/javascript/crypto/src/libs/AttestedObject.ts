@@ -1,98 +1,162 @@
 import {AttestationCrypto} from "./AttestationCrypto";
-import {SignedAttestation} from "./SignedAttestation";
-import {uint8tohex} from "./utils";
+import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
+import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
-import {AttestableObject} from "./AttestableObject";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
+import {KeyPair} from "./KeyPair";
+import {AsnParser} from "@peculiar/asn1-schema";
+import {UseToken} from "../asn1/shemas/UseToken";
+import {UsageProofOfExponent} from "./UsageProofOfExponent";
+import {IdentifierAttestation} from "./IdentifierAttestation";
+import {Attestable} from "./Attestable";
+import {Verifiable} from "./Verifiable";
+import {ASNEncodable} from "./ASNEncodable";
+import {AttestableObject} from "./AttestableObject";
+import {DEBUGLEVEL} from "../config";
 
 declare global {
-    interface Window { ethereum: any; }
+    interface Window {
+        ethereum: any;
+        web3: any;
+    }
 }
 
-// TODO public AttestedObject(T object, SignedAttestation att, ProofOfExponent pok, byte[] signature,
-//       AsymmetricKeyParameter userPublicKey) {
-export class AttestedObject {
+
+export class AttestedObject implements ASNEncodable, Verifiable {
     private crypto: AttestationCrypto;
     private pok: ProofOfExponentInterface;
-    private unsignedEncoding: string;
     private derEncodedProof: string;
-    private signature: string;
     private encoding: string;
-    constructor(
-        private attestableObject: AttestableObject,
-        private att: SignedAttestation,
-        private attestationSecret: bigint ,
-        private objectSecret: bigint
-    ) {
+    private attestableObject: any;
+    private att: SignedIdentifierAttestation;
+    private attestationSecret: bigint ;
+    private objectSecret: bigint;
+    private userPublicKey: Uint8Array;
+    private userKeyPair: KeyPair;
+
+    private preSignEncoded: string;
+
+    private webDomain: string;
+
+    static Eip712UserData: {[index: string]:string|number}  = {
+        payload: '',
+        description: '',
+        timestamp: 0
+    }
+    // static Eip712UserDataTypes: {[index: string]:string}[]  = [
+    static Eip712UserDataTypes: {name: string, type: string}[]  = [
+        {name: 'payload', type: 'string'},
+        {name: 'description', type: 'string'},
+        {name: 'timestamp', type: 'uint256'},
+    ]
+    static Eip712UserDataPrimaryName: string = "Authentication";
+    static Eip712UserDataDescription: string = "Single-use authentication";
+
+    constructor() {}
+
+    create<T extends Attestable>(
+        attestableObject: T ,
+        att: SignedIdentifierAttestation,
+        attestationSecret: bigint ,
+        objectSecret: bigint
+    ){
+        this.attestableObject = attestableObject;
+        this.att = att;
+        this.attestationSecret = attestationSecret;
+        this.objectSecret = objectSecret;
         this.crypto = new AttestationCrypto();
         this.pok = this.makeProof(attestationSecret, objectSecret, this.crypto);
         this.derEncodedProof = this.pok.getDerEncoding();
 
-        let vec =
-            this.attestableObject.getDerEncoding() +
+        this.fillPresignData();
+
+    }
+
+    setWebDomain(domain: string){
+        this.webDomain = domain;
+    }
+
+    fillPresignData(){
+        this.preSignEncoded = this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
             this.pok.getDerEncoding();
-        this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);
+
+        this.encoding = Asn1Der.encode('SEQUENCE_30', this.preSignEncoded);
     }
-/*
-    public async signFinalObject(){
-        let vec =
-            uint8tohex(this.attestableObject.getDerEncoding()) +
-            uint8tohex(this.att.getDerEncoding())+
-            this.pok.getDerEncoding();
-        this.unsignedEncoding = Asn1Der.encode('SEQUENCE_30', vec);
-        const hash = await ethers.utils.keccak256(hexStringToArray(this.unsignedEncoding));
 
-        console.log('hash');
-        console.log(hash);
+    fromDecodedData<T extends Attestable>(
+        attestableObject: T ,
+        att: SignedIdentifierAttestation,
+        pok: ProofOfExponentInterface
+    ){
+        this.attestableObject = attestableObject;
+        this.att = att;
+        this.pok = pok;
 
-        // TODO sign by user wallet
-        // this.signature = SignatureUtility.sign(this.unsignedEncoding, userKeys.getPrivate());
-        if (!window.ethereum){
-            throw new Error('Please install metamask before.');
-        }
+        this.fillPresignData();
 
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        if (!signer) throw new Error("Active Wallet required");
+        this.userKeyPair = this.att.getUnsignedAttestation().getSubjectPublicKeyInfo();
 
-        const userAddress = await signer.getAddress();
-
-        console.log('lets sign message');
-        const metamaskEnabled = await window.ethereum.enable();
-
-        if (!metamaskEnabled){
-            throw new Error("Active Wallet required");
-        }
-
-        // console.log(this.unsignedEncoding);
-
-        // let signature = await signer.signMessage(hexStringToArray(this.unsignedEncoding));
-        let signature = await signer.signMessage(ethers.utils.arrayify(hash));
-        console.log('signature');
-        console.log(signature);
-
-        if (!signature){
-            throw new Error("Cant sign data");
-        }
-
-        const ethereumHash = await ethers.utils.keccak256("\x19Ethereum Signed Message:\n" + hash.length + hash);
-        const pk = ethers.utils.recoverPublicKey(ethereumHash, signature);
-        const recoveredAddress = ethers.utils.computeAddress(ethers.utils.arrayify(pk));
-
-        console.log('recoveredAddress');
-        console.log(recoveredAddress);
-
-        //     vec.add(new DERBitString(this.signature));
-        //     this.encoding = new DERSequence(vec).getEncoded();
-        // } catch (IOException e) {
-        //     throw new RuntimeException(e);
-        // }
-        // if (!verify()) {
-        //     throw new IllegalArgumentException("The redeem request is not valid");
-        // }
+        this.constructorCheck();
     }
-*/
+
+
+    // async sign(){
+    //     let userData = {
+    //         payload: this.encoding,
+    //         description: AttestedObject.Eip712UserDataDescription,
+    //         timestamp: new Date().getTime()
+    //     };
+    //
+    //     return await SignatureUtility.signEIP712WithBrowserWallet(this.webDomain, userData, AttestedObject.Eip712UserDataTypes, AttestedObject.Eip712UserDataPrimaryName );
+    // }
+
+    public verify(): boolean{
+        if (!this.attestableObject.verify()) {
+            logger(DEBUGLEVEL.LOW, "Could not verify attestable object");
+            return false;
+        }
+        if (!this.att.verify()) {
+            logger(DEBUGLEVEL.LOW, "Could not verify attestation");
+            return false;
+        }
+        if (!this.crypto.verifyEqualityProof(
+            this.att.getUnsignedAttestation().getCommitment(),
+            this.attestableObject.getCommitment(),
+            this.pok
+        )) {
+            logger(DEBUGLEVEL.LOW, "Could not verify the consistency between the commitment in the attestation and the attested object");
+            return false;
+        }
+
+        return true;
+    }
+
+    static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
+        let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
+
+        let me = new this();
+
+        me.attestableObject = new attestable();
+        me.attestableObject.fromBytes(attested.signedToken, issuerKey);
+
+        me.att = SignedIdentifierAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
+
+        let pok = new UsageProofOfExponent();
+        pok.fromBytes( new Uint8Array(attested.proof) ) ;
+        me.pok = pok;
+
+        let attCom: Uint8Array = me.att.getUnsignedAttestation().getCommitment();
+        let objCom: Uint8Array = me.attestableObject.getCommitment();
+        let crypto = new AttestationCrypto();
+
+        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
+            throw new Error("The redeem proof did not verify");
+        }
+
+        return me;
+    }
+
     private makeProof(attestationSecret: bigint, objectSecret: bigint, crypto: AttestationCrypto): ProofOfExponentInterface {
         // TODO Bob should actually verify the attestable object is valid before trying to cash it to avoid wasting gas
         // Need to decode twice since the standard ASN1 encodes the octet string in an octet string
@@ -103,11 +167,11 @@ export class AttestedObject {
 
         // TODO we dont parse that value, because its already parsed to this.riddle
         // let attCom: Uint8Array = new Uint8Array(extensions.extension.extnValue);
-        let attCom: Uint8Array = this.att.getUnsignedAttestation().getRiddle();
+        let attCom: Uint8Array = this.att.getUnsignedAttestation().getCommitment();
         let objCom: Uint8Array = this.attestableObject.getCommitment();
         let pok: ProofOfExponentInterface = crypto.computeEqualityProof(uint8tohex(attCom), uint8tohex(objCom), attestationSecret, objectSecret);
 
-        if (!crypto.verifyEqualityProof(uint8tohex(attCom), uint8tohex(objCom), pok)) {
+        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
             throw new Error("The redeem proof did not verify");
         }
         return pok;
@@ -125,10 +189,66 @@ export class AttestedObject {
         return this.derEncodedProof;
     }
 
-    public getDerEncodingWithSignature() { return this.encoding; }
+    public getDerEncoding():string {
+        return this.encoding;
+    }
 
-    // TODO type it
-    public getDerEncoding() {
-        return this.unsignedEncoding;
+    public getUserPublicKey() {
+        return this.userPublicKey;
+    }
+
+    private constructorCheck() {
+        if (!this.verify()) {
+            throw new Error("The redeem request is not valid");
+        }
+    }
+
+    public checkValidity(): boolean {
+        // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
+        try {
+            let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();
+            let std: IdentifierAttestation = IdentifierAttestation.fromBytes(new Uint8Array(hexStringToArray(attEncoded))) as IdentifierAttestation;
+
+            // CHECK: perform the needed checks of an identifier attestation
+            if (!std.checkValidity()) {
+                logger(DEBUGLEVEL.LOW, "The attestation is not a valid standard attestation");
+                return false;
+            }
+        } catch (e) {
+            logger(DEBUGLEVEL.LOW, "The attestation is invalid");
+            return false;
+        }
+
+        try {
+            // CHECK: that the cheque is still valid
+            if (!this.getAttestableObject().checkValidity()) {
+                logger(DEBUGLEVEL.LOW, "Cheque is not valid");
+                return false;
+            }
+        } catch (e) {
+            logger(DEBUGLEVEL.LOW, "Cheque validation failed");
+            return false;
+        }
+
+        try {
+
+            // CHECK: the Ethereum address on the attestation matches receivers signing key
+            // let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
+            let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getAddress();
+            logger(DEBUGLEVEL.HIGH, 'attestationEthereumAddress: ' + attestationEthereumAddress);
+            logger(DEBUGLEVEL.HIGH, this.getUserPublicKey());
+            logger(DEBUGLEVEL.HIGH, 'this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
+
+            if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
+                logger(DEBUGLEVEL.LOW, "The attestation is not to the same Ethereum user who is sending this request");
+                return false;
+            }
+        } catch (e) {
+            logger(DEBUGLEVEL.LOW, "Address validation failed");
+            logger(DEBUGLEVEL.MEDIUM, e);
+            return false;
+        }
+
+        return true;
     }
 }

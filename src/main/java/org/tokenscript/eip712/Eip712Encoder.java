@@ -1,8 +1,8 @@
 package org.tokenscript.eip712;
 
-import com.alphawallet.attestation.ValidationTools;
-import com.alphawallet.attestation.core.AttestationCrypto;
-import com.alphawallet.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.ValidationTools;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.ExceptionUtil;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

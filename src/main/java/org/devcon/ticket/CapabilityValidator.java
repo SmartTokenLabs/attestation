@@ -1,6 +1,6 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.SignatureUtility;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.interfaces.DecodedJWT;

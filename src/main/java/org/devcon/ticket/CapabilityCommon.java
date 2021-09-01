@@ -1,6 +1,6 @@
 package org.devcon.ticket;
 
-import com.alphawallet.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.ExceptionUtil;
 import com.auth0.jwt.algorithms.Algorithm;
 import java.security.PrivateKey;
 import java.security.PublicKey;

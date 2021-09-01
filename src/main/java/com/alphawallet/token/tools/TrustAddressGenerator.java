@@ -24,7 +24,7 @@ import java.util.Arrays;
  * TrustAddress can be generated without the TokenScript being
  * signed. It's digest is produced in the way "as if tokenscript is
  * signed", therefore please do not add logic like extracting
- * <SignedInfo> from the TokenScript assuming it's signed.
+ * "SignedInfo" from the TokenScript assuming it's signed.
  * - Weiwu
  */
 public class TrustAddressGenerator {
