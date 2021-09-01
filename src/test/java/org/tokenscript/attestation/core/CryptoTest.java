@@ -187,7 +187,7 @@ public class CryptoTest {
   }
 
   @Test
-  public void testNonceAttestationProof() {
+  public void testUnAttestationProof() {
     FullProofOfExponent pok1 = crypto.computeAttestationProof(SECRET1);
     FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1, new byte[0]);
     assertTrue(AttestationCrypto.verifyFullProof(pok1));
@@ -250,7 +250,7 @@ public class CryptoTest {
   }
 
   @Test
-  public void testNonceEqualityProof() {
+  public void testUnEqualityProof() {
     byte[] com1 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET1);
     byte[] com2 = AttestationCrypto.makeCommitment(ID, TYPE, SECRET2);
     UsageProofOfExponent pok1 = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);

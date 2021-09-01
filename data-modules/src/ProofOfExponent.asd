@@ -12,8 +12,8 @@
         <element name="responseValue" type="asnx:OCTET-STRING">
           <annotation>The response to the challenge based on the secret exponent</annotation>
         </element>
-        <element name="nonce" type="asnx:OCTET-STRING">
-          <annotation>The nonce that is linking the proof to a specific usage context</annotation>
+        <element name="unpredictableNumber" type="asnx:OCTET-STRING">
+          <annotation>The unpredictable number that is linking the proof to a specific usage context</annotation>
         </element>
       </sequence>
     </type>
@@ -27,8 +27,8 @@
           <element name="responseValue" type="asnx:OCTET-STRING">
             <annotation>The response to the challenge based on the secret exponent</annotation>
           </element>
-          <element name="nonce" type="asnx:OCTET-STRING">
-            <annotation>The nonce that is linking the proof to a specific usage context</annotation>
+          <element name="unpredictableNumber" type="asnx:OCTET-STRING">
+            <annotation>The unpredictable number that is linking the proof to a specific usage context</annotation>
           </element>
         </sequence>
       </type>

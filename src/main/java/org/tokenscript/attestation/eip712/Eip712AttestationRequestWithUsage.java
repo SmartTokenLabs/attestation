@@ -155,7 +155,7 @@ public class Eip712AttestationRequestWithUsage extends Eip712Validator implement
   private boolean testNonceAndDescription(long timeLimit) {
     long nonceMinTime = Timestamp.stringTimestampToLong(data.getTimestamp()) - timeLimit;
     long nonceMaxTime = Timestamp.stringTimestampToLong(data.getTimestamp()) + timeLimit;
-    if (!Nonce.validateNonce(attestationRequestWithUsage.getPok().getNonce(),
+    if (!Nonce.validateNonce(attestationRequestWithUsage.getPok().getUnpredictableNumber(),
         SignatureUtility.addressFromKey(userPublicKey), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
       logger.error("Nonce validation failed");
       return false;

@@ -145,7 +145,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       logger.error("Timestamp not valid");
       return false;
     }
-    if (!Nonce.validateNonce(getPok().getNonce(),
+    if (!Nonce.validateNonce(getPok().getUnpredictableNumber(),
         getAttestation().getUnsignedAttestation().getAddress(), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
       logger.error("Nonce validation failed");
       return false;
