@@ -18,13 +18,13 @@ public class UsageProofOfExponent implements ProofOfExponent {
   private static final Logger logger = LogManager.getLogger(UsageProofOfExponent.class);
   private final ECPoint tPoint;
   private final BigInteger challenge;
-  private final byte[] nonce;
+  private final byte[] unpredictableNumber;
   private final byte[] encoding;
 
-  public UsageProofOfExponent(ECPoint tPoint, BigInteger challenge, byte[] nonce) {
+  public UsageProofOfExponent(ECPoint tPoint, BigInteger challenge, byte[] unpredictableNumber) {
     this.tPoint = tPoint;
     this.challenge = challenge;
-    this.nonce = nonce;
+    this.unpredictableNumber = unpredictableNumber;
     this.encoding = makeEncoding(tPoint, challenge);
   }
 
@@ -42,7 +42,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
       this.challenge = new BigInteger(challengeEnc.getOctets());
       ASN1OctetString tPointEnc = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++));
       this.tPoint = AttestationCrypto.decodePoint(tPointEnc.getOctets());
-      this.nonce = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
+      this.unpredictableNumber = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++)).getOctets();
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);
     }
@@ -53,7 +53,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(new DEROctetString(challenge.toByteArray()));
       res.add(new DEROctetString(tPoint.getEncoded(false)));
-      res.add(new DEROctetString(nonce));
+      res.add(new DEROctetString(unpredictableNumber));
       return new DERSequence(res).getEncoded();
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
@@ -71,7 +71,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
   }
 
   @Override
-  public byte[] getNonce() { return nonce; }
+  public byte[] getUnpredictableNumber() { return unpredictableNumber; }
 
   @Override
   public byte[] getDerEncoding() {

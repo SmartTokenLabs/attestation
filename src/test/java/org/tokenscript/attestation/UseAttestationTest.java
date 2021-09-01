@@ -23,7 +23,7 @@ public class UseAttestationTest {
   public static final BigInteger SECRET2 = new BigInteger("43854346503445438654346854346854");
   public static final String ID = "test@test.ts";
   private static final AttestationType TYPE = AttestationType.EMAIL;
-  public static final byte[] NONCE = new byte[] {0x66};
+  public static final byte[] UN = new byte[] {0x66};
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair issuerKeys;
   private static AsymmetricKeyParameter sessionKey;
@@ -53,7 +53,7 @@ public class UseAttestationTest {
 
   @Test
   public void consistentDecoding() throws Exception {
-    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), SECRET2, ID);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
     UseAttestation useAttestation = new UseAttestation(signed, TYPE, pok, sessionKey);
@@ -67,7 +67,7 @@ public class UseAttestationTest {
         SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(otherConstructor.getSessionPublicKey()).getEncoded());
     assertArrayEquals(useAttestation.getDerEncoding(), otherConstructor.getDerEncoding());
     // Internal randomness is used in pok construction
-    FullProofOfExponent otherPok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent otherPok = crypto.computeAttestationProof(SECRET1, UN);
     UseAttestation otherUseAttestation = new UseAttestation(signed, TYPE, otherPok, sessionKey);
     assertTrue(otherUseAttestation.verify());
     assertTrue(otherUseAttestation.checkValidity());
@@ -76,7 +76,7 @@ public class UseAttestationTest {
 
   @Test
   public void badPok() {
-    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, NONCE);
+    FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
     FullProofOfExponent badPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge(), new byte[] {0x01} );
     assertFalse(AttestationCrypto.verifyFullProof(badPok));
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), SECRET2, ID);

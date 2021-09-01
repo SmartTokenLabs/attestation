@@ -1,17 +1,18 @@
 package org.devcon.ticket;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Date;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.AttestedObject;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.Verifiable;
 import org.tokenscript.attestation.eip712.Timestamp;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.auth.UnpredictableNumberBundle;
 import org.tokenscript.auth.UnpredictableNumberTool;
 
@@ -97,6 +98,10 @@ public class UseTicketBundle implements Verifiable {
     }
     if (!unt.validateUnpredictableNumber(un.getNumber(), un.getRandomness(), un.getExpiration())) {
       logger.error("Unpredictable number is not valid ");
+      return false;
+    }
+    if (!Arrays.equals(un.getNumber().getBytes(StandardCharsets.UTF_8), useTicket.getPok().getUnpredictableNumber())) {
+      logger.error("Unpredictable number used in the UseTicket proof is different from the unpredictable number signed");
       return false;
     }
     return verify();
