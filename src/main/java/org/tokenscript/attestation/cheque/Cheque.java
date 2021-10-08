@@ -1,6 +1,7 @@
 package org.tokenscript.attestation.cheque;
 
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.Attestable;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.ExceptionUtil;
@@ -113,9 +114,11 @@ public class Cheque implements Attestable {
 
   @Override
   public boolean checkValidity() {
-    long currentTime = Clock.systemUTC().millis();
-    if (!(currentTime >= getNotValidBefore() && currentTime < getNotValidAfter())) {
-      logger.error("Cheque is no longer valid");
+    Timestamp timestamp = new Timestamp(getNotValidBefore());
+    // It is valid the time difference between expiration and start validity
+    timestamp.setValidity(getNotValidAfter()-getNotValidBefore());
+    if (!timestamp.validateAgainstExpiration(getNotValidAfter())) {
+      logger.error("Cheque not valid at this time");
       return false;
     }
     return true;

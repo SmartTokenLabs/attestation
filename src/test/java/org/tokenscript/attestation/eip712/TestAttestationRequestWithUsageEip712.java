@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.tokenscript.attestation.AttestationRequestWithUsage;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
@@ -164,7 +165,7 @@ public class TestAttestationRequestWithUsageEip712 {
 
   @Test
   public void expiredToken() throws Exception {
-    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, -1,
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, -Timestamp.ALLOWED_ROUNDING*2,
         MAIL, requestWithUsage, userSigningKey);
     assertTrue(request.verify());
     assertTrue(request.checkValidity());
@@ -173,7 +174,7 @@ public class TestAttestationRequestWithUsageEip712 {
 
   @Test
   public void invalidTimestamp() {
-    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, -1,
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, -Timestamp.ALLOWED_ROUNDING*2,
         Timestamp.DEFAULT_TOKEN_TIME_LIMIT, MAIL, requestWithUsage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkValidity());

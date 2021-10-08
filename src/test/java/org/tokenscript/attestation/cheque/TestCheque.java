@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
 import java.io.IOException;
@@ -99,8 +100,14 @@ public class TestCheque {
 
   @Test
   public void testInvalid() {
-    Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, -1000, senderKeys, BigInteger.TEN);
+    Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, -Timestamp.ALLOWED_ROUNDING*2, senderKeys, BigInteger.TEN);
     assertFalse(cheque.checkValidity());
+  }
+
+  @Test
+  public void testTimeDiffSlack() {
+    Cheque cheque = new Cheque("test@test.ts", AttestationType.EMAIL, 1000, -Timestamp.ALLOWED_ROUNDING/2, senderKeys, BigInteger.TEN);
+    assertTrue(cheque.checkValidity());
   }
 
 }

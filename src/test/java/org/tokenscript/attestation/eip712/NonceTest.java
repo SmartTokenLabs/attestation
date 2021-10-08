@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.SignatureUtility;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -16,7 +17,7 @@ public class NonceTest {
   private static final Timestamp TIMESTAMP = new Timestamp();
   // OG we need more time gap because of roundings
   private static final Timestamp MIN_TIMESTAMP = new Timestamp(TIMESTAMP.getTime());
-  private static final Timestamp MAX_TIMESTAMP = new Timestamp(TIMESTAMP.getTime()+4000);
+  private static final Timestamp MAX_TIMESTAMP = new Timestamp(TIMESTAMP.getTime()+Timestamp.ALLOWED_ROUNDING*2);
 
   private static SecureRandom rand;
   private static String address;
@@ -39,8 +40,7 @@ public class NonceTest {
   public void timestamp() {
     byte[] nonce = Nonce.makeNonce(address, RECEIVER, TIMESTAMP);
     assertFalse(Nonce.validateNonce(nonce, address, RECEIVER, MAX_TIMESTAMP, MIN_TIMESTAMP));
-    // TODO OG Tore, please update that test, disbled temporary
-    //assertFalse(Nonce.validateNonce(nonce, address, RECEIVER, MIN_TIMESTAMP, MIN_TIMESTAMP));
+    assertFalse(Nonce.validateNonce(nonce, address, RECEIVER, MIN_TIMESTAMP, new Timestamp(MIN_TIMESTAMP.getTime()-Timestamp.ALLOWED_ROUNDING)));
     assertFalse(Nonce.validateNonce(nonce, address, RECEIVER, MAX_TIMESTAMP, MAX_TIMESTAMP));
   }
 

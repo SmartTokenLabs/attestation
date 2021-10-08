@@ -4,6 +4,7 @@ import org.tokenscript.attestation.AttestationAndUsageValidator;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.UseAttestation;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.URLUtility;

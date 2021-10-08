@@ -100,8 +100,21 @@ public class AttestationTest {
         Attestation res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
         assertTrue(res.checkValidity());
         assertTrue(res.isValidX509());
-        Date almostNow = new Date(Clock.systemUTC().millis() - 1000);
+        Date almostNow = new Date(Clock.systemUTC().millis() - Timestamp.ALLOWED_ROUNDING - 2000);
         res.setNotValidAfter(almostNow);
+        assertFalse(res.checkValidity());
+    }
+
+    @Test
+    public void testNotYetValid() throws Exception {
+        Attestation res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
+        assertTrue(res.checkValidity());
+        assertTrue(res.isValidX509());
+        // We are still within the allowed rounding
+        res.setNotValidBefore(new Date(Clock.systemUTC().millis() + Timestamp.ALLOWED_ROUNDING-2000));
+        assertTrue(res.checkValidity());
+        // We just passed allowed rounding
+        res.setNotValidBefore(new Date(Clock.systemUTC().millis() + Timestamp.ALLOWED_ROUNDING+2000));
         assertFalse(res.checkValidity());
     }
 
