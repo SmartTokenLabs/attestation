@@ -50,12 +50,12 @@ public class CoSignedIdentifierAttestationTest
         Files.write(p, coSignedAttestation.getDerEncoding());
 
         System.out.println("Wrapped ID Attestation: " + Numeric.toHexString(coSignedAttestation.getDerEncoding()));
-        System.out.println("Signed ID Attestation: " + Numeric.toHexString(coSignedAttestation.getUnsignedAttestation().getDerEncoding()));
+        System.out.println("Signed ID Attestation: " + Numeric.toHexString(coSignedAttestation.getWrappedSignedIdentifierAttestation().getDerEncoding()));
 
         //Extract the Ethereum signature
         byte[] sig = coSignedAttestation.getSignature();
 
-        byte[] signedIdentifierBytes = coSignedAttestation.getUnsignedAttestation().getDerEncoding();
+        byte[] signedIdentifierBytes = coSignedAttestation.getWrappedSignedIdentifierAttestation().getDerEncoding();
 
         SignedIdentifierAttestation reconstructSignedAtt = new SignedIdentifierAttestation(signedIdentifierBytes, attestorKeys.getPublic());
 
@@ -65,7 +65,7 @@ public class CoSignedIdentifierAttestationTest
                 subjectKeys.getPublic(),
                 sig);
 
-        assertTrue(reconstructWrapped.verify());
+        assertTrue(reconstructWrapped.checkValidity());
 
         //Negative test:                                                    v - Changed 1 digit in ID
         IdentifierAttestation att2 = new IdentifierAttestation("20552168", "https://twitter.com/zhangweiwu", subjectKeys.getPublic());
