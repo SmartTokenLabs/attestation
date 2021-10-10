@@ -6,8 +6,8 @@ export class Timestamp {
     // Date.parse('Thu, 01 Jan 1970 00:00:00 GMT-0400');
     // Tue Mar 30 2021 21:14:22 GMT+0300
     public static TIMESTAMP_FORMAT:string = "EEE MMM d yyyy HH:mm:ss 'GMT'Z";
-    public ALLOWED_ROUNDING: number = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
-    static ALLOWED_ROUNDING: number = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
+    public ALLOWED_ROUNDING: number = 10000; // 10 sec, since we are always rounding to the nearest second in the string representation
+    static ALLOWED_ROUNDING: number = 10000; // 10 sec, since we are always rounding to the nearest second in the string representation
 
     static UNLIMITED = 253402297199000;
     static DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 365; // 1 year
@@ -58,7 +58,7 @@ export class Timestamp {
             return false;
         }
         // Slack only goes into the future
-        if (this.time < currentTime - this.ALLOWED_ROUNDING - this.validity) {
+        if (this.time + this.ALLOWED_ROUNDING + this.validity < currentTime ) {
             return false;
         }
         return true;
@@ -68,14 +68,16 @@ export class Timestamp {
         let currentTime = this.getCurrentTime();
         // If timestamp is in the future
         if (this.time > (currentTime + this.ALLOWED_ROUNDING)) {
+            logger(DEBUGLEVEL.LOW, "Object is not longer valid. Details: attNotAfter = " + expirationTimeInMs + ", currentTime = " + currentTime);
             return false;
         }
         // If token has expired
         if (expirationTimeInMs < (currentTime - this.ALLOWED_ROUNDING)) {
+            logger(DEBUGLEVEL.LOW, "Object still not valid. Details: not valid before = " + this.time + ", currentTime = " + currentTime);
             return false;
         }
         // If the token is valid for too long
-        if ((expirationTimeInMs - this.time) > (this.validity + 3 * this.ALLOWED_ROUNDING)) {
+        if ((expirationTimeInMs - this.time) > (this.validity + this.ALLOWED_ROUNDING)) {
             logger(DEBUGLEVEL.LOW, expirationTimeInMs + "\n" + this.time + "\n" + this.validity + "\n" + this.ALLOWED_ROUNDING + "\n" + (expirationTimeInMs - this.time)  + "\n" + (this.validity + this.ALLOWED_ROUNDING) + "\n" );
             return false;
         }

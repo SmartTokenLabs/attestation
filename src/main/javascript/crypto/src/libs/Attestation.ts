@@ -186,17 +186,12 @@ export class Attestation {
             logger(DEBUGLEVEL.LOW, "Some attest data missed");
             return false;
         }
-        let currentTime = Date.now();
         let attNotBefore = this.getNotValidBefore();
         let attNotAfter = this.getNotValidAfter();
 
-        if ( attNotAfter && !(currentTime < (attNotAfter + Timestamp.ALLOWED_ROUNDING))) {
-            logger(DEBUGLEVEL.LOW, "Attestation is not longer valid. Details: attNotAfter = " + attNotAfter + ", currentTime = " + currentTime);
-            return false;
-        }
-
-        if ( attNotBefore && !(currentTime >= (attNotBefore - Timestamp.ALLOWED_ROUNDING))) {
-            logger(DEBUGLEVEL.LOW, "Attestation still not valid. Details: attNotBefore = " + attNotBefore + ", currentTime = " + currentTime);
+        let timestamp:Timestamp = new Timestamp(attNotBefore);
+        timestamp.setValidity(attNotAfter - attNotBefore);
+        if (!timestamp.validateAgainstExpiration(attNotAfter)) {
             return false;
         }
 

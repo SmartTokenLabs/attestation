@@ -6,6 +6,7 @@ import {KeyPair} from "./KeyPair";
 import {SignatureUtility} from "./SignatureUtility";
 import {Attestable} from "./Attestable";
 import {DEBUGLEVEL} from "../config";
+import {Timestamp} from "./Timestamp";
 
 let sha3 = require("js-sha3");
 let EC = require("elliptic");
@@ -120,14 +121,9 @@ export class Cheque implements Attestable {
         return this.encoded;
     }
     public checkValidity(): boolean {
-        let now: number = Date.now();
-        if ( this.notValidBefore > now ) {
-            logger(DEBUGLEVEL.LOW, "Cheque is no longer valid");
-            return false;
-        }
-
-        if ( this.notValidAfter < now ) {
-            logger(DEBUGLEVEL.LOW, "Cheque expired");
+        let timestamp:Timestamp = new Timestamp(this.notValidBefore);
+        timestamp.setValidity(this.notValidAfter - this.notValidBefore);
+        if (!timestamp.validateAgainstExpiration(this.notValidAfter)) {
             return false;
         }
 
