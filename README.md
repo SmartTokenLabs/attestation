@@ -2,6 +2,15 @@
 
 This repository host the attestation libraries as part of TokenScript. Discussion goes to the forum https://community.tokenscript.org/
 
+You can always use this project in your own code through Maven central, by adding the following dependency in your POM:
+```dtd
+<dependency>
+  <groupId>org.tokenscript</groupId>
+  <artifactId>attestation</artifactId>
+  <version>0.3.7</version>
+</dependency>
+```
+
 This repository's library serves 3 use-cases of attestations.
 
 | Use-case               | Description                                                  | Protocol                                                     | Cmd Demo                         |
