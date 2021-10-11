@@ -78,6 +78,7 @@ public class CoSignedIdentifierAttestationTest
                 sig);
 
         assertTrue(reconstructWrapped.checkValidity());
+        assertTrue(reconstructWrapped.verify());
 
         //Negative test:                                                    v - Changed 1 digit in ID
         IdentifierAttestation att2 = new IdentifierAttestation("20552168", "https://twitter.com/zhangweiwu", subjectKeys.getPublic());
