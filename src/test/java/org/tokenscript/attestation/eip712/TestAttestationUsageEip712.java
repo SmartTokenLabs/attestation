@@ -11,6 +11,7 @@ import org.tokenscript.attestation.HelperTest;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.UseAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
@@ -158,7 +159,7 @@ public class TestAttestationUsageEip712 {
   @Test
   public void expiredToken() throws Exception {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
-    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -1, CHAIN_ID,
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, -Timestamp.ALLOWED_ROUNDING*2, CHAIN_ID,
         MAIL, usage, userSigningKey);
     assertTrue(request.verify());
     assertFalse(request.checkTokenValidity());

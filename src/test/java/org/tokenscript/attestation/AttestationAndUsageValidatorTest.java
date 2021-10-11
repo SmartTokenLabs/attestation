@@ -10,7 +10,6 @@ import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.eip712.Eip712AttestationUsageEncoder;
 import org.tokenscript.attestation.eip712.Nonce;
-import org.tokenscript.attestation.eip712.Timestamp;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import org.bouncycastle.asn1.sec.SECNamedCurves;

@@ -13,6 +13,7 @@ import org.tokenscript.attestation.HelperTest;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.DERUtility;
 import org.tokenscript.attestation.core.SignatureUtility;
@@ -136,7 +137,7 @@ public class TestRedeemCheque {
     Field field = cheque.getClass().getDeclaredField("notValidAfter");
     field.setAccessible(true);
     // Set validity to the past
-    field.set(cheque, Clock.systemUTC().millis()-1000);
+    field.set(cheque, Clock.systemUTC().millis()- Timestamp.ALLOWED_ROUNDING*2);
     assertFalse(cheque.checkValidity());
     assertFalse(attestedCheque.checkValidity());
     // Verification should also fail since signature is now invalid

@@ -12,7 +12,7 @@ import org.tokenscript.attestation.AttestedObject;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.Verifiable;
-import org.tokenscript.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.auth.UnpredictableNumberBundle;
 import org.tokenscript.auth.UnpredictableNumberTool;
 

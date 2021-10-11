@@ -1,14 +1,10 @@
 package org.tokenscript.attestation;
 
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.Validateable;
 import com.alphawallet.token.entity.SignMessageType;
 import com.alphawallet.token.entity.Signable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.text.ParseException;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -31,6 +27,9 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x509.Time;
+import org.tokenscript.attestation.core.ASNEncodable;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.Validateable;
 
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
@@ -296,14 +295,12 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       return false;
     }
     if (getNotValidBefore() != null && getNotValidAfter() != null) {
-      long currentTime = Clock.systemUTC().millis();
-      Date attNotBefore = getNotValidBefore();
-      Date attNotAfter = getNotValidAfter();
-      if (attNotBefore != null && attNotAfter != null) {
-        if (!(currentTime >= attNotBefore.getTime() && currentTime < attNotAfter.getTime())) {
-          logger.error("Attestation either too old or too new");
-          return false;
-        }
+      Timestamp timestamp = new Timestamp(getNotValidBefore().getTime());
+      // It is valid the time difference between expiration and start validity
+      timestamp.setValidity(getNotValidAfter().getTime()-getNotValidBefore().getTime());
+      if (!timestamp.validateAgainstExpiration(getNotValidAfter().getTime())) {
+        logger.error("Attestation not valid at this time");
+        return false;
       }
     }
     if (extensions != null && dataObject != null) {

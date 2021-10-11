@@ -23,7 +23,7 @@ import org.tokenscript.attestation.eip712.Eip712AttestationRequest;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestWithUsage;
 import org.tokenscript.attestation.eip712.Eip712AttestationUsage;
 import org.tokenscript.attestation.eip712.Nonce;
-import org.tokenscript.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.eip712.TokenValidateable;
 import java.io.IOException;
 import java.math.BigInteger;

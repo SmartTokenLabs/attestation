@@ -1,5 +1,6 @@
 package org.tokenscript.attestation.eip712;
 
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.ValidationTools;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.ExceptionUtil;

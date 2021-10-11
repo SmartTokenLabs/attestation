@@ -27,7 +27,7 @@ import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
-import org.tokenscript.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.eip712.Eip712Test;
 import org.tokenscript.eip712.FullEip712InternalData;
 

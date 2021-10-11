@@ -2,7 +2,7 @@ package org.tokenscript.auth;
 
 import org.tokenscript.attestation.AttestedObject;
 import org.tokenscript.attestation.core.URLUtility;
-import org.tokenscript.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.Timestamp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;

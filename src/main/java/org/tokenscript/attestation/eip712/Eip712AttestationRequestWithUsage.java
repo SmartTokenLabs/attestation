@@ -1,11 +1,12 @@
 package org.tokenscript.attestation.eip712;
 
-import static org.tokenscript.attestation.eip712.Timestamp.DEFAULT_TIME_LIMIT_MS;
-import static org.tokenscript.attestation.eip712.Timestamp.DEFAULT_TOKEN_TIME_LIMIT;
+import static org.tokenscript.attestation.Timestamp.DEFAULT_TIME_LIMIT_MS;
+import static org.tokenscript.attestation.Timestamp.DEFAULT_TOKEN_TIME_LIMIT;
 
 import org.tokenscript.attestation.AttestationRequestWithUsage;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;

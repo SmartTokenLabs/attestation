@@ -1,4 +1,4 @@
-package org.tokenscript.attestation.eip712;
+package org.tokenscript.attestation;
 
 
 import org.tokenscript.attestation.core.ExceptionUtil;
@@ -14,7 +14,7 @@ import org.apache.logging.log4j.Logger;
 public class Timestamp {
   private static final Logger logger = LogManager.getLogger(Timestamp.class);
 
-  public static final int ALLOWED_ROUNDING = 1000; // 1 sec, since we are always rounding to the nearest second in the string representation
+  public static final int ALLOWED_ROUNDING = 10000; // 10 sec to account for both rounding down to nearest second and remote clock issues
   // Timestamp with millisecond accuracy and timezone info
   public static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
 
@@ -68,7 +68,7 @@ public class Timestamp {
       return false;
     }
     // Slack only goes into the future
-    if (time < currentTime - ALLOWED_ROUNDING - validity) {
+    if (time + validity + ALLOWED_ROUNDING < currentTime) {
       logger.error("Timestamp is expired");
       return false;
     }
@@ -89,7 +89,7 @@ public class Timestamp {
     }
     // If the token is valid for too long
     // OG added 2 * ALLOWED_ROUNDING extra time to fix roundings
-    if (expirationTimeInMs - time > validity + 3 * ALLOWED_ROUNDING) {
+    if (expirationTimeInMs - time > validity + ALLOWED_ROUNDING) {
       logger.error("Lifetime is larger than allowed");
       return false;
     }

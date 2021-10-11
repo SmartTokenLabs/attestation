@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.tokenscript.attestation.Timestamp;
 
 public class TimestampTest {
 
@@ -39,60 +40,60 @@ public class TimestampTest {
 
   @Test
   public void negativeTimestampTest() {
-    StaticTime time = new StaticTime(12000);
-    time.setValidity(10);
-    time.setCurrentTime(10980);
+    StaticTime time = new StaticTime(120000);
+    time.setValidity(100);
+    time.setCurrentTime(109800);
     // Too new
     assertFalse(time.validateTimestamp());
     // Too old
-    time.setCurrentTime(13011);
+    time.setCurrentTime(130110);
     assertFalse(time.validateTimestamp());
   }
 
   @Test
   public void tooLongExpiration() {
-    StaticTime time = new StaticTime(10000);
-    time.setValidity(99);
+    StaticTime time = new StaticTime(100000);
+    time.setValidity(990);
     time.setCurrentTime(time.getTime());
     // OG added 2s to fix 2 roundings
-    long expiration = time.getTime() + 3100;
+    long expiration = time.getTime() + 31000;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 
   @Test
   public void timestampInFuture() {
-    StaticTime time = new StaticTime(12000);
-    time.setValidity(3000);
-    time.setCurrentTime(10000);
-    long expiration = 13000;
+    StaticTime time = new StaticTime(120000);
+    time.setValidity(30000);
+    time.setCurrentTime(100000);
+    long expiration = 130000;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 
   @Test
   public void timestampExpired() {
-    StaticTime time = new StaticTime(10000);
-    time.setValidity(5000);
-    time.setCurrentTime(14000);
-    long expiration = 13000;
+    StaticTime time = new StaticTime(100000);
+    time.setValidity(50000);
+    time.setCurrentTime(140000);
+    long expiration = 130000;
     assertTrue(time.validateAgainstExpiration(expiration));
-    expiration = 12999;
+    expiration = 129990;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 
   @Test
   public void timestampFromPastOk() {
-    StaticTime time = new StaticTime(10000);
-    time.setValidity(3000);
-    time.setCurrentTime(11000);
-    long expiration = 12000;
+    StaticTime time = new StaticTime(100000);
+    time.setValidity(30000);
+    time.setCurrentTime(110000);
+    long expiration = 120000;
     assertTrue(time.validateAgainstExpiration(expiration));
   }
 
   @Test
   public void validForTooLong() {
-    StaticTime time = new StaticTime(10000);
-    time.setValidity(2000);
-    long expiration = 12001;
+    StaticTime time = new StaticTime(100000);
+    time.setValidity(20000);
+    long expiration = 120010;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 

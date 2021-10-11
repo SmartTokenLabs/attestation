@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.HashMap;
 import java.util.List;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.eip712.Eip712Encoder;
 import org.tokenscript.eip712.FullEip712InternalData;
 

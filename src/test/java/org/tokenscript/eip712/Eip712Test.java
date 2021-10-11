@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.Timestamp;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

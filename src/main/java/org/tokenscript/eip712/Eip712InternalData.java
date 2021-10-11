@@ -1,6 +1,6 @@
 package org.tokenscript.eip712;
 
-import org.tokenscript.attestation.eip712.Timestamp;
+import org.tokenscript.attestation.Timestamp;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({ "description", "timestamp"})
