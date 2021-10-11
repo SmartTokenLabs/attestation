@@ -1,20 +1,25 @@
 package org.twittertip;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.alphawallet.token.tools.Numeric;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.tokenscript.attestation.HelperTest;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.demo.SmartContract;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.SecureRandom;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class CoSignedIdentifierAttestationTest
 {
@@ -24,6 +29,13 @@ public class CoSignedIdentifierAttestationTest
 
     static SignedIdentifierAttestation attestation;
     private CoSignedIdentifierAttestation coSignedAttestation;
+    @Mock
+    SignedIdentifierAttestation mockedAttestation;
+
+    @BeforeEach
+    public void init() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @BeforeAll
     public static void setupKeys() throws Exception {
@@ -113,5 +125,30 @@ public class CoSignedIdentifierAttestationTest
 
         SignedIdentifierAttestation newSigned = new SignedIdentifierAttestation(signedEncoded, attestorKeys.getPublic());
         assertArrayEquals(signed.getDerEncoding(), newSigned.getDerEncoding());
+    }
+
+    @Test
+    public void badValidation() {
+        Mockito.when(mockedAttestation.verify()).thenReturn(true);
+        Mockito.when(mockedAttestation.getDerEncoding()).thenReturn(new byte[] {0x00});
+        Mockito.when(mockedAttestation.getSignature()).thenReturn(new byte[] {0x00});
+        Mockito.when(mockedAttestation.checkValidity()).thenReturn(false);
+
+        coSignedAttestation = new CoSignedIdentifierAttestation(mockedAttestation, subjectKeys);
+        assertTrue(coSignedAttestation.verify());
+        assertFalse(coSignedAttestation.checkValidity());
+    }
+
+    @Test
+    public void badVerification() {
+        // We need to return true first, since it is checked in the constructor
+        Mockito.when(mockedAttestation.verify()).thenReturn(true).thenReturn(false);
+        Mockito.when(mockedAttestation.getDerEncoding()).thenReturn(new byte[] {0x00});
+        Mockito.when(mockedAttestation.getSignature()).thenReturn(new byte[] {0x00});
+        Mockito.when(mockedAttestation.checkValidity()).thenReturn(true);
+
+        coSignedAttestation = new CoSignedIdentifierAttestation(mockedAttestation, subjectKeys);
+        assertFalse(coSignedAttestation.verify());
+        assertTrue(coSignedAttestation.checkValidity());
     }
 }
