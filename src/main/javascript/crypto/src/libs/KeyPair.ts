@@ -1,5 +1,5 @@
 import {
-    base64ToUint8array, hexStringToArray, hexStringToUint8, logger,
+    base64ToUint8array, ecSignatureToSRVhex, hexStringToArray, hexStringToUint8, logger, SignatureSRV,
     stringToArray,
     uint8arrayToBase64,
     uint8ToBn,
@@ -350,9 +350,10 @@ export class KeyPair {
     }
 
     signRawBytesWithEthereum(bytes: number[]): string{
-        let encodingHash = sha3.keccak256(bytes);
+        let encodingHash = ethers.utils.keccak256(bytes).substring(2);
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
-        return uint8tohex(Uint8Array.from(ecKey.sign(encodingHash).toDER()));
+        let signatureInstance: SignatureSRV = ecKey.sign(hexStringToUint8( encodingHash));
+        return ecSignatureToSRVhex(signatureInstance, ecKey);
     }
 
     verifyBytesWithEthereum(bytes: number[], signature: string): boolean{

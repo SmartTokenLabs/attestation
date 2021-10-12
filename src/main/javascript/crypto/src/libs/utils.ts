@@ -299,3 +299,29 @@ export function testsLogger(level:number, ...args: any){
     if (level > testsDisplayDebugLevel) return;
     console.log(...args);
 }
+
+export interface SignatureSRV {
+    r: any,
+    s: any,
+    recoveryParam: number
+}
+
+export function ecSignatureToSRVhex(signature: SignatureSRV, ecKey: any): string {
+    try {
+        let r = signature.r.toString(16).padStart(64, "0");
+        let s_ = signature.s;
+        let v = signature.recoveryParam;
+
+        let half_curve = ecKey.ec.curve.n.shrn(1);
+        if (s_.cmp(half_curve) > 0) {
+            s_ = ecKey.ec.curve.n.sub(s_);
+            v = 1 - v;
+        }
+
+        let s = s_.toString(16).padStart(64, "0");
+        return r + s + (v == 1 ? "1c" : "1b");
+    } catch (e){
+        logger(1, e);
+        throw new Error("Signature format doesn't fit.");
+    }
+}

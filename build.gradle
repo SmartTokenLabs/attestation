@@ -46,8 +46,8 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-core:2.13.0'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.68'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.68'
-    runtimeOnly 'org.apache.logging.log4j:log4j-slf4j18-impl:2.13.0'
-    runtimeOnly 'com.amazonaws:aws-lambda-java-log4j2:1.2.0'
+    implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.13.0'
+    implementation 'com.amazonaws:aws-lambda-java-log4j2:1.2.0'
     implementation('com.amazonaws:aws-lambda-java-core:1.2.0')
     implementation('com.amazonaws:aws-lambda-java-events:2.2.6')
     implementation 'org.json:json:20200518'
