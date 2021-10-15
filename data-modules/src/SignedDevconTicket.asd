@@ -8,9 +8,6 @@
                 <element name="ticket" type="DevconTicket">
                     <annotation>The actual, unsigned, ticket object</annotation>
                 </element>
-                <element name="commitment" type="asnx:OCTET-STRING">
-                  <annotation>The elliptic curve point that is a commitment to the ticket holder's identifier</annotation>
-                </element>
                 <!-- The algorithm and public key are optional since they will normally be internally defined from devconId -->
                 <optional>
                   <element name="publicKeyInfo" type="PublicKeyInfo"/>
@@ -28,6 +25,9 @@
                 <!-- (currently not specified)
                 <element name="co2_token" type="asnx:OCTET-STRING"/>
                 -->
+                <element name="commitment" type="asnx:OCTET-STRING">
+                  <annotation>The elliptic curve point that is a commitment to the ticket holder's identifier</annotation>
+                </element>
             </sequence>
         </type>
     </namedType>

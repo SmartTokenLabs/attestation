@@ -42,7 +42,7 @@ public class Ticket implements Attestable {
    * @param devconId The id of the conference for which the ticket should be used
    * @param ticketId The Id of the ticket
    * @param ticketClass The type of this ticket
-   * @param keys The keys used to sign the cheque
+   * @param keys The keys used to sign the ticket
    * @param secret the secret that must be known to cash the cheque
    */
   public Ticket(String mail, String devconId, BigInteger ticketId, int ticketClass,
@@ -102,13 +102,13 @@ public class Ticket implements Attestable {
     ticket.add(new DERUTF8String(devconId));
     ticket.add(new ASN1Integer(ticketId));
     ticket.add(new ASN1Integer(ticketClass));
+    ticket.add(new DEROctetString(commitment));
     return new DERSequence(ticket);
   }
 
   private byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
     ASN1EncodableVector signedTicket = new ASN1EncodableVector();
     signedTicket.add(ticket);
-    signedTicket.add(new DEROctetString(commitment));
     signedTicket.add(new DERBitString(signature));
     return new DERSequence(signedTicket).getEncoded();
   }
@@ -118,7 +118,6 @@ public class Ticket implements Attestable {
       ASN1Sequence ticket = makeTicket();
       ASN1EncodableVector signedTicket = new ASN1EncodableVector();
       signedTicket.add(ticket);
-      signedTicket.add(new DEROctetString(commitment));
       ASN1EncodableVector publicKeyInfo = new ASN1EncodableVector();
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey);
       publicKeyInfo.add(spki.getAlgorithm());

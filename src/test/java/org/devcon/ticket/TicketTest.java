@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.URLUtility;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -23,7 +21,15 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.UseAttestation;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.URLUtility;
 
 public class TicketTest {
   private static final String MAIL = "test@test.ts";
@@ -37,6 +43,14 @@ public class TicketTest {
   private static SecureRandom rand;
 
   private static final String PREFIX = "build/test-results/";
+
+  @Mock
+  UseAttestation mockedTicket;
+
+  @BeforeEach
+  public void init() {
+    MockitoAnnotations.initMocks(this);
+  }
 
   @BeforeAll
   public static void setupKeys() throws Exception {
@@ -207,5 +221,20 @@ public class TicketTest {
     } catch (IllegalArgumentException e) {
       // Expected
     }
+  }
+
+  // Validates fix of https://github.com/TokenScript/attestation/issues/192
+  @Test
+  public void wrongCommitment() throws Exception {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    assertTrue(ticket.checkValidity());
+    assertTrue(ticket.verify());
+    byte[] commitmentWrongEmail = AttestationCrypto.makeCommitment("wrong@mail.dk", AttestationType.EMAIL, SECRET);
+    Field field = ticket.getClass().getDeclaredField("commitment");
+    field.setAccessible(true);
+    // Should make signature fail
+    field.set(ticket, commitmentWrongEmail);
+    assertTrue(ticket.checkValidity());
+    assertFalse(ticket.verify());
   }
 }
