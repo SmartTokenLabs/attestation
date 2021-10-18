@@ -23,11 +23,13 @@ import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.params.ECNamedDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.math.ec.ECPoint;
 
 public class DERUtility {
@@ -51,18 +53,31 @@ public class DERUtility {
     }
   }
 
+  public static AsymmetricKeyParameter restoreRFCRFC5915Key(byte[] asnEncodedKey) {
+//    AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
+//        new ASN1ObjectIdentifier(oid), parameters.toASN1Primitive());
+//    ASN1BitString keyEnc = DERBitString.getInstance(input);
+//    ASN1Sequence spkiEnc = new DERSequence(new ASN1Encodable[] {identifierEnc, keyEnc});
+//    SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(spkiEnc);
+    try {
+      return PublicKeyFactory.createKey(asnEncodedKey);
+    } catch (IOException e) {
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not restore public key", e);
+    }
+  }
+
   /**
    * Converts ASNPrimitive data in RFC5915 format to a keypair.
    * Ideally, in production environment keys shouldn't be in RFC5915 key distribution format,
    * but rather in PKCS#8 format so that it can be encrypted.
-   * @param data
+   * @param asnEncodedKey The ASN1, CER encoding of the key
    * @return
    */
-  public static AsymmetricCipherKeyPair restoreRFC5915Key(ASN1Primitive data) {
-    ECPrivateKey pKey = ECPrivateKey.getInstance(data);
+  public static AsymmetricCipherKeyPair restoreRFC5915Key(byte[] asnEncodedKey)
+  {
+    ECPrivateKey pKey = decode5915Key(asnEncodedKey);
     BigInteger d = pKey.getKey();
     ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) pKey.getParameters();
-
     X9ECParameters x9 = CustomNamedCurves.getByOID(oid);
     if (x9 == null) {
       x9 = ECNamedCurveTable.getByOID(oid);
@@ -73,6 +88,19 @@ public class DERUtility {
     ECPoint q = privateKey.getParameters().getG().multiply(d);
     ECKeyParameters pub = new ECPublicKeyParameters(q, privateKey.getParameters());
     return new AsymmetricCipherKeyPair(pub, privateKey);
+  }
+
+  private static ECPrivateKey decode5915Key(byte[] asnEncodedKey) {
+    ECPrivateKey pKey;
+    try {
+      ASN1InputStream asn1InputStream = new ASN1InputStream(asnEncodedKey);
+      ASN1Primitive dataASN1 = asn1InputStream.readObject();
+      pKey = ECPrivateKey.getInstance(dataASN1);
+      asn1InputStream.close();
+      return pKey;
+    } catch (IOException e) {
+      throw ExceptionUtil.makeRuntimeException(logger, "Could not decode ASN key object", e);
+    }
   }
 
   public static byte[] encodeSecret(BigInteger secret) {
