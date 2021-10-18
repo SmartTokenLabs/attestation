@@ -55,7 +55,7 @@ public class Issuer {
                 // TODO change URL encoding
                 String ticketInUrl = new String(
                     Base64.getUrlEncoder().encode(ticket.getDerEncoding()));
-                String pokInUrl = new String(Base64.getUrlEncoder().encode(pok.getDerEncoding()));
+                String pokInUrl = new String(Base64.getUrlEncoder().encode(pok.getInternalPok().getDerEncoding()));
                 System.out.printf("?ticket=%s&pok=%s&secret=%s&mail=%s", ticketInUrl, pokInUrl,
                     sharedSecret.toString(), URLEncoder.encode(mail, StandardCharsets.UTF_8));
             } catch (Exception e) {

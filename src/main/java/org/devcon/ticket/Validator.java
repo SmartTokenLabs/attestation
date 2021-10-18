@@ -48,7 +48,7 @@ public class Validator {
               "Something went wrong and the constructed ticket could not be verified");
         }
         FullProofOfExponent internalPok = new FullProofOfExponent(URLUtility.decodeData(pokInUrl));
-        PublicIdentifierProof pok = new PublicIdentifierProof(crypto, ticket.getCommitment(), mail,
+        PublicIdentifierProof pok = new PublicIdentifierProof(ticket.getCommitment(), mail,
             AttestationType.EMAIL, internalPok);
         if (!pok.verify()) {
           throw new RuntimeException(
