@@ -1,6 +1,6 @@
 package org.devcon.ticket;
 
-import java.math.BigInteger;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,8 +18,6 @@ public class Validator {
   static AttestationCrypto crypto = new AttestationCrypto(rand);
 
   public static void main(String... args) {
-    BigInteger sharedSecret = crypto.makeSecret();
-
     if (args.length != 4) {
       System.err.println("Commandline Options:");
       System.err.println(
@@ -35,31 +33,38 @@ public class Validator {
         String pokInUrl = args[2];
         String mail = args[3];
 
-        byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
-        AsymmetricKeyParameter issuerPubKey = DERUtility.restoreRFCRFC5915Key(dataCER);
-        TicketDecoder ticketDecoder = new TicketDecoder(issuerPubKey);
-        Ticket ticket = ticketDecoder.decode(URLUtility.decodeData(ticketInUrl));
-        if (!ticket.checkValidity()) {
-          throw new RuntimeException(
-              "Something went wrong and the constructed ticket could not be validated");
-        }
-        if (!ticket.verify()) {
-          throw new RuntimeException(
-              "Something went wrong and the constructed ticket could not be verified");
-        }
-        FullProofOfExponent internalPok = new FullProofOfExponent(URLUtility.decodeData(pokInUrl));
-        PublicIdentifierProof pok = new PublicIdentifierProof(ticket.getCommitment(), mail,
-            AttestationType.EMAIL, internalPok);
-        if (!pok.verify()) {
-          throw new RuntimeException(
-              "Something went wrong and the commitment in the ticket could not be verified according to the email");
-        }
+        validateTicket(ticketInUrl, pokInUrl, mail, keyFile);
         System.out.println("Ticket is VALID and was issued to email " + mail);
       } catch (Exception e) {
         System.err.println(
             "Something went wrong. Ticket is NOT validated! Please check the supplied arguments again and ensure that the public key is an elliptic curve key in RFC 5915 format.");
         throw new RuntimeException("Could not validate ticket", e);
       }
+    }
+  }
+
+  /**
+   * Throws an exception if anything is wrong with the ticket.
+   */
+  static void validateTicket(String ticketInUrl, String pokInUrl, String mail, Path keyFile) throws IOException {
+    byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
+    AsymmetricKeyParameter issuerPubKey = DERUtility.restoreRFCRFC5915Key(dataCER);
+    TicketDecoder ticketDecoder = new TicketDecoder(issuerPubKey);
+    Ticket ticket = ticketDecoder.decode(URLUtility.decodeData(ticketInUrl));
+    if (!ticket.checkValidity()) {
+      throw new RuntimeException(
+          "Something went wrong and the constructed ticket could not be validated");
+    }
+    if (!ticket.verify()) {
+      throw new RuntimeException(
+          "Something went wrong and the constructed ticket could not be verified");
+    }
+    FullProofOfExponent internalPok = new FullProofOfExponent(URLUtility.decodeData(pokInUrl));
+    PublicIdentifierProof pok = new PublicIdentifierProof(ticket.getCommitment(), mail,
+        AttestationType.EMAIL, internalPok);
+    if (!pok.verify()) {
+      throw new RuntimeException(
+          "Something went wrong and the commitment in the ticket could not be verified according to the email");
     }
   }
 }
