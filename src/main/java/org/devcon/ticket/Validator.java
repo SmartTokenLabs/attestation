@@ -4,19 +4,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.SecureRandom;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.DERUtility;
 import org.tokenscript.attestation.core.URLUtility;
 
 public class Validator {
-
-  static SecureRandom rand = new SecureRandom();
-  static AttestationCrypto crypto = new AttestationCrypto(rand);
-
   public static void main(String... args) {
     if (args.length != 4) {
       System.err.println("Commandline Options:");
