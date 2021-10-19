@@ -54,11 +54,6 @@ public class DERUtility {
   }
 
   public static AsymmetricKeyParameter restoreRFCRFC5915Key(byte[] asnEncodedKey) {
-//    AlgorithmIdentifier identifierEnc = new AlgorithmIdentifier(
-//        new ASN1ObjectIdentifier(oid), parameters.toASN1Primitive());
-//    ASN1BitString keyEnc = DERBitString.getInstance(input);
-//    ASN1Sequence spkiEnc = new DERSequence(new ASN1Encodable[] {identifierEnc, keyEnc});
-//    SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(spkiEnc);
     try {
       return PublicKeyFactory.createKey(asnEncodedKey);
     } catch (IOException e) {
