@@ -21,6 +21,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.Attestation;
 import org.tokenscript.attestation.AttestedObject;
@@ -145,6 +146,8 @@ public class UseTicketTest {
     assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
   }
 
+  // TODO Solidity code should be updated, see https://github.com/TokenScript/attestation/issues/196
+  @Disabled
   @Test
   public void testSmartContractDecode() throws Exception {
     //try building all components
