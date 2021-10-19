@@ -41,6 +41,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
     BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
     int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
+    byte[] commitment = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
     /* refactored 2021-01-05 : we don't care about the ticket class set on our level
     TicketClass ticketClass = null;
     for (TicketClass current : TicketClass.values()) {
@@ -53,7 +54,6 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     }
 
      */
-    byte[] commitment = (ASN1OctetString.getInstance(asn1.getObjectAt(1))).getOctets();
     byte[] signature = parsePKandSignature(asn1);
     return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, publicKey);
   }
@@ -65,14 +65,14 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
    */
   private byte[] parsePKandSignature(ASN1Sequence input) throws IOException, IllegalArgumentException{
     byte[] signature;
-    ASN1Encodable object = input.getObjectAt(2);
+    ASN1Encodable object = input.getObjectAt(1);
     if (object instanceof ASN1Sequence) {
       // The optional PublicKeyInfo is included
       parseEncodingOfPKInfo((ASN1Sequence) object);
-      signature = DERBitString.getInstance(input.getObjectAt(3)).getBytes();
+      signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
     } else if (object instanceof DERBitString) {
       // Only the signature is included
-      signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
+      signature = DERBitString.getInstance(input.getObjectAt(1)).getBytes();
     } else {
       throw ExceptionUtil.throwException(logger,
           new IllegalArgumentException("Invalid ticket encoding"));
