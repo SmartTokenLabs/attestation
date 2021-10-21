@@ -4,7 +4,7 @@ import {Name} from "./InformationFramework";
 
 export class PublicKeyInfoValue {
     // @AsnProp({ type: AlgorithmIdentifierASN }) public algorithm: AlgorithmIdentifierASN;
-    @AsnProp({ type: AsnPropTypes.Any }) public algorithm: Uint8Array;
+    @AsnProp({ type: AsnPropTypes.Any }) public algorithm?: Uint8Array;
     @AsnProp({ type: AsnPropTypes.BitString }) public publicKey: Uint8Array;
 }
 

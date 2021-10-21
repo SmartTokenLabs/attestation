@@ -1,6 +1,14 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString, logger} from "./libs/utils";
+import {
+    base64ToUint8array,
+    uint8ToBn,
+    uint8tohex,
+    uint8toString,
+    logger,
+    hexStringToBase64Url,
+    hexStringToBase64
+} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
@@ -198,7 +206,7 @@ export class Authenticator {
 
             let unSigned = redeem.getDerEncoding();
             logger(DEBUGLEVEL.HIGH,unSigned);
-            return unSigned;
+            return hexStringToBase64(unSigned);
         } catch (e) {
             logger(DEBUGLEVEL.LOW,'getUseTicket: redeem failed');
             logger(DEBUGLEVEL.MEDIUM,e);
@@ -221,9 +229,14 @@ export class Authenticator {
             typeof event.data.ready !== "undefined"
             && event.data.ready === true
         ) {
+            logger(DEBUGLEVEL.HIGH,'this.magicLink',this.magicLink);
+            logger(DEBUGLEVEL.HIGH,'this.email',this.email);
+
             let sendData:postMessageData = {force: false};
             if (this.magicLink) sendData.magicLink = this.magicLink;
             if (this.email) sendData.email = this.email;
+
+            logger(DEBUGLEVEL.HIGH,'sendData',sendData);
 
             this.iframe.contentWindow.postMessage(sendData, this.attestationOrigin);
             return;
@@ -281,6 +294,9 @@ export class Authenticator {
                     this.authResultCallback(useToken);
                 }
 
+            }).catch(e=>{
+                logger(DEBUGLEVEL.LOW,`UseDevconTicket . Something went wrong. ${e}`);
+                this.authResultCallback(false);
             })
 
 

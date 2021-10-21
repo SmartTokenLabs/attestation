@@ -43,6 +43,8 @@ describe("Utils tests", () => {
     test('uint8tohex test', () => {
         expect(uint8tohex(new Uint8Array([1,2]))).toBe("0102")
     })
+    // let k = KeyPair.fromPublicHex('');
+    let k = KeyPair.publicFromPEM();
 });
 
 describe("Read keys and files", () => {

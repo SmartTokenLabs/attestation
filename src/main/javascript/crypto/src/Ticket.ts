@@ -90,14 +90,14 @@ export class Ticket extends AttestableObject implements Attestable {
         let ticket: string =
             Asn1Der.encode('UTF8STRING', this.devconId)
             + Asn1Der.encode('INTEGER', this.ticketId)
-            + Asn1Der.encode('INTEGER', this.ticketClass)
-            + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+            + Asn1Der.encode('INTEGER', this.ticketClass);
         return Asn1Der.encode('SEQUENCE_30', ticket);
     }
 
     encodeSignedTicket(ticket: string)  {
         let signedTicket:string =
             ticket
+            + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment))
             + Asn1Der.encode('BIT_STRING', this.signature);
         return Asn1Der.encode('SEQUENCE_30', signedTicket);
     }
@@ -150,8 +150,8 @@ export class Ticket extends AttestableObject implements Attestable {
         let devconId:string = signedDevconTicket.ticket.devconId;
         let ticketId:bigint = BigInt(signedDevconTicket.ticket.ticketId);
         let ticketClassInt:number = signedDevconTicket.ticket.ticketClass;
-        let commitment:Uint8Array = signedDevconTicket.ticket.commitment;
 
+        let commitment:Uint8Array = signedDevconTicket.commitment;
         let signature:Uint8Array = signedDevconTicket.signatureValue;
         this.createWithCommitment(devconId, ticketId, ticketClassInt, new Uint8Array(commitment), uint8tohex(new Uint8Array(signature)) , keys );
     }
