@@ -62,16 +62,17 @@ public class NFTAttestationTest {
         Files.write(p, nftAttestation.getDerEncoding());
 
         //Extract the Ethereum signature
-        byte[] sig = nftAttestation.getSignature();
+        Signature sig = nftAttestation.getSignature();
 
         //generate NFTAttestation from the NFTAttestation bytes
-        NFTAttestation nftAttestation2 = new NFTAttestation(nftAtt.getDerEncoding(), attestorKeys.getPublic());
+        NFTAttestation nftAttestation2 = new NFTAttestation(nftAtt.getDerEncoding(),
+            attestorKeys.getPublic());
 
         //check recovered signed attestation within the wrapping
         assertTrue(nftAttestation2.verify());
 
         //Generate SignedNFTAttestation using the reconstructed NFTAttestation and the extracted Ethereum signature
-        SignedNFTAttestation signedNFTAttestation2 = new SignedNFTAttestation(nftAttestation2, subjectKeys.getPublic(), sig);
+        SignedNFTAttestation signedNFTAttestation2 = new SignedNFTAttestation(nftAttestation2, sig);
         assertTrue(signedNFTAttestation2.checkValidity());
         assertTrue(nftAttestation.checkValidity());
         assertArrayEquals(signedNFTAttestation2.getUnsignedAttestation().getDerEncoding(), nftAtt.getDerEncoding());

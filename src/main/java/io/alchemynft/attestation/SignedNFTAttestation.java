@@ -1,48 +1,66 @@
 package io.alchemynft.attestation;
 
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.core.Verifiable;
-import io.alchemynft.attestation.NFTAttestation;
+import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.tokenscript.attestation.core.ASNEncodable;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.Validateable;
+import org.tokenscript.attestation.core.Verifiable;
 
 public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validateable {
+    private static final Logger logger = LogManager.getLogger(SignedNFTAttestation.class);
+
     private final NFTAttestation att;
-    private final byte[] signature;
+    private final Signature signature;
     private final AsymmetricKeyParameter attestationVerificationKey;
 
     public SignedNFTAttestation(NFTAttestation att, AsymmetricCipherKeyPair subjectSigningKey) {
         this.att = att;
-        this.signature = SignatureUtility.signPersonalMsgWithEthereum(att.getDerEncoding(), subjectSigningKey.getPrivate());
         this.attestationVerificationKey = subjectSigningKey.getPublic();
+        this.signature = new PersonalSignature(subjectSigningKey, att.getDerEncoding());
+
         if (!verify()) {
-            throw new IllegalArgumentException("The signature is not valid");
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
         }
     }
 
     /**
      * Constructor used for when we supply the signature separately
      */
-    public SignedNFTAttestation(NFTAttestation att, AsymmetricKeyParameter subjectPublicKey, byte[] signature) {
+    public SignedNFTAttestation(NFTAttestation att, Signature signature) {
         this.att = att;
+        this.attestationVerificationKey = getKeyFromAttestation(this.att);
         this.signature = signature;
-        this.attestationVerificationKey = subjectPublicKey;
         if (!verify()) {
-            throw new IllegalArgumentException("The signature is not valid");
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
         }
+    }
+
+    private AsymmetricKeyParameter getKeyFromAttestation(NFTAttestation att) {
+        AsymmetricKeyParameter key = null;
+        try {
+            key = PublicKeyFactory.createKey(
+                att.getSignedIdentifierAttestation().getUnsignedAttestation()
+                    .getSubjectPublicKeyInfo());
+        } catch (IOException e) {
+            ExceptionUtil.makeRuntimeException(logger, "Could not restore key from signed signed attestation", e);
+        }
+        return key;
     }
 
     public NFTAttestation getUnsignedAttestation() {
         return att;
     }
 
-    public byte[] getSignature() {
+    public Signature getSignature() {
         return signature;
     }
 
@@ -53,7 +71,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
 
     @Override
     public byte[] getDerEncoding() {
-        return constructSignedAttestation(this.att, this.signature);
+        return constructSignedAttestation(this.att, this.signature.getRawSignature());
     }
 
     static byte[] constructSignedAttestation(NFTAttestation unsignedAtt, byte[] signature) {
@@ -76,6 +94,6 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
 
     @Override
     public boolean verify() {
-        return SignatureUtility.verifyPersonalEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey);
+        return signature.verify(att.getDerEncoding(), attestationVerificationKey);
     }
 }
