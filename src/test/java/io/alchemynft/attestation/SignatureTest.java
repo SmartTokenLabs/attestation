@@ -45,10 +45,26 @@ public class SignatureTest {
   }
 
   @Test
+  public void otherConstructorRaw() {
+    Signature sig = new RawSignature(subjectKeys, MSG);
+    Signature newSig = new RawSignature(sig.getRawSignature());
+    sunshine(newSig);
+    assertArrayEquals(sig.getRawSignature(), newSig.getRawSignature());
+  }
+
+  @Test
   public void expectedPersonal() {
     Signature sig = new PersonalSignature(subjectKeys, MSG);
     assertArrayEquals(sig.getRawSignature(), SignatureUtility.signPersonalMsgWithEthereum(MSG, subjectKeys.getPrivate()));
     assertEquals(sig.getTypeOfSignature(), "personal");
+  }
+
+  @Test
+  public void otherConstructorPersonal() {
+    Signature sig = new PersonalSignature(subjectKeys, MSG);
+    Signature newSig = new PersonalSignature(sig.getRawSignature());
+    sunshine(newSig);
+    assertArrayEquals(sig.getRawSignature(), newSig.getRawSignature());
   }
 
   @Test
@@ -58,6 +74,14 @@ public class SignatureTest {
         SignatureUtility.signPersonalMsgWithEthereum(AttestationCrypto.hashWithKeccak(MSG),
             subjectKeys.getPrivate()));
     assertEquals(sig.getTypeOfSignature(), "compressed");
+  }
+
+  @Test
+  public void otherConstructorCompressed() {
+    Signature sig = new CompressedMsgSignature(subjectKeys, MSG);
+    Signature newSig = new CompressedMsgSignature(sig.getRawSignature());
+    sunshine(newSig);
+    assertArrayEquals(sig.getRawSignature(), newSig.getRawSignature());
   }
 
   public void sunshine(Signature sig) {

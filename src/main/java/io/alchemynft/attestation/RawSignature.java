@@ -9,6 +9,10 @@ public class RawSignature extends AbstractSignature {
     super(keys, unprocessedMsg, TYPE_OF_SIGNATURE);
   }
 
+  public RawSignature(byte[] signature) {
+    super(signature, TYPE_OF_SIGNATURE);
+  }
+
   @Override
   public byte[] processMessage(byte[] unprocessedMsg) {
     return unprocessedMsg.clone();

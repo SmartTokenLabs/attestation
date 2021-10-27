@@ -10,6 +10,10 @@ public class PersonalSignature extends AbstractSignature {
     super(keys, unprocessedMsg, TYPE_OF_SIGNATURE);
   }
 
+  public PersonalSignature(byte[] rawSignature) {
+    super(rawSignature, TYPE_OF_SIGNATURE);
+  }
+
   @Override
   public byte[] processMessage(byte[] unprocessedMsg) {
     return SignatureUtility.convertToPersonalEthMessage(unprocessedMsg);

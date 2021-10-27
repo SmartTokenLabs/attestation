@@ -11,6 +11,10 @@ public class CompressedMsgSignature extends AbstractSignature {
     super(keys, unprocessedMsg, TYPE_OF_SIGNATURE);
   }
 
+  public CompressedMsgSignature(byte[] signature) {
+    super(signature, TYPE_OF_SIGNATURE);
+  }
+
   @Override
   public byte[] processMessage(byte[] unprocessedMsg) {
     return SignatureUtility.convertToPersonalEthMessage(AttestationCrypto.hashWithKeccak(unprocessedMsg));

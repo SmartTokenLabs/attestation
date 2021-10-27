@@ -4,14 +4,18 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.tokenscript.attestation.core.ASNEncodable;
 import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.Validateable;
 import org.tokenscript.attestation.core.Verifiable;
 
@@ -37,14 +41,27 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
      */
     public SignedNFTAttestation(NFTAttestation att, Signature signature) {
         this.att = att;
-        this.attestationVerificationKey = getKeyFromAttestation(this.att);
+        this.attestationVerificationKey = getKeyFromAttestation();
         this.signature = signature;
         if (!verify()) {
             ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
         }
     }
 
-    private AsymmetricKeyParameter getKeyFromAttestation(NFTAttestation att) {
+    public SignedNFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
+        ASN1InputStream input = new ASN1InputStream(derEncoding);
+        ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+        ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+        this.att = new NFTAttestation(nftEncoding.getEncoded(), identifierAttestationVerificationKey);
+        // todo this actually not used
+        AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
+        DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
+        this.signature = new PersonalSignature(signatureEnc.getBytes());
+        this.attestationVerificationKey = getKeyFromAttestation();
+        input.close();
+    }
+
+    private AsymmetricKeyParameter getKeyFromAttestation() {
         AsymmetricKeyParameter key = null;
         try {
             key = PublicKeyFactory.createKey(
@@ -94,6 +111,17 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
 
     @Override
     public boolean verify() {
-        return signature.verify(att.getDerEncoding(), attestationVerificationKey);
+        if (!signature.verify(att.getDerEncoding(), attestationVerificationKey)) {
+            return false;
+        }
+        if (!att.verify()) {
+            return false;
+        }
+        // Verify that signature is done using thew right key
+        if (!SignatureUtility.addressFromKey(attestationVerificationKey).equals(
+            SignatureUtility.addressFromKey(getKeyFromAttestation()))) {
+            return false;
+        }
+        return true;
     }
 }

@@ -13,6 +13,11 @@ public abstract class AbstractSignature implements Signature {
     this.rawSignature = sign(keys, unprocessedMessage);
   }
 
+  public AbstractSignature(byte[] rawSignature, String type) {
+    this.type = type;
+    this.rawSignature = rawSignature;
+  }
+
   protected byte[] sign(AsymmetricCipherKeyPair keys, byte[] unprocessedMessage) {
     return SignatureUtility.signWithEthereum(processMessage(unprocessedMessage), keys.getPrivate());
   }
