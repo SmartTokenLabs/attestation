@@ -42,8 +42,6 @@ export class Ticket extends AttestableObject implements Attestable {
     private magicLinkURLPrefix:string = "https://ticket.devcon.org/";
 
     private signature: string;
-    // private commitment: Uint8Array;
-
     private keys: KeyPair;
     // protected encoded: string;
 
@@ -74,17 +72,17 @@ export class Ticket extends AttestableObject implements Attestable {
         me.fromData(devconId, ticketId, ticketClass, keys);
 
         let crypto = new AttestationCrypto();
-        let commitment,signature;
+        let signature;
 
-        let asn1Tic = me.makeTicket();
         try {
-            commitment = crypto.makeCommitment(mail, crypto.getType('mail'), secret);
+            me.commitment = crypto.makeCommitment(mail, crypto.getType('mail'), secret);
+            let asn1Tic = me.makeTicket();
             signature = keys.signBytes(hexStringToArray(asn1Tic));
         } catch (e) {
             throw new Error(e);
         }
 
-        me.createWithCommitment(devconId, ticketId, ticketClass, commitment, signature, keys);
+        me.createWithCommitment(devconId, ticketId, ticketClass, me.commitment, signature, keys);
         return me;
     }
 
@@ -92,14 +90,14 @@ export class Ticket extends AttestableObject implements Attestable {
         let ticket: string =
             Asn1Der.encode('UTF8STRING', this.devconId)
             + Asn1Der.encode('INTEGER', this.ticketId)
-            + Asn1Der.encode('INTEGER', this.ticketClass);
+            + Asn1Der.encode('INTEGER', this.ticketClass)
+            + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
         return Asn1Der.encode('SEQUENCE_30', ticket);
     }
 
     encodeSignedTicket(ticket: string)  {
         let signedTicket:string =
             ticket
-            + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment))
             + Asn1Der.encode('BIT_STRING', this.signature);
         return Asn1Der.encode('SEQUENCE_30', signedTicket);
     }
@@ -152,8 +150,8 @@ export class Ticket extends AttestableObject implements Attestable {
         let devconId:string = signedDevconTicket.ticket.devconId;
         let ticketId:bigint = BigInt(signedDevconTicket.ticket.ticketId);
         let ticketClassInt:number = signedDevconTicket.ticket.ticketClass;
+        let commitment:Uint8Array = signedDevconTicket.ticket.commitment;
 
-        let commitment:Uint8Array = signedDevconTicket.commitment;
         let signature:Uint8Array = signedDevconTicket.signatureValue;
         this.createWithCommitment(devconId, ticketId, ticketClassInt, new Uint8Array(commitment), uint8tohex(new Uint8Array(signature)) , keys );
     }
