@@ -16,6 +16,7 @@ export class SubjectPublicKeyInfo {
 
 export class PrivateKeyData {
     @AsnProp({ type: AsnPropTypes.Integer }) public one: number;
+    // @AsnProp({ type: AsnPropTypes.Any }) public algDescr2: Uint8Array;
     @AsnProp({ type: AsnPropTypes.OctetString }) public privateKey: Uint8Array;
     @AsnProp({ type: AsnPropTypes.Any, context: 0 })
     public algDescr: Uint8Array;

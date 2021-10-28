@@ -53,7 +53,7 @@ export class AttestationCrypto {
                 return ATTESTATION_TYPE.mail;
             case "phone":
                 return ATTESTATION_TYPE.phone;
-            case "InetPersona":
+            case "inetpersona":
                 return ATTESTATION_TYPE.InetPersona;
             default:
                 throw new Error("Wrong type of identifier");

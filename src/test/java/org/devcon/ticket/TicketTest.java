@@ -24,6 +24,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import java.nio.file.Paths;
 
 public class TicketTest {
   private static final String MAIL = "test@test.ts";
@@ -69,6 +70,12 @@ public class TicketTest {
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
+
+    String ticketUrl = Issuer.constructTicket("mah_v2@mah.com", "6", ticketID, ticketClass, Paths.get("src/test/data/namedEcPrivKey.pem"));
+    fileWriter = new FileWriter(PREFIX + "mah_v2@mah.com.url");
+    printWriter = new PrintWriter(fileWriter);
+    printWriter.print(ticketUrl);
+
     // this should also work
     //printWriter.print(ticketInUrl);
     printWriter.close();

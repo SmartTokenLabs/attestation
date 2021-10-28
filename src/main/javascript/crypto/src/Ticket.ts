@@ -79,7 +79,7 @@ export class Ticket extends AttestableObject implements Attestable {
         let asn1Tic = me.makeTicket();
         try {
             commitment = crypto.makeCommitment(mail, crypto.getType('mail'), secret);
-            signature = keys.signBytesWithEthereum(hexStringToArray(asn1Tic));
+            signature = keys.signBytes(hexStringToArray(asn1Tic));
         } catch (e) {
             throw new Error(e);
         }

@@ -1,7 +1,7 @@
 import {CURVE_BN256, Point} from "./Point";
 import {Proof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {base64ToUint8array, uint8ToBn, uint8tohex} from "./utils";
+import {base64ToUint8array, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 
@@ -25,7 +25,7 @@ export class FullProofOfExponent {
     }
 
     static fromBytes( uint8data: Uint8Array ) {
-        let proof: Proof = AsnParser.parse( uint8data , Proof);
+        let proof: Proof = AsnParser.parse( uint8toBuffer(uint8data) , Proof);
         return this.fromASNType(proof);
     }
 
