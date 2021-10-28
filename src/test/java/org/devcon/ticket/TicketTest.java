@@ -70,15 +70,17 @@ public class TicketTest {
     FileWriter fileWriter = new FileWriter(PREFIX + "mah@mah.com.url");
     PrintWriter printWriter = new PrintWriter(fileWriter);
     printWriter.printf("%s?ticket=%s&secret=%s", Ticket.magicLinkURLPrefix, ticketInUrl, senderSecret.toString());
-
-    String ticketUrl = Issuer.constructTicket("mah_v2@mah.com", "6", ticketID, ticketClass, Paths.get("src/test/data/namedEcPrivKey.pem"));
-    fileWriter = new FileWriter(PREFIX + "mah_v2@mah.com.url");
-    printWriter = new PrintWriter(fileWriter);
-    printWriter.print(ticketUrl);
-
     // this should also work
     //printWriter.print(ticketInUrl);
     printWriter.close();
+
+    String ticketUrl = Issuer.constructTicket("mah_v2@mah.com", "6", ticketID, ticketClass, Paths.get("src/test/data/namedEcPrivKey.pem"));
+    FileWriter fileWriter2 = new FileWriter(PREFIX + "mah_v2@mah.com.url");
+    PrintWriter printWriter2 = new PrintWriter(fileWriter2);
+    printWriter2.print(ticketUrl);
+    printWriter2.close();
+
+
     
     List<byte[]> decoded = URLUtility.decodeList(ticket.getUrlEncoding());
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
