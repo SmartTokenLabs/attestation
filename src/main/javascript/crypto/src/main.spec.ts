@@ -4,7 +4,7 @@ import {
     stringToArray,
     uint8arrayToBase64,
     uint8tohex,
-    testsLogger
+    testsLogger, base64ToUint8array
 } from './libs/utils';
 import {readFileSync} from "fs";
 import {KeyPair} from "./libs/KeyPair";
@@ -14,6 +14,7 @@ import {DEBUGLEVEL} from "./config";
 import {Issuer} from "./libs/Issuer";
 const url = require('url');
 const querystring = require('querystring');
+
 
 let EC = require("elliptic");
 
@@ -25,14 +26,19 @@ let useAttestRes: string,
     userKey: KeyPair,
     attestorPubKey: KeyPair,
     attestorKey: KeyPair,
+
     senderKey: KeyPair,
+    senderPubKey: KeyPair,
+
     sessionSignature: Uint8Array,
     useAttestationJson: string,
     attestationRequestJson: string,
     requestAttestAndUsage: string,
     magicLink: string,
+
     magicLinkPublicPEM: string,
     magicLinkPrivatePEM: string,
+
     useRequestAttestationJson: string;
 let sessionMessage = "message";
 let email = "test@test.ts";
@@ -57,6 +63,9 @@ describe("Read keys and files", () => {
     const userPubPEM = readFileSync(PREFIX_PATH + 'user-pub.pem', 'utf8');
     let userPubKey = KeyPair.publicFromPEM(userPubPEM);
 
+    const senderPubPEM = readFileSync(PREFIX_PATH + 'sender-pub.pem', 'utf8');
+    senderPubKey = KeyPair.publicFromPEM(senderPubPEM);
+
     const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
     attestorPubKey = KeyPair.publicFromPEM(attestorPubPEM);
 
@@ -74,6 +83,8 @@ describe("Read keys and files", () => {
 
     useAttestationJson = readFileSync(PREFIX_PATH + 'use-attestation.json', 'utf8');
 
+    magicLink = readFileSync(PREFIX_PATH + 'mah@mah.com.url', 'utf8');
+
     useRequestAttestationJson = readFileSync(PREFIX_PATH + 'use-and-request-attestation.json', 'utf8');
 
     magicLink = readFileSync(PREFIX_PATH + 'mah_v2@mah.com.url', 'utf8');
@@ -84,6 +95,7 @@ describe("Read keys and files", () => {
         expect(userPubKey.getPublicKeyAsHexStr()).toBe(userKey.getPublicKeyAsHexStr());
     })
 });
+
 
 describe("MagicLink reader", () => {
     test('Decode Magic Link from Java Build', async () => {
@@ -112,6 +124,20 @@ describe("MagicLink reader", () => {
 
 
 });
+
+describe("magicLink", () => {
+
+    test('Session key sign+verify message', async () => {
+        let parsedUrl = url.parse(magicLink);
+        let str = querystring.parse(parsedUrl.query);
+        let ticket = new Ticket();
+        ticket.fromBytes(base64ToUint8array(str.ticket), senderPubKey);
+
+        expect(ticket.verify()).toBe(true);
+
+    })
+})
+
 
 describe("Subtle import test", () => {
     let res: boolean;
