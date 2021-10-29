@@ -1,11 +1,10 @@
 package org.devcon.ticket;
 
-import org.tokenscript.attestation.AttestableObjectDecoder;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -19,18 +18,27 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.tokenscript.attestation.AttestableObjectDecoder;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 
 public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
   private static final Logger logger = LogManager.getLogger(TicketDecoder.class);
+  private static final String DEFAULT = "default";
 
-  private AsymmetricKeyParameter publicKey;
+  private Map<String, AsymmetricKeyParameter> idsToKeys;
+
+  public TicketDecoder(Map<String, AsymmetricKeyParameter> idsToKeys) {
+    this.idsToKeys = idsToKeys;
+  }
 
   public TicketDecoder(AsymmetricKeyParameter publicKey) {
-    this.publicKey = publicKey;
+    this();
+    idsToKeys.put(DEFAULT, publicKey);
   }
 
   public TicketDecoder() {
-    publicKey = null;
+    idsToKeys = new HashMap<>();
   }
 
   @Override
@@ -54,8 +62,8 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     }
 
      */
-    byte[] signature = parsePKandSignature(asn1);
-    return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, publicKey);
+    byte[] signature = parsePKandSignature(asn1, devconId);
+    return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
   }
 
   /**
@@ -63,12 +71,12 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
    * @param input The encoded Ticket
    * @return
    */
-  private byte[] parsePKandSignature(ASN1Sequence input) throws IOException, IllegalArgumentException{
+  private byte[] parsePKandSignature(ASN1Sequence input, String devconId) throws IOException, IllegalArgumentException{
     byte[] signature;
     ASN1Encodable object = input.getObjectAt(1);
     if (object instanceof ASN1Sequence) {
       // The optional PublicKeyInfo is included
-      parseEncodingOfPKInfo((ASN1Sequence) object);
+      parseEncodingOfPKInfo((ASN1Sequence) object, devconId);
       signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
     } else if (object instanceof DERBitString) {
       // Only the signature is included
@@ -80,21 +88,31 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     return signature;
   }
 
-  private void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo) throws IOException, IllegalArgumentException {
+  private void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(publicKeyInfo.getObjectAt(0));
     byte[] publicKeyBytes = DERBitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
     AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreDefaultKey(algorithm, publicKeyBytes);
       SubjectPublicKeyInfo decodedSpki = SubjectPublicKeyInfoFactory
           .createSubjectPublicKeyInfo(decodedPublicKey);
     // Ensure that the right type of public key is given
-    if (publicKey != null) {
+    if (getPk(devconId) != null) {
       SubjectPublicKeyInfo referenceSpki = SubjectPublicKeyInfoFactory
-          .createSubjectPublicKeyInfo(publicKey);
+          .createSubjectPublicKeyInfo(getPk(devconId));
       if (!Arrays.equals(referenceSpki.getEncoded(), decodedSpki.getEncoded())) {
         throw ExceptionUtil.throwException(logger, new IllegalArgumentException(
             "The public key is not of the same as supplied as argument"));
       }
     }
-    publicKey = decodedPublicKey;
+    idsToKeys.put(devconId, decodedPublicKey);
+  }
+
+  private AsymmetricKeyParameter getPk(String devconId) {
+    AsymmetricKeyParameter pk;
+    if (idsToKeys.get(devconId) != null) {
+      pk = idsToKeys.get(devconId);
+    } else {
+      pk = idsToKeys.get(DEFAULT);
+    }
+    return pk;
   }
 }
