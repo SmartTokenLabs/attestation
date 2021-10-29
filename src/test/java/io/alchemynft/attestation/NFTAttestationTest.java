@@ -33,8 +33,8 @@ public class NFTAttestationTest {
         IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
      */
-    static SignedIdentifierAttestation attestation;
-    private static SignedNFTAttestation nftAttestation;
+    static SignedIdentifierAttestation signedIdentifierAtt;
+    private static SignedNFTAttestation signedNftAttestation;
     private static ERC721Token[] nfts;
     private final SmartContract contract = new SmartContract();
     static final String labeledURI = "https://twitter.com/king_midas";
@@ -59,7 +59,7 @@ public class NFTAttestationTest {
 
         IdentifierAttestation att = new IdentifierAttestation("205521676", "https://twitter.com/zhangweiwu", subjectKeys.getPublic());
         assertTrue(att.checkValidity());
-        attestation = new SignedIdentifierAttestation(att, attestorKeys);
+        signedIdentifierAtt = new SignedIdentifierAttestation(att, attestorKeys);
         nfts = new ERC721Token[] {
             new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25"),
             new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26")
@@ -69,9 +69,9 @@ public class NFTAttestationTest {
 
     @Test
     public void sunshine() {
-        NFTAttestation nftAtt = new NFTAttestation(attestation, nfts);
+        NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
         //construct SignedNFTAttestation using subject key
-        nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+        signedNftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
         assertTrue(nftAtt.verify());
         assertTrue(nftAtt.checkValidity());
     }
@@ -79,17 +79,17 @@ public class NFTAttestationTest {
     @Test
     public void testNFTAttestation() throws Exception
     {
-        NFTAttestation nftAtt = new NFTAttestation(attestation, nfts);
+        NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
         //construct SignedNFTAttestation using subject key
-        nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+        signedNftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
         Path p = Files.createTempFile("unsigned_nftAttestation", ".der");
 
         System.out.println("To check the unsigned NFT attestation, run this:");
         System.out.println("$ openssl asn1parse -inform DER -in " + p.toString());
-        Files.write(p, nftAttestation.getDerEncoding());
+        Files.write(p, signedNftAttestation.getDerEncoding());
 
         //Extract the Ethereum signature
-        Signature sig = nftAttestation.getSignature();
+        Signature sig = signedNftAttestation.getSignature();
 
         //generate NFTAttestation from the NFTAttestation bytes
         NFTAttestation nftAttestation2 = new NFTAttestation(nftAtt.getDerEncoding(),
@@ -101,36 +101,37 @@ public class NFTAttestationTest {
         //Generate SignedNFTAttestation using the reconstructed NFTAttestation and the extracted Ethereum signature
         SignedNFTAttestation signedNFTAttestation2 = new SignedNFTAttestation(nftAttestation2, sig);
         assertTrue(signedNFTAttestation2.checkValidity());
-        assertTrue(nftAttestation.checkValidity());
+        assertTrue(signedNftAttestation.checkValidity());
         assertArrayEquals(signedNFTAttestation2.getUnsignedAttestation().getDerEncoding(), nftAtt.getDerEncoding());
-        assertArrayEquals(signedNFTAttestation2.getDerEncoding(), nftAttestation.getDerEncoding());
+        assertArrayEquals(signedNFTAttestation2.getDerEncoding(), signedNftAttestation.getDerEncoding());
     }
 
     @Test
     public void consistentEncoding() throws IOException {
-        NFTAttestation nftAtt = new NFTAttestation(attestation, nfts);
-        nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
-        SignedNFTAttestation decodedNFTAtt = new SignedNFTAttestation(nftAttestation.getDerEncoding(), attestorKeys.getPublic());
+        NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
+        signedNftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+        SignedNFTAttestation decodedNFTAtt = new SignedNFTAttestation(signedNftAttestation.getDerEncoding(), attestorKeys.getPublic());
         assertTrue(decodedNFTAtt.verify());
         assertTrue(decodedNFTAtt.checkValidity());
-        assertArrayEquals(nftAttestation.getDerEncoding(), decodedNFTAtt.getDerEncoding());
+        assertArrayEquals(signedNftAttestation.getDerEncoding(), decodedNFTAtt.getDerEncoding());
     }
 
     @Test
     public void testGetters() {
-        NFTAttestation nftAtt = new NFTAttestation(attestation, nfts);
+        NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
         //construct SignedNFTAttestation using subject key
-        nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
-        assertEquals(SignatureUtility.addressFromKey(nftAttestation.getAttestationVerificationKey()),
+        signedNftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+        assertEquals(SignatureUtility.addressFromKey(signedNftAttestation.getAttestationVerificationKey()),
             SignatureUtility.addressFromKey(subjectKeys.getPublic()));
         assertArrayEquals(nftAtt.getTokens(), nfts);
     }
 
     @Test
     public void testPublicAttestation() {
-        assertTrue(attestation.checkValidity());
-        assertTrue(attestation.verify());
-        assertTrue(SignatureUtility.verifyEthereumSignature(attestation.getUnsignedAttestation().getPrehash(), attestation.getSignature(), attestorKeys.getPublic()));
+        assertTrue(signedIdentifierAtt.checkValidity());
+        assertTrue(signedIdentifierAtt.verify());
+        assertTrue(SignatureUtility.verifyEthereumSignature(
+            signedIdentifierAtt.getUnsignedAttestation().getPrehash(), signedIdentifierAtt.getSignature(), attestorKeys.getPublic()));
     }
 
     @Test
@@ -147,8 +148,8 @@ public class NFTAttestationTest {
 
     @Test
     public void badSignature() {
-        NFTAttestation nftAtt = new NFTAttestation(attestation, nfts);
-        nftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
+        NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
+        signedNftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
         Signature wrongSignature = new PersonalSignature(subjectKeys, "something wrong".getBytes(
             StandardCharsets.UTF_8));
         assertThrows(IllegalArgumentException.class, ()-> new SignedNFTAttestation(nftAtt, wrongSignature));
@@ -157,7 +158,7 @@ public class NFTAttestationTest {
     @Test
     public void badSigningKey() {
         AsymmetricCipherKeyPair notAttestedKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-        NFTAttestation nftAtt = new NFTAttestation(attestation, nfts);
+        NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
         assertThrows(IllegalArgumentException.class, ()-> new SignedNFTAttestation(nftAtt, notAttestedKeys));
     }
 
@@ -170,7 +171,7 @@ public class NFTAttestationTest {
 
     @Test
     public void invalidSignedIdentifierAtt() {
-        NFTAttestation realNftAtt = new NFTAttestation(attestation, nfts);
+        NFTAttestation realNftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
         Mockito.when(mockedSignedIdentifierAtt.verify()).thenReturn(false);
         Mockito.when(mockedSignedIdentifierAtt.getDerEncoding()).thenReturn(realNftAtt.getDerEncoding());
         NFTAttestation nftAtt = new NFTAttestation(mockedSignedIdentifierAtt, nfts);

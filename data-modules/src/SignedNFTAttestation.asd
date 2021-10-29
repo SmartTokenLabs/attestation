@@ -12,6 +12,10 @@
                 <element name="nftAttestation" type="NFTAttestation">
                     <annotation>The NFT attestation which is signed</annotation>
                 </element>
+                <!-- An integer that is 1 or great indicating which signing approach has been used. If not present, version 1 will be assumed -->
+                <optional>
+                  </element name="signingVersion" type="asnx:INTEGER">
+                </optional>
                 </element name="signingAlgorithm" type="AlgorithmIdentifier">
                 </element name="signatureValue" type="asnx:BIT-STRING">
             </sequence>
