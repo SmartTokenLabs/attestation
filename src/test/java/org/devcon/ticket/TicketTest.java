@@ -3,6 +3,7 @@ package org.devcon.ticket;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -15,7 +16,9 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -191,6 +194,73 @@ public class TicketTest {
     assertArrayEquals(encoded, noPKDecodingTicket.getDerEncodingWithPK());
   }
 
+  @Test
+  public void testMultiplePks() throws Exception {
+    Ticket firstTicket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] firstEncodedTicket = firstTicket.getDerEncoding();
+    Ticket secondTicket = new Ticket(MAIL, "secondConference", TICKET_ID, TICKET_CLASS, otherKeys, SECRET);
+    byte[] secondEncodedTicket = secondTicket.getDerEncoding();
+    Map<String, AsymmetricKeyParameter> keys = new HashMap<>();
+    keys.put(CONFERENCE_ID, senderKeys.getPublic());
+    keys.put("secondConference", otherKeys.getPublic());
+    AsymmetricCipherKeyPair yetAnotherKey = SignatureUtility.constructECKeysWithSmallestY(rand);
+    keys.put("some conference", yetAnotherKey.getPublic());
+    TicketDecoder decoder = new TicketDecoder(keys);
+    Ticket restoredFirstTicket = decoder.decode(firstEncodedTicket);
+    Ticket restoredSecondTicket = decoder.decode(secondEncodedTicket);
+    assertTrue(restoredFirstTicket.verify());
+    assertTrue(restoredFirstTicket.checkValidity());
+    assertTrue(restoredSecondTicket.verify());
+    assertTrue(restoredSecondTicket.checkValidity());
+  }
+
+  @Test
+  public void testMissingKey() {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] encodedTicket = ticket.getDerEncoding();
+    TicketDecoder decoder = new TicketDecoder();
+    assertThrows(RuntimeException.class, ()-> decoder.decode(encodedTicket));
+  }
+
+  @Test
+  public void testWrongPks()  {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] encodedTicket = ticket.getDerEncoding();
+    Map<String, AsymmetricKeyParameter> keys = new HashMap<>();
+    // Incorrect conference name
+    keys.put("incorrect conference", senderKeys.getPublic());
+    keys.put("secondConference", otherKeys.getPublic());
+    TicketDecoder decoder = new TicketDecoder(keys);
+    assertThrows(RuntimeException.class, ()-> decoder.decode(encodedTicket));
+  }
+
+  @Test
+  public void testWrongName() throws Exception {
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    byte[] encodedTicket = ticket.getDerEncodingWithPK();
+    Map<String, AsymmetricKeyParameter> keys = new HashMap<>();
+    // Incorrect conference name
+    keys.put("incorrect conference", senderKeys.getPublic());
+    keys.put("secondConference", otherKeys.getPublic());
+    TicketDecoder decoder = new TicketDecoder(keys);
+    Ticket restoredTicket = decoder.decode(encodedTicket);
+    // TODO Currently supplied key is blankly accepted. Should throw exception. See https://github.com/TokenScript/attestation/issues/198
+    assertTrue(restoredTicket.verify());
+    assertTrue(restoredTicket.checkValidity());
+  }
+
+  @Test
+  public void testWrongUserSuppliedKey() throws Exception {
+    Ticket ticket = new Ticket(MAIL, "secondConference", TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    Field field = ticket.getClass().getDeclaredField("publicKey");
+    field.setAccessible(true);
+    field.set(ticket, otherKeys.getPublic());
+
+    byte[] encodingWithPK = ticket.getDerEncodingWithPK();
+    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    // The constructor verification will fail
+    assertThrows(IllegalArgumentException.class, ()-> decoder.decode(encodingWithPK));
+  }
 
   @Test
   public void testIllegalKeys() throws Exception {

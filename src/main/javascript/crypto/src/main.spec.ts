@@ -131,7 +131,7 @@ describe("magicLink", () => {
         let parsedUrl = url.parse(magicLink);
         let str = querystring.parse(parsedUrl.query);
         let ticket = new Ticket();
-        ticket.fromBytes(base64ToUint8array(str.ticket), senderPubKey);
+        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' :senderPubKey});
 
         expect(ticket.verify()).toBe(true);
 
