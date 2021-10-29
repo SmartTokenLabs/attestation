@@ -26,6 +26,9 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.nio.file.Paths;
+
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
@@ -33,6 +36,7 @@ import org.tokenscript.attestation.UseAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
+
 
 public class TicketTest {
   private static final String MAIL = "test@test.ts";
@@ -89,6 +93,14 @@ public class TicketTest {
     // this should also work
     //printWriter.print(ticketInUrl);
     printWriter.close();
+
+    String ticketUrl = Issuer.constructTicket("mah_v2@mah.com", "6", ticketID, ticketClass, Paths.get("src/test/data/namedEcPrivKey.pem"));
+    FileWriter fileWriter2 = new FileWriter(PREFIX + "mah_v2@mah.com.url");
+    PrintWriter printWriter2 = new PrintWriter(fileWriter2);
+    printWriter2.print(ticketUrl);
+    printWriter2.close();
+
+
     
     List<byte[]> decoded = URLUtility.decodeList(ticket.getUrlEncoding());
     Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));

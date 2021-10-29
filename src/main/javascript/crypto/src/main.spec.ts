@@ -11,10 +11,10 @@ import {KeyPair} from "./libs/KeyPair";
 import {Authenticator} from "./Authenticator";
 import {Asn1Der} from "./libs/DerUtility";
 import {DEBUGLEVEL} from "./config";
-import {Ticket} from "./Ticket";
-
-const querystring = require('querystring');
+import {Issuer} from "./libs/Issuer";
 const url = require('url');
+const querystring = require('querystring');
+
 
 let EC = require("elliptic");
 
@@ -26,12 +26,19 @@ let useAttestRes: string,
     userKey: KeyPair,
     attestorPubKey: KeyPair,
     attestorKey: KeyPair,
+
+    senderKey: KeyPair,
     senderPubKey: KeyPair,
+
     sessionSignature: Uint8Array,
     useAttestationJson: string,
     attestationRequestJson: string,
     requestAttestAndUsage: string,
     magicLink: string,
+
+    magicLinkPublicPEM: string,
+    magicLinkPrivatePEM: string,
+
     useRequestAttestationJson: string;
 let sessionMessage = "message";
 let email = "test@test.ts";
@@ -68,6 +75,9 @@ describe("Read keys and files", () => {
     const sessionPrivPEM = readFileSync(PREFIX_PATH + 'session-priv.pem', 'utf8');
     sessionKey = KeyPair.privateFromPEM(sessionPrivPEM);
 
+    const senderPrivPEM = readFileSync(PREFIX_PATH + 'sender-priv.pem', 'utf8');
+    senderKey = KeyPair.privateFromPEM(senderPrivPEM);
+
     const session2PrivPEM = readFileSync(PREFIX_PATH + 'session-priv2.pem', 'utf8');
     session2Key = KeyPair.privateFromPEM(session2PrivPEM);
 
@@ -77,9 +87,42 @@ describe("Read keys and files", () => {
 
     useRequestAttestationJson = readFileSync(PREFIX_PATH + 'use-and-request-attestation.json', 'utf8');
 
+    magicLink = readFileSync(PREFIX_PATH + 'mah_v2@mah.com.url', 'utf8');
+    magicLinkPrivatePEM = readFileSync('../../../../src/test/data/namedEcPrivKey.pem', 'utf8');
+    magicLinkPublicPEM = readFileSync('../../../../src/test/data/namedEcPubKey.pem', 'utf8');
+
     test('Read keys test ok', () => {
         expect(userPubKey.getPublicKeyAsHexStr()).toBe(userKey.getPublicKeyAsHexStr());
     })
+});
+
+
+describe("MagicLink reader", () => {
+    test('Decode Magic Link from Java Build', async () => {
+        if (magicLink.substring(0,1) == "?") magicLink = magicLink.substring(1);
+        let params = querystring.parse(magicLink);
+
+        let senderKey = KeyPair.publicFromPEM(magicLinkPublicPEM);
+        let res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
+        expect(res).toBe(true);
+    });
+
+    test('Encode/Decode Magic Link from JS', async () => {
+        let res;
+        try {
+            let senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
+            
+            res = await Issuer.constructTicket("mail@mail.com", "5", 222n, 9, senderKey);
+            testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${res}`);
+        } catch (e) {
+            testsLogger(DEBUGLEVEL.LOW, e);
+            throw new Error('verifyUsage failed');
+        }
+        expect(1).toBe(1);
+
+    })
+
+
 });
 
 describe("magicLink", () => {
@@ -94,6 +137,7 @@ describe("magicLink", () => {
 
     })
 })
+
 
 describe("Subtle import test", () => {
     let res: boolean;
