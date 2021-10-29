@@ -39,6 +39,7 @@ public class UseAttestation implements ASNEncodable, Verifiable, Validateable {
     this.encoding = derEncoding;
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
+      input.close();
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       int i = 0;
       this.attestation = new SignedIdentifierAttestation(asn1.getObjectAt(i++).toASN1Primitive().getEncoded(), attestationVerificationKey);

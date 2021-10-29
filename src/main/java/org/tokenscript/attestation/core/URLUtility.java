@@ -47,6 +47,7 @@ public class URLUtility {
     byte[] decodedData = decodeData(url);
     ASN1InputStream input = new ASN1InputStream(decodedData);
     ASN1Encodable[] asn1 = ASN1Sequence.getInstance(input.readObject()).toArray();
+    input.close();
     for (ASN1Encodable current : asn1) {
       res.add(ASN1OctetString.getInstance(current).getOctets());
     }

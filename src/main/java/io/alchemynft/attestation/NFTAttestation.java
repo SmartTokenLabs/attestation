@@ -37,7 +37,7 @@ public class NFTAttestation implements ASNEncodable, Validateable {
     public NFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
         ASN1InputStream input = new ASN1InputStream(derEncoding);
         ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-
+        input.close();
         ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
         this.att = new SignedIdentifierAttestation(attestationEnc.getEncoded(), identifierAttestationVerificationKey);
 

@@ -40,6 +40,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
   public SignedIdentifierAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
     ASN1InputStream input = new ASN1InputStream(derEncoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+    input.close();
     ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
     AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
     // TODO ideally this should be refactored to SignedAttestation being augmented with an generic

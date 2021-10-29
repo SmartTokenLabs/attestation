@@ -39,6 +39,7 @@ public class FullProofOfExponent implements ProofOfExponent {
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoded);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      input.close();
       int asn1counter = 0;
       ASN1OctetString riddleEnc = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++));
       this.riddle = AttestationCrypto.decodePoint(riddleEnc.getOctets());

@@ -60,6 +60,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
     public SignedNFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
         ASN1InputStream input = new ASN1InputStream(derEncoding);
         ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+        input.close();
         int currentPos = 0;
         ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos++));
         this.att = new NFTAttestation(nftEncoding.getEncoded(), identifierAttestationVerificationKey);
@@ -74,7 +75,6 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(currentPos++));
         this.signature = makeSignature(signatureEnc.getBytes(), signingVersion);
         this.attestationVerificationKey = getKeyFromAttestation();
-        input.close();
     }
 
     private int determineSigningVersion() {

@@ -89,6 +89,7 @@ public class DERUtility {
     try {
       ASN1InputStream input = new ASN1InputStream(secretBytes);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      input.close();
       ASN1OctetString secret = ASN1OctetString.getInstance(asn1.getObjectAt(0));
       return new BigInteger(secret.getOctets());
     } catch (IOException e) {
