@@ -17,10 +17,8 @@ import {
 import {ethers} from "ethers";
 import {Signature} from "../asn1/shemas/Signature";
 import {DEBUGLEVEL} from "../config";
-// import * as elliptic from "elliptic";
 
 let EC = require("elliptic");
-// const { subtle } = require('crypto').webcrypto;
 
 let subtle:any;
 
@@ -165,9 +163,6 @@ export class KeyPair {
         let me = new this();
         // TODO detect and validate algorithm
         me.algorithm = me.getAlgorithNameFromASN1(uint8tohex(new Uint8Array(privateKeyObj.algDescr)));
-        // console.log("uint8tohex(privateKeyObj.algDescr)");
-        // console.log(privateKeyObj.algDescr);
-        // console.log(uint8tohex(new Uint8Array(privateKeyObj.algDescr) ));
 
         me.privKey = new Uint8Array(privateKeyObj.privateKey);
         return me;
@@ -203,12 +198,6 @@ export class KeyPair {
         let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
         return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
     }
-
-    // static publicFromPEM5915RFC(pem: string): KeyPair {
-    //     const pubUint8 = base64ToUint8array(pem);
-    //     let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
-    //     return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
-    // }
 
     // Generate a private key
     static async generateKeyAsync(): Promise<KeyPair> {
@@ -294,8 +283,6 @@ export class KeyPair {
         let hash = sha3.keccak256(hexStringToArray(pubPoint));
         return "0x" + hash.substr(-40).toUpperCase();
     }
-
-    // signMessage(message: string){}
 
     signBytes(bytes: number[]): string{
 
