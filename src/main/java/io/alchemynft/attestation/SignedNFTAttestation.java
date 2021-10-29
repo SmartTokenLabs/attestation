@@ -22,7 +22,7 @@ import org.tokenscript.attestation.core.Verifiable;
 
 public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validateable {
     private static final Logger logger = LogManager.getLogger(SignedNFTAttestation.class);
-    private static final int CURRENT_SIGNING_VERSION = 2;
+    public static final int DEFAULT_SIGNING_VERSION = 2;
 
     private final NFTAttestation att;
     private final int signingVersion;
@@ -30,7 +30,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
     private final AsymmetricKeyParameter attestationVerificationKey;
 
     public SignedNFTAttestation(NFTAttestation att, AsymmetricCipherKeyPair subjectSigningKey) {
-        this(att, subjectSigningKey, CURRENT_SIGNING_VERSION);
+        this(att, subjectSigningKey, DEFAULT_SIGNING_VERSION);
     }
 
     public SignedNFTAttestation(NFTAttestation att, AsymmetricCipherKeyPair subjectSigningKey, int signingVersion) {
@@ -88,7 +88,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         }
     }
 
-    private Signature makeSignature(byte[] encodedBytes, int signingVersion) {
+    Signature makeSignature(byte[] encodedBytes, int signingVersion) {
         if (signingVersion == 1) {
             return new PersonalSignature(encodedBytes);
         }
@@ -99,7 +99,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         }
     }
 
-    private Signature makeSignature(AsymmetricCipherKeyPair keys, int signingVersion) {
+    Signature makeSignature(AsymmetricCipherKeyPair keys, int signingVersion) {
         if (signingVersion == 1) {
             return new PersonalSignature(keys, att.getDerEncoding());
         }
