@@ -3,9 +3,10 @@ import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedInfo} from "../asn1/shemas/AttestationFramework";
 import {Extensions} from "../asn1/shemas/AuthenticationFramework";
 import {KeyPair} from "./KeyPair";
-import {Asn1Der} from "./DerUtility";
+import {Asn1Der, X500NamesLabels} from "./DerUtility";
 import {Timestamp} from "./Timestamp";
 import {DEBUGLEVEL} from "../config";
+import {AttributeTypeAndValue} from "../asn1/shemas/InformationFramework";
 
 export class Attestation {
     static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
@@ -34,7 +35,22 @@ export class Attestation {
 
     constructor(){}
 
+    private parseNames(rdn:AttributeTypeAndValue[]):string{
+        let invertedX500NamesLabels:{[index: string]:string} = {};
+        Object.keys(X500NamesLabels).forEach((key:string)=>{
+            invertedX500NamesLabels[X500NamesLabels[key].toLowerCase()] = key;
+        })
+        let nameArray: string[] = [];
+        rdn.forEach((obj:AttributeTypeAndValue)=>{
+            let type = invertedX500NamesLabels[obj.type.toString().toLowerCase()];
+            if (!type) throw new Error(`X500 with name ${obj.type.toString()} not implemented yet.`)
+            nameArray.push(`${type}="${obj.value}"`);
+        })
+        return nameArray.join(',');
+    }
+
     fromBytes( uint8bytes: Uint8Array) {
+
         const me = this;
         let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8toBuffer(uint8bytes), SignedInfo);
 
@@ -50,55 +66,29 @@ export class Attestation {
         }
 
         let rdn = decodedAttestationObj.subject.rdnSequence;
-        if (rdn && rdn[0] && rdn[0][0]){
-            let obj = rdn[0][0];
-            me.subject = (obj.type.toString() == "2.5.4.3" ? "CN=" : "") + obj.value;
+        me.subject = "";
+
+        if (rdn && rdn[0] && rdn[0].length){
+            me.subject = this.parseNames(rdn[0]);
         }
 
         me.subjectKey = KeyPair.publicFromSubjectPublicKeyInfo(decodedAttestationObj.subjectPublicKeyInfo);
 
         let issuerSet = decodedAttestationObj.issuer.rdnSequence;
-        let namesArray: string[] = [];
+        me.issuer = '';
         if (issuerSet.length) {
-            issuerSet.forEach(issuerSetItem => {
-                let curVal = issuerSetItem[0].value;
-                let type = issuerSetItem[0].type;
-                let prefix = '';
-                switch (type){
-                    case '2.5.4.3':
-                        prefix = "CN";
-                        break;
-                    case '2.5.4.6':
-                        prefix = "C";
-                        break;
-                    case '2.5.4.10':
-                        prefix = "O";
-                        break;
-                    case '2.5.4.11':
-                        prefix = "OU";
-                        break;
-                    case '2.5.4.7':
-                        prefix = "L";
-                        break;
-                    default:
-                        throw new Error('Alg "' + type + '" Not implemented yet');
-                }
-
-                if (type && curVal) {
-                    namesArray.push(type + '=' + curVal);
-                }
-            })
+            me.issuer = this.parseNames(issuerSet[0]);
         }
-        me.issuer = namesArray.join(',');
 
         if (decodedAttestationObj.contract){
             me.smartcontracts = decodedAttestationObj.contract;
         }
 
-        if (decodedAttestationObj.attestsTo.extensions){
+        if (decodedAttestationObj.attestsTo && decodedAttestationObj.attestsTo.extensions){
             me.extensions = decodedAttestationObj.attestsTo.extensions;
             me.commitment = new Uint8Array(me.extensions.extension.extnValue);
-        } else if(decodedAttestationObj.attestsTo.dataObject) {
+        } else if(decodedAttestationObj.attestsTo && decodedAttestationObj.attestsTo.dataObject) {
+            throw new Error("Implement parse dataObject");
             // TODO parse dataObject
             //this.extensions = decodedAttestationObj.attestsTo.dataObject;
         }
@@ -177,15 +167,26 @@ export class Attestation {
     }
 
     checkValidity(){
-        if (this.version == null
-            || this.serialNumber == null
-            || this.subject == null
-            || this.signingAlgorithm == null
-            || (!this.extensions && !this.dataObject && !this.commitment)
-        ) {
-            logger(DEBUGLEVEL.LOW, "Some attest data missed");
+        if (this.version == null) {
+            logger(DEBUGLEVEL.LOW, "Attest version missed");
             return false;
         }
+
+        if (this.serialNumber == null) {
+            logger(DEBUGLEVEL.LOW, "Attest serial number missed");
+            return false;
+        }
+
+        if (this.subject == null) {
+            logger(DEBUGLEVEL.LOW, "Attest subject missed");
+            return false;
+        }
+
+        if (this.signingAlgorithm == null) {
+            logger(DEBUGLEVEL.LOW, "Attest signing algorithm missed");
+            return false;
+        }
+
         let attNotBefore = this.getNotValidBefore();
         let attNotAfter = this.getNotValidAfter();
 
@@ -196,7 +197,7 @@ export class Attestation {
         }
 
         if (this.extensions != null && this.dataObject != null) {
-            logger(DEBUGLEVEL.LOW, "Extensions or dataObject required");
+            logger(DEBUGLEVEL.LOW, "Both Extensions and dataObject not allowed");
             return false;
         }
 
@@ -235,7 +236,6 @@ export class Attestation {
         + Asn1Der.encode('INTEGER', this.serialNumber)
             // TODO verify encoding!!!
         + Asn1Der.encodeObjectId(this.signingAlgorithm);
-            // res.add(this.issuer == null ? new DERSequence() : this.issuer);
         res += this.issuer ? Asn1Der.encodeName(this.issuer) : Asn1Der.encode('NULL_VALUE','');
 
         if (this.notValidAfter != null && this.notValidBefore != null) {
@@ -247,34 +247,34 @@ export class Attestation {
         }
 
         // res.add(this.subject == null ? new DERSequence() : this.subject);
+
+        // res += this.subject ? Asn1Der.encodeName(this.subject) : Asn1Der.encode('NULL_VALUE','');
         res += this.subject ? Asn1Der.encodeName(this.subject) : Asn1Der.encode('NULL_VALUE','');
 
         res += this.subjectKey ? this.subjectKey.getAsnDerPublic() : Asn1Der.encode('NULL_VALUE','');
 
-        // if (this.smartcontracts != null) {
-        //     res.add(this.smartcontracts);
+        if (this.smartcontracts != null) {
+            res += this.smartcontracts;
+        }
+
+        // if (this.commitment && this.commitment.length){
+        //     let extensions: string = Asn1Der.encode('OBJECT_ID', Attestation.OID_OCTETSTRING)
+        //         + Asn1Der.encode('BOOLEAN', 1)
+        //         + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+        //     // Double Sequence is needed to be compatible with X509V3
+        //     res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensions)),3);
         // }
 
-        if (this.commitment && this.commitment.length){
-            let extensions: string = Asn1Der.encode('OBJECT_ID', Attestation.OID_OCTETSTRING)
-                + Asn1Der.encode('BOOLEAN', 1)
-                + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
-            // Double Sequence is needed to be compatible with X509V3
-            res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensions)),3);
-        } else {
-            // TODO implement
-            // if (this.smartcontracts != null) {
-            //     res.add(this.smartcontracts);
-            // }
-            // // The validity check ensure that only one of "extensions" and "dataObject" is set
-            // if (this.extensions != null) {
-            //     res.add(new DERTaggedObject(true, 3, this.extensions));
-            // }
-            // if (this.dataObject != null) {
-            //     res.add(new DERTaggedObject(true, 4, this.dataObject));
-            // }
-            throw new Error('dataObject not implemented. We didn\'t use it before.');
+
+        // The validity check ensure that only one of "extensions" and "dataObject" is set
+        if (this.extensions != null) {
+            res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', this.extensions)),3);
         }
+
+        if (this.dataObject != null) {
+            res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', this.dataObject)),4);
+        }
+
         return hexStringToUint8(Asn1Der.encode('SEQUENCE_30',res));
     }
 
