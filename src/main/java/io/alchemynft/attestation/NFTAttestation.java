@@ -18,13 +18,13 @@ import org.tokenscript.attestation.core.Validateable;
 public class NFTAttestation implements ASNEncodable, Validateable {
     private static final Logger logger = LogManager.getLogger(NFTAttestation.class);
 
-    private final SignedIdentifierAttestation att;
+    private final SignedIdentifierAttestation signedIdentifierAttestation;
     private final ERC721Token[] erc721Tokens;
     private final DERSequence tokens;
 
-    public NFTAttestation(SignedIdentifierAttestation att, ERC721Token[] nftTokens)
+    public NFTAttestation(SignedIdentifierAttestation signedIdentifierAttestation, ERC721Token[] nftTokens)
     {
-        this.att = att;
+        this.signedIdentifierAttestation = signedIdentifierAttestation;
         this.erc721Tokens = nftTokens;
         ASN1EncodableVector asn1 = new ASN1EncodableVector();
         for (ERC721Token nftToken : nftTokens)
@@ -39,7 +39,7 @@ public class NFTAttestation implements ASNEncodable, Validateable {
         ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
         input.close();
         ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
-        this.att = new SignedIdentifierAttestation(attestationEnc.getEncoded(), identifierAttestationVerificationKey);
+        this.signedIdentifierAttestation = new SignedIdentifierAttestation(attestationEnc.getEncoded(), identifierAttestationVerificationKey);
 
         ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
         this.tokens = DERSequence.convert(tokensEnc);
@@ -53,7 +53,7 @@ public class NFTAttestation implements ASNEncodable, Validateable {
     public byte[] getDerEncoding() {
         try {
             ASN1EncodableVector res = new ASN1EncodableVector();
-            res.add(ASN1Primitive.fromByteArray(att.getDerEncoding()));
+            res.add(ASN1Primitive.fromByteArray(signedIdentifierAttestation.getDerEncoding()));
             res.add(tokens);
             return new DERSequence(res).getEncoded();
         } catch (Exception e) {
@@ -62,7 +62,7 @@ public class NFTAttestation implements ASNEncodable, Validateable {
     }
 
     public SignedIdentifierAttestation getSignedIdentifierAttestation() {
-        return att;
+        return signedIdentifierAttestation;
     }
 
     public ERC721Token[] getTokens() {
@@ -70,14 +70,14 @@ public class NFTAttestation implements ASNEncodable, Validateable {
     }
 
     public AlgorithmIdentifier getSigningAlgorithm() {
-        return att.getUnsignedAttestation().getSigningAlgorithm();
+        return signedIdentifierAttestation.getUnsignedAttestation().getSigningAlgorithm();
     }
 
     public boolean checkValidity() {
-        return att.checkValidity();
+        return signedIdentifierAttestation.checkValidity();
     }
 
     public boolean verify() {
-        return att.verify();
+        return signedIdentifierAttestation.verify();
     }
 }

@@ -15,7 +15,7 @@ public class PersonalSignature extends AbstractSignature {
   }
 
   @Override
-  public byte[] processMessage(byte[] unprocessedMsg) {
+  byte[] processMessage(byte[] unprocessedMsg) {
     return SignatureUtility.convertToPersonalEthMessage(unprocessedMsg);
   }
 

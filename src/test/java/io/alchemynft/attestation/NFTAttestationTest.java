@@ -112,7 +112,7 @@ public class NFTAttestationTest {
     }
 
     @Test
-    public void testGetters() {
+    public void testGetters() throws IOException {
         NFTAttestation nftAtt = new NFTAttestation(signedIdentifierAtt, nfts);
         //construct SignedNFTAttestation using subject key
         signedNftAttestation = new SignedNFTAttestation(nftAtt, subjectKeys);
@@ -197,8 +197,8 @@ public class NFTAttestationTest {
     }
 
     @Test
-    public void noSigningVersionIncluded() throws IOException {
-        String urlEncodedSignedNftAtt = "MIICpjCCAlMwggIXMIIBxKADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTEwMjkxMTU0MDdaGA85OTk5MTIzMTIyNTk1OVowOTE3MDUGCSsGAQQBgXoBOQwoaHR0cHM6Ly90d2l0dGVyLmNvbS96aGFuZ3dlaXd1IDIwNTUyMTY3NjCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAASVDHwL7SPDysXMMbu5qtm7VTI4eIJnCsKxzfB5mrDrx2TCZ_cE6P3aB5arg5ek0hAQJNJMTv_2lbOkF_LtDkjNMAkGByqGSM49BAIDQgAv5ZST-ud2DA32TnZiyAFJW2mhSQaC5IbYL_d_Bv3z7WESsdVTNpbpB9ZKbTFGTh5EPsLnpgKLz8o8R5bTe-C7HDA2MBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEZMBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEaMAkGByqGSM49BAIDQgCUHR5uYwJZcj3DfjTHvPh5mlriAS3E1sQM1o_A2F5-YQ1c6uuZhmXuSP21jnb3QXSBZXwhGYjuljhCDnGd1UCMHA==";
+    public void signingVersion1Included() throws IOException {
+        String urlEncodedSignedNftAtt = "MIICqTCCAlMwggIXMIIBxKADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTExMDkxNjIwMThaGA85OTk5MTIzMTIyNTk1OVowOTE3MDUGCSsGAQQBgXoBOQwoaHR0cHM6Ly90d2l0dGVyLmNvbS96aGFuZ3dlaXd1IDIwNTUyMTY3NjCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAASVDHwL7SPDysXMMbu5qtm7VTI4eIJnCsKxzfB5mrDrx2TCZ_cE6P3aB5arg5ek0hAQJNJMTv_2lbOkF_LtDkjNMAkGByqGSM49BAIDQgD8Wu2eGeRW1GNFxOk5Srdn4E968ML7MUINj55zBqhuOhUWmosV5d4VsarkmpCmlwAXxvIpt7UcFP4cK8QuwH89GzA2MBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEZMBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEaAgEBMAkGByqGSM49BAIDQgCrpY0RQ3LNfJd6YgYEC-etEU_oJKUAA6WP0TRfZITeQVNNm21BOFQc-iiXs053UcSy1y29tbUPt1wp4VRU8Qu4Gw==";
         signedNftAttestation = new SignedNFTAttestation(URLUtility.decodeData(urlEncodedSignedNftAtt), attestorKeys.getPublic());
         SignedNFTAttestation newSignedNftAtt = new SignedNFTAttestation(signedNftAttestation.getUnsignedAttestation(), signedNftAttestation.getSignature());
         assertTrue(newSignedNftAtt.verify());

@@ -14,7 +14,7 @@ public class RawSignature extends AbstractSignature {
   }
 
   @Override
-  public byte[] processMessage(byte[] unprocessedMsg) {
+  byte[] processMessage(byte[] unprocessedMsg) {
     return unprocessedMsg.clone();
   }
 }

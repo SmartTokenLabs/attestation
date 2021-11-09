@@ -49,7 +49,7 @@ public class ERC721Token implements ASNEncodable {
     private void validateID(BigInteger tokenId) {
         // Only allow non-negative IDs
         if (tokenId.compareTo(BigInteger.ZERO) < 0) {
-            ExceptionUtil.throwException(logger, new IllegalArgumentException("IDs cannot be negative"));
+            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("IDs cannot be negative"));
         }
     }
 

@@ -32,8 +32,11 @@ public abstract class AbstractSignature implements Signature {
     return type;
   }
 
-  @Override
-  public abstract byte[] processMessage(byte[] unprocessedMsg);
+  /**
+   * Processes any message and returns the raw bytes that are actually being signed
+   * @return
+   */
+  abstract byte[] processMessage(byte[] unprocessedMsg);
 
   @Override
   public boolean verify(byte[] unprocessedMsg, AsymmetricKeyParameter verificationKey) {

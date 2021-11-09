@@ -12,7 +12,6 @@ import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 
 public class SignatureTest {
@@ -30,7 +29,7 @@ public class SignatureTest {
 
   @Test
   public void personal() {
-    Signature sig = new PersonalSignature(subjectKeys, MSG);
+    AbstractSignature sig = new PersonalSignature(subjectKeys, MSG);
     sunshine(sig);
     ensureProcessing(sig);
     wrongMessage(sig);
@@ -38,10 +37,34 @@ public class SignatureTest {
   }
 
   @Test
+  public void raw() {
+    AbstractSignature sig = new RawSignature(subjectKeys, MSG);
+    sunshine(sig);
+    wrongMessage(sig);
+    wrongKeys(sig);
+  }
+
+  @Test
+  public void compressed() {
+    Signature sig = new CompressedMsgSignature(subjectKeys, MSG);
+    sunshine(sig);
+    wrongMessage(sig);
+    wrongKeys(sig);
+  }
+
+
+  @Test
   public void expectedRaw() {
-    Signature sig = new RawSignature(subjectKeys, MSG);
+    AbstractSignature sig = new RawSignature(subjectKeys, MSG);
     assertArrayEquals(sig.getRawSignature(), SignatureUtility.signWithEthereum(MSG, subjectKeys.getPrivate()));
     assertEquals(sig.getTypeOfSignature(), "raw");
+    Arrays.equals(sig.processMessage(MSG), MSG);
+  }
+
+  @Test
+  public void expectedCompressedType() {
+    Signature sig = new CompressedMsgSignature(subjectKeys, MSG, "prefix ", " postfix");
+    assertEquals(sig.getTypeOfSignature(), "compressed");
   }
 
   @Test
@@ -60,20 +83,18 @@ public class SignatureTest {
   }
 
   @Test
+  public void compressedReference() {
+    CompressedMsgSignature sig = new CompressedMsgSignature(subjectKeys, MSG, "prefix ", " postfix");
+    assertArrayEquals(sig.processMessage(MSG), "prefix 0x9DF8DBA3720D00BD48AD744722021EF91B035E273BCCFB78660CA8DF9574B086 postfix".getBytes(
+        StandardCharsets.UTF_8));
+  }
+
+  @Test
   public void otherConstructorPersonal() {
     Signature sig = new PersonalSignature(subjectKeys, MSG);
     Signature newSig = new PersonalSignature(sig.getRawSignature());
     sunshine(newSig);
     assertArrayEquals(sig.getRawSignature(), newSig.getRawSignature());
-  }
-
-  @Test
-  public void expectedCompressed() {
-    Signature sig = new CompressedMsgSignature(subjectKeys, MSG);
-    assertArrayEquals(sig.getRawSignature(),
-        SignatureUtility.signPersonalMsgWithEthereum(AttestationCrypto.hashWithKeccak(MSG),
-            subjectKeys.getPrivate()));
-    assertEquals(sig.getTypeOfSignature(), "compressed");
   }
 
   @Test
@@ -90,7 +111,7 @@ public class SignatureTest {
     assertTrue(sig.verify(MSG, subjectKeys.getPublic()));
   }
 
-  public void ensureProcessing(Signature sig) {
+  public void ensureProcessing(AbstractSignature sig) {
     assertFalse(Arrays.equals(sig.processMessage(MSG), MSG));
   }
 

@@ -23,6 +23,8 @@ import org.tokenscript.attestation.core.Verifiable;
 public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validateable {
     private static final Logger logger = LogManager.getLogger(SignedNFTAttestation.class);
     public static final int DEFAULT_SIGNING_VERSION = 2;
+    public static final String PREFIX_MSG = "The digest of the ERC721 tokens for AlchemyNFT is: ";
+    public static final String POSTFIX_MSG = "";
 
     private final NFTAttestation att;
     private final int signingVersion;
@@ -40,7 +42,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         this.signingVersion = signingVersion;
 
         if (!verify()) {
-            ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
+            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
         }
     }
 
@@ -53,7 +55,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         this.signature = signature;
         this.signingVersion = determineSigningVersion();
         if (!verify()) {
-            ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
+            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
         }
     }
 
@@ -93,7 +95,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
             return new PersonalSignature(encodedBytes);
         }
         else if (signingVersion == 2) {
-            return new CompressedMsgSignature(encodedBytes);
+            return new CompressedMsgSignature(encodedBytes, PREFIX_MSG, POSTFIX_MSG);
         } else {
             throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Unknown signing version"));
         }
@@ -104,7 +106,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
             return new PersonalSignature(keys, att.getDerEncoding());
         }
         else if (signingVersion == 2) {
-            return new CompressedMsgSignature(keys, att.getDerEncoding());
+            return new CompressedMsgSignature(keys, att.getDerEncoding(), PREFIX_MSG, POSTFIX_MSG);
         } else {
             throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Unknown signing version"));
         }
@@ -117,7 +119,7 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
                 att.getSignedIdentifierAttestation().getUnsignedAttestation()
                     .getSubjectPublicKeyInfo());
         } catch (IOException e) {
-            ExceptionUtil.makeRuntimeException(logger, "Could not restore key from signed signed attestation", e);
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not restore key from signed signed attestation", e);
         }
         return key;
     }
@@ -145,7 +147,10 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
             byte[] rawAtt = unsignedAtt.getDerEncoding();
             ASN1EncodableVector res = new ASN1EncodableVector();
             res.add(ASN1Primitive.fromByteArray(rawAtt));
-            res.add(new ASN1Integer(signingVersion));
+            //  Only include version number if it is greater than 1
+            if (signingVersion > 1) {
+                res.add(new ASN1Integer(signingVersion));
+            }
             res.add(unsignedAtt.getSigningAlgorithm());
             res.add(new DERBitString(signature));
             return new DERSequence(res).getEncoded();
