@@ -12,6 +12,14 @@ import {Authenticator} from "./Authenticator";
 import {Asn1Der} from "./libs/DerUtility";
 import {DEBUGLEVEL} from "./config";
 import {Ticket} from "./Ticket";
+import {IdentifierAttestation} from "./libs/IdentifierAttestation";
+import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
+import {ERC721Token} from "./libs/ERC721Token";
+import {NFTAttestation} from "./libs/NFTAttestation";
+import {SignedNFTAttestation} from "./libs/SignedNFTAttestation";
+import {Signature} from "./libs/Signature";
+import {RawSignature} from "./libs/RawSignature";
+import {PersonalSignature} from "./libs/PersonalSignature";
 
 const querystring = require('querystring');
 const url = require('url');
@@ -24,6 +32,7 @@ let useAttestRes: string,
     sessionKey: KeyPair,
     session2Key: KeyPair,
     userKey: KeyPair,
+    userPubKey: KeyPair,
     attestorPubKey: KeyPair,
     attestorKey: KeyPair,
     senderPubKey: KeyPair,
@@ -54,7 +63,7 @@ describe("Read keys and files", () => {
     userKey = KeyPair.privateFromPEM(userPrivPEM);
 
     const userPubPEM = readFileSync(PREFIX_PATH + 'user-pub.pem', 'utf8');
-    let userPubKey = KeyPair.publicFromPEM(userPubPEM);
+    userPubKey = KeyPair.publicFromPEM(userPubPEM);
 
     const senderPubPEM = readFileSync(PREFIX_PATH + 'sender-pub.pem', 'utf8');
     senderPubKey = KeyPair.publicFromPEM(senderPubPEM);
@@ -82,6 +91,148 @@ describe("Read keys and files", () => {
     })
 });
 
+describe("SignedIdentifierAttestation", () => {
+    let subjectKeys = userKey;
+    let nfts:ERC721Token[];
+    let signedIdentifierAtt: SignedIdentifierAttestation;
+    let signedNftAttestation: SignedNFTAttestation;
+    let nftAtt:NFTAttestation;
+
+    test('setup', () => {
+
+        let att:IdentifierAttestation = IdentifierAttestation.fromLabelAndUrl("205521676", "https://twitter.com/zhangweiwu", subjectKeys);
+        expect(att.checkValidity()).toBe(true);
+        signedIdentifierAtt = SignedIdentifierAttestation.fromData(att, attestorKey);
+        nfts = [
+            ERC721Token.fromStrings("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25"),
+            ERC721Token.fromStrings("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26")
+        ];
+        console.log("SubjectPublicKey's Fingerprint (summarised as Ethereum address):\n" + userPubKey.getPublicKeyAsHexStr());
+
+        expect(true).toBe(true);
+
+    })
+
+    test('testNFTAttestation', () => {
+        nftAtt = NFTAttestation.fromAttAndTokens(signedIdentifierAtt, nfts);
+        //construct SignedNFTAttestation using subject key
+        signedNftAttestation = SignedNFTAttestation.fromAtt(nftAtt, subjectKeys);
+
+        expect(signedNftAttestation.verify()).toBe(true);
+        expect(signedNftAttestation.checkValidity()).toBe(true);
+
+        //Extract the Ethereum signature
+        let sig:Signature = signedNftAttestation.getSignature();
+
+        // console.log(nftAtt.getDerEncoding());
+        let realSignedNFTAtt =  "MIICkjCCAj8wggIdMIIByqADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTExMDMyMTM0NDFaGA85OTk5MTIzMTIzNTk1OVowPzE9MDsGCSsGAQQBgXoBOQwuaHR0cHM6Ly90d2l0dGVyLmNvbS9PbGVoUnYgMTM4NzgwNjM2NzY2NzMzOTI3NTCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP////////////////////////////////////7///wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm+Zn753LusVaBilc6HCwcCm/zbLc4o2VnygVsW+BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj/sQ1LgCIQD////////////////////+uq7c5q9IoDu/0l6M0DZBQQIBAQNCAAQvGW7DOtBMY5j+ju8ahNiFU5dkG7TLu89XbjuqNMUWpRsurGsgHdJJULZRPL2F9r0aEbe61RE0PZ2t7Msw9yZCMAkGByqGSM49BAIDQgCT5mb1dcBRLlxJa3RLi25KIjWMAErnZDIJ1Wc4dJrFkSh/TU5D9cIS0lbOoAUfEFvJB39k0aqHuIwNLM8Xe+BBGzAcMBoEFAAAgMCSZPVRYLcZ1nAEJLh3yNl3BAIBDTAJBgcqhkjOPQQCA0IAijX0yxUsm53EIG35ffgGDGfmd34ENfSGVNcK8EVllTsC8+WjmpBykKJsFDH++zgY14MuHNBUB2/ZTt3PpTIKSBw=";
+
+        //generate NFTAttestation from the NFTAttestation bytes
+        let nftAttestation2:NFTAttestation = NFTAttestation.fromDer(hexStringToUint8(nftAtt.getDerEncoding()), attestorPubKey);
+
+        //check recovered signed attestation within the wrapping
+        expect(nftAttestation2.verify()).toBe(true);
+
+        //Generate SignedNFTAttestation using the reconstructed NFTAttestation and the extracted Ethereum signature
+
+
+        let signedNFTAttestation2:SignedNFTAttestation = SignedNFTAttestation.fromAttAndSign(nftAttestation2, sig);
+        expect(signedNFTAttestation2.checkValidity()).toBe(true);
+        expect(signedNftAttestation.checkValidity()).toBe(true);
+
+        expect(signedNFTAttestation2.getUnsignedAttestation().getDerEncoding()).toEqual(nftAtt.getDerEncoding());
+        expect(signedNFTAttestation2.getDerEncoding()).toEqual(signedNftAttestation.getDerEncoding());
+
+    })
+
+    test('consistentEncoding', () => {
+        let decodedNFTAtt:SignedNFTAttestation = SignedNFTAttestation.fromASN(hexStringToUint8(signedNftAttestation.getDerEncoding()), attestorPubKey);
+
+        expect(decodedNFTAtt.verify()).toBe(true);
+        expect(decodedNFTAtt.checkValidity()).toBe(true);
+
+        expect(signedNftAttestation.getDerEncoding()).toEqual(decodedNFTAtt.getDerEncoding());
+    })
+
+
+    test('testGetters', () => {
+        expect(signedNftAttestation.getAttestationVerificationKey().getAddress()).toBe(subjectKeys.getAddress());
+        expect(nftAtt.getTokens()).toEqual(nfts);
+    })
+
+
+    test('testPublicAttestation', () => {
+        expect(signedIdentifierAtt.checkValidity()).toBe(true);
+        expect(signedIdentifierAtt.verify()).toBe(true);
+    })
+
+    test('defaultSigningVersion', () => {
+        let newSignedNftAtt:SignedNFTAttestation = SignedNFTAttestation.fromAttAndSign(signedNftAttestation.getUnsignedAttestation(), signedNftAttestation.getSignature());
+        expect(signedNftAttestation.getDerEncoding() == newSignedNftAtt.getDerEncoding()).toBe(true);
+        expect(newSignedNftAtt.verify()).toBe(true);
+        expect(newSignedNftAtt.checkValidity()).toBe(true);
+        let otherConstructor:SignedNFTAttestation = SignedNFTAttestation.fromASN(hexStringToUint8(newSignedNftAtt.getDerEncoding()), attestorPubKey);
+        expect(signedNftAttestation.getDerEncoding() == otherConstructor.getDerEncoding()).toBe(true);
+        expect(otherConstructor.verify()).toBe(true);
+        expect(otherConstructor.checkValidity()).toBe(true);
+    })
+
+    test('oldVersionSigning', () => {
+        let newSignedNftAtt:SignedNFTAttestation = SignedNFTAttestation.fromAttAndSign(signedNftAttestation.getUnsignedAttestation(), signedNftAttestation.getSignature());
+        expect(signedNftAttestation.getDerEncoding() == newSignedNftAtt.getDerEncoding()).toBe(true);
+        expect(newSignedNftAtt.verify()).toBe(true);
+        expect(newSignedNftAtt.checkValidity()).toBe(true);
+        let otherConstructor:SignedNFTAttestation = SignedNFTAttestation.fromASN(hexStringToUint8(newSignedNftAtt.getDerEncoding()), attestorPubKey);
+        expect(signedNftAttestation.getDerEncoding() == otherConstructor.getDerEncoding()).toBe(true);
+        expect(otherConstructor.verify()).toBe(true);
+        expect(otherConstructor.checkValidity()).toBe(true);
+    })
+
+    test('unknownVersion', () => {
+        expect( ()=>{SignedNFTAttestation.fromAttAndVer(nftAtt, subjectKeys, 42)}).toThrowError();
+    })
+
+    test('unknownVersionOtherConstructor', () => {
+        let rawSignature:RawSignature = new RawSignature();
+        rawSignature.fromMessage(subjectKeys, hexStringToUint8(nftAtt.getDerEncoding()));
+        let rawSig: Signature = rawSignature as Signature;
+        expect( ()=>{SignedNFTAttestation.fromAttAndSign(nftAtt, rawSig)}).toThrowError();
+    })
+
+    test('badSignatureVersion', () => {
+        expect(()=>{
+            signedNftAttestation.makeSignature(Uint8Array.from([42]), 42)
+        } ).toThrowError();
+    })
+
+    test('noSigningVersionIncluded', () => {
+        let urlEncodedSignedNftAtt:string = "MIICpjCCAlMwggIXMIIBxKADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTEwMjkxMTU0MDdaGA85OTk5MTIzMTIyNTk1OVowOTE3MDUGCSsGAQQBgXoBOQwoaHR0cHM6Ly90d2l0dGVyLmNvbS96aGFuZ3dlaXd1IDIwNTUyMTY3NjCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAASVDHwL7SPDysXMMbu5qtm7VTI4eIJnCsKxzfB5mrDrx2TCZ_cE6P3aB5arg5ek0hAQJNJMTv_2lbOkF_LtDkjNMAkGByqGSM49BAIDQgAv5ZST-ud2DA32TnZiyAFJW2mhSQaC5IbYL_d_Bv3z7WESsdVTNpbpB9ZKbTFGTh5EPsLnpgKLz8o8R5bTe-C7HDA2MBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEZMBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEaMAkGByqGSM49BAIDQgCUHR5uYwJZcj3DfjTHvPh5mlriAS3E1sQM1o_A2F5-YQ1c6uuZhmXuSP21jnb3QXSBZXwhGYjuljhCDnGd1UCMHA==";
+
+        // java tests generate keys in different order, so current key subjectKey = attestorKey
+        signedNftAttestation = SignedNFTAttestation.fromASN(base64ToUint8array(urlEncodedSignedNftAtt), subjectKeys);
+        let newSignedNftAtt:SignedNFTAttestation = SignedNFTAttestation.fromAttAndSign(signedNftAttestation.getUnsignedAttestation(), signedNftAttestation.getSignature());
+        expect(newSignedNftAtt.verify()).toBe(true);
+        expect(newSignedNftAtt.checkValidity()).toBe(true);
+    })
+
+    test('badSignature', () => {
+        let s = new PersonalSignature();
+        s.fromMessage(subjectKeys, Uint8Array.from([1,2,3,4]));
+        let wrongSignature: Signature = s as Signature;
+        expect(()=>{
+            SignedNFTAttestation.fromAttAndSign(nftAtt, wrongSignature);
+        } ).toThrowError();
+    })
+
+    test('badSigningKey', () => {
+        expect(()=>{
+            SignedNFTAttestation.fromAtt(nftAtt, sessionKey);
+        } ).toThrowError();
+    })
+
+});
+
+/*
 describe("magicLink", () => {
 
     test('Session key sign+verify message', async () => {
@@ -181,8 +332,6 @@ describe("Attestation request/construct", () => {
     });
 
 });
-
-
 
 describe("executeEipFlow", () => {
 
@@ -361,7 +510,7 @@ describe("executeCombinedEipFlow", () => {
 
 })
 
-
+*/
 
 
 

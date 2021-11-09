@@ -1,4 +1,4 @@
-import {hexStringToArray, hexStringToUint8, logger} from "./utils";
+import {hexStringToArray, hexStringToUint8, logger, stringToArray} from "./utils";
 import {KeyPair} from "./KeyPair";
 import {ethers} from "ethers";
 import {_TypedDataEncoder, recoverPublicKey} from "ethers/lib/utils";
@@ -19,6 +19,8 @@ export interface Eip712DomainInterface {
 }
 
 export class SignatureUtility {
+    static ethereumPrefix: string = "\u0019Ethereum Signed Message:\n";
+
     static OID_ECDSA_PUBLICKEY:string = "1.2.840.10045.2.1";
     // static Eip712Types: {[index: string]:string}  = {
     //     STRING: "string",
@@ -252,5 +254,8 @@ export class SignatureUtility {
         return (recoveryByte - 35) >> 1;
     }
 
+    static convertToPersonalEthMessage(message: string):number[]{
+        return stringToArray(this.ethereumPrefix + message.length + message);
+    }
 
 }
