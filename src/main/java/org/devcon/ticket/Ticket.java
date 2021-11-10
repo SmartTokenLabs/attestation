@@ -34,7 +34,7 @@ public class Ticket implements Attestable {
   private final AlgorithmIdentifier algorithm;
   private final byte[] signature;
   public static final String magicLinkURLPrefix = "https://ticket.devcon.org/";
-  private AsymmetricKeyParameter publicKey;
+  private final AsymmetricKeyParameter publicKey;
   private final byte[] encoded;
 
   /**

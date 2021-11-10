@@ -96,7 +96,7 @@ public class Demo {
           try {
             int amount = Integer.parseInt(arguments.get(1));
             String receiverId = arguments.get(2);
-            AttestationType type = getType(arguments.get(3));
+            AttestationType type = AttestationType.getType(arguments.get(3));
             long validity = 1000*Long.parseLong(arguments.get(4)); // Validity in milliseconds
             createCheque(crypto, amount, receiverId, type, validity,
                 Paths.get(arguments.get(5)), Paths.get(arguments.get(6)), Paths.get(arguments.get(7)));
@@ -131,7 +131,7 @@ public class Demo {
         case "request-attest":
           System.out.println("Constructing attestation request");
           try {
-            AttestationType type = getType(arguments.get(3));
+            AttestationType type = AttestationType.getType(arguments.get(3));
             requestAttest(crypto, Paths.get(arguments.get(1)), arguments.get(2), type, Paths.get(arguments.get(4)), Paths.get(arguments.get(5)));
           } catch (Exception e) {
             System.err.println("Was expecting: <signing key input dir> <identifier> "
@@ -144,7 +144,7 @@ public class Demo {
         case "request-attest-and-usage":
           System.out.println("Constructing attestation along with usage object");
           try {
-            AttestationType type = getType(arguments.get(3));
+            AttestationType type = AttestationType.getType(arguments.get(3));
             requestAndUseAttest(crypto, Paths.get(arguments.get(1)), arguments.get(2), type, Paths.get(arguments.get(4)),
                 Paths.get(arguments.get(5)), Paths.get(arguments.get(6)));
           } catch (Exception e) {
@@ -190,7 +190,7 @@ public class Demo {
         case "use-attest":
           System.out.println("Constructing attestation usage object");
           try {
-            AttestationType type = getType(arguments.get(6));
+            AttestationType type = AttestationType.getType(arguments.get(6));
             useAttest(crypto, Paths.get(arguments.get(1)), Paths.get(arguments.get(2)), Paths.get(arguments.get(3)),
                 Paths.get(arguments.get(4)), arguments.get(5), type, Paths.get(arguments.get(7)), Paths.get(arguments.get(8)));
           } catch (Exception e) {
@@ -502,22 +502,5 @@ public class Demo {
     System.out.println(encodedInput);
   }
 
-  private static AttestationType getType(String stringType) throws IllegalArgumentException {
-    AttestationType type;
-    switch (stringType.toLowerCase()) {
-      case "mail":
-        type = AttestationType.EMAIL;
-        break;
-      case "phone":
-        type = AttestationType.PHONE;
-        break;
-      case "InetPersona":
-        type = AttestationType.INETPERSONA;
-        break;
-      default:
-        System.err.println("Could not parse identifier type, must be either \"mail\", \"phone\" or \"InetPersona\"");
-        throw new IllegalArgumentException("Wrong type of identifier");
-    }
-    return type;
-  }
+
 }
