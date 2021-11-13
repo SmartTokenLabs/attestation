@@ -25,8 +25,6 @@ import {PersonalSignature} from "./libs/PersonalSignature";
 const querystring = require('querystring');
 import {Issuer} from "./libs/Issuer";
 const url = require('url');
-const querystring = require('querystring');
-
 
 let EC = require("elliptic");
 
@@ -126,9 +124,10 @@ describe("SignedIdentifierAttestation", () => {
             ERC721Token.fromStrings("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25"),
             ERC721Token.fromStrings("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26")
         ];
-        console.log("SubjectPublicKey's Fingerprint (summarised as Ethereum address):\n" + userPubKey.getPublicKeyAsHexStr());
+        testsLogger(DEBUGLEVEL.MEDIUM , "SubjectPublicKey's Fingerprint (summarised as Ethereum address):\n" + userPubKey.getPublicKeyAsHexStr());
 
-        expect(true).toBe(true);
+        expect(signedIdentifierAtt.verify()).toBe(true);
+        expect(signedIdentifierAtt.checkValidity()).toBe(true);
 
     })
 
@@ -224,8 +223,8 @@ describe("SignedIdentifierAttestation", () => {
         } ).toThrowError();
     })
 
-    test('noSigningVersionIncluded', () => {
-        let urlEncodedSignedNftAtt:string = "MIICpjCCAlMwggIXMIIBxKADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTEwMjkxMTU0MDdaGA85OTk5MTIzMTIyNTk1OVowOTE3MDUGCSsGAQQBgXoBOQwoaHR0cHM6Ly90d2l0dGVyLmNvbS96aGFuZ3dlaXd1IDIwNTUyMTY3NjCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAASVDHwL7SPDysXMMbu5qtm7VTI4eIJnCsKxzfB5mrDrx2TCZ_cE6P3aB5arg5ek0hAQJNJMTv_2lbOkF_LtDkjNMAkGByqGSM49BAIDQgAv5ZST-ud2DA32TnZiyAFJW2mhSQaC5IbYL_d_Bv3z7WESsdVTNpbpB9ZKbTFGTh5EPsLnpgKLz8o8R5bTe-C7HDA2MBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEZMBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEaMAkGByqGSM49BAIDQgCUHR5uYwJZcj3DfjTHvPh5mlriAS3E1sQM1o_A2F5-YQ1c6uuZhmXuSP21jnb3QXSBZXwhGYjuljhCDnGd1UCMHA==";
+    test('signingVersion1Included', () => {
+        let urlEncodedSignedNftAtt:string = "MIICqTCCAlMwggIXMIIBxKADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTExMDkxNjIwMThaGA85OTk5MTIzMTIyNTk1OVowOTE3MDUGCSsGAQQBgXoBOQwoaHR0cHM6Ly90d2l0dGVyLmNvbS96aGFuZ3dlaXd1IDIwNTUyMTY3NjCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAASVDHwL7SPDysXMMbu5qtm7VTI4eIJnCsKxzfB5mrDrx2TCZ_cE6P3aB5arg5ek0hAQJNJMTv_2lbOkF_LtDkjNMAkGByqGSM49BAIDQgD8Wu2eGeRW1GNFxOk5Srdn4E968ML7MUINj55zBqhuOhUWmosV5d4VsarkmpCmlwAXxvIpt7UcFP4cK8QuwH89GzA2MBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEZMBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEaAgEBMAkGByqGSM49BAIDQgCrpY0RQ3LNfJd6YgYEC-etEU_oJKUAA6WP0TRfZITeQVNNm21BOFQc-iiXs053UcSy1y29tbUPt1wp4VRU8Qu4Gw==";
 
         // java tests generate keys in different order, so current key subjectKey = attestorKey
         signedNftAttestation = SignedNFTAttestation.fromASN(base64ToUint8array(urlEncodedSignedNftAtt), subjectKeys);
@@ -251,7 +250,9 @@ describe("SignedIdentifierAttestation", () => {
 
 });
 
+describe("SignatureTest ", () => {
 
+})
 
 describe("MagicLink reader", () => {
     test('Decode Magic Link from Java Build', async () => {
@@ -268,7 +269,7 @@ describe("MagicLink reader", () => {
         try {
             let senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
             
-            res = await Issuer.constructTicket("mail@mail.com", "5", 222n, 9, senderKey);
+            res = await Issuer.constructTicket("mail@mail.com", "6", 222n, 9, senderKey);
             testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${res}`);
         } catch (e) {
             testsLogger(DEBUGLEVEL.LOW, e);
@@ -281,15 +282,13 @@ describe("MagicLink reader", () => {
 
 });
 
-
 describe("magicLink", () => {
 
     test('Session key sign+verify message', async () => {
-        let parsedUrl = url.parse(magicLink);
-        let str = querystring.parse(parsedUrl.query);
+        if (magicLink.substring(0,1) == "?") magicLink = magicLink.substring(1);
+        let str = querystring.parse(magicLink);
         let ticket = new Ticket();
-        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' :senderPubKey});
-
+        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' :KeyPair.publicFromPEM(magicLinkPublicPEM)});
         expect(ticket.verify()).toBe(true);
 
     })
@@ -559,6 +558,9 @@ describe("executeCombinedEipFlow", () => {
     })
 
 })
+
+
+
 
 
 

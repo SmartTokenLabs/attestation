@@ -17,6 +17,8 @@ import {DEBUGLEVEL} from "../config";
 
 export class SignedNFTAttestation implements ASNEncodable, Verifiable, Validateable {
     static DEFAULT_SIGNING_VERSION = 2;
+    static PREFIX_MSG = "The digest of the ERC721 tokens for AlchemyNFT is: ";
+    static POSTFIX_MSG = "";
 
     private att: NFTAttestation;
     private signingVersion: number;
@@ -32,8 +34,8 @@ export class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         me.att = att;
         me.attestationVerificationKey = subjectSigningKey;
         me.signature =  me.makeSignatureWithKey(subjectSigningKey, signingVersion);
-        me.signingVersion = signingVersion;
 
+        me.signingVersion = signingVersion;
         if (!me.verify()) {
             throw new Error("The signature is not valid");
         }
@@ -97,23 +99,22 @@ export class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         }
         else if (signingVersion == 2) {
             let res = new CompressedMsgSignature();
-            res.fromSignature(uint8tohex(encodedBytes));
+            res.fromRawSignatureAndPrefix(uint8tohex(encodedBytes), SignedNFTAttestation.PREFIX_MSG, SignedNFTAttestation.POSTFIX_MSG );
             return res;
         } else {
             throw new Error("Unknown signing version");
         }
     }
 
-    public makeSignatureWithKey(keys: KeyPair, signingVersion: number):Signature {
-
+    public makeSignatureWithKey(key: KeyPair, signingVersion: number):Signature {
         if (signingVersion == 1) {
             let res = new PersonalSignature();
-            res.fromMessage(keys, hexStringToUint8(this.att.getDerEncoding()));
+            res.fromMessage(key, hexStringToUint8(this.att.getDerEncoding()));
             return res;
         }
         else if (signingVersion == 2) {
             let res = new CompressedMsgSignature();
-            res.fromMessage(keys, hexStringToUint8(this.att.getDerEncoding()));
+            res.fromKeyMessagePrefix(key, hexStringToUint8(this.att.getDerEncoding()), SignedNFTAttestation.PREFIX_MSG, SignedNFTAttestation.POSTFIX_MSG);
             return res;
         } else {
             throw new Error("Unknown signing version");
@@ -147,7 +148,7 @@ export class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
     static constructSignedAttestation( unsignedAtt:NFTAttestation, signingVersion: number, signature: string): string {
 
         let res = unsignedAtt.getDerEncoding()
-        + Asn1Der.encode('INTEGER', signingVersion)
+        + (signingVersion > 1 ? Asn1Der.encode('INTEGER', signingVersion): "")
         + Asn1Der.encodeObjectId(unsignedAtt.getSigningAlgorithm())
         + Asn1Der.encode('BIT_STRING', signature);
 
@@ -160,7 +161,7 @@ export class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
 
     public verify():boolean {
         if (!this.signature.verify(hexStringToUint8(this.att.getDerEncoding()), this.attestationVerificationKey)) {
-            logger(DEBUGLEVEL.LOW, `Signature verify failed for address: ${this.attestationVerificationKey.getAddress()} and derEncoded: ${this.att.getDerEncoding()} and signature = ${this.signature.getRawSignature()}` );
+            logger(DEBUGLEVEL.MEDIUM, `Signature verify failed for address: ${this.attestationVerificationKey.getAddress()} and derEncoded: ${this.att.getDerEncoding()} and signature = ${this.signature.getRawSignature()}` );
             return false;
         }
         if (!this.att.verify()) {

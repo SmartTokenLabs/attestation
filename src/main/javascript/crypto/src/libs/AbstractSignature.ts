@@ -4,7 +4,7 @@ import {hexStringToArray, uint8tohex} from "./utils";
 
 export abstract class AbstractSignature implements Signature {
     private type: string;
-    private rawSignature: string;
+    protected rawSignature: string;
 
     public keyMessageType(keys: KeyPair, unprocessedMessage: Uint8Array, type:string) {
         this.type = type;

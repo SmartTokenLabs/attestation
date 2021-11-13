@@ -68,12 +68,12 @@ export class Timestamp {
         let currentTime = this.getCurrentTime();
         // If timestamp is in the future
         if (this.time > (currentTime + this.ALLOWED_ROUNDING)) {
-            logger(DEBUGLEVEL.LOW, "Object is not longer valid. Details: attNotAfter = " + expirationTimeInMs + ", currentTime = " + currentTime);
+            logger(DEBUGLEVEL.LOW, "Object still not valid. Details: not valid before = " + this.time + ", currentTime = " + currentTime);
             return false;
         }
         // If token has expired
         if (expirationTimeInMs < (currentTime - this.ALLOWED_ROUNDING)) {
-            logger(DEBUGLEVEL.LOW, "Object still not valid. Details: not valid before = " + this.time + ", currentTime = " + currentTime);
+            logger(DEBUGLEVEL.LOW, "Object is not longer valid. Details: attNotAfter = " + expirationTimeInMs + ", currentTime = " + currentTime);
             return false;
         }
         // If the token is valid for too long

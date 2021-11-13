@@ -10,14 +10,14 @@ import {ERC721, NFTAttestationASN, Tokens} from "../asn1/shemas/NFTAttestation";
 import {DEBUGLEVEL} from "../config";
 
 export class NFTAttestation implements ASNEncodable, Validateable {
-    private att: SignedIdentifierAttestation;
+    private signedIdentifierAttestation: SignedIdentifierAttestation;
     private tokens: ERC721Token[];
     // private ASNtokens: ERC721;
 
-    static fromAttAndTokens(att:SignedIdentifierAttestation, nftTokens: ERC721Token[])
+    static fromAttAndTokens(signedIdentifierAttestation:SignedIdentifierAttestation, nftTokens: ERC721Token[])
     {
         let me = new this();
-        me.att = att;
+        me.signedIdentifierAttestation = signedIdentifierAttestation;
         me.tokens = nftTokens;
 
         return me;
@@ -34,8 +34,8 @@ export class NFTAttestation implements ASNEncodable, Validateable {
     static fromAsnObj(NFTatt: NFTAttestationASN, identifierAttestationVerificationKey:KeyPair) {
         let me = new this();
 
-        //root attestation, should be signed att
-        me.att = SignedIdentifierAttestation.fromBytes(new Uint8Array( NFTatt.creator), identifierAttestationVerificationKey);
+        //root attestation, should be signed signedIdentifierAttestation
+        me.signedIdentifierAttestation = SignedIdentifierAttestation.fromBytes(new Uint8Array( NFTatt.creator), identifierAttestationVerificationKey);
 
         me.tokens = [];
 
@@ -61,12 +61,12 @@ export class NFTAttestation implements ASNEncodable, Validateable {
             logger(DEBUGLEVEL.LOW,"Empty tokens!!!");
             throw new Error("NFTs required for NFT attestaion");
         }
-        let res = this.att.getDerEncoding() + this.encodeTokens();
+        let res = this.signedIdentifierAttestation.getDerEncoding() + this.encodeTokens();
         return Asn1Der.encode('SEQUENCE_30',res);
     }
 
     public getSignedIdentifierAttestation():SignedIdentifierAttestation {
-        return this.att;
+        return this.signedIdentifierAttestation;
     }
 
     public getTokens():ERC721Token[] {
@@ -75,14 +75,14 @@ export class NFTAttestation implements ASNEncodable, Validateable {
 
     // TODO type it
     public getSigningAlgorithm() {
-        return this.att.getUnsignedAttestation().getSigningAlgorithm();
+        return this.signedIdentifierAttestation.getUnsignedAttestation().getSigningAlgorithm();
     }
 
     public checkValidity(): boolean {
-        return this.att.checkValidity();
+        return this.signedIdentifierAttestation.checkValidity();
     }
 
     public verify(): boolean {
-        return this.att.verify();
+        return this.signedIdentifierAttestation.verify();
     }
 }

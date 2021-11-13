@@ -55,9 +55,7 @@ export class KeyPair {
     private constructor() {}
     private privKey: Uint8Array;
     private pubKey: Uint8Array;
-    // private key algorithm name
-    // TODO change to private
-    public algorithm: string;
+    private algorithm: string;
     private ethereumPrefix: string = "\u0019Ethereum Signed Message:\n";
 
     private algorithmASNList: {[index:string]: string[]} = {
@@ -517,7 +515,7 @@ export class KeyPair {
         let output: Uint8Array;
         switch (signatureUint8.length) {
             case 64:
-                logger(DEBUGLEVEL.LOW, "anySignatureToRawUint8 received 64 bytes signature (without v value)");
+                logger(DEBUGLEVEL.LOW, `anySignatureToRawUint8 received 64 bytes signature (without v value) = ${uint8tohex(signatureUint8)}`);
             case 65:
                 output = signatureUint8;
                 break;

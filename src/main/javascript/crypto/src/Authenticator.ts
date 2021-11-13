@@ -151,7 +151,7 @@ export class Authenticator {
 
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         try {
-            ticket = Ticket.fromBase64(base64ticket, KeyPair.publicFromBase64(base64senderPublicKey));
+            ticket = Ticket.fromBase64(base64ticket,{"6": KeyPair.publicFromBase64(base64senderPublicKey)});
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
                 throw new Error("Validation failed");
@@ -395,7 +395,7 @@ export class Authenticator {
                 Authenticator.checkAttestRequestValidity(attestationRequest);
             } catch (e) {
                 let m = "Failed to parse Eip712AttestationRequestWithUsage. " + e;
-                logger(DEBUGLEVEL.LOW,m);
+                logger(DEBUGLEVEL.MEDIUM,m);
                 logger(DEBUGLEVEL.MEDIUM,e);
                 throw new Error(m);
             }
