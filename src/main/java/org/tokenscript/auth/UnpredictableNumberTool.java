@@ -41,7 +41,7 @@ public class UnpredictableNumberTool {
     hmac.init(new KeyParameter(key));
     // todo should be moved to url utility
     if (!Eip712Common.isDomainValid(domain)) {
-      ExceptionUtil.throwException(logger, new IllegalArgumentException("Domain is not a valid domain"));
+      throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Domain is not a valid domain"));
     }
   }
 

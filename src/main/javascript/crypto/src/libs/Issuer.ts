@@ -8,12 +8,12 @@ import {FullProofOfExponent} from "./FullProofOfExponent";
 
 export class Issuer {
     static constructTicket(mail: string, devconID: string, ticketID: bigint, ticketClass: number, issuerKeyPair: KeyPair):string {
-
         let sharedSecret:bigint = new AttestationCrypto().makeSecret();
-        let ticket:Ticket = Ticket.createWithMail(mail, devconID, ticketID, ticketClass, issuerKeyPair, sharedSecret);
+        let ticket:Ticket = Ticket.createWithMail(mail, devconID, ticketID, ticketClass, {'6':issuerKeyPair}, sharedSecret);
         if (!ticket.checkValidity()) {
             throw new Error("Something went wrong and the constructed ticket could not be validated");
         }
+
         if (!ticket.verify()) {
             throw new Error("Something went wrong and the constructed ticket could not be verified");
         }
@@ -23,14 +23,16 @@ export class Issuer {
         if (!pok.verify()) {
             throw new Error("Something went wrong and the commitment in the ticket could not be verified according to the email.");
         }
+
         let ticketInUrl:string = hexStringToBase64Url(ticket.getDerEncoding());
         let pokInUrl:string = hexStringToBase64Url(pok.getInternalPok().getDerEncoding());
+
         return `?ticket=${ticketInUrl}&pok=${pokInUrl}&secret=${sharedSecret.toString()}&mail=${encodeURIComponent(mail)}`
     }
 
     static validateTicket(base64urlTicket:string, base64urlPok: string, mail: string, issuerPubKey:KeyPair) {
         let ticket = new Ticket();
-        ticket.fromBytes(base64ToUint8array(base64urlTicket), issuerPubKey);
+        ticket.fromBytes(base64ToUint8array(base64urlTicket),  {'6':issuerPubKey});
 
         if (!ticket.checkValidity()) {
             throw new Error("Something went wrong and the constructed ticket could not be validated");

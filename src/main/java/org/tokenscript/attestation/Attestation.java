@@ -57,6 +57,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     ASN1InputStream input = new ASN1InputStream(derEncoding);
     int currentPos = 0;
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+    input.close();
     ASN1TaggedObject taggedVersion = ASN1TaggedObject.getInstance(asn1.getObjectAt(currentPos));
     currentPos++;
     version = ASN1Integer.getInstance(taggedVersion.getObject());

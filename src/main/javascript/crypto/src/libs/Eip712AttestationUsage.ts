@@ -101,7 +101,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
                 this.useAttestation = UseAttestation.fromBytes(base64ToUint8array(this.data.payload), this.attestorKey);
             } catch (e){
                 let m = "Failed to read UseAttestation. " + e;
-                logger(DEBUGLEVEL.LOW, m, e);
+                logger(DEBUGLEVEL.MEDIUM, m, e);
                 throw new Error(m);
             }
         }

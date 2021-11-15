@@ -45,6 +45,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
   public Ticket decode(byte[] encoding) throws IOException {
     ASN1InputStream input = new ASN1InputStream(encoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+    input.close();
     ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
     String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
     BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();

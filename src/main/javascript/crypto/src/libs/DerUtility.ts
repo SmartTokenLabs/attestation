@@ -73,6 +73,20 @@ const Asn1DerTagById: {[index: number]:string} = {
     49: "SET",
 }
 
+export const X500NamesLabels:{[index: string]:string} = {
+    'CN':           "2.5.4.3",
+    'C' :           "2.5.4.6",
+    'O' :           "2.5.4.10",
+    'OU':           "2.5.4.11",
+    'L' :           "2.5.4.7",
+    'labeledURI':   "1.3.6.1.4.1.250.1.57"
+}
+
+export interface x500NameData {
+    type:string,
+    value:string
+}
+
 export class Asn1Der {
     static encodeAsInteger(value: bigint) {
         return this.encode('INTEGER', value);
@@ -82,14 +96,15 @@ export class Asn1Der {
        return Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('OBJECT_ID', objectId));
     }
 
-    static encodeName(str: string): string {
-        let matches = str.matchAll(/(\w+)=("[\w\s]+"|\w+)/g);
-        let set = '';
+    static parseX500Names(str:string): x500NameData[] {
+        let matches = str.matchAll(/(\w+)=("[^"]+"|[\w\.]+)/g);
         let alg = '';
-        let itemData = '';
         if (!matches) {
             throw new Error('wrong Name format');
         }
+
+        let result:x500NameData[] = [];
+
         for( const match of matches ){
             let type = match[1];
             let value = match[2];
@@ -98,28 +113,26 @@ export class Asn1Der {
             if (value.substr(0,1) == "\"" && value.substr(-1) == "\"") {
                 value = value.slice(1,value.length - 1);
             };
-            switch(type.toUpperCase()){
-                case 'CN':
-                    alg = "2.5.4.3";
-                    break;
-                case 'C':
-                    alg = "2.5.4.6";
-                    break;
-                case 'O':
-                    alg = "2.5.4.10";
-                    break;
-                case 'OU':
-                    alg = "2.5.4.11";
-                    break;
-                case 'L':
-                    alg = "2.5.4.7";
-                    break;
-                default:
-                    throw new Error('Type "' + type + '" not implemented yet');
-            }
-            itemData = Asn1Der.encode('OBJECT_ID',alg) + Asn1Der.encode('UTF8STRING',value);
-            set += Asn1Der.encode('SEQUENCE_30', itemData);
+            alg = X500NamesLabels[type];
+            if (!alg) throw new Error('Type "' + type + '" not implemented yet');
+
+            result.push({type, value}) ;
         }
+        return result;
+    }
+
+    static encodeName(str: string): string {
+        let set = '';
+
+        let dataArr = Asn1Der.parseX500Names(str);
+        dataArr.forEach((item:x500NameData)=>{
+            let OID = X500NamesLabels[item.type];
+            if (!OID) {
+                throw new Error(`X500 Name Object ID not implemented.(${item.value})`);
+            }
+            let itemData = Asn1Der.encode('OBJECT_ID',OID) + Asn1Der.encode('UTF8STRING',item.value);
+            set += Asn1Der.encode('SEQUENCE_30', itemData);
+        })
         return Asn1Der.encode('SEQUENCE_30',Asn1Der.encode('SET', set));
     }
 

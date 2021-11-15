@@ -24,6 +24,7 @@ public class ChequeDecoder implements AttestableObjectDecoder<Cheque> {
   public Cheque decode(byte[] encoding) throws IOException {
     ASN1InputStream input = new ASN1InputStream(encoding);
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+    input.close();
     ASN1Sequence cheque = ASN1Sequence.getInstance(asn1.getObjectAt(0));
     long amount = (ASN1Integer.getInstance(cheque.getObjectAt(0))).getValue().longValueExact();
 

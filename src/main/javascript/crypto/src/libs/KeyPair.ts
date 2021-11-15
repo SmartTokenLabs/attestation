@@ -55,9 +55,7 @@ export class KeyPair {
     private constructor() {}
     private privKey: Uint8Array;
     private pubKey: Uint8Array;
-    // private key algorithm name
-    // TODO change to private
-    public algorithm: string;
+    private algorithm: string;
     private ethereumPrefix: string = "\u0019Ethereum Signed Message:\n";
 
     private algorithmASNList: {[index:string]: string[]} = {
@@ -244,6 +242,12 @@ export class KeyPair {
             //     return '04' + pubPoint.x.toString(16).padStart(64, '0') + pubPoint.y.toString(16).padStart(64, '0')
             if (CURVES.hasOwnProperty(this.algorithm) && EC_CURVES_SUBTLE.hasOwnProperty(this.algorithm)) {
                 let curve = new EC.ec(this.algorithm);
+                if (!this.getPrivateAsHexString()) {
+                    console.log(this);
+                    throw new Error("Cant sign. This is only public key.");
+
+                }
+
                 let key = curve.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
                 return key.getPublic('hex').toString();
             } else {
@@ -285,6 +289,9 @@ export class KeyPair {
     }
 
     signBytes(bytes: number[]): string{
+        if (!this.getPrivateAsHexString()) {
+            throw new Error("Cant sign. This is only public key.");
+        }
 
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let encodingHash = sha3.keccak256(bytes)
@@ -293,6 +300,10 @@ export class KeyPair {
     }
 
     signStringWithEthereum(message: string): string{
+        if (!this.getPrivateAsHexString()) {
+            throw new Error("Cant sign. This is only public key.");
+        }
+
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let finalMsg = this.ethereumPrefix + message.length + message;
         let encodingHash = sha3.keccak256(stringToArray(finalMsg));
@@ -364,19 +375,29 @@ export class KeyPair {
 
     signRawBytesWithEthereum(bytes: number[]): string{
         let encodingHash = ethers.utils.keccak256(bytes).substring(2);
+        logger(DEBUGLEVEL.HIGH,`signRawBytesWithEthereum: key: ${this.getAddress()}, hash: ${encodingHash}`);
+        if (!this.getPrivateAsHexString()) {
+            throw new Error("Cant sign. This is only public key.");
+        }
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let signatureInstance: SignatureSRV = ecKey.sign(hexStringToUint8( encodingHash));
+
         return ecSignatureToSRVhex(signatureInstance, ecKey);
     }
 
     verifyBytesWithEthereum(bytes: number[], signature: string): boolean{
-        if (!signature || !bytes || !bytes.length) {
+        if (!bytes || !bytes.length) {
             throw new Error('Missing data to verify');
         }
+        if (!signature) {
+            throw new Error('Missing signature to verify');
+        }
+
         // let encodingHash = sha3.keccak256(bytes);
         let encodingHash = hexStringToArray(ethers.utils.keccak256(bytes));
-
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
+
+        logger(DEBUGLEVEL.HIGH, `verifyBytesWithEthereum: key: ${this.getAddress()}, hash: ${uint8tohex(new Uint8Array(encodingHash))}`);
 
         // TODO add signature conversion
         signature = uint8tohex(KeyPair.anySignatureToRawUint8(signature));
@@ -494,11 +515,19 @@ export class KeyPair {
         let output: Uint8Array;
         switch (signatureUint8.length) {
             case 64:
+                logger(DEBUGLEVEL.LOW, `anySignatureToRawUint8 received 64 bytes signature (without v value) = ${uint8tohex(signatureUint8)}`);
+            case 65:
                 output = signatureUint8;
                 break;
-            case 65:
                 // remove last byte ( v ) value
-                output = signatureUint8.slice(0,64);
+                // output = signatureUint8.slice(0,64);
+                // break;
+            case 66:
+                // remove 04 at start
+                if (signatureUint8[0] != 4) {
+                    throw new Error(`Cant recognize signature: ${uint8tohex(signatureUint8)}`);
+                }
+                output = signatureUint8.slice(1,65);
                 break;
             case 70:
             case 71:

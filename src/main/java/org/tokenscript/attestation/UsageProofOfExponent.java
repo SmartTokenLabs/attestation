@@ -37,6 +37,7 @@ public class UsageProofOfExponent implements ProofOfExponent {
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoded);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      input.close();
       int asn1counter = 0;
       ASN1OctetString challengeEnc = ASN1OctetString.getInstance(asn1.getObjectAt(asn1counter++));
       this.challenge = new BigInteger(challengeEnc.getOctets());

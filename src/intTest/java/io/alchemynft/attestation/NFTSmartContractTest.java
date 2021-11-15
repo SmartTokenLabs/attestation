@@ -62,9 +62,6 @@ public class NFTSmartContractTest {
 
         System.out.println("DER: " + Numeric.toHexString(nftAttestation.getDerEncoding()));
 
-        //Extract the Ethereum signature
-        byte[] sig = nftAttestation.getSignature();
-
         //generate NFTAttestation from the NFTAttestation bytes
         NFTAttestation nftAttestation2 = new NFTAttestation(nftAtt.getDerEncoding(), attestorKeys.getPublic());
 
@@ -72,7 +69,7 @@ public class NFTSmartContractTest {
         assertTrue(nftAttestation2.verify());
 
         //Generate SignedNFTAttestation using the reconstructed NFTAttestation and the extracted Ethereum signature
-        SignedNFTAttestation signedNFTAttestation2 = new SignedNFTAttestation(nftAttestation2, subjectKeys.getPublic(), sig);
+        SignedNFTAttestation signedNFTAttestation2 = new SignedNFTAttestation(nftAttestation2, subjectKeys);
         assertTrue(signedNFTAttestation2.checkValidity());
         assertTrue(nftAttestation.checkValidity());
         assertArrayEquals(signedNFTAttestation2.getUnsignedAttestation().getDerEncoding(), nftAtt.getDerEncoding());
@@ -94,8 +91,8 @@ public class NFTSmartContractTest {
         assertTrue(atr.isValid);
         for (int index = 0; index < atr.ercToken.length; index++)
         {
-            assertEquals(atr.ercToken[index].address.toString().toLowerCase(), myNFTs[index].address.toLowerCase());
-            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].tokenId);
+            assertEquals(atr.ercToken[index].address.toString().toLowerCase(), myNFTs[index].getAddress().toLowerCase());
+            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].getTokenId());
         }
 
         //TODO: make a more comprehensive negative test, involving bad attestation subject address etc.

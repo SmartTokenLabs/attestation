@@ -21,10 +21,8 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
     constructor() {}
 
     static fromBytes(uint8data: Uint8Array, attestorKeys: KeyPair): SignedIdentifierAttestation {
-
         const myAttestation: MyAttestation = AsnParser.parse( uint8toBuffer( uint8data ), MyAttestation);
         return this.fromASNType(myAttestation, attestorKeys, uint8data);
-
     }
 
     static fromASNType(myAttestation: MyAttestation, attestorKeys: KeyPair, uint8data: Uint8Array = new Uint8Array(0)): SignedIdentifierAttestation {
@@ -39,6 +37,7 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
         if (algorithmEncoded !== me.att.getSigningAlgorithm()) {
             throw new Error("Algorithm specified is not consistent");
         }
+
         me.constructorCheck();
         return me;
     }
@@ -56,7 +55,8 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
 
     verify(){
         try {
-            return this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), this.signature);
+            let res =  this.attestorKeys.verifyBytesWithEthereum(hexStringToArray(this.att.getDerEncoding()), this.signature);
+            return res;
 
         } catch (e) {
             logger(DEBUGLEVEL.LOW, e);
@@ -87,7 +87,7 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
 
         let res: string = uint8tohex(rawAtt) +
             Asn1Der.encode('SEQUENCE_30', alg) +
-            Asn1Der.encode('BIT_STRING', '04' + uint8tohex(KeyPair.anySignatureToRawUint8(signature)));
+            Asn1Der.encode('BIT_STRING', uint8tohex(KeyPair.anySignatureToRawUint8(signature)));
 
         return Asn1Der.encode('SEQUENCE_30', res);
     }

@@ -70,14 +70,13 @@ export class Ticket extends AttestableObject implements Attestable {
     static createWithMail(mail: string, devconId:string , ticketId: bigint, ticketClass: number, keys: {[index: string]:KeyPair}, secret: bigint): Ticket {
         let me = new this();
         me.fromData(devconId, ticketId, ticketClass, keys);
-
         let crypto = new AttestationCrypto();
         let signature;
 
         try {
             me.commitment = crypto.makeCommitment(mail, crypto.getType('mail'), secret);
             let asn1Tic = me.makeTicket();
-            signature = keys[me.devconId].signBytesWithEthereum(hexStringToArray(asn1Tic));
+            signature = keys[me.devconId].signRawBytesWithEthereum(hexStringToArray(asn1Tic));
         } catch (e) {
             throw new Error(e);
         }
@@ -153,6 +152,7 @@ export class Ticket extends AttestableObject implements Attestable {
         let commitment:Uint8Array = signedDevconTicket.ticket.commitment;
 
         let signature:Uint8Array = signedDevconTicket.signatureValue;
+
         this.createWithCommitment(devconId, ticketId, ticketClassInt, new Uint8Array(commitment), uint8tohex(new Uint8Array(signature)) , keys );
     }
 

@@ -71,6 +71,7 @@ public class SignatureUtil {
     try {
       ASN1InputStream input = new ASN1InputStream(signature);
       ASN1Sequence seq = ASN1Sequence.getInstance(input.readObject());
+      input.close();
       BigInteger r = ASN1Integer.getInstance(seq.getObjectAt(0)).getValue();
       BigInteger s = ASN1Integer.getInstance(seq.getObjectAt(1)).getValue();
       // Normalize number s
