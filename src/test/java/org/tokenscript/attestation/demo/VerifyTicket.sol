@@ -2,7 +2,7 @@
 /* AlphaWallet 2021 */
 
 pragma solidity ^0.8.0;
-pragma experimental ABIEncoderV2; 
+pragma experimental ABIEncoderV2;
 
 contract VerifyAttestation {
     address payable owner;
@@ -41,16 +41,38 @@ contract VerifyAttestation {
 
     uint256 constant IA5_CODE = uint256(bytes32("IA5")); //tags for disambiguating content
     uint256 constant DEROBJ_CODE = uint256(bytes32("OBJID"));
-    
+
+    uint256 constant public fieldSize = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
+    uint256 constant public curveOrder = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+
     event Value(uint256 indexed val);
     event RtnStr(bytes val);
     event RtnS(string val);
+
+    uint256[2] private G = [ 21282764439311451829394129092047993080259557426320933158672611067687630484067,
+    3813889942691430704369624600187664845713336792511424430006907067499686345744 ];
+
+    uint256[2] private H = [ 10844896013696871595893151490650636250667003995871483372134187278207473369077,
+    9393217696329481319187854592386054938412168121447413803797200472841959383227 ];
 
     uint256 constant curveOrderBitLength = 254;
     uint256 constant curveOrderBitShift = 256 - curveOrderBitLength;
     uint256 constant pointLength = 65;
 
+    // We create byte arrays for these at construction time to save gas when we need to use them
+    bytes constant GPoint = abi.encodePacked(uint8(0x04), uint256(21282764439311451829394129092047993080259557426320933158672611067687630484067),
+        uint256(3813889942691430704369624600187664845713336792511424430006907067499686345744));
+
+    bytes constant HPoint = abi.encodePacked(uint8(0x04), uint256(10844896013696871595893151490650636250667003995871483372134187278207473369077),
+        uint256(9393217696329481319187854592386054938412168121447413803797200472841959383227));
+
     uint256 callCount;
+
+    struct FullProofOfExponent {
+        bytes tPoint;
+        uint256 challenge;
+        bytes entropy;
+    }
 
     constructor()
     {
@@ -63,173 +85,247 @@ contract VerifyAttestation {
         uint length;
     }
 
-    function verifyTicketAttestation(bytes memory attestation) public pure returns(address payable subject, bytes memory ticketId, address issuer, address attestor)
+    function verifyTicketAttestationPayable(bytes memory attestation) public returns(bool)
     {
-        bytes memory attestationData;
-        bytes memory preHash;
+        address attestor;
+        (attestor,,,) = verifyTicketAttestation(attestation);
+        if (attestor != address(0))
+        {
+            callCount++;
+            return true;
+        }
+        else
+        {
+            revert();
+        }
+    }
 
+    function verifyTicketAttestation(bytes memory attestation) public view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
+    {
         uint256 decodeIndex = 0;
         uint256 length = 0;
-        uint256 messageLength = 0;
-        uint256 hashIndex = 0;
+        FullProofOfExponent memory pok;
+        bytes memory commitment1;
+        bytes memory commitment2;
 
-        /*
-        Attestation structure:
-            Length, Length
-            - Version,
-            - Serial,
-            - Signature type,
-            - Issuer Sequence,
-            - Validity Time period Start, finish
-        */
+        (length, decodeIndex, ) = decodeLength(attestation, 0); //852 (total length, primary header)
 
-        (length, decodeIndex) = decodeLength(attestation, 1); //924
+        (ticketIssuer, ticketId, commitment2, decodeIndex) = recoverTicketSignatureAddress(attestation, decodeIndex);
 
-        (length, hashIndex) = decodeLength(attestation, decodeIndex+1); //168
+        (attestor, subject, commitment1, decodeIndex) = recoverSignedIdentifierAddress(attestation, decodeIndex);
 
-        (messageLength, decodeIndex) = decodeLength(attestation, hashIndex+1); //1F
+        //now pull POK data
+        (pok, decodeIndex) = recoverPOK(attestation, decodeIndex);
 
-        preHash = copyDataBlock(attestation, hashIndex, (messageLength + decodeIndex) - hashIndex);
-        
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex + messageLength + 1);
-
-        (length, attestationData, decodeIndex) = decodeElementOffset(attestation, decodeIndex + length, 1); // Signature
-        
-        //pull issuer key
-        issuer = recoverSigner(keccak256(preHash), attestationData);
-        
-        (subject, attestor) = verifyPublicAttestation(attestation, decodeIndex);
-        
-        (length, decodeIndex) = decodeLength(preHash, 1);
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1);
-        (length, ticketId, decodeIndex) = decodeElement(preHash, decodeIndex + length); // public key
+        if (!verifyPOK(commitment1, commitment2, pok))
+        {
+            attestor = address(0);
+            ticketIssuer = address(0);
+            subject = address(0);
+        }
     }
-    
-    function verifyPublicAttestation(bytes memory attestation, uint256 nIndex) private pure returns(address payable subject, address attestorAddress)
-    {
-        bytes memory attestationData;
-        bytes memory preHash;
 
+    function verifyEqualityProof(bytes memory com1, bytes memory com2, bytes memory proof, bytes memory entropy) public view returns(bool result)
+    {
+        FullProofOfExponent memory pok;
+        bytes memory attestationData;
         uint256 decodeIndex = 0;
         uint256 length = 0;
 
-        /*
-        Attestation structure:
-            Length, Length
-            - Version,
-            - Serial,
-            - Signature type,
-            - Issuer Sequence,
-            - Validity Time period Start, finish
-        */
-        
-        (length, nIndex) = decodeLength(attestation, nIndex+1); //nIndex is start of prehash
-        
-        (length, decodeIndex) = decodeLength(attestation, nIndex+1); // length of prehash is decodeIndex (result) - nIndex
+        (length, decodeIndex, ) = decodeLength(proof, 0);
 
-        //obtain pre-hash
-        preHash = copyDataBlock(attestation, nIndex, (decodeIndex + length) - nIndex);
+        (, attestationData, decodeIndex,) = decodeElement(proof, decodeIndex);
+        pok.challenge = bytesToUint(attestationData);
+        (, pok.tPoint, decodeIndex,) = decodeElement(proof, decodeIndex);
+        pok.entropy = entropy;
 
-        nIndex = (decodeIndex + length); //set pointer to read data after the pre-hash block
-
-        (length, decodeIndex) = decodeLength(preHash, 1); //read pre-hash header
-
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1); // Version
-
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1 + length); // Serial
-
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1 + length); // Signature type (9) 1.2.840.10045.2.1
-
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1 + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
-        
-        //TODO: Read and check validity times
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1 + length); // Timestamp  
-        
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1 + length); // ID ref  
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1 + length); // User Key block
-        
-        (length, decodeIndex) = decodeLength(preHash, decodeIndex + 1); // read ZK block length
-        
-        (length, attestationData, decodeIndex) = decodeElementOffset(preHash, decodeIndex + length, 2); // public key
-        
-        subject = payable(publicKeyToAddress(attestationData));
-
-        (length, decodeIndex) = decodeLength(attestation, nIndex + 1); // Signature algorithm ID (9) 1.2.840.10045.2.1
-        
-        (length, attestationData, nIndex) = decodeElementOffset(attestation, decodeIndex + length, 1); // Signature (72) : #0348003045022100F1862F9616B43C1F1550156341407AFB11EEC8B8BB60A513B346516DBC4F1F3202204E1B19196B97E4AECD6AE7E701BF968F72130959A01FCE83197B485A6AD2C7EA
-
-        //return attestorPass && subjectPass && identifierPass;
-        attestorAddress = recoverSigner(keccak256(preHash), attestationData);
+        return verifyPOK(com1, com2, pok);
     }
-    
+
+    //////////////////////////////////////////////////////////////
+    // DER Structure Decoding
+    //////////////////////////////////////////////////////////////
+
+    function recoverSignedIdentifierAddress(bytes memory attestation, uint256 hashIndex) public pure returns(address signer, address subject, bytes memory commitment1, uint256 resultIndex)
+    {
+        bytes memory sigData;
+
+        uint256 length ;
+        uint256 decodeIndex ;
+        uint256 headerIndex;
+
+        (length, hashIndex, ) = decodeLength(attestation, hashIndex); //576  (SignedIdentifierAttestation)
+
+        (length, headerIndex, ) = decodeLength(attestation, hashIndex); //493  (IdentifierAttestation)
+
+        resultIndex = length + headerIndex; // (length + decodeIndex) - hashIndex);
+
+        bytes memory preHash = copyDataBlock(attestation, hashIndex,  (length + headerIndex) - hashIndex);
+
+        decodeIndex = headerIndex + length;
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //Signature algorithm
+
+        (length, sigData, resultIndex) = decodeElementOffset(attestation, decodeIndex + length, 1); // Signature
+
+        //get signing address
+        signer = recoverSigner(keccak256(preHash), sigData);
+
+        //Recover public key
+        (length, decodeIndex, ) = decodeLength(attestation, headerIndex); //read Version
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Serial
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Signature type (9) 1.2.840.10045.2.1
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Validity time
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Smartcontract?
+
+        (subject, decodeIndex) = addressFromPublicKey(attestation, decodeIndex + length);
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // ID code (07)
+        (commitment1, decodeIndex) = recoverCommitment(attestation, decodeIndex + length);
+    }
+
+    function recoverCommitment(bytes memory attestation, uint256 decodeIndex) private pure returns(bytes memory commitment, uint256 resultIndex)
+    {
+        uint256 length;
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // Commitment tag (0x57)
+        //pull Commitment
+        commitment = copyDataBlock(attestation, decodeIndex + (length - 65), 65);
+        resultIndex = decodeIndex + length;
+    }
+
+    function recoverTicketSignatureAddress(bytes memory attestation, uint256 hashIndex) public pure returns(address signer, bytes memory ticketId, bytes memory commitment2, uint256 resultIndex)
+    {
+        uint256 length;
+        uint256 decodeIndex;
+        bytes memory sigData;
+
+        (length, decodeIndex, ) = decodeLength(attestation, hashIndex); //163 Ticket Data
+
+        (length, hashIndex, ) = decodeLength(attestation, decodeIndex); //5D
+
+        bytes memory preHash = copyDataBlock(attestation, decodeIndex, (length + hashIndex) - decodeIndex); // ticket
+
+        (length, decodeIndex, ) = decodeLength(attestation, hashIndex); //DEVCON ID
+        (length, ticketId, decodeIndex,) = decodeElement(attestation, decodeIndex + length);
+        //(length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); //Ticket ID
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //Ticket Class
+
+        (length, commitment2, decodeIndex,) = decodeElement(attestation, decodeIndex + length);
+
+        (length, sigData, resultIndex) = decodeElementOffset(attestation, decodeIndex, 1); // Signature
+
+        //ecrecover
+        signer = recoverSigner(keccak256(preHash), sigData);
+    }
+
+    function recoverPOK(bytes memory attestation, uint256 decodeIndex) private pure returns(FullProofOfExponent memory pok, uint256 resultIndex)
+    {
+        bytes memory data;
+        uint256 length;
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //68 POK data
+        (length, data, decodeIndex,) = decodeElement(attestation, decodeIndex);
+        pok.challenge = bytesToUint(data);
+        (length, pok.tPoint, decodeIndex,) = decodeElement(attestation, decodeIndex);
+        (length, pok.entropy, resultIndex,) = decodeElement(attestation, decodeIndex);
+    }
+
     function getAttestationTimestamp(bytes memory attestation) public pure returns(string memory startTime, string memory endTime)
     {
         uint256 length = 0;
-        uint256 decodeIndex = 0;
-
-        /*
-        Attestation structure:
-            Length, Length
-            - Version,
-            - Serial,
-            - Signature type,
-            - Issuer Sequence,
-            - Validity Time period Start, finish
-        */
-        
-        (length, decodeIndex) = decodeLength(attestation, 1); // 924
-
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex+1); // 168
-        
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex+length+1); // 576
-        
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex+1); // 493
-
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex + 1); // Version
-
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex + 1 + length); // Serial
-
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex + 1 + length); // Signature type (9) 1.2.840.10045.2.1
-
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex + 1 + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
-        
-        (length, decodeIndex) = decodeLength(attestation, decodeIndex + 1 + length); // Time sequence header
-        
+        uint256 nIndex = 0;
+        uint256 tag;
         bytes memory timeData;
-        (length, timeData, decodeIndex) = decodeElement(attestation, decodeIndex);
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex); //move past overall size
+        (length, nIndex, tag) = decodeLength(attestation, nIndex); //move past token wrapper size
+
+        //now into PublicAttestation
+        (length, nIndex, tag) = decodeLength(attestation, nIndex); //nIndex is start of prehash
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex); // length of prehash is decodeIndex (result) - nIndex
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex); // Version
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Serial
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Signature type (9) 1.2.840.10045.2.1
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
+
+        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Time sequence header
+
+        (length, timeData, nIndex, ) = decodeElement(attestation, nIndex);
         startTime = copyStringBlock(timeData);
-        (length, timeData, decodeIndex) = decodeElement(attestation, decodeIndex);
+        (length, timeData, nIndex, ) = decodeElement(attestation, nIndex);
         endTime = copyStringBlock(timeData);
     }
-    
-    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint j = _i;
-        uint len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint k = len;
-        while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
+
+    function addressFromPublicKey(bytes memory attestation, uint256 decodeIndex) public pure returns(address keyAddress, uint256 resultIndex)
+    {
+        uint256 length;
+        bytes memory publicKeyBytes;
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // 307 key headerIndex
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // 236 header tag
+
+        (length, publicKeyBytes, resultIndex) = decodeElementOffset(attestation, decodeIndex + length, 2); // public key
+
+        keyAddress = publicKeyToAddress(publicKeyBytes);
     }
-    
+
+    //////////////////////////////////////////////////////////////
+    // Cryptography & Ethereum constructs
+    //////////////////////////////////////////////////////////////
+
+    function getRiddle(bytes memory com1, bytes memory com2) public view returns(uint256[2] memory riddle)
+    {
+        uint256[2] memory lhs;
+        uint256[2] memory rhs;
+        (lhs[0], lhs[1]) = extractXYFromPoint(com1);
+        (rhs[0], rhs[1]) = extractXYFromPoint(com2);
+
+        rhs = ecInv(rhs);
+
+        riddle = ecAdd(lhs, rhs);
+    }
+
+    function verifyPOK(bytes memory com1, bytes memory com2, FullProofOfExponent memory pok) private view returns(bool)
+    {
+        uint256[2] memory riddle = getRiddle(com1, com2);
+
+        bytes memory cArray = abi.encodePacked(HPoint, com1, com2, pok.tPoint, pok.entropy);
+        uint256 c = mapToCurveMultiplier(cArray);
+
+        uint256[2] memory lhs = ecMul(pok.challenge, H[0], H[1]);
+        if (lhs[0] == 0 && lhs[1] == 0) { return false; } //early revert to avoid spending more gas
+
+        //ECPoint riddle multiply by proof (component hash)
+        uint256[2] memory rhs = ecMul(c, riddle[0], riddle[1]);
+        if (rhs[0] == 0 && rhs[1] == 0) { return false; } //early revert to avoid spending more gas
+
+        uint256[2] memory point;
+        (point[0], point[1]) = extractXYFromPoint(pok.tPoint);
+        rhs = ecAdd(rhs, point);
+
+        return ecEquals(lhs, rhs);
+    }
+
+    function ecEquals(uint256[2] memory ecPoint1, uint256[2] memory ecPoint2) private pure returns(bool)
+    {
+        return (ecPoint1[0] == ecPoint2[0] && ecPoint1[1] == ecPoint2[1]);
+    }
+
     function publicKeyToAddress(bytes memory publicKey) pure internal returns(address keyAddr)
     {
         bytes32 keyHash = keccak256(publicKey);
         bytes memory scratch = new bytes(32);
-            
-        assembly { 
+
+        assembly {
             mstore(add(scratch, 32), keyHash)
             mstore(add(scratch, 12), 0)
             keyAddr := mload(add(scratch, 32))
@@ -244,7 +340,7 @@ contract VerifyAttestation {
     }
 
     function splitSignature(bytes memory sig)
-        internal pure returns (bytes32 r, bytes32 s, uint8 v)
+    internal pure returns (bytes32 r, bytes32 s, uint8 v)
     {
         require(sig.length == 65, "invalid signature length");
 
@@ -258,8 +354,114 @@ contract VerifyAttestation {
             v := byte(0, mload(add(sig, 96)))
         }
     }
-    
-    function decodeDERData(bytes memory byteCode, uint dIndex) internal pure returns(bytes memory data, uint256 index, uint256 length)
+
+    function ecMul(uint256 s, uint256 x, uint256 y) public view
+    returns (uint256[2] memory retP)
+    {
+        bool success;
+        // With a public key (x, y), this computes p = scalar * (x, y).
+        uint256[3] memory i = [x, y, s];
+
+        assembly
+        {
+        // call ecmul precompile
+        // inputs are: x, y, scalar
+            success := staticcall (not(0), 0x07, i, 0x60, retP, 0x40)
+        }
+
+        if (!success)
+        {
+            retP[0] = 0;
+            retP[1] = 0;
+        }
+    }
+
+    function ecInv(uint256[2] memory point) private pure
+    returns (uint256[2] memory invPoint)
+    {
+        invPoint[0] = point[0];
+        int256 n = int256(fieldSize) - int256(point[1]);
+        n = n % int256(fieldSize);
+        if (n < 0) { n += int256(fieldSize); }
+        invPoint[1] = uint256(n);
+    }
+
+    function ecAdd(uint256[2] memory p1, uint256[2] memory p2) public view
+    returns (uint256[2] memory retP)
+    {
+        bool success;
+        uint256[4] memory i = [p1[0], p1[1], p2[0], p2[1]];
+
+        assembly
+        {
+        // call ecadd precompile
+        // inputs are: x1, y1, x2, y2
+            success := staticcall (not(0), 0x06, i, 0x80, retP, 0x40)
+        }
+
+        if (!success)
+        {
+            retP[0] = 0;
+            retP[1] = 0;
+        }
+    }
+
+    function extractXYFromPoint(bytes memory data) public pure returns (uint256 x, uint256 y)
+    {
+        assembly
+        {
+            x := mload(add(data, 0x21)) //copy from 33rd byte because first 32 bytes are array length, then 1st byte of data is the 0x04;
+            y := mload(add(data, 0x41)) //65th byte as x value is 32 bytes.
+        }
+    }
+
+    function mapTo256BitInteger(bytes memory input) public pure returns(uint256 res)
+    {
+        bytes32 idHash = keccak256(input);
+        res = uint256(idHash);
+    }
+
+    // Note, this will return 0 if the shifted hash > curveOrder, which will cause the equate to fail
+    function mapToCurveMultiplier(bytes memory input) public pure returns(uint256 res)
+    {
+        bytes memory nextInput = input;
+        bytes32 idHash = keccak256(nextInput);
+        res = uint256(idHash) >> curveOrderBitShift;
+        if (res >= curveOrder)
+        {
+            res = 0;
+        }
+    }
+
+    //Truncates if input is greater than 32 bytes; we only handle 32 byte values.
+    function bytesToUint(bytes memory b) public pure returns (uint256 conv)
+    {
+        if (b.length < 0x20) //if b is less than 32 bytes we need to pad to get correct value
+        {
+            bytes memory b2 = new bytes(32);
+            uint startCopy = 0x20 + 0x20 - b.length;
+            assembly
+            {
+                let bcc := add(b, 0x20)
+                let bbc := add(b2, startCopy)
+                mstore(bbc, mload(bcc))
+                conv := mload(add(b2, 32))
+            }
+        }
+        else
+        {
+            assembly
+            {
+                conv := mload(add(b, 32))
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    // DER Helper functions
+    //////////////////////////////////////////////////////////////
+
+    function decodeDERData(bytes memory byteCode, uint dIndex) internal pure returns(bytes memory data, uint256 index, uint256 length, uint8 tag)
     {
         return decodeDERData(byteCode, dIndex, 0);
     }
@@ -310,7 +512,7 @@ contract VerifyAttestation {
             }
         }
     }
-    
+
     function copyStringBlock(bytes memory byteCode) internal pure returns(string memory stringData)
     {
         uint256 blank = 0; //blank 32 byte value
@@ -352,18 +554,18 @@ contract VerifyAttestation {
             {
                 let mc := add(stringData, offsetStart)
                 mstore(mc, mload(add(blank, 0x20)))
-                //now shrink the memory back so the returned object is the correct size
+            //now shrink the memory back so the returned object is the correct size
                 mstore(stringData, length)
             }
         }
     }
 
-    function decodeDERData(bytes memory byteCode, uint dIndex, uint offset) internal pure returns(bytes memory data, uint256 index, uint256 length)
+    function decodeDERData(bytes memory byteCode, uint dIndex, uint offset) internal pure returns(bytes memory data, uint256 index, uint256 length, uint8 tag)
     {
-        index = dIndex + 1;
+        index = dIndex;
 
-        (length, index) = decodeLength(byteCode, index);
-        
+        (length, index, tag) = decodeLength(byteCode, index);
+
         if (offset <= length)
         {
             uint requiredLength = length - offset;
@@ -371,25 +573,30 @@ contract VerifyAttestation {
 
             data = copyDataBlock(byteCode, dStart, requiredLength);
         }
+        else
+        {
+            data = bytes("");
+        }
 
         index += length;
     }
 
-    function decodeElement(bytes memory byteCode, uint decodeIndex) internal pure returns(uint256 length, bytes memory content, uint256 newIndex)
+    function decodeElement(bytes memory byteCode, uint decodeIndex) internal pure returns(uint256 length, bytes memory content, uint256 newIndex, uint8 tag)
     {
-        (content, newIndex, length) = decodeDERData(byteCode, decodeIndex);
+        (content, newIndex, length, tag) = decodeDERData(byteCode, decodeIndex);
     }
 
     function decodeElementOffset(bytes memory byteCode, uint decodeIndex, uint offset) internal pure returns(uint256 length, bytes memory content, uint256 newIndex)
     {
-        (content, newIndex, length) = decodeDERData(byteCode, decodeIndex, offset);
+        (content, newIndex, length, ) = decodeDERData(byteCode, decodeIndex, offset);
     }
 
-    function decodeLength(bytes memory byteCode, uint decodeIndex) internal pure returns(uint256 length, uint256 newIndex)
+    function decodeLength(bytes memory byteCode, uint decodeIndex) internal pure returns(uint256 length, uint256 newIndex, uint8 tag)
     {
         uint codeLength = 1;
         length = 0;
         newIndex = decodeIndex;
+        tag = uint8(byteCode[newIndex++]);
 
         if ((byteCode[newIndex] & 0x80) == 0x80)
         {
@@ -414,13 +621,7 @@ contract VerifyAttestation {
 
         return retVal;
     }
-    
-    function mapTo256BitInteger(bytes memory input) internal pure returns(uint256 res)
-    {
-        bytes32 idHash = keccak256(input);
-        res = uint256(idHash);
-    }
-    
+
     struct Status {
         uint decodeIndex;
         uint objCodeIndex;
