@@ -79,20 +79,28 @@ describe("NFTMinter.deploy", function () {
             console.log("Starting balance for Subject: " + startingBalance);
 
             let txReceipt = await nftContract.mintUsingAttestation(ticketAttestation);
+            let minted = await txReceipt.wait();
 
-            console.log("RCP: " + txReceipt);
-
+            console.log("RCP: ");
+            console.log(minted);
             
             // console.log(events);
 
-            let transferEvent = txReceipt.events?.filter((x:any) => {return x.event == "Transfer"});
+            let transferEvent = minted.events?.filter((x:any) => {return x.event == "Transfer"});
             //console.log("Mint TokenID: " + transferEvent[0].args.tokenId);
-            console.log("Mint TokenID: " + transferEvent);
+            console.log("Mint TokenID: ");
+            let args = transferEvent[0].args;
+            if (args){
+                console.log(`Token ID: ${args.tokenId.toHexString()}`);
+            }
+            
             let eventFilter = await nftContract.filters.Transfer();
             let events = await nftContract.queryFilter(eventFilter);
             let eventArgs = events[0].args;
-            console.log(eventArgs);
-            console.log(events[0]);
+            if (eventArgs){
+                console.log(`Token ID: ${eventArgs.tokenId.toHexString()}`);
+            }
+            // console.log(events[0].args.tokenId.toString());
 
             //How to get the event.tokenId ??
 
