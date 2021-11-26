@@ -1,4 +1,4 @@
-package org.tokenscript.auth;
+package org.tokenscript.attestation.eip712;
 
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import java.security.SecureRandom;

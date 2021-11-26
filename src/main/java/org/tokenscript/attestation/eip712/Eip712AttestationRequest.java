@@ -1,5 +1,9 @@
 package org.tokenscript.attestation.eip712;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.AttestationRequest;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
@@ -10,11 +14,8 @@ import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.core.Validateable;
 import org.tokenscript.attestation.core.Verifiable;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.eip712.Eip712Encoder;
+import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
@@ -33,15 +34,14 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
-      String identifier, AttestationRequest request,
-      AsymmetricKeyParameter signingKey) {
-    super(attestorDomain, new Eip712AttestationRequestEncoder());
+      String identifier, AttestationRequest request, AsymmetricKeyParameter signingKey) {
+    super(attestorDomain,  new Eip712AttestationRequestEncoder());
     try {
       this.acceptableTimeLimit = acceptableTimeLimit;
       this.attestationRequest = request;
       this.jsonEncoding = makeToken(identifier, signingKey);
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
-      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
+      this.data = retrieveUnderlyingJson(jsonEncoding, AttestationRequestInternalData.class);
     } catch (Exception e ) {
       throw ExceptionUtil.throwException(logger,
           new IllegalArgumentException("Could not encode object"));
@@ -55,12 +55,17 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
       String jsonEncoding) {
-    super(attestorDomain, new Eip712AttestationRequestEncoder());
+    this(attestorDomain, acceptableTimeLimit, jsonEncoding, new Eip712AttestationRequestEncoder());
+  }
+
+  public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
+    String jsonEncoding, Eip712Encoder encoder) {
+    super(attestorDomain, encoder);
     try {
       this.acceptableTimeLimit = acceptableTimeLimit;
       this.jsonEncoding = jsonEncoding;
       this.publicKey = retrieveUserPublicKey(jsonEncoding, AttestationRequestInternalData.class);
-      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationRequestInternalData.class);
+      this.data = retrieveUnderlyingJson(jsonEncoding, AttestationRequestInternalData.class);
       this.attestationRequest = new AttestationRequest(URLUtility.decodeData(data.getPayload()));
     } catch (Exception e ) {
       throw ExceptionUtil.throwException(logger,
@@ -77,7 +82,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   }
 
   String makeToken(String identifier, AsymmetricKeyParameter signingKey) throws JsonProcessingException {
-    Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(signingKey, encoder);
+    Eip712Signer issuer = new Eip712Signer<AttestationRequestInternalData>(signingKey, encoder);
     String encodedAttestationRequest = URLUtility.encodeData(attestationRequest.getDerEncoding());
     Timestamp timestamp = Nonce.getTimestamp(attestationRequest.getPok().getUnpredictableNumber());
     AttestationRequestInternalData data = new AttestationRequestInternalData(
@@ -109,7 +114,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   @Override
   public boolean verify() {
     if (!attestationRequest.verify()) {
-      logger.error("Could not verify signature");
+      logger.error("Could not verify proof");
       return false;
     }
     return true;
@@ -117,6 +122,10 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   @Override
   public boolean checkValidity() {
+    if (!validateDomain(jsonEncoding)) {
+      logger.error("Domain invalid");
+      return false;
+    }
     if (!data.getDescription().equals(encoder.getUsageValue())){
       logger.error("Description field is incorrect");
       return false;

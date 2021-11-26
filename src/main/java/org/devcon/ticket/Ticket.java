@@ -24,7 +24,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class Ticket implements Attestable {
+public class Ticket extends Attestable {
   private static final Logger logger = LogManager.getLogger(Ticket.class);
 
   private final BigInteger ticketId;

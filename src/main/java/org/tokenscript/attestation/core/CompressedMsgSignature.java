@@ -1,11 +1,8 @@
-package io.alchemynft.attestation;
+package org.tokenscript.attestation.core;
 
 import java.nio.charset.StandardCharsets;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.util.encoders.Hex;
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.SignatureUtility;
 
 public class CompressedMsgSignature implements Signature {
   private static final String TYPE_OF_SIGNATURE = "compressed";
@@ -23,21 +20,21 @@ public class CompressedMsgSignature implements Signature {
     this.rawSignature = rawSignature;
   }
 
-  public CompressedMsgSignature(AsymmetricCipherKeyPair keys, byte[] unprocessedMsg) {
-    this(keys, unprocessedMsg, "", "");
+  public CompressedMsgSignature(AsymmetricKeyParameter signingKey, byte[] unprocessedMsg) {
+    this(signingKey, unprocessedMsg, "", "");
   }
 
   /**
    * Constructs a compressed signature of the format @messagePrefix concatenated with Keccak(@unprocessedMsg) concatenated with @messagePostfix.
    */
-  public CompressedMsgSignature(AsymmetricCipherKeyPair keys, byte[] unprocessedMsg, String messagePrefix, String messagePostfix) {
+  public CompressedMsgSignature(AsymmetricKeyParameter signingKey, byte[] unprocessedMsg, String messagePrefix, String messagePostfix) {
     this.messagePrefix = messagePrefix;
     this.messagePostfix = messagePostfix;
-    this.rawSignature = sign(keys, unprocessedMsg);
+    this.rawSignature = sign(signingKey, unprocessedMsg);
   }
 
-  protected byte[] sign(AsymmetricCipherKeyPair keys, byte[] unprocessedMsg) {
-    return SignatureUtility.signWithEthereum(processMessage(unprocessedMsg), keys.getPrivate());
+  protected byte[] sign(AsymmetricKeyParameter keys, byte[] unprocessedMsg) {
+    return SignatureUtility.signWithEthereum(processMessage(unprocessedMsg), keys);
   }
 
   @Override

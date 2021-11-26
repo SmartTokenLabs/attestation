@@ -14,7 +14,7 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
 
@@ -49,7 +49,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       this.maxTokenValidityInMs = maxTokenValidityInMs;
       this.jsonEncoding = makeToken(identifier, useAttestation, signingKey);
       this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
-      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
+      this.data = retrieveUnderlyingJson(jsonEncoding, AttestationUsageData.class);
       this.validator = new AttestationAndUsageValidator(useAttestation, identifier, userPublicKey);
     } catch (Exception e ) {
       throw ExceptionUtil.throwException(logger,
@@ -71,7 +71,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       this.maxTokenValidityInMs = maxTokenValidityInMs;
       this.jsonEncoding = jsonEncoding;
       this.userPublicKey = retrieveUserPublicKey(jsonEncoding, AttestationUsageData.class);
-      this.data = retrieveUnderlyingObject(jsonEncoding, AttestationUsageData.class);
+      this.data = retrieveUnderlyingJson(jsonEncoding, AttestationUsageData.class);
       UseAttestation useAttestation = new UseAttestation(URLUtility.decodeData(data.getPayload()), attestationIssuerVerificationKey);
       this.validator = new AttestationAndUsageValidator(useAttestation, data.getIdentifier(), userPublicKey);
     } catch (Exception e ) {
@@ -90,7 +90,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   String makeToken(String identifier, UseAttestation useAttestation,
       AsymmetricKeyParameter signingKey) throws IOException {
-    Eip712Issuer issuer = new Eip712Issuer<AttestationUsageData>(signingKey, encoder);
+    Eip712Signer issuer = new Eip712Signer<AttestationUsageData>(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(useAttestation.getDerEncoding());
     Timestamp now = new Timestamp();
     Timestamp expirationTime = new Timestamp(now.getTime() + maxTokenValidityInMs);

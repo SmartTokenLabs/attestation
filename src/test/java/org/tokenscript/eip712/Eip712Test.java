@@ -6,12 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.Timestamp;
 import com.alphawallet.token.web.Ethereum.web3j.StructuredData.Entry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.InvalidObjectException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.HashMap;
@@ -19,6 +16,8 @@ import java.util.List;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.tokenscript.attestation.Timestamp;
+import org.tokenscript.attestation.core.SignatureUtility;
 
 public class Eip712Test {
   private static final String testDomain = "http://www.test.com";
@@ -27,7 +26,7 @@ public class Eip712Test {
   private static AsymmetricCipherKeyPair userKeys;
   private static SecureRandom rand;
   private static Eip712Validator validator;
-  private static Eip712Issuer issuer;
+  private static Eip712Signer issuer;
   private static Eip712Encoder encoder;
   private static ObjectMapper mapper;
 
@@ -48,7 +47,7 @@ public class Eip712Test {
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     encoder = new TestEncoder();
     validator = new Eip712Validator(testDomain, encoder);
-    issuer = new Eip712Issuer(userKeys.getPrivate(), encoder);
+    issuer = new Eip712Signer(userKeys.getPrivate(), encoder);
     mapper = new ObjectMapper();
   }
 
@@ -62,7 +61,7 @@ public class Eip712Test {
   @Test
   public void testSunshine() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain);
-    checkEquality(validator.retrieveUnderlyingObject(token, FullEip712InternalData.class));
+    checkEquality(validator.retrieveUnderlyingJson(token, FullEip712InternalData.class));
     assertTrue(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
   }
 
@@ -71,7 +70,7 @@ public class Eip712Test {
     String token = "{\"signatureInHex\":\"0x3a65f28b33d92973327ae616bb74c28a9c9f14ef5741a388d00449888fa2a7eb7602d1bf03cc89ff1c39b6cbbf4839bbed609161d36c364274a302e41e7aa0ae1c\",\"jsonSigned\":\"{\\\"types\\\":{\\\"Test\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"},{\\\"name\\\":\\\"verifyingContract\\\",\\\"type\\\":\\\"address\\\"},{\\\"name\\\":\\\"salt\\\",\\\"type\\\":\\\"bytes32\\\"}]},\\\"primaryType\\\":\\\"Test\\\",\\\"message\\\":{\\\"payload\\\":\\\"payload\\\",\\\"description\\\":\\\"description\\\",\\\"timestamp\\\":\\\"Thu Jan 1 1970 00:00:00 GMT+0000\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.test.com\\\",\\\"version\\\":\\\"1.0\\\",\\\"chainId\\\":1,\\\"verifyingContract\\\":\\\"0x0123456789012345678901234567890123456789\\\",\\\"salt\\\":\\\"0x0000000000000000000000000000000000000000000000000000000000000000\\\"}}\"}";
     String recomputedToken = issuer.buildSignedTokenFromJsonObject(testObject, testDomain);
     assertEquals(token, recomputedToken);
-    checkEquality(validator.retrieveUnderlyingObject(token, FullEip712InternalData.class));
+    checkEquality(validator.retrieveUnderlyingJson(token, FullEip712InternalData.class));
     assertTrue(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
   }
 
@@ -81,7 +80,7 @@ public class Eip712Test {
         + "\\\"types\\\":{\\\"Test\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"chainId\\\",\\\"type\\\":\\\"uint256\\\"},{\\\"name\\\":\\\"verifyingContract\\\",\\\"type\\\":\\\"address\\\"},{\\\"name\\\":\\\"salt\\\",\\\"type\\\":\\\"bytes32\\\"}]},"
         + "   \\\"message\\\":{\\\"description\\\":\\\"description\\\",  \\\"payload\\\":\\\"payload\\\",  \\\"timestamp\\\":\\\"Thu Jan 1 1970 00:00:00 GMT+0000\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.test.com\\\",\\\"version\\\":\\\"1.0\\\",\\\"chainId\\\":1,\\\"verifyingContract\\\":\\\"0x0123456789012345678901234567890123456789\\\",\\\"salt\\\":\\\"0x0000000000000000000000000000000000000000000000000000000000000000\\\"}}\","
         + "  \"signatureInHex\":\"0x3a65f28b33d92973327ae616bb74c28a9c9f14ef5741a388d00449888fa2a7eb7602d1bf03cc89ff1c39b6cbbf4839bbed609161d36c364274a302e41e7aa0ae1c\" }";
-    checkEquality(validator.retrieveUnderlyingObject(token, FullEip712InternalData.class));
+    checkEquality(validator.retrieveUnderlyingJson(token, FullEip712InternalData.class));
     assertTrue(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
   }
 
@@ -96,15 +95,17 @@ public class Eip712Test {
   @Test
   public void testNewChainID() throws Exception {
     TestEncoder localTestEncoder = new TestEncoder("1", 42);
-    Eip712Issuer localIssuer = new Eip712Issuer(userKeys.getPrivate(), localTestEncoder);
+    Eip712Signer localIssuer = new Eip712Signer(userKeys.getPrivate(), localTestEncoder);
     String token = localIssuer.buildSignedTokenFromJsonObject(testObject, testDomain);
     String otherToken = localIssuer.buildSignedTokenFromJsonObject(testObject, testDomain);
     assertEquals(token, otherToken);
     Eip712Validator localValidator = new Eip712Validator(testDomain, localTestEncoder);
-    checkEquality(localValidator.retrieveUnderlyingObject(token, FullEip712InternalData.class));
+    checkEquality(localValidator.retrieveUnderlyingJson(token, FullEip712InternalData.class));
     assertTrue(localValidator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
+    assertTrue(localValidator.validateDomain(token));
     // Other chain ID in global validator
-    assertFalse(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
+    assertTrue(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
+    assertFalse(validator.validateDomain(token));
   }
 
   @Test
@@ -116,14 +117,14 @@ public class Eip712Test {
 
   @Test
   public void nullInput() {
-    assertThrows( IllegalArgumentException.class, () -> validator.retrieveUnderlyingObject(null, FullEip712InternalData.class));
+    assertThrows( IllegalArgumentException.class, () -> validator.retrieveUnderlyingJson(null, FullEip712InternalData.class));
   }
 
   @Test
   public void testDifferenceWithDifferentChainIds() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain);
     TestEncoder localTestEncoder = new TestEncoder("1.0", 42);
-    Eip712Issuer localIssuer = new Eip712Issuer(userKeys.getPrivate(), localTestEncoder);
+    Eip712Signer localIssuer = new Eip712Signer(userKeys.getPrivate(), localTestEncoder);
     String newToken = localIssuer.buildSignedTokenFromJsonObject(testObject, testDomain);
     assertFalse(token.equals(newToken));
   }
@@ -131,9 +132,9 @@ public class Eip712Test {
   @Test
   public void wrongSignature() throws Exception {
     AsymmetricCipherKeyPair newKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    Eip712Issuer newIssuer = new Eip712Issuer(newKeys.getPrivate(), encoder);
+    Eip712Signer newIssuer = new Eip712Signer(newKeys.getPrivate(), encoder);
     String token = newIssuer.buildSignedTokenFromJsonObject(testObject, testDomain);
-    checkEquality(validator.retrieveUnderlyingObject(token, FullEip712InternalData.class));
+    checkEquality(validator.retrieveUnderlyingJson(token, FullEip712InternalData.class));
     assertTrue(validator.verifySignature(token, SignatureUtility.addressFromKey(newKeys.getPublic()), FullEip712InternalData.class));
     assertFalse(validator.verifySignature(token, SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
   }
@@ -145,15 +146,13 @@ public class Eip712Test {
     // Flip a bit
     tokenBytes[0] ^= 0x01;
     assertFalse(validator.verifySignature(new String(tokenBytes, StandardCharsets.UTF_8), SignatureUtility.addressFromKey(userKeys.getPublic()), FullEip712InternalData.class));
-    assertThrows(IllegalArgumentException.class, () -> validator.retrieveUnderlyingObject(new String(tokenBytes, StandardCharsets.UTF_8), FullEip712InternalData.class));
+    assertThrows(IllegalArgumentException.class, () -> validator.retrieveUnderlyingJson(new String(tokenBytes, StandardCharsets.UTF_8), FullEip712InternalData.class));
   }
 
   @Test
   public void incorrectDomain() throws Exception {
     String token = issuer.buildSignedTokenFromJsonObject(testObject, "http://www.not-test.com");
-    Eip712ExternalData data = mapper.readValue(token, Eip712ExternalData.class);
-    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
-    assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(rootNode));
+    assertFalse(validator.validateDomain(token));
   }
 
   @Test
@@ -168,22 +167,26 @@ public class Eip712Test {
 
   @Test
   public void invalidVersionIssuer() throws Exception {
-    Eip712Issuer newIssuer = new Eip712Issuer(userKeys.getPrivate(), new TestEncoder("2.0", 1));
+    Eip712Signer newIssuer = new Eip712Signer(userKeys.getPrivate(), new TestEncoder("2.0", 1));
     String token = newIssuer.buildSignedTokenFromJsonObject(testObject, testDomain);
-    Eip712ExternalData data = mapper.readValue(token, Eip712ExternalData.class);
-    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
-    assertThrows(InvalidObjectException.class, () -> validator.getDomainFromJson(rootNode));
+    assertFalse(validator.validateDomain(token));
   }
 
   @Test
   public void invalidVersionValidator() throws Exception {
     Eip712Validator newValidator = new Eip712Validator(testDomain, new TestEncoder("2.0", 1));
     String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain);
-    Eip712ExternalData data = mapper.readValue(token, Eip712ExternalData.class);
-    JsonNode rootNode = mapper.readTree(data.getJsonSigned());
-    assertThrows(InvalidObjectException.class, () -> newValidator.getDomainFromJson(rootNode));
+    assertFalse(newValidator.validateDomain(token));
   }
 
+  @Test
+  public void invalidSalt() throws Exception {
+    byte[] salt = new byte[32];
+    salt[0] = (byte) 0xff;
+    Eip712Validator newValidator = new Eip712Validator(testDomain, new TestEncoder(encoder.getProtocolVersion(), encoder.getChainId(), encoder.getVerifyingContract(), salt));
+    String token = issuer.buildSignedTokenFromJsonObject(testObject, testDomain);
+    assertFalse(newValidator.validateDomain(token));
+  }
 
   @Test
   public void invalidAddressInEncoder() {

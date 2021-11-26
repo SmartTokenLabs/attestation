@@ -13,8 +13,6 @@ import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.Verifiable;
 import org.tokenscript.attestation.Timestamp;
-import org.tokenscript.auth.UnpredictableNumberBundle;
-import org.tokenscript.auth.UnpredictableNumberTool;
 
 public class UseTicketBundle implements Verifiable {
   private static final Logger logger = LogManager.getLogger(UseTicketBundle.class);
@@ -113,7 +111,7 @@ public class UseTicketBundle implements Verifiable {
       logger.error("UseTicket could not be verified");
       return false;
     }
-    if (!SignatureUtility.verifyPersonalEthereumSignature(computeMessage(un), signature, useTicket.getUserPublicKey())) {
+    if (!SignatureUtility.verifyPersonalEthereumSignature(computeMessage(un), signature, useTicket.getAttestedUserKey())) {
       logger.error("Signature could not be verified");
       return false;
     }

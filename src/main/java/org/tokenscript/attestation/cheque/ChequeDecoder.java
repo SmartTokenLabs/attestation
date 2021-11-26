@@ -1,6 +1,6 @@
 package org.tokenscript.attestation.cheque;
 
-import org.tokenscript.attestation.AttestableObjectDecoder;
+import org.tokenscript.attestation.ObjectDecoder;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
-public class ChequeDecoder implements AttestableObjectDecoder<Cheque> {
+public class ChequeDecoder implements ObjectDecoder<Cheque> {
   private static final Logger logger = LogManager.getLogger(ChequeDecoder.class);
 
   public ChequeDecoder() {}

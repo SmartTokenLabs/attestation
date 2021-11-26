@@ -9,9 +9,9 @@ IMPORTS
     AlgorithmIdentifier
         FROM AuthenticationFramework;
 
+-- Version 1 --
 SignedNFTAttestation ::= SEQUENCE {
     nftAttestation       NFTAttestation,
-    signingVersion       INTEGER OPTIONAL,
     signingAlgorithm     AlgorithmIdentifier,
     signatureValue       BIT STRING
 }
