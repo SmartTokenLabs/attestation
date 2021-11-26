@@ -57,7 +57,12 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
     event GenerateCommitment(address indexed addr, uint256 indexed id);
     event Burn(address burner, uint256 tokenId);
 
-    string private constant _baseURL = "https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/"; //Random Base token URL ;)
+    modifier onlyOwner() {
+        require(_contractCreator == _msgSender(), "AttestationMintable: caller is not the owner");
+        _;
+    }
+
+    string private _baseUrl;
     
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
@@ -70,12 +75,23 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
         _verificationAddress = verificationAddress;
         _attestorKey = attestorKey;
         _issuerKey = issuerKey;
+        _baseUrl = "https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/"; //Random Base token URL ;)
     }
 
-    function updateVericationAddress(address newVerifyAddress) public 
+    function updateVericationAddress(address newVerifyAddress) public onlyOwner
     {
-        require(msg.sender == _contractCreator, "Only Contract Owner can update the verification address");
         _verificationAddress = newVerifyAddress;
+    }
+
+    function updateAttestationKeys(address newattestorKey, address newIssuerKey) public onlyOwner
+    {
+        _attestorKey = newattestorKey;
+        _issuerKey = newIssuerKey;
+    }
+
+    function updateBaseURL(string memory newBaseUrl) public onlyOwner
+    {
+        _baseUrl = newBaseUrl;
     }
 
     /**
@@ -89,7 +105,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * @dev See {IERC721-balanceOf}.
      */
     function balanceOf(address owner) public view virtual override returns (uint256) {
-        require(owner != address(0), "ERC721: balance query for the zero address");
+        require(owner != address(0), "AttestationMintable: balance query for the zero address");
         return _balances[owner];
     }
 
@@ -98,7 +114,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      */
     function ownerOf(uint256 tokenId) public view virtual override returns (address) {
         address owner = _owners[tokenId];
-        require(owner != address(0), "ERC721: owner query for nonexistent token");
+        require(owner != address(0), "AttestationMintable: owner query for nonexistent token");
         return owner;
     }
 
@@ -120,8 +136,8 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return string(abi.encodePacked(_baseURL, uint2str(tokenId)));
+        require(_exists(tokenId), "AttestationMintable: URI query for nonexistent token");
+        return string(abi.encodePacked(_baseUrl, uint2str(tokenId)));
     }
 
     function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
@@ -157,8 +173,8 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
     }
     
     function burn(uint256 tokenId) public {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: Burn caller is not owner nor approved");
+        require(_exists(tokenId), "AttestationMintable: URI query for nonexistent token");
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "AttestationMintable: Burn caller is not owner nor approved");
         _burn(tokenId);
         emit Burn(msg.sender, tokenId);
     }
@@ -168,10 +184,10 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      */
     function approve(address to, uint256 tokenId) public virtual override {
         address owner = ownerOf(tokenId);
-        require(to != owner, "ERC721: approval to current owner");
+        require(to != owner, "AttestationMintable: approval to current owner");
 
         require(_msgSender() == owner || isApprovedForAll(owner, _msgSender()),
-            "ERC721: approve caller is not owner nor approved for all"
+            "AttestationMintable: approve caller is not owner nor approved for all"
         );
 
         _approve(to, tokenId);
@@ -181,7 +197,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * @dev See {IERC721-getApproved}.
      */
     function getApproved(uint256 tokenId) public view virtual override returns (address) {
-        require(_exists(tokenId), "ERC721: approved query for nonexistent token");
+        require(_exists(tokenId), "AttestationMintable: approved query for nonexistent token");
 
         return _tokenApprovals[tokenId];
     }
@@ -190,7 +206,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * @dev See {IERC721-setApprovalForAll}.
      */
     function setApprovalForAll(address operator, bool approved) public virtual override {
-        require(operator != _msgSender(), "ERC721: approve to caller");
+        require(operator != _msgSender(), "AttestationMintable: approve to caller");
 
         _operatorApprovals[_msgSender()][operator] = approved;
         emit ApprovalForAll(_msgSender(), operator, approved);
@@ -208,7 +224,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      */
     function transferFrom(address from, address to, uint256 tokenId) public virtual override {
         //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "AttestationMintable: transfer caller is not owner nor approved");
 
         _transfer(from, to, tokenId);
     }
@@ -224,7 +240,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * @dev See {IERC721-safeTransferFrom}.
      */
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override {
-        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "AttestationMintable: transfer caller is not owner nor approved");
         _safeTransfer(from, to, tokenId, _data);
     }
 
@@ -248,7 +264,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      */
     function _safeTransfer(address from, address to, uint256 tokenId, bytes memory _data) internal virtual {
         _transfer(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+        require(_checkOnERC721Received(from, to, tokenId, _data), "AttestationMintable: transfer to non ERC721Receiver implementer");
     }
 
     /**
@@ -271,7 +287,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * - `tokenId` must exist.
      */
     function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
-        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+        require(_exists(tokenId), "AttestationMintable: operator query for nonexistent token");
         address owner = ownerOf(tokenId);
         return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
     }
@@ -296,7 +312,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      */
     function _safeMint(address to, uint256 tokenId, bytes memory _data) internal virtual {
         _mint(to, tokenId);
-        require(_checkOnERC721Received(address(0), to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+        require(_checkOnERC721Received(address(0), to, tokenId, _data), "AttestationMintable: transfer to non ERC721Receiver implementer");
     }
 
     /**
@@ -312,8 +328,8 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * Emits a {Transfer} event.
      */
     function _mint(address to, uint256 tokenId) internal virtual {
-        require(to != address(0), "ERC721: mint to the zero address");
-        require(!_exists(tokenId), "ERC721: token already minted");
+        require(to != address(0), "AttestationMintable: mint to the zero address");
+        require(!_exists(tokenId), "AttestationMintable: token already minted");
 
         _beforeTokenTransfer(address(0), to, tokenId);
 
@@ -357,8 +373,8 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      * Emits a {Transfer} event.
      */
     function _transfer(address from, address to, uint256 tokenId) internal virtual {
-        require(ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
-        require(to != address(0), "ERC721: transfer to the zero address");
+        require(ownerOf(tokenId) == from, "AttestationMintable: transfer of token that is not own");
+        require(to != address(0), "AttestationMintable: transfer to the zero address");
 
         _beforeTokenTransfer(from, to, tokenId);
 
@@ -400,7 +416,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
                 return retval == IERC721Receiver(to).onERC721Received.selector;
             } catch (bytes memory reason) {
                 if (reason.length == 0) {
-                    revert("ERC721: transfer to non ERC721Receiver implementer");
+                    revert("AttestationMintable: transfer to non ERC721Receiver implementer");
                 } else {
                     // solhint-disable-next-line no-inline-assembly
                     assembly {
