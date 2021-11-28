@@ -42,8 +42,14 @@
  <namedType name="ValidityValue">
   <type>
    <sequence>
-    <element name="notBefore" type="Time"/>
-    <element name="notAfter" type="Time"/>
+    <element name="notBefore" type="asnx:GeneralizedTime"/>
+    <optional>
+     <element name="notBeforeInt" type="asnx:INTEGER"/>
+    </optional>
+    <element name="notAfter" type="asnx:GeneralizedTime"/>
+    <optional>
+     <element name="notAfterInt" type="asnx:INTEGER"/>
+    </optional>
    </sequence>
   </type>
  </namedType>
