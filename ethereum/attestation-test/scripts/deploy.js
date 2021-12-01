@@ -19,7 +19,7 @@ const { createWalletsAndAddresses, ethersDebugMessages } = require('./inc/lib');
     await verifyAttestation.deployed();
 
     const AttestationMintable = await ethers.getContractFactory("AttestationMintable");
-    const nftContract = await AttestationMintable.connect(rinkebyDeployKey).deploy(verifyAttestation.address, debugAttestorKey, debugIssuerKey);
+    const nftContract = await AttestationMintable.deploy(verifyAttestation.address, debugAttestorKey, debugIssuerKey);
     await nftContract.deployed();
 
     console.log("Verify Addr: " + verifyAttestation.address);
