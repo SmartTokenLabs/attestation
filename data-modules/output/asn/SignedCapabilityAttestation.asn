@@ -1,0 +1,21 @@
+SignedCapabilityAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+SignedCapabilityAttestation ::= SEQUENCE {
+    capabilityAttestation     CapabilityAttestation,
+    signatureValue            BIT STRING
+}
+
+
+CapabilityAttestation ::= SEQUENCE {
+    uniqueId         INTEGER,
+    sourceDomain     UTF8String,        -- MUST be an URI of the domain of the issuer --
+    targetDomain     UTF8String,        -- MUST be an URI of the target domain --
+    notBefore        INTEGER,           -- UNIX time, milliseconds since epoch --
+    notAfter         INTEGER,           -- UNIX time, milliseconds since epoch --
+    capabilities     BIT STRING         -- Encoding of each of the capabilities issued --
+}
+
+END
