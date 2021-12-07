@@ -119,17 +119,10 @@ describe("NFTMinter.deploy", function () {
     it("Test Contract functions", async function(){
         {
             // try URL
-            var expectedUrl = "https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/" + ticketAttestationId;
+            var expectedUrl = "https://alchemynft.io/31337/0xe7f1725e7734ce288f8367e1bb143e90bb3f0512/" + ticketAttestationId + ".json";
             var tokenUrl = await nftContract.tokenURI(ticketAttestationId);
             console.log("Token URL: " + tokenUrl);
             expect(tokenUrl).to.be.equal(expectedUrl);
-            var newBaseUrl = "https://ipfs.io/ipfs/QmeS/";
-            console.log("Update Base URL to " + newBaseUrl);
-            await nftContract.updateBaseURL(newBaseUrl);
-            expectedUrl = newBaseUrl + ticketAttestationId;
-            tokenUrl = await nftContract.tokenURI(ticketAttestationId);
-            expect(tokenUrl).to.be.equal(expectedUrl);
-            console.log("Token URL: " + tokenUrl);
 
             //try updating the attestor and issuer keys
             await nftContract.updateAttestationKeys(randomAddress, randomUserAddress);
@@ -150,7 +143,6 @@ describe("NFTMinter.deploy", function () {
             await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Transaction reverted: function call to a non-contract account');
 
             //attempt to use these functions with a different key (non owner)
-            await expect( nftContract.connect(addr1).updateBaseURL(newBaseUrl)).to.be.revertedWith('AttestationMintable: caller is not the owner');
             await expect( nftContract.connect(addr1).updateAttestationKeys(randomAddress, randomUserAddress)).to.be.revertedWith('AttestationMintable: caller is not the owner');
             await expect( nftContract.connect(addr1).updateVericationAddress(randomAddress)).to.be.revertedWith('AttestationMintable: caller is not the owner');
         }

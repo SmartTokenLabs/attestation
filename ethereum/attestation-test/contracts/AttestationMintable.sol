@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+//import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
@@ -36,6 +37,9 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
     bytes4 private constant _INTERFACE_ID_ERC165 = 0x01ffc9a7;
     bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
     bytes4 private constant _INTERFACE_ID_OFFICIAL_ERC721 = 0x80ac58cd;
+
+    string  constant JSON_FILE = ".json";
+    string  constant _alchemyURI = "https://alchemynft.io/";
     
     address _attestorKey;
     address _issuerKey;
@@ -61,8 +65,6 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
         require(_contractCreator == _msgSender(), "AttestationMintable: caller is not the owner");
         _;
     }
-
-    string private _baseUrl;
     
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
@@ -75,7 +77,6 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
         _verificationAddress = verificationAddress;
         _attestorKey = attestorKey;
         _issuerKey = issuerKey;
-        _baseUrl = "https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/"; //Random Base token URL ;)
     }
 
     function updateVericationAddress(address newVerifyAddress) public onlyOwner
@@ -87,11 +88,6 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
     {
         _attestorKey = newattestorKey;
         _issuerKey = newIssuerKey;
-    }
-
-    function updateBaseURL(string memory newBaseUrl) public onlyOwner
-    {
-        _baseUrl = newBaseUrl;
     }
 
     /**
@@ -137,29 +133,7 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "AttestationMintable: URI query for nonexistent token");
-        return string(abi.encodePacked(_baseUrl, uint2str(tokenId)));
-    }
-
-    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint j = _i;
-        uint len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint k = len;
-        while (_i != 0) {
-            k = k-1;
-            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
+        return string(abi.encodePacked(_alchemyURI, block.chainid.toString(), "/", contractAddress(), "/", tokenId.toString(), JSON_FILE));
     }
     
     function mintUsingAttestation(bytes memory attestation) public returns (uint256 tokenId) {
@@ -451,6 +425,10 @@ contract AttestationMintable is Context, ERC165, IERC721, IERC721Metadata {
                 conv := mload(add(b, 32))
             }
         }
+    }
+
+    function contractAddress() internal view returns (string memory) {
+        return Strings.toHexString(uint160(address(this)), 20);
     }
     
     function endContract() public payable
