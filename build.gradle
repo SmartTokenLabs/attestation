@@ -1,6 +1,7 @@
 buildscript {
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:6.+'
+        classpath 'org.owasp:dependency-check-gradle:6.+'
     }
 }
 
@@ -18,6 +19,7 @@ node {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'org.owasp.dependencycheck'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -158,7 +160,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.7"
+version = "0.3.8"
 
 // See https://docs.gradle.org/current/userguide/publishing_maven.html for details
 // For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
