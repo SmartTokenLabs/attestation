@@ -288,12 +288,10 @@ export class Authenticator {
             ).then(useToken => {
                 if (useToken){
                     logger(DEBUGLEVEL.HIGH,'this.authResultCallback( useToken ): ');
-                    this.authResultCallback(useToken);
                 } else {
                     logger(DEBUGLEVEL.HIGH,'this.authResultCallback( empty ): ');
-                    this.authResultCallback(useToken);
                 }
-
+                this.authResultCallback(useToken);
             }).catch(e=>{
                 logger(DEBUGLEVEL.LOW,`UseDevconTicket . Something went wrong. ${e}`);
                 this.authResultCallback(false);
