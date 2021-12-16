@@ -3,7 +3,7 @@ const { createWalletsAndAddresses, ethersDebugMessages } = require('./inc/lib');
 
 (async ()=>{
     const {
-        rinkebyDeployKey
+        rinkebyDeployKey2
     } = await createWalletsAndAddresses(ethers.provider);
 
     const debugAttestorKey = '0x538080305560986811c3c1A2c5BCb4F37670EF7e';  //Liscon attestor
@@ -11,7 +11,7 @@ const { createWalletsAndAddresses, ethersDebugMessages } = require('./inc/lib');
     const attestationKey = '';  //Insert here
     const issuerKey = '';       //Insert here
 
-    console.log('User balance: ' , ethers.utils.formatEther(await ethers.provider.getBalance(rinkebyDeployKey.address)), "\n");
+    console.log('User balance: ' , ethers.utils.formatEther(await ethers.provider.getBalance(rinkebyDeployKey2.address)), "\n");
 
     //deploy Verification contract
     const VerifyAttestation = await ethers.getContractFactory("VerifyTicketLegacy");
@@ -24,9 +24,9 @@ const { createWalletsAndAddresses, ethersDebugMessages } = require('./inc/lib');
 
     console.log("Verify Addr: " + verifyAttestation.address);
     console.log("NFT Addr: " + nftContract.address);
-    console.log("Owner: " + rinkebyDeployKey.address);
+    console.log("Owner: " + rinkebyDeployKey2.address);
 
-    console.log('User balance: ' , ethers.utils.formatEther(await ethers.provider.getBalance(rinkebyDeployKey.address)), "\n");
+    console.log('User balance: ' , ethers.utils.formatEther(await ethers.provider.getBalance(rinkebyDeployKey2.address)), "\n");
 
 })();
 // npx hardhat run scripts/deploy-legacy.js --network rinkeby

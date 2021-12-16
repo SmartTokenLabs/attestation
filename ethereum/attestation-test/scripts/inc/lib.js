@@ -57,10 +57,10 @@ async function createWalletsAndAddresses(provider){
     const mumbaiDeployKey = new ethers.Wallet(PRIVATE_KEY_RETORT, provider);
     const mainDeployKey = new ethers.Wallet(PRIVATE_KEY_MAIN, provider);
 
-    console.log( 'rinkebyDeployKey address ' , rinkebyDeployKey.address);
+    // console.log( 'rinkebyDeployKey address ' , rinkebyDeployKey.address);
     console.log( 'rinkebyDeployKey2 address ' , rinkebyDeployKey2.address);
-    console.log( 'mumbaiDeployKey address ' , mumbaiDeployKey.address);
-    console.log( 'mainDeployKey address ' , mainDeployKey.address);
+    // console.log( 'mumbaiDeployKey address ' , mumbaiDeployKey.address);
+    // console.log( 'mainDeployKey address ' , mainDeployKey.address);
 
     const { chainId } = await ethers.provider.getNetwork()
 
@@ -68,28 +68,28 @@ async function createWalletsAndAddresses(provider){
 
     if (chainId == 31337 || chainId == 1337) { //default HH ganache Id for testing, provide balances
         await owner.sendTransaction({
-            to: mainDeployKey.address,
+            to: rinkebyDeployKey2.address,
             value: ethers.utils.parseEther("3.0")
         });
 
-        await owner.sendTransaction({
-            to: retortDeployKey.address,
-            value: ethers.utils.parseEther("3.0")
-        });
+        // await owner.sendTransaction({
+        //     to: retortDeployKey.address,
+        //     value: ethers.utils.parseEther("3.0")
+        // });
 
-        await owner.sendTransaction({
-            to: myNFTDeployKey.address,
-            value: ethers.utils.parseEther("3.0")
-        });
+        // await owner.sendTransaction({
+        //     to: myNFTDeployKey.address,
+        //     value: ethers.utils.parseEther("3.0")
+        // });
 
-        await owner.sendTransaction({
-            to: remixDeployKey.address,
-            value: ethers.utils.parseEther("3.0")
-        });
+        // await owner.sendTransaction({
+        //     to: remixDeployKey.address,
+        //     value: ethers.utils.parseEther("3.0")
+        // });
     }
 
-    let startBalance2 = await ethers.provider.getBalance(rinkebyDeployKey.address);
-    console.log( 'Rinkeby balance ' , ethers.utils.formatEther(startBalance2));
+    let startBalance2 = await ethers.provider.getBalance(rinkebyDeployKey2.address);
+    console.log( 'Balance ' , ethers.utils.formatEther(startBalance2));
 
 
     return {

@@ -81,7 +81,10 @@ export default {
       accounts: [`${PRIVATE_KEY}`]
     },
     mumbai: {
-      url: `https://matic-mumbai.chainstacklabs.com`, //ths RPC seems to work more consistently
+      url: `https://rpc-mumbai.maticvigil.com`, //ths RPC seems to work more consistently
+      // "https://matic-mumbai.chainstacklabs.com",
+      // "https://rpc-mumbai.maticvigil.com",
+      // "https://matic-testnet-archive-rpc.bwarelabs.com"
       accounts: [`${PRIVATE_KEY}`]
     },
     mainnet: {
@@ -98,6 +101,14 @@ export default {
     },
     polygon: {
       url: `https://matic-mainnet.chainstacklabs.com`,
+      accounts: [`${PRIVATE_KEY}`]
+    },
+    arbrinkeby: {
+      url: `https://rinkeby.arbitrum.io/rpc`,
+      accounts: [`${PRIVATE_KEY}`]
+    },
+    optimistickovan: {
+      url: `https://kovan.optimism.io/`,
       accounts: [`${PRIVATE_KEY}`]
     }
   }
