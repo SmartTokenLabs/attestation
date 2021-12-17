@@ -15,11 +15,13 @@ const { createWalletsAndAddresses, ethersDebugMessages } = require('./inc/lib');
 
     //deploy Verification contract
     const VerifyAttestation = await ethers.getContractFactory("VerifyTicketLegacy");
-    const verifyAttestation = await VerifyAttestation.deploy();
+    const verifyAttestation = await VerifyAttestation.connect(rinkebyDeployKey2).deploy();
+    console.log(verifyAttestation);
     await verifyAttestation.deployed();
 
+
     const AttestationMintable = await ethers.getContractFactory("AttestationMintable");
-    const nftContract = await AttestationMintable.deploy(verifyAttestation.address, debugAttestorKey, debugIssuerKey);
+    const nftContract = await AttestationMintable.connect(rinkebyDeployKey2).deploy(verifyAttestation.address, debugAttestorKey, debugIssuerKey);
     await nftContract.deployed();
 
     console.log("Verify Addr: " + verifyAttestation.address);
