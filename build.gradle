@@ -44,8 +44,8 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.apache.logging.log4j:log4j-api:2.16.+'
-    implementation 'org.apache.logging.log4j:log4j-core:2.16.+'
+    implementation 'org.apache.logging.log4j:log4j-api:2.+'
+    implementation 'org.apache.logging.log4j:log4j-core:2.+'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.16.+'
@@ -160,7 +160,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.9"
+version = "0.3.10"
 
 // See https://docs.gradle.org/current/userguide/publishing_maven.html for details
 // For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
