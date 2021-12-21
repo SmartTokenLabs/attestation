@@ -39,6 +39,7 @@ public class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      input.close();
       int i = 0;
       this.type = AttestationType.values()[
           ASN1Integer.getInstance(asn1.getObjectAt(i++)).getValue().intValueExact()];

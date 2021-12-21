@@ -11,6 +11,7 @@ IMPORTS
 
 SignedNFTAttestation ::= SEQUENCE {
     nftAttestation       NFTAttestation,
+    signingVersion       INTEGER OPTIONAL,
     signingAlgorithm     AlgorithmIdentifier,
     signatureValue       BIT STRING
 }

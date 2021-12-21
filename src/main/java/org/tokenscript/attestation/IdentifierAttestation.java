@@ -45,7 +45,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
     private final String type;
 
-    private AttestationType(String type) {
+    AttestationType(String type) {
       this.type = type;
     }
 
@@ -55,6 +55,26 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
     public String toString() {
       return this.type;
+    }
+
+    public static AttestationType getType(String stringType) throws IllegalArgumentException {
+      AttestationType type;
+      switch (stringType.toLowerCase()) {
+        case "mail":
+        case "email":
+          type = AttestationType.EMAIL;
+          break;
+        case "phone":
+          type = AttestationType.PHONE;
+          break;
+        case "inetpersona":
+          type = AttestationType.INETPERSONA;
+          break;
+        default:
+          System.err.println("Could not parse identifier type, must be either \"mail\", \"phone\" or \"InetPersona\"");
+          throw new IllegalArgumentException("Wrong type of identifier");
+      }
+      return type;
     }
   }
 

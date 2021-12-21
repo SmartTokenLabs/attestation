@@ -17,10 +17,8 @@ import {
 import {ethers} from "ethers";
 import {Signature} from "../asn1/shemas/Signature";
 import {DEBUGLEVEL} from "../config";
-// import * as elliptic from "elliptic";
 
 let EC = require("elliptic");
-// const { subtle } = require('crypto').webcrypto;
 
 let subtle:any;
 
@@ -57,16 +55,14 @@ export class KeyPair {
     private constructor() {}
     private privKey: Uint8Array;
     private pubKey: Uint8Array;
-    // private key algorithm name
-    // TODO change to private
-    public algorithm: string;
+    private algorithm: string;
     private ethereumPrefix: string = "\u0019Ethereum Signed Message:\n";
 
-    private algorithmASNList: {[index:string]: string} = {
-        secp256k1:  "3081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f3044042000000000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000000704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101",
-        sect283k1:  "3081f806072a8648ce3d02013081ec020101302506072a8648ce3d0102301a0202011b06092a8648ce3d01020303300902010502010702010c304c042400000000000000000000000000000000000000000000000000000000000000000000000004240000000000000000000000000000000000000000000000000000000000000000000000010449040503213f78ca44883f1a3b8162f188e553cd265f23c1567a16876913b0c2ac245849283601ccda380f1c9e318d90f95d07e5426fe87e45c0e8184698e45962364e34116177dd2259022401ffffffffffffffffffffffffffffffffffe9ae2ed07577265dff7f94451e061e163c61020104",
+    private algorithmASNList: {[index:string]: string[]} = {
+        secp256k1:  ["3081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f3044042000000000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000000704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101","06052b8104000a"],
+        sect283k1:  ["3081f806072a8648ce3d02013081ec020101302506072a8648ce3d0102301a0202011b06092a8648ce3d01020303300902010502010702010c304c042400000000000000000000000000000000000000000000000000000000000000000000000004240000000000000000000000000000000000000000000000000000000000000000000000010449040503213f78ca44883f1a3b8162f188e553cd265f23c1567a16876913b0c2ac245849283601ccda380f1c9e318d90f95d07e5426fe87e45c0e8184698e45962364e34116177dd2259022401ffffffffffffffffffffffffffffffffffe9ae2ed07577265dff7f94451e061e163c61020104"],
         // NIST P-256, secp256r1, prime256v1
-        p256: "3081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100ffffffff00000001000000000000000000000000ffffffffffffffffffffffff30440420ffffffff00000001000000000000000000000000fffffffffffffffffffffffc04205ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b0441046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5022100ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551020101"
+        p256: ["3081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100ffffffff00000001000000000000000000000000ffffffffffffffffffffffff30440420ffffffff00000001000000000000000000000000fffffffffffffffffffffffc04205ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b0441046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5022100ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551020101"]
     }
 
     getPrivateAsUint8(): Uint8Array{
@@ -157,11 +153,27 @@ export class KeyPair {
         return me;
     }
 
+    static privateFromKeyDataPEM(pem: string): KeyPair {
+
+        const receiverPrivUint8 = base64ToUint8array(pem);
+        let privateKeyObj: PrivateKeyData = AsnParser.parse(uint8toBuffer( receiverPrivUint8), PrivateKeyData);
+
+        let me = new this();
+        // TODO detect and validate algorithm
+        me.algorithm = me.getAlgorithNameFromASN1(uint8tohex(new Uint8Array(privateKeyObj.algDescr)));
+
+        me.privKey = new Uint8Array(privateKeyObj.privateKey);
+        return me;
+
+    }
+
     getAlgorithNameFromASN1(alg: string): string {
 
         let algEncodings: {[index:string]: string} = {};
         for (const property in this.algorithmASNList) {
-            algEncodings[this.algorithmASNList[property]] = property;
+            this.algorithmASNList[property].forEach((algAsn1:string)=>{
+                algEncodings[algAsn1] = property;
+            })
         }
 
         if (algEncodings.hasOwnProperty(alg)) {
@@ -230,6 +242,12 @@ export class KeyPair {
             //     return '04' + pubPoint.x.toString(16).padStart(64, '0') + pubPoint.y.toString(16).padStart(64, '0')
             if (CURVES.hasOwnProperty(this.algorithm) && EC_CURVES_SUBTLE.hasOwnProperty(this.algorithm)) {
                 let curve = new EC.ec(this.algorithm);
+                if (!this.getPrivateAsHexString()) {
+                    console.log(this);
+                    throw new Error("Cant sign. This is only public key.");
+
+                }
+
                 let key = curve.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
                 return key.getPublic('hex').toString();
             } else {
@@ -248,13 +266,13 @@ export class KeyPair {
         if (!this.algorithm){
             let m = 'algorithm undefined, lets use default.';
             logger(DEBUGLEVEL.VERBOSE, m);
-            pubPointTypeDescrDER = this.algorithmASNList[DEFAULT_ALGORITHM];
+            pubPointTypeDescrDER = this.algorithmASNList[DEFAULT_ALGORITHM][0];
         } else if (!this.algorithmASNList.hasOwnProperty(this.algorithm)){
             let m = 'Fatal Error. Algorithm not implemented yet - '+this.algorithm;
             logger(DEBUGLEVEL.LOW, m);
             throw new Error(m);
         } else {
-            pubPointTypeDescrDER = this.algorithmASNList[this.algorithm];
+            pubPointTypeDescrDER = this.algorithmASNList[this.algorithm][0];
         }
 
         return Asn1Der.encode('SEQUENCE_30',
@@ -270,9 +288,10 @@ export class KeyPair {
         return "0x" + hash.substr(-40).toUpperCase();
     }
 
-    // signMessage(message: string){}
-
     signBytes(bytes: number[]): string{
+        if (!this.getPrivateAsHexString()) {
+            throw new Error("Cant sign. This is only public key.");
+        }
 
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let encodingHash = sha3.keccak256(bytes)
@@ -281,6 +300,10 @@ export class KeyPair {
     }
 
     signStringWithEthereum(message: string): string{
+        if (!this.getPrivateAsHexString()) {
+            throw new Error("Cant sign. This is only public key.");
+        }
+
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let finalMsg = this.ethereumPrefix + message.length + message;
         let encodingHash = sha3.keccak256(stringToArray(finalMsg));
@@ -294,6 +317,7 @@ export class KeyPair {
 
     signBytesWithEthereum(bytes: number[]): string{
         let message = '0x' + uint8tohex(new Uint8Array(bytes));
+        console.log("message: " + message);
         return this.signStringWithEthereum(message);
     }
 
@@ -337,7 +361,7 @@ export class KeyPair {
     verifyHexStringWithEthereum(message: string, signature: string): boolean{
         let finalMsg = '0x' + message;
         let encodingHash = sha3.keccak256(stringToArray(this.ethereumPrefix + finalMsg.length + finalMsg));
-
+        
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
         var m = signature.match(/([a-f\d]{64})/gi);
 
@@ -351,19 +375,29 @@ export class KeyPair {
 
     signRawBytesWithEthereum(bytes: number[]): string{
         let encodingHash = ethers.utils.keccak256(bytes).substring(2);
+        logger(DEBUGLEVEL.HIGH,`signRawBytesWithEthereum: key: ${this.getAddress()}, hash: ${encodingHash}`);
+        if (!this.getPrivateAsHexString()) {
+            throw new Error("Cant sign. This is only public key.");
+        }
         let ecKey = ec.keyFromPrivate(this.getPrivateAsHexString(), 'hex');
         let signatureInstance: SignatureSRV = ecKey.sign(hexStringToUint8( encodingHash));
+
         return ecSignatureToSRVhex(signatureInstance, ecKey);
     }
 
     verifyBytesWithEthereum(bytes: number[], signature: string): boolean{
-        if (!signature || !bytes || !bytes.length) {
+        if (!bytes || !bytes.length) {
             throw new Error('Missing data to verify');
         }
+        if (!signature) {
+            throw new Error('Missing signature to verify');
+        }
+
         // let encodingHash = sha3.keccak256(bytes);
         let encodingHash = hexStringToArray(ethers.utils.keccak256(bytes));
-
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
+
+        logger(DEBUGLEVEL.HIGH, `verifyBytesWithEthereum: key: ${this.getAddress()}, hash: ${uint8tohex(new Uint8Array(encodingHash))}`);
 
         // TODO add signature conversion
         signature = uint8tohex(KeyPair.anySignatureToRawUint8(signature));
@@ -481,11 +515,19 @@ export class KeyPair {
         let output: Uint8Array;
         switch (signatureUint8.length) {
             case 64:
+                logger(DEBUGLEVEL.LOW, `anySignatureToRawUint8 received 64 bytes signature (without v value) = ${uint8tohex(signatureUint8)}`);
+            case 65:
                 output = signatureUint8;
                 break;
-            case 65:
                 // remove last byte ( v ) value
-                output = signatureUint8.slice(0,64);
+                // output = signatureUint8.slice(0,64);
+                // break;
+            case 66:
+                // remove 04 at start
+                if (signatureUint8[0] != 4) {
+                    throw new Error(`Cant recognize signature: ${uint8tohex(signatureUint8)}`);
+                }
+                output = signatureUint8.slice(1,65);
                 break;
             case 70:
             case 71:

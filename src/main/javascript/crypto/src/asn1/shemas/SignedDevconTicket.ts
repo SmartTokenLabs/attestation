@@ -5,6 +5,7 @@ export class DevconTicket {
     @AsnProp({ type: AsnPropTypes.Utf8String }) public devconId: string;
     @AsnProp({ type: AsnPropTypes.Integer }) public ticketId: number;
     @AsnProp({ type: AsnPropTypes.Integer }) public ticketClass: number;
+    @AsnProp({ type: AsnPropTypes.OctetString }) public commitment: Uint8Array;
 }
 
 export class PublicKeyInfo {
@@ -16,9 +17,6 @@ export class SignedDevconTicket {
 
     @AsnProp({ type: DevconTicket })
     public ticket: DevconTicket;
-
-    @AsnProp({ type: AsnPropTypes.OctetString })
-    public commitment: Uint8Array;
 
     @AsnProp({ type: PublicKeyInfo, optional: true })
     public publicKeyInfo?: PublicKeyInfo;

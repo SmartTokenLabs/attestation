@@ -18,16 +18,20 @@ export function hexStringToArray(str: string = '') {
     let strArr = [...str];
     if (strArr.length % 2) strArr.unshift('0');
     let tempStr = '';
-    if (!strArr.length) return [];
-    if (typeof strArr != "undefined" && strArr){
-        while (strArr.length) {
-            tempStr = '';
-            // @ts-ignore
-            tempStr += strArr.shift() + strArr.shift();
-            arr.push(parseInt(tempStr,16));
-        }
-    }
+    if (!strArr || typeof strArr == "undefined" || !strArr.length) return [];
 
+    let tmpVal:number;
+
+    while (strArr.length) {
+        tempStr = '';
+        // @ts-ignore
+        tempStr += strArr.shift() + strArr.shift();
+        tmpVal = parseInt(tempStr,16);
+        if (isNaN(tmpVal)) {
+            throw new Error("hexStringToArray input is not a hex string.");
+        }
+        arr.push(tmpVal);
+    }
     return arr;
 }
 

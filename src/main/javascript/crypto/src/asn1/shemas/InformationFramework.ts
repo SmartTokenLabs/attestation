@@ -17,7 +17,7 @@ export class RelativeDistinguishedName {
 // @AsnType({ type: AsnTypeTypes.Set })
 */
 
-class AttributeTypeAndValue {
+export class AttributeTypeAndValue {
     @AsnProp({ type: AsnPropTypes.ObjectIdentifier })
     type: string;
 

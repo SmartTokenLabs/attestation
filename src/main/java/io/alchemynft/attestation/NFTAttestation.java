@@ -1,48 +1,59 @@
 package io.alchemynft.attestation;
 
-import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.ERC721Token;
-import org.bouncycastle.asn1.*;
+import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-
-import java.io.IOException;
+import org.tokenscript.attestation.ERC721Token;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.core.ASNEncodable;
+import org.tokenscript.attestation.core.Validateable;
 
 public class NFTAttestation implements ASNEncodable, Validateable {
-    private final SignedIdentifierAttestation att;
+    private static final Logger logger = LogManager.getLogger(NFTAttestation.class);
+
+    private final SignedIdentifierAttestation signedIdentifierAttestation;
+    private final ERC721Token[] erc721Tokens;
     private final DERSequence tokens;
 
-    public NFTAttestation(SignedIdentifierAttestation att, ERC721Token[] nftTokens)
+    public NFTAttestation(SignedIdentifierAttestation signedIdentifierAttestation, ERC721Token[] nftTokens)
     {
-        this.att = att;
+        this.signedIdentifierAttestation = signedIdentifierAttestation;
+        this.erc721Tokens = nftTokens;
         ASN1EncodableVector asn1 = new ASN1EncodableVector();
         for (ERC721Token nftToken : nftTokens)
         {
             asn1.add(new DERSequence(nftToken.getTokenVector()));
         }
-
         this.tokens = new DERSequence(asn1);
     }
 
-    public NFTAttestation(byte[] derEncoding, AsymmetricKeyParameter signingPublicKey) throws IOException {
+    public NFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
         ASN1InputStream input = new ASN1InputStream(derEncoding);
         ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-
+        input.close();
         ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
-        this.att = new SignedIdentifierAttestation(attestationEnc.getEncoded(), signingPublicKey);
+        this.signedIdentifierAttestation = new SignedIdentifierAttestation(attestationEnc.getEncoded(), identifierAttestationVerificationKey);
 
         ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
         this.tokens = DERSequence.convert(tokensEnc);
+        this.erc721Tokens = new ERC721Token[tokens.size()];
+        for (int i = 0; i< erc721Tokens.length; i++) {
+            erc721Tokens[i] = new ERC721Token(tokens.getObjectAt(i).toASN1Primitive().getEncoded());
+        }
     }
 
     @Override
     public byte[] getDerEncoding() {
         try {
             ASN1EncodableVector res = new ASN1EncodableVector();
-            res.add(ASN1Primitive.fromByteArray(att.getDerEncoding()));
+            res.add(ASN1Primitive.fromByteArray(signedIdentifierAttestation.getDerEncoding()));
             res.add(tokens);
             return new DERSequence(res).getEncoded();
         } catch (Exception e) {
@@ -50,19 +61,23 @@ public class NFTAttestation implements ASNEncodable, Validateable {
         }
     }
 
-    public AlgorithmIdentifier getSigningAlgorithm() {
-        return att.getUnsignedAttestation().getSigningAlgorithm();
+    public SignedIdentifierAttestation getSignedIdentifierAttestation() {
+        return signedIdentifierAttestation;
     }
 
-    public byte[] getPreHash() {
-        return SignatureUtility.convertToPersonalEthMessage(getDerEncoding());
+    public ERC721Token[] getTokens() {
+        return erc721Tokens;
+    }
+
+    public AlgorithmIdentifier getSigningAlgorithm() {
+        return signedIdentifierAttestation.getUnsignedAttestation().getSigningAlgorithm();
     }
 
     public boolean checkValidity() {
-        return att.checkValidity();
+        return signedIdentifierAttestation.checkValidity();
     }
 
     public boolean verify() {
-        return att.verify();
+        return signedIdentifierAttestation.verify();
     }
 }

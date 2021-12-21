@@ -97,6 +97,7 @@ public class AttestorTest {
     byte[] certBytes = cert.getEncoded();
     ASN1InputStream asnCertStream = new ASN1InputStream(certBytes);
     ASN1Sequence asnCertSeq = ASN1Sequence.getInstance(asnCertStream.readObject());
+    asnCertStream.close();
     // The first object is TBSCert
     return asnCertSeq.getObjectAt(0).toASN1Primitive().getEncoded();
   }
