@@ -162,9 +162,11 @@ group = "org.tokenscript"
 archivesBaseName = "attestation"
 version = "0.3.8"
 
-// See https://docs.gradle.org/current/userguide/publishing_maven.html for details
-// For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
-// at https://central.sonatype.org/publish/release/
+/** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
+ * For actually updating the Maven repo update the version reference in README.md,
+ * then run publishAllPublicationsToMaven and then follow the manual
+ * at https://central.sonatype.org/publish/release/
+ **/
 publishing {
     publications {
         mavenJava(MavenPublication) {
