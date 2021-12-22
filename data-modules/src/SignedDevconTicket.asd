@@ -20,7 +20,7 @@
         <type>
             <sequence>
                 <element name="devconId" type="asnx:UTF8String"/>
-                <element name="ticketId" type="asnx:INTEGER"/>
+                <element name="ticketId" type="TicketId"/>
                 <element name="ticketClass" type="asnx:INTEGER"/>
                 <!-- (currently not specified)
                 <element name="co2_token" type="asnx:OCTET-STRING"/>
@@ -37,6 +37,14 @@
           <element name="signatureAlgorithm" type="AlgorithmIdentifier"/>
           <element name="publicKey" type="asnx:BIT-STRING"/>
         </sequence>
+      </type>
+    </namedType>
+    <namedType name="TicketId">
+      <type>
+        <choice>
+          <element name="integerId" type="asnx:INTEGER"/>
+          <element name="stringId" type="asnx:UTF8String"/>
+        </choice>
       </type>
     </namedType>
 </asnx:module>

@@ -1,19 +1,20 @@
 package org.devcon.ticket;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1UTF8String;
 import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -47,8 +48,14 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
     input.close();
     ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
-    BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
+    String devconId = (ASN1UTF8String.getInstance(ticket.getObjectAt(0))).getString();
+    ASN1Primitive ticketIdObj = ticket.getObjectAt(1).toASN1Primitive();
+    String ticketId;
+    if (ticketIdObj instanceof ASN1Integer) {
+      ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue().toString();
+    } else { // ASN1UTF8String
+      ticketId = (ASN1UTF8String.getInstance(ticket.getObjectAt(1))).getString();
+    }
     int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
     byte[] commitment = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
     /* refactored 2021-01-05 : we don't care about the ticket class set on our level
@@ -78,10 +85,10 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     if (object instanceof ASN1Sequence) {
       // The optional PublicKeyInfo is included
       parseEncodingOfPKInfo((ASN1Sequence) object, devconId);
-      signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
+      signature = ASN1BitString.getInstance(input.getObjectAt(2)).getBytes();
     } else if (object instanceof DERBitString) {
       // Only the signature is included
-      signature = DERBitString.getInstance(input.getObjectAt(1)).getBytes();
+      signature = ASN1BitString.getInstance(input.getObjectAt(1)).getBytes();
     } else {
       throw ExceptionUtil.throwException(logger,
           new IllegalArgumentException("Invalid ticket encoding"));
@@ -91,7 +98,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
 
   private void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(publicKeyInfo.getObjectAt(0));
-    byte[] publicKeyBytes = DERBitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
+    byte[] publicKeyBytes = ASN1BitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
     AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreDefaultKey(algorithm, publicKeyBytes);
       SubjectPublicKeyInfo decodedSpki = SubjectPublicKeyInfoFactory
           .createSubjectPublicKeyInfo(decodedPublicKey);

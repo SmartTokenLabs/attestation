@@ -16,7 +16,7 @@ SignedDevconTicket ::= SEQUENCE {
 
 DevconTicket ::= SEQUENCE {
     devconId         UTF8String,
-    ticketId         INTEGER,
+    ticketId         TicketId,
     ticketClass      INTEGER,
 --  (currently not specified)      --
 --  co2_token         OCTET STRING --
@@ -26,6 +26,11 @@ DevconTicket ::= SEQUENCE {
 PublicKeyInfo ::= SEQUENCE {
     algorithm       AlgorithmIdentifier,
     publicKey       BIT STRING
+}
+
+TicketId ::= CHOICE {
+  integerId        INTEGER,
+  stringId         UTF8String
 }
 
 END
