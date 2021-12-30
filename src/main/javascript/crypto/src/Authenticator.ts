@@ -135,10 +135,11 @@ export class Authenticator {
         iframe.style.width = '800px';
         iframe.style.height = '700px';
         iframe.style.maxWidth = '100%';
+        iframe.style.border = 'none';
         iframe.style.background = '#fff';
         let iframeWrap = document.createElement('div');
         this.iframeWrap = iframeWrap;
-        iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #fffa');
+        iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #000a');
         iframeWrap.appendChild(iframe);
 
         document.body.appendChild(iframeWrap);
