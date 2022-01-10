@@ -35,17 +35,25 @@ public class NFTAttestation implements ASNEncodable, Validateable {
     }
 
     public NFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
-        ASN1InputStream input = new ASN1InputStream(derEncoding);
-        ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-        input.close();
-        ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
-        this.signedIdentifierAttestation = new SignedIdentifierAttestation(attestationEnc.getEncoded(), identifierAttestationVerificationKey);
+        ASN1InputStream input = null;
+        try {
+            input = new ASN1InputStream(derEncoding);
+            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+            input.close();
+            ASN1Sequence attestationEnc = ASN1Sequence.getInstance(
+                asn1.getObjectAt(0)); //root attestation, should be signed att
+            this.signedIdentifierAttestation = new SignedIdentifierAttestation(
+                attestationEnc.getEncoded(), identifierAttestationVerificationKey);
 
-        ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
-        this.tokens = DERSequence.convert(tokensEnc);
-        this.erc721Tokens = new ERC721Token[tokens.size()];
-        for (int i = 0; i< erc721Tokens.length; i++) {
-            erc721Tokens[i] = new ERC721Token(tokens.getObjectAt(i).toASN1Primitive().getEncoded());
+            ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
+            this.tokens = DERSequence.convert(tokensEnc);
+            this.erc721Tokens = new ERC721Token[tokens.size()];
+            for (int i = 0; i < erc721Tokens.length; i++) {
+                erc721Tokens[i] = new ERC721Token(
+                    tokens.getObjectAt(i).toASN1Primitive().getEncoded());
+            }
+        } finally {
+            input.close();
         }
     }
 

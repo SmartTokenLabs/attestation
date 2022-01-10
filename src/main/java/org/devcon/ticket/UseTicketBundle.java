@@ -64,7 +64,7 @@ public class UseTicketBundle implements Verifiable {
 
   private byte[] computeMessage(UnpredictableNumberBundle currentUn) {
     Date expirationDate = new Date(currentUn.getExpiration());
-    String expirationString = Timestamp.TIMESTAMP_FORMAT.format(expirationDate);
+    String expirationString = Timestamp.getTimestampFormat().format(expirationDate);
     String messageToSignString =  "Authenticate towards \"" + currentUn.getDomain() + "\" using unpredictable number \"" + currentUn.getNumber()
         + "\" for an authentication valid until " + expirationString;
     return messageToSignString.getBytes(StandardCharsets.UTF_8);

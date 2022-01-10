@@ -3,6 +3,7 @@ package io.alchemynft.attestation;
 import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -60,23 +61,30 @@ public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
     }
 
     public SignedNFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
-        ASN1InputStream input = new ASN1InputStream(derEncoding);
-        ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-        input.close();
-        int currentPos = 0;
-        ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos++));
-        this.att = new NFTAttestation(nftEncoding.getEncoded(), identifierAttestationVerificationKey);
-        if (asn1.getObjectAt(currentPos) instanceof ASN1Integer) {
-            this.signingVersion = ASN1Integer.getInstance(asn1.getObjectAt(currentPos++)).intValueExact();
-        } else {
-            // If signingVersion is not present we default to version 1
-            this.signingVersion = 1;
+        ASN1InputStream input = null;
+        try {
+            input = new ASN1InputStream(derEncoding);
+            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+            int currentPos = 0;
+            ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos++));
+            this.att = new NFTAttestation(nftEncoding.getEncoded(),
+                identifierAttestationVerificationKey);
+            if (asn1.getObjectAt(currentPos) instanceof ASN1Integer) {
+                this.signingVersion = ASN1Integer.getInstance(asn1.getObjectAt(currentPos++))
+                    .intValueExact();
+            } else {
+                // If signingVersion is not present we default to version 1
+                this.signingVersion = 1;
+            }
+            // todo this actually not used
+            AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(
+                asn1.getObjectAt(currentPos++));
+            ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(currentPos++));
+            this.signature = makeSignature(signatureEnc.getBytes(), signingVersion);
+            this.attestationVerificationKey = getKeyFromAttestation();
+        } finally {
+            input.close();
         }
-        // todo this actually not used
-        AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(asn1.getObjectAt(currentPos++));
-        DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(currentPos++));
-        this.signature = makeSignature(signatureEnc.getBytes(), signingVersion);
-        this.attestationVerificationKey = getKeyFromAttestation();
     }
 
     private int determineSigningVersion() {
