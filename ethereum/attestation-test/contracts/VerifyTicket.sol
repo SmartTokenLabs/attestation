@@ -4,7 +4,7 @@
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-contract VerifyAttestation {
+contract VerifyTicket {
     address payable owner;
 
     bytes1 constant BOOLEAN_TAG         = bytes1(0x01);
@@ -66,6 +66,8 @@ contract VerifyAttestation {
     bytes constant HPoint = abi.encodePacked(uint8(0x04), uint256(10844896013696871595893151490650636250667003995871483372134187278207473369077),
         uint256(9393217696329481319187854592386054938412168121447413803797200472841959383227));
 
+    bytes constant emptyBytes = new bytes(0x00);
+
     uint256 callCount;
 
     struct FullProofOfExponent {
@@ -97,6 +99,21 @@ contract VerifyAttestation {
         else
         {
             revert();
+        }
+    }
+
+    function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) public view returns(address subject, bytes memory ticketId)
+    {
+        //ensure the attestor and issuer keys are correct
+        address recoveredAttestor;
+        address recoveredIsuer;
+
+        (recoveredAttestor, recoveredIsuer, subject, ticketId) = verifyTicketAttestation(attestation);
+
+        if (recoveredAttestor != attestor || recoveredIsuer != ticketIssuer)
+        {
+            subject = address(0);
+            ticketId = emptyBytes;
         }
     }
 
@@ -237,32 +254,35 @@ contract VerifyAttestation {
 
     function getAttestationTimestamp(bytes memory attestation) public pure returns(string memory startTime, string memory endTime)
     {
+        uint256 decodeIndex = 0;
         uint256 length = 0;
-        uint256 nIndex = 0;
-        uint256 tag;
+
+        (length, decodeIndex, ) = decodeLength(attestation, 0); //852 (total length, primary header)
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //Ticket (should be 163)
+        (startTime, endTime) = getAttestationTimestamp(attestation, decodeIndex + length);
+    }
+
+    function getAttestationTimestamp(bytes memory attestation, uint256 decodeIndex) public pure returns(string memory startTime, string memory endTime)
+    {
+        uint256 length = 0;
         bytes memory timeData;
 
-        (length, nIndex, tag) = decodeLength(attestation, nIndex); //move past overall size
-        (length, nIndex, tag) = decodeLength(attestation, nIndex); //move past token wrapper size
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //576  (SignedIdentifierAttestation)
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //493  (IdentifierAttestation)
 
-        //now into PublicAttestation
-        (length, nIndex, tag) = decodeLength(attestation, nIndex); //nIndex is start of prehash
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //read Version
 
-        (length, nIndex, tag) = decodeLength(attestation, nIndex); // length of prehash is decodeIndex (result) - nIndex
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Serial
 
-        (length, nIndex, tag) = decodeLength(attestation, nIndex); // Version
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Signature type (9) 1.2.840.10045.2.1
 
-        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Serial
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
 
-        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Signature type (9) 1.2.840.10045.2.1
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Validity time
 
-        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
-
-        (length, nIndex, tag) = decodeLength(attestation, nIndex + length); // Time sequence header
-
-        (length, timeData, nIndex, ) = decodeElement(attestation, nIndex);
+        (length, timeData, decodeIndex, ) = decodeElement(attestation, decodeIndex);
         startTime = copyStringBlock(timeData);
-        (length, timeData, nIndex, ) = decodeElement(attestation, nIndex);
+        (length, timeData, decodeIndex, ) = decodeElement(attestation, decodeIndex);
         endTime = copyStringBlock(timeData);
     }
 
