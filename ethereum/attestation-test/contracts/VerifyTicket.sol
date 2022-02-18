@@ -134,7 +134,7 @@ contract VerifyTicket {
 
         (attestor, subject, commitment1, decodeIndex) = recoverSignedIdentifierAddress(attestation, decodeIndex);
 
-        //now pull POK data
+        //now pull ZK (Zero-Knowledge) POK (Proof Of Knowledge) data
         (pok, decodeIndex) = recoverPOK(attestation, decodeIndex);
 
         if (!verifyPOK(commitment1, commitment2, pok))
@@ -319,14 +319,20 @@ contract VerifyTicket {
         riddle = ecAdd(lhs, rhs);
     }
 
-    // Verify ZK proof of equality of message in two Pedersen commitments by proving knowledge of
-    // the discrete log of their difference.
-    // This verifies that the message (identifier) in both commitments are the same, and the one
-    // constructing the proof knows the secret of both these commitments.
-    // See:
-    // Commitment1: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/IdentifierAttestation.java
-    // Commitment2: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/devcon/ticket/Ticket.java
-    // Reference implementation: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/core/AttestationCrypto.java
+    /* Verify ZK (Zero-Knowledge) proof of equality of message in two
+       Pedersen commitments by proving knowledge of the discrete log
+       of their difference. This verifies that the message
+       (identifier, such as email address) in both commitments are the
+       same, and the one constructing the proof knows the secret of
+       both these commitments.  See:
+     
+     Commitment1: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/IdentifierAttestation.java
+     
+     Commitment2: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/devcon/ticket/Ticket.java
+     
+     Reference implementation: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/core/AttestationCrypto.java
+    */
+    
     function verifyPOK(bytes memory com1, bytes memory com2, FullProofOfExponent memory pok) private view returns(bool)
     {
         // Riddle is H*(r1-r2) with r1, r2 being the secret randomness of com1, respectively com2
