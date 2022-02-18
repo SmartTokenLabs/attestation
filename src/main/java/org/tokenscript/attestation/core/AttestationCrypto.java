@@ -1,9 +1,5 @@
 package org.tokenscript.attestation.core;
 
-import org.tokenscript.attestation.FullProofOfExponent;
-import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import org.tokenscript.attestation.ProofOfExponent;
-import org.tokenscript.attestation.UsageProofOfExponent;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -23,16 +19,23 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECCurve.Fp;
 import org.bouncycastle.math.ec.ECPoint;
+import org.tokenscript.attestation.FullProofOfExponent;
+import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.ProofOfExponent;
+import org.tokenscript.attestation.UsageProofOfExponent;
 
 public class AttestationCrypto {
   private static final Logger logger = LogManager.getLogger(AttestationCrypto.class);
 
   public static final int BYTES_IN_DIGEST = 256 / 8;
   public static final BigInteger fieldSize = new BigInteger("21888242871839275222246405745257275088696311157297823662689037894645226208583");
-  // IMPORTANT: if another group is used then curveOrder should be the largest subgroup order
+  // IMPORTANT: If another group is used then curveOrder should be the largest subgroup order and it should be ensured that G and H lie on this subgroup!
   public static final BigInteger curveOrder = new BigInteger("21888242871839275222246405745257275088548364400416034343698204186575808495617");
   // NOTE: Curve order for BN256 is 254 bit
+  // Security is equivalent to about 100 bits, it has been decided to be "good enough" for this application since other curves would be significantly more expensive to use on Ethereum
+  // See https://eips.ethereum.org/EIPS/eip-3068 for details
   public static final int curveOrderBitLength = 254; // minus 1 since the bitcount includes an extra bit for sign since BigInteger is two's complement
+  // IMPORTANT: This should be updated and taken into account when sampling generators if the group is changed
   public static final BigInteger cofactor = new BigInteger("1");
   public static final ECCurve curve = new Fp(fieldSize, BigInteger.ZERO, new BigInteger("3"), curveOrder, cofactor);
   // Generator for message part of Pedersen commitments generated deterministically from mapToInteger queried on 0 and mapped to the curve using try-and-increment
@@ -164,7 +167,8 @@ public class AttestationCrypto {
   private FullProofOfExponent constructSchnorrPOK(ECPoint riddle, BigInteger exponent, List<ECPoint> challengePoints, byte[] unpredictableNumber) {
     ECPoint t;
     BigInteger hiding, c, d;
-    // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder
+    // Use rejection sampling to sample a hiding value s.t. the random oracle challenge c computed from it is less than curveOrder.
+    // This is needed to prevent bias in the randomness. Even small bias can causes issues for some curves, see for example https://eprint.iacr.org/2020/615.pdf
     do {
       hiding = makeSecret();
       t = H.multiply(hiding);
@@ -272,6 +276,13 @@ public class AttestationCrypto {
   }
 
   public static ECPoint decodePoint(byte[] point) {
-    return curve.decodePoint(point).normalize();
+    ECPoint ecPoint = curve.decodePoint(point).normalize();
+    // Check that the point is actually on the curve to prevent invalid curve attacks, throws exception if not
+    curve.validatePoint(ecPoint.getXCoord().toBigInteger(), ecPoint.getYCoord().toBigInteger());
+    // Check there is no subgroup attack
+    if (!cofactor.equals(BigInteger.ONE)) {
+      throw new InternalError("We have only implemented checks for curves with cofactor 1");
+    }
+    return ecPoint;
   }
 }
