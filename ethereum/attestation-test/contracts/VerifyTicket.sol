@@ -123,7 +123,9 @@ contract VerifyTicket {
         uint256 decodeIndex = 0;
         uint256 length = 0;
         FullProofOfExponent memory pok;
+        // Commitment to user identifier in Attestation
         bytes memory commitment1;
+        // Commitment to user identifier in Ticket
         bytes memory commitment2;
 
         (length, decodeIndex, ) = decodeLength(attestation, 0); //852 (total length, primary header)
@@ -317,16 +319,20 @@ contract VerifyTicket {
         riddle = ecAdd(lhs, rhs);
     }
 
-    // Verify Proof Of Knowledge
-    // forming a zk meta-proof that the two Pedersen commitments represent the same data
-    // this verifies the integrity of the data; the actual data can be optionally revealed by the attestation holder
+    // Verify ZK proof of equality of message in two Pedersen commitments by proving knowledge of
+    // the discrete log of their difference.
+    // This verifies that the message (identifier) in both commitments are the same, and the one
+    // constructing the proof knows the secret of both these commitments.
     // See:
     // Commitment1: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/IdentifierAttestation.java
     // Commitment2: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/devcon/ticket/Ticket.java
+    // Reference implementation: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/core/AttestationCrypto.java
     function verifyPOK(bytes memory com1, bytes memory com2, FullProofOfExponent memory pok) private view returns(bool)
     {
+        // Riddle is H*(r1-r2) with r1, r2 being the secret randomness of com1, respectively com2
         uint256[2] memory riddle = getRiddle(com1, com2);
 
+        // Compute challenge in a Fiat-Shamir style, based on context specific entropy to avoid reuse of proof
         bytes memory cArray = abi.encodePacked(HPoint, com1, com2, pok.tPoint, pok.entropy);
         uint256 c = mapToCurveMultiplier(cArray);
 
