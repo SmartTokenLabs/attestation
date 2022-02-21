@@ -63,7 +63,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     }
 
      */
-    byte[] signature = parsePKandSignature(asn1, devconId);
+    byte[] signature = parsePKandSignature(asn1, devconId, 1);
     return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
   }
 
@@ -72,16 +72,16 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
    * @param input The encoded Ticket
    * @return
    */
-  private byte[] parsePKandSignature(ASN1Sequence input, String devconId) throws IOException, IllegalArgumentException{
+  byte[] parsePKandSignature(ASN1Sequence input, String devconId, int asnBaseIdx) throws IOException, IllegalArgumentException{
     byte[] signature;
-    ASN1Encodable object = input.getObjectAt(1);
+    ASN1Encodable object = input.getObjectAt(asnBaseIdx);
     if (object instanceof ASN1Sequence) {
       // The optional PublicKeyInfo is included
       parseEncodingOfPKInfo((ASN1Sequence) object, devconId);
-      signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
+      signature = DERBitString.getInstance(input.getObjectAt(asnBaseIdx+1)).getBytes();
     } else if (object instanceof DERBitString) {
       // Only the signature is included
-      signature = DERBitString.getInstance(input.getObjectAt(1)).getBytes();
+      signature = DERBitString.getInstance(input.getObjectAt(asnBaseIdx)).getBytes();
     } else {
       throw ExceptionUtil.throwException(logger,
           new IllegalArgumentException("Invalid ticket encoding"));
@@ -89,7 +89,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     return signature;
   }
 
-  private void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
+  void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(publicKeyInfo.getObjectAt(0));
     byte[] publicKeyBytes = DERBitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
     AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreDefaultKey(algorithm, publicKeyBytes);
@@ -107,7 +107,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     idsToKeys.put(devconId, decodedPublicKey);
   }
 
-  private AsymmetricKeyParameter getPk(String devconId) {
+  AsymmetricKeyParameter getPk(String devconId) {
     AsymmetricKeyParameter pk;
     if (idsToKeys.get(devconId) != null) {
       pk = idsToKeys.get(devconId);
