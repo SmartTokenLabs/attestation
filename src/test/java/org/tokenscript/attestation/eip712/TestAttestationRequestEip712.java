@@ -147,8 +147,8 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey);
-
-    mockedEncoder = spy(Eip712AttestationRequestEncoder.class);
+    Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LEGACY_USAGE_VALUE);
+    mockedEncoder = spy(encoder);
     Mockito.when(mockedEncoder.getUsageValue()).thenReturn("Something wrong");
     Eip712AttestationRequest badRequest = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, request.getJsonEncoding(), mockedEncoder);
     assertTrue(badRequest.verify());
