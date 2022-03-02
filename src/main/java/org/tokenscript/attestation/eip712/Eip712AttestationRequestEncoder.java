@@ -14,10 +14,11 @@ public class Eip712AttestationRequestEncoder extends Eip712Encoder {
 
   private static final String PROTOCOL_VERSION = "0.1";
   private static final String PRIMARY_NAME = "AttestationRequest";
-  private static final String USAGE_VALUE = "Linking Ethereum address to phone or email";
+  public static final String LEGACY_USAGE_VALUE = "Linking Ethereum address to phone or email";
+  public static final String LISCON_USAGE_VALUE = "Creating email attestation";
 
-  public Eip712AttestationRequestEncoder() {
-    super(USAGE_VALUE, PROTOCOL_VERSION, PRIMARY_NAME);
+  public Eip712AttestationRequestEncoder(String usageValue) {
+    super(usageValue, PROTOCOL_VERSION, PRIMARY_NAME);
   }
 
   public HashMap<String, List<Entry>> getTypes() {

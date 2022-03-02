@@ -97,7 +97,7 @@ public class Ticket implements Attestable {
     }
   }
 
-  private ASN1Sequence makeTicket() {
+  ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new DERUTF8String(devconId));
     ticket.add(new ASN1Integer(ticketId));
@@ -106,14 +106,14 @@ public class Ticket implements Attestable {
     return new DERSequence(ticket);
   }
 
-  private byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
+  byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
     ASN1EncodableVector signedTicket = new ASN1EncodableVector();
     signedTicket.add(ticket);
     signedTicket.add(new DERBitString(signature));
     return new DERSequence(signedTicket).getEncoded();
   }
 
-  public byte[] getDerEncodingWithPK() {
+  byte[] getDerEncodingWithPK() {
     try {
       ASN1Sequence ticket = makeTicket();
       ASN1EncodableVector signedTicket = new ASN1EncodableVector();

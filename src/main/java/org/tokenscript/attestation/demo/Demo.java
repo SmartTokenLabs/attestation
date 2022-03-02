@@ -3,28 +3,6 @@ package org.tokenscript.attestation.demo;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
-import org.tokenscript.attestation.AttestationRequest;
-import org.tokenscript.attestation.AttestationAndUsageValidator;
-import org.tokenscript.attestation.AttestationRequestWithUsage;
-import org.tokenscript.attestation.AttestedObject;
-import org.tokenscript.attestation.FullProofOfExponent;
-import org.tokenscript.attestation.IdentifierAttestation;
-import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.UseAttestation;
-import org.tokenscript.attestation.cheque.Cheque;
-import org.tokenscript.attestation.cheque.ChequeDecoder;
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.DERUtility;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.core.Verifiable;
-import org.tokenscript.attestation.eip712.Eip712AttestationRequest;
-import org.tokenscript.attestation.eip712.Eip712AttestationRequestWithUsage;
-import org.tokenscript.attestation.eip712.Eip712AttestationUsage;
-import org.tokenscript.attestation.eip712.Nonce;
-import org.tokenscript.attestation.Timestamp;
-import org.tokenscript.attestation.eip712.TokenValidateable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +29,28 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.tokenscript.attestation.AttestationAndUsageValidator;
+import org.tokenscript.attestation.AttestationRequest;
+import org.tokenscript.attestation.AttestationRequestWithUsage;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.FullProofOfExponent;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.Timestamp;
+import org.tokenscript.attestation.UseAttestation;
+import org.tokenscript.attestation.cheque.Cheque;
+import org.tokenscript.attestation.cheque.ChequeDecoder;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.DERUtility;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.Verifiable;
+import org.tokenscript.attestation.eip712.Eip712AttestationRequest;
+import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder;
+import org.tokenscript.attestation.eip712.Eip712AttestationRequestWithUsage;
+import org.tokenscript.attestation.eip712.Eip712AttestationUsage;
+import org.tokenscript.attestation.eip712.Nonce;
+import org.tokenscript.attestation.eip712.TokenValidateable;
 
 public class Demo {
   static SecureRandom rand = new SecureRandom();
@@ -344,7 +344,8 @@ public class Demo {
     byte[] nonce = Nonce.makeNonce(address, ATTESTOR_DOMAIN, new Timestamp());
     FullProofOfExponent pok = crypto.computeAttestationProof(secret, nonce);
     AttestationRequest attRequest = new AttestationRequest(type, pok);
-    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, receiverId, attRequest, keys.getPrivate());
+    Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(ATTESTOR_DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, receiverId, attRequest, keys.getPrivate(), encoder);
     Files.write(outputDirRequest, request.getJsonEncoding().getBytes(StandardCharsets.UTF_8),
         CREATE, TRUNCATE_EXISTING);
     DERUtility.writePEM(DERUtility.encodeSecret(secret), "SECRET", outputDirSecret);
@@ -372,9 +373,7 @@ public class Demo {
       long validityInMilliseconds, Path pathRequest, Path attestationDir) throws Exception {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathAttestorKey));
     String jsonRequest = String.join("", Files.readAllLines(pathRequest));
-    Eip712AttestationRequest attestationRequest = new Eip712AttestationRequest(ATTESTOR_DOMAIN, jsonRequest);
-    checkAttestRequestVerifiability(attestationRequest);
-    checkAttestRequestValidity(attestationRequest);
+    Eip712AttestationRequest attestationRequest = Eip712AttestationRequest.decodeAndValidateAttestation(ATTESTOR_DOMAIN, jsonRequest);
     byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
     IdentifierAttestation att = new IdentifierAttestation(commitment, attestationRequest.getUserPublicKey());
     att.setIssuer("CN=" + issuerName);
@@ -391,8 +390,8 @@ public class Demo {
     AsymmetricCipherKeyPair keys = DERUtility.restoreBase64Keys(Files.readAllLines(pathAttestorKey));
     String jsonRequest = String.join("", Files.readAllLines(pathRequest));
     Eip712AttestationRequestWithUsage attestationRequest = new Eip712AttestationRequestWithUsage(ATTESTOR_DOMAIN, jsonRequest);
-    checkAttestRequestVerifiability(attestationRequest);
-    checkAttestRequestValidity(attestationRequest);
+    Eip712AttestationRequestWithUsage.checkAttestRequestVerifiability(attestationRequest);
+    Eip712AttestationRequestWithUsage.checkAttestRequestValidity(attestationRequest);
     byte[] commitment = AttestationCrypto.makeCommitment(attestationRequest.getIdentifier(), attestationRequest.getType(), attestationRequest.getPok().getRiddle());
     IdentifierAttestation att = new IdentifierAttestation(commitment, attestationRequest.getUserPublicKey());
     att.setIssuer("CN=" + issuerName);
@@ -402,19 +401,6 @@ public class Demo {
     att.setNotValidAfter(new Date(Clock.systemUTC().millis() + validityInMilliseconds));
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, keys);
     DERUtility.writePEM(signed.getDerEncoding(), "ATTESTATION", attestationDir);
-  }
-
-  private static void checkAttestRequestVerifiability(Verifiable input) {
-    if (!input.verify()) {
-      System.err.println("Could not verify attestation signing request");
-      throw new RuntimeException("Verification failed");
-    }
-  }
-  private static void checkAttestRequestValidity(Validateable input) {
-    if (!input.checkValidity()) {
-      System.err.println("Could not validate attestation signing request");
-      throw new RuntimeException("Validation failed");
-    }
   }
 
   private static void useAttest(AttestationCrypto crypto, Path pathUserKey, Path attestationDir, Path pathAttestationSecret, Path attestorVerificationKey,
