@@ -1,0 +1,7 @@
+// This config file contains Mocha's defaults.
+// This same configuration could be provided in the `mocha` property of your
+// project's `package.json`.
+{
+  "require": "ts-node/register/files",
+  "timeout": "50000"
+}

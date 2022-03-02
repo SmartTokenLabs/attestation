@@ -14,6 +14,8 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
+
+import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -146,8 +148,6 @@ public class UseTicketTest {
     assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
   }
 
-  // TODO Solidity code should be updated, see https://github.com/TokenScript/attestation/issues/196
-  @Disabled
   @Test
   public void testSmartContractDecode() throws Exception {
     //try building all components
@@ -156,7 +156,6 @@ public class UseTicketTest {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
-    // TODO @James solidity code needs to be updated since the ticket format has changed
     //now attempt to dump data from contract:
     TicketAttestationReturn tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
 
@@ -164,6 +163,7 @@ public class UseTicketTest {
     assertTrue(tar.subjectAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(subjectKeys.getPublic())));
     assertTrue(tar.issuerAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic())));
     assertTrue(tar.attestorAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(attestorKeys.getPublic())));
+    assertEquals(Numeric.toBigInt(tar.ticketId), TICKET_ID);
   }
 
   @Test

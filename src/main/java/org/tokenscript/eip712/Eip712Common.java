@@ -10,6 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.Validateable;
+import org.tokenscript.attestation.core.Verifiable;
 
 /**
  * Common class for EIP712 JSON issuance and validation
@@ -45,5 +47,16 @@ public abstract class Eip712Common {
       return false;
     }
     return true;
+  }
+
+  public static void checkAttestRequestVerifiability(Verifiable input) {
+    if (!input.verify()) {
+      throw new RuntimeException("Verification failed");
+    }
+  }
+  public static void checkAttestRequestValidity(Validateable input) {
+    if (!input.checkValidity()) {
+      throw new RuntimeException("Validation failed");
+    }
   }
 }

@@ -32,7 +32,7 @@ public class SmartContract {
   private static final String ATTESTATION_CHECKING_CONTRACT = "0xBfF9E858796Bc8443dd1026D14Ae018EfBE87aD5";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   private static final String ATTESTATION_VERIFICATION_CONTRACT = "0xE5Eb8348f5dFcA8D6BF82A0DBcA461110F9FE1c9";
-  private static final String TICKET_VERIFICATION_CONTRACT = "0x5Fc044Dd56e501C5D9094375fEDa0e4256838330";
+  private static final String TICKET_VERIFICATION_CONTRACT = "0x48DfE3135Bb0eF563a2E8Fbf564E312484e5C19c";
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
   {
@@ -62,10 +62,10 @@ public class SmartContract {
 
     if (responseValues.size() == 4)
     {
-      retVal.subjectAddress = responseValues.get(0).getValue().toString();
-      retVal.ticketId = (byte[])responseValues.get(1).getValue();
-      retVal.issuerAddress = responseValues.get(2).getValue().toString();
-      retVal.attestorAddress = responseValues.get(3).getValue().toString();
+      retVal.attestorAddress = responseValues.get(0).getValue().toString();
+      retVal.issuerAddress = responseValues.get(1).getValue().toString();
+      retVal.subjectAddress = responseValues.get(2).getValue().toString();
+      retVal.ticketId = (byte[]) responseValues.get(3).getValue();
     }
 
     return retVal;
@@ -219,10 +219,11 @@ public class SmartContract {
     return new Function(
             "verifyTicketAttestation",
             Arrays.asList(new DynamicBytes(encoding)),
-            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, //Subject
-                    new TypeReference<DynamicBytes>() {}, //TicketId
+            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, //Attestor
                     new TypeReference<Address>() {},      //Issuer
-                    new TypeReference<Address>() {}));    //Attestor
+                    new TypeReference<Address>() {},      //Subject
+                    new TypeReference<DynamicBytes>() {}  //TicketId
+            ));
   }
 
   protected static org.web3j.abi.datatypes.DynamicArray<?> getERC721Array(ERC721Token token)

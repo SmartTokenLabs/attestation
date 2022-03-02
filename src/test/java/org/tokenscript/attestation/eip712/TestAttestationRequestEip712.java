@@ -35,7 +35,7 @@ public class TestAttestationRequestEip712 {
   private static final String MAIL = "test@test.ts";
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
   private static final AttestationType TYPE = AttestationType.EMAIL;
-  private static final Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder();
+  private static final Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE);
 
   private static AsymmetricKeyParameter userSigningKey;
   private static String userAddress;
@@ -71,7 +71,7 @@ public class TestAttestationRequestEip712 {
   public void referenceJsonFormat() {
     String request = "{\"signatureInHex\":\"0x439cfdc3422621c1a77ad12bdf19e80876ddd7317b59055f352fe8d03a3dabba64c1a628321997b260658b098b490f6455c8724bffa859ec191d248a9e5015de1b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAgIBATCB_ARBBBmSwTCP4VSOr07WYbuIZjR6oUIigLCB-o_ygrN2b2xxHKXEocXBQM3NLqQ5OkRuj0ogmOpKgwn7LhWYWkqNzvMEICJmtJRx1tdMmkl2aurO3CCzauIr2G3rsR0VoUkub2M6BEEECsnXLNQdO2PgaHzQWGWg4KAQ4IvSkn1hPJotLPXMhPIuZeSry7aaOEQt64wyXUolp8an18193r5MKhfZ-E3AjQRSMFg3QTE4MUNCNzI1MDc3NkUxNjc4M0Y5RDNDOTE2NkRFMEY5NUFCMjgzr4crx6TxqXpXW2o9byWM8Ya4h7ATlfLav-aSz8hWQ8YAAAF41bojKA==\\\",\\\"description\\\":\\\"Linking Ethereum address to phone or email\\\",\\\"timestamp\\\":\\\"Thu Apr 15 2021 15:30:49 GMT+0200\\\",\\\"identifier\\\":\\\"test@test.ts\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
     Eip712AttestationRequest eiprequest = new Eip712AttestationRequest(DOMAIN, Timestamp.UNLIMITED,
-        request);
+        request, new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LEGACY_USAGE_VALUE));
     assertTrue(eiprequest.verify());
     assertTrue(eiprequest.checkValidity());
   }
@@ -153,6 +153,21 @@ public class TestAttestationRequestEip712 {
     Eip712AttestationRequest badRequest = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, request.getJsonEncoding(), mockedEncoder);
     assertTrue(badRequest.verify());
     assertFalse(badRequest.checkValidity());
+  }
+
+  @Test
+  public void automaticDecoder() {
+    byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
+    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS,
+        MAIL, attRequest, userSigningKey, new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LEGACY_USAGE_VALUE));
+    assertTrue(request.verify());
+    assertTrue(request.checkValidity());
+    Eip712AttestationRequest decodedRequest = Eip712AttestationRequest.decodeAndValidateAttestation(DOMAIN, request.getJsonEncoding());
+    assertTrue(decodedRequest.verify());
+    assertTrue(decodedRequest.checkValidity());
+    assertEquals(request.getJsonEncoding(), decodedRequest.getJsonEncoding());
   }
 
   @Test
@@ -267,5 +282,20 @@ public class TestAttestationRequestEip712 {
     assertFalse(request.checkValidity());
   }
 
+  @Test
+  public void invalidEncoder() {
+    byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
+    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS,
+        MAIL, attRequest, userSigningKey, new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LEGACY_USAGE_VALUE));
+    assertTrue(request.verify());
+    assertTrue(request.checkValidity());
+    // Decode with wrong encoder
+    Eip712AttestationRequest decodedRequest = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS,
+        request.getJsonEncoding(), new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE));
+    assertTrue(decodedRequest.verify());
+    assertFalse(decodedRequest.checkValidity());
+  }
 
 }

@@ -28,14 +28,41 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   private final AsymmetricKeyParameter publicKey;
   private final long acceptableTimeLimit;
 
+  public static Eip712AttestationRequest decodeAndValidateAttestation(String attestorDomain, String jsonEncoding) {
+    Eip712AttestationRequest attestationRequest;
+    try {
+      // Try with Liscon encoder
+      Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE);
+      attestationRequest = new Eip712AttestationRequest(attestorDomain,
+          Timestamp.DEFAULT_TIME_LIMIT_MS, jsonEncoding, encoder);
+      checkAttestRequestVerifiability(attestationRequest);
+      checkAttestRequestValidity(attestationRequest);
+    } catch (Exception e) {
+      // Try with legacy encoding
+      Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LEGACY_USAGE_VALUE);
+      attestationRequest = new Eip712AttestationRequest(attestorDomain,
+          Timestamp.DEFAULT_TIME_LIMIT_MS, jsonEncoding, encoder);
+      checkAttestRequestVerifiability(attestationRequest);
+      checkAttestRequestValidity(attestationRequest);
+    }
+    return attestationRequest;
+  }
+
   public Eip712AttestationRequest(String attestorDomain, String identifier,
       AttestationRequest request, AsymmetricKeyParameter signingKey) {
     this(attestorDomain, Timestamp.DEFAULT_TIME_LIMIT_MS, identifier, request, signingKey);
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
-      String identifier, AttestationRequest request, AsymmetricKeyParameter signingKey) {
-    super(attestorDomain,  new Eip712AttestationRequestEncoder());
+      String identifier, AttestationRequest request,
+      AsymmetricKeyParameter signingKey) {
+    this(attestorDomain, acceptableTimeLimit, identifier, request, signingKey, new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE));
+  }
+
+  public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
+      String identifier, AttestationRequest request,
+      AsymmetricKeyParameter signingKey, Eip712AttestationRequestEncoder encoder) {
+    super(attestorDomain, encoder);
     try {
       this.acceptableTimeLimit = acceptableTimeLimit;
       this.attestationRequest = request;
@@ -55,11 +82,11 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
       String jsonEncoding) {
-    this(attestorDomain, acceptableTimeLimit, jsonEncoding, new Eip712AttestationRequestEncoder());
+    this(attestorDomain, acceptableTimeLimit, jsonEncoding, new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE));
   }
 
   public Eip712AttestationRequest(String attestorDomain, long acceptableTimeLimit,
-    String jsonEncoding, Eip712Encoder encoder) {
+      String jsonEncoding, Eip712AttestationRequestEncoder encoder) {
     super(attestorDomain, encoder);
     try {
       this.acceptableTimeLimit = acceptableTimeLimit;
