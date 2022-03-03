@@ -400,16 +400,16 @@ public class SignatureUtility {
         return res;
     }
 
-    public static boolean verifySHA256(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) {
+    public static boolean verifySHA256(byte[] unsigned, byte[] signature, AsymmetricKeyParameter key) throws IOException {
         byte[] digestBytes = AttestationCrypto.hashWithSHA256(unsigned);
         return verifyHashed(digestBytes, signature, key);
     }
 
-    public static boolean verifyHashed(byte[] digest, byte[] signature, AsymmetricKeyParameter key) {
+    public static boolean verifyHashed(byte[] digest, byte[] signature, AsymmetricKeyParameter key) throws IOException {
+        ASN1InputStream input = null;
         try {
-            ASN1InputStream input = new ASN1InputStream(signature);
+            input = new ASN1InputStream(signature);
             ASN1Sequence seq = ASN1Sequence.getInstance(input.readObject());
-            input.close();
             BigInteger r = ASN1Integer.getInstance(seq.getObjectAt(0)).getValue();
             BigInteger s = ASN1Integer.getInstance(seq.getObjectAt(1)).getValue();
             s = normalizeS(s, ((ECKeyParameters) key).getParameters());
@@ -420,6 +420,8 @@ public class SignatureUtility {
             logger.error("Could not decode signature");
             // Something went wrong so the signature cannot be verified
             return false;
+        } finally {
+            input.close();
         }
     }
 

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -66,7 +67,7 @@ public class SignatureTest {
   }
 
   @Test
-  public void testSignDeterministic() {
+  public void testSignDeterministic() throws IOException {
     byte[] message = new byte[515];
     message[0] = 42;
     message[514] = 13;
@@ -76,7 +77,7 @@ public class SignatureTest {
   }
 
   @Test
-  public void testSignRandomized() {
+  public void testSignRandomized() throws IOException  {
     for (int i = 0; i < 50; i++) {
       byte[] message = new byte[256];
       message[0] = 0x42;

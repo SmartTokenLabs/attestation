@@ -38,22 +38,26 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
   }
 
   public SignedIdentifierAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
-    ASN1InputStream input = new ASN1InputStream(derEncoding);
-    ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-    input.close();
-    ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
-    // TODO ideally this should be refactored to SignedAttestation being augmented with an generic
-    // Attestation type and an encoder to construct such an attestation
-    this.att = new IdentifierAttestation(attestationEnc.getEncoded());
-    DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
-    this.signature = signatureEnc.getBytes();
-    this.attestationVerificationKey = verificationKey;
-    if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {
-      throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("Algorithm specified is not consistent"));
-    }
-    constructorCheck(verificationKey);
+    ASN1InputStream input = null;
+    try {
+      input = new ASN1InputStream(derEncoding);
+      ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+      AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
+      // TODO ideally this should be refactored to SignedAttestation being augmented with an generic
+      // Attestation type and an encoder to construct such an attestation
+      this.att = new IdentifierAttestation(attestationEnc.getEncoded());
+      DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
+      this.signature = signatureEnc.getBytes();
+      this.attestationVerificationKey = verificationKey;
+      if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {
+        throw ExceptionUtil.throwException(logger,
+            new IllegalArgumentException("Algorithm specified is not consistent"));
+      }
+      constructorCheck(verificationKey);
+      } finally {
+        input.close();
+      }
   }
 
   void constructorCheck(AsymmetricKeyParameter verificationKey) {
