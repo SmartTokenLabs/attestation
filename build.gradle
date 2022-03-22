@@ -1,23 +1,28 @@
 buildscript {
     dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:6.+'
+        classpath 'org.owasp:dependency-check-gradle:6.+'
     }
 }
 
 plugins {
     id 'java'
-    id "com.github.node-gradle.node" version "3.1.0"
+    id "com.github.node-gradle.node" version "3.1.1"
     id 'java-library'
     id 'signing'
     id 'maven-publish'
+    id "org.sonarqube" version "3.0"
 }
 
 node {
     download = true
-    version = "14.15.3"
+    version = "14.+"
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'org.owasp.dependencycheck'
+
+project.tasks["sonarqube"].dependsOn "test"
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -157,11 +162,13 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.7"
+version = "0.3.13"
 
-// See https://docs.gradle.org/current/userguide/publishing_maven.html for details
-// For actually updating the Maven repo run publishAllPublicationsToMaven and then follow the manual
-// at https://central.sonatype.org/publish/release/
+/** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
+ * For actually updating the Maven repo update the version reference in README.md,
+ * then run publishAllPublicationsToMaven and then follow the manual
+ * at https://central.sonatype.org/publish/release/
+ **/
 publishing {
     publications {
         mavenJava(MavenPublication) {

@@ -13,8 +13,6 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v2
-        with:
-          ref: ${{ github.ref }}
       -
         name: Set up Java
         uses: actions/setup-java@v1

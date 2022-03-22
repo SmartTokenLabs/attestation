@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.tokenscript.attestation.FullProofOfExponent;
@@ -364,6 +365,17 @@ public class CryptoTest {
     assertNotEquals(point, newPoint);
     assertNotEquals(encoded, newEncoded);
     assertNotEquals(decoded, newDecoded);
+  }
+
+  @Test
+  public void testInvalidCurveAttack() {
+    byte[] encoded = AttestationCrypto.makeCommitment(ID, TYPE, SECRET1);
+    ECPoint decoded = AttestationCrypto.decodePoint(encoded);
+    BigInteger x = decoded.getAffineXCoord().toBigInteger();
+    BigInteger y = decoded.getAffineYCoord().toBigInteger();
+    BigInteger wrongY = y.add(BigInteger.ONE);
+    byte[] invalidPoint = AttestationCrypto.curve.createPoint(x, wrongY).getEncoded(false);
+    assertThrows(IllegalArgumentException.class, ()-> AttestationCrypto.decodePoint(invalidPoint));
   }
 
   /**

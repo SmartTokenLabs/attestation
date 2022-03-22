@@ -43,28 +43,31 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
 
   @Override
   public Ticket decode(byte[] encoding) throws IOException {
-    ASN1InputStream input = new ASN1InputStream(encoding);
-    ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-    input.close();
-    ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
-    BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
-    int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
-    byte[] commitment = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
-    /* refactored 2021-01-05 : we don't care about the ticket class set on our level
-    TicketClass ticketClass = null;
-    for (TicketClass current : TicketClass.values()) {
-      if (current.getValue() == ticketClassInt) {
-        ticketClass = current;
+    ASN1InputStream input = null;
+    try {
+      input = new ASN1InputStream(encoding);
+      ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+      String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
+      BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
+      int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
+      byte[] commitment = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
+      /* refactored 2021-01-05 : we don't care about the ticket class set on our level
+      TicketClass ticketClass = null;
+      for (TicketClass current : TicketClass.values()) {
+        if (current.getValue() == ticketClassInt) {
+          ticketClass = current;
+        }
       }
-    }
-    if (ticketClass == null) {
-      throw new IOException("Not valid ticket class");
-    }
-
+      if (ticketClass == null) {
+        throw new IOException("Not valid ticket class");
+      }
      */
-    byte[] signature = parsePKandSignature(asn1, devconId);
-    return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
+      byte[] signature = parsePKandSignature(asn1, devconId, 1);
+      return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
+    } finally {
+      input.close();
+    }
   }
 
   /**
@@ -72,16 +75,16 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
    * @param input The encoded Ticket
    * @return
    */
-  private byte[] parsePKandSignature(ASN1Sequence input, String devconId) throws IOException, IllegalArgumentException{
+  byte[] parsePKandSignature(ASN1Sequence input, String devconId, int asnBaseIdx) throws IOException, IllegalArgumentException{
     byte[] signature;
-    ASN1Encodable object = input.getObjectAt(1);
+    ASN1Encodable object = input.getObjectAt(asnBaseIdx);
     if (object instanceof ASN1Sequence) {
       // The optional PublicKeyInfo is included
       parseEncodingOfPKInfo((ASN1Sequence) object, devconId);
-      signature = DERBitString.getInstance(input.getObjectAt(2)).getBytes();
+      signature = DERBitString.getInstance(input.getObjectAt(asnBaseIdx+1)).getBytes();
     } else if (object instanceof DERBitString) {
       // Only the signature is included
-      signature = DERBitString.getInstance(input.getObjectAt(1)).getBytes();
+      signature = DERBitString.getInstance(input.getObjectAt(asnBaseIdx)).getBytes();
     } else {
       throw ExceptionUtil.throwException(logger,
           new IllegalArgumentException("Invalid ticket encoding"));
@@ -89,7 +92,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     return signature;
   }
 
-  private void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
+  void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
     AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(publicKeyInfo.getObjectAt(0));
     byte[] publicKeyBytes = DERBitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
     AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreDefaultKey(algorithm, publicKeyBytes);
@@ -107,7 +110,7 @@ public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
     idsToKeys.put(devconId, decodedPublicKey);
   }
 
-  private AsymmetricKeyParameter getPk(String devconId) {
+  AsymmetricKeyParameter getPk(String devconId) {
     AsymmetricKeyParameter pk;
     if (idsToKeys.get(devconId) != null) {
       pk = idsToKeys.get(devconId);
