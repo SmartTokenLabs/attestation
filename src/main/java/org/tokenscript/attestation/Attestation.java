@@ -33,7 +33,7 @@ import org.tokenscript.attestation.core.Validateable;
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
-  public static final boolean BLOCKCHAIN_FRIENDLY_BY_DEFAULT = true;
+  public boolean blockchainFriendly = true;
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(
@@ -93,6 +93,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
           validityCtr++;
         } catch (IllegalArgumentException e) {
           // Optional long timestamp is not included
+          blockchainFriendly = false;
         }
         if (notValidBeforeLong != null && notValidBeforeLong != notValidBefore.getTime()) {
           logger.error("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
@@ -106,6 +107,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
           validityCtr++;
         } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
           // Optional long timestamp is not included
+          blockchainFriendly = false;
         }
         if (notValidAfterLong != null && notValidAfterLong != notValidAfter.getTime()) {
           logger.error("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
@@ -337,7 +339,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public byte[] getDerEncoding() throws InvalidObjectException {
-    return getDerEncoding(BLOCKCHAIN_FRIENDLY_BY_DEFAULT);
+    return getDerEncoding(blockchainFriendly);
   }
   public byte[] getDerEncoding(boolean blockchainFriendlyEncoding) throws InvalidObjectException {
     byte[] attEncoded = getPrehash(blockchainFriendlyEncoding);
@@ -350,7 +352,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public byte[] getPrehash() {
-    return getPrehash(BLOCKCHAIN_FRIENDLY_BY_DEFAULT);
+    return getPrehash(blockchainFriendly);
   }
   /**
    * Construct the DER encoded byte array to be signed. Returns null if the Attestation object is
