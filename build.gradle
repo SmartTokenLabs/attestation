@@ -42,11 +42,10 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.apache.logging.log4j:log4j-api:2.13.0'
-    implementation 'org.apache.logging.log4j:log4j-core:2.13.0'
+    implementation 'ch.qos.logback:logback-classic:1.2.11'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.68'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.68'
-    implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.13.0'
+    implementation('org.apache.logging.log4j:log4j-to-slf4j:2.17.1')
     implementation 'com.amazonaws:aws-lambda-java-log4j2:1.2.0'
     implementation('com.amazonaws:aws-lambda-java-core:1.2.0')
     implementation('com.amazonaws:aws-lambda-java-events:2.2.6')
