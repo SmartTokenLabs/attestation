@@ -14,6 +14,7 @@ import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -196,6 +197,7 @@ public class NFTAttestationTest {
         assertThrows(IllegalArgumentException.class, ()-> signedNftAttestation.makeSignature(subjectKeys, 42));
     }
 
+    @Disabled//This test should be removed once PR 210 gets merged
     @Test
     public void signingVersion1Included() throws IOException {
         String urlEncodedSignedNftAtt = "MIICqTCCAlMwggIXMIIBxKADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTExMDkxNjIwMThaGA85OTk5MTIzMTIyNTk1OVowOTE3MDUGCSsGAQQBgXoBOQwoaHR0cHM6Ly90d2l0dGVyLmNvbS96aGFuZ3dlaXd1IDIwNTUyMTY3NjCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP____________________________________7___wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm-Zn753LusVaBilc6HCwcCm_zbLc4o2VnygVsW-BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj_sQ1LgCIQD____________________-uq7c5q9IoDu_0l6M0DZBQQIBAQNCAASVDHwL7SPDysXMMbu5qtm7VTI4eIJnCsKxzfB5mrDrx2TCZ_cE6P3aB5arg5ek0hAQJNJMTv_2lbOkF_LtDkjNMAkGByqGSM49BAIDQgD8Wu2eGeRW1GNFxOk5Srdn4E968ML7MUINj55zBqhuOhUWmosV5d4VsarkmpCmlwAXxvIpt7UcFP4cK8QuwH89GzA2MBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEZMBkEFKVn9aFlVF-iY5u9p5mR8QXq34UiBAEaAgEBMAkGByqGSM49BAIDQgCrpY0RQ3LNfJd6YgYEC-etEU_oJKUAA6WP0TRfZITeQVNNm21BOFQc-iiXs053UcSy1y29tbUPt1wp4VRU8Qu4Gw==";

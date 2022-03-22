@@ -65,6 +65,31 @@ public class AttestationTest {
     }
 
     @Test
+    public void blockchainFriendlyVersion() throws Exception {
+        Attestation att = new Attestation();
+        att.setVersion(19);
+        att.setSerialNumber(42);
+        att.setIssuer("CN=ALX");
+        Date now = new Date();
+        att.setNotValidBefore(now);
+        Date later = new Date(Clock.systemUTC().millis()+1000);
+        att.setNotValidAfter(later);
+        att.setSubject("CN=me");
+        SubjectPublicKeyInfo newSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKeys.getPublic());
+        att.setSubjectPublicKeyInfo(newSpki);
+        att.setSmartcontracts(Arrays.asList(42L, 13L));
+        att.setExtensions(new DERSequence());
+        att.setSigningAlgorithm(SignedIdentifierAttestation.ECDSA_WITH_SHA256);
+        assertTrue(att.checkValidity());
+        //  The blockchain friendly encoding contains more info
+        assertFalse(Arrays.equals(att.getPrehash(true), att.getPrehash(false)));
+        // Blockchain version still valid
+        Attestation newAtt = new Attestation(att.getPrehash(false));
+        assertTrue(newAtt.checkValidity());
+        assertTrue(newAtt.getPrehash(true).length >att.getPrehash(false).length);
+    }
+
+    @Test
     public void testMakeUnsignedX509Attestation() throws IOException {
         byte[] res = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic()).getPrehash();
         assertTrue(res != null);
