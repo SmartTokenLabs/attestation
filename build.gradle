@@ -11,6 +11,7 @@ plugins {
     id 'java-library'
     id 'signing'
     id 'maven-publish'
+    id "org.sonarqube" version "3.0"
 }
 
 node {
@@ -20,6 +21,8 @@ node {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.owasp.dependencycheck'
+
+project.tasks["sonarqube"].dependsOn "test"
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'

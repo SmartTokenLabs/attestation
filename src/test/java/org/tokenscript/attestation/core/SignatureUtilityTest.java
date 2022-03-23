@@ -66,7 +66,7 @@ public class SignatureUtilityTest {
   }
 
   @Test
-  public void testSignDeterministic() {
+  public void testSignDeterministic() throws Exception  {
     byte[] message = new byte[515];
     message[0] = 42;
     message[514] = 13;
@@ -76,7 +76,7 @@ public class SignatureUtilityTest {
   }
 
   @Test
-  public void testSignRandomized() {
+  public void testSignRandomized() throws Exception {
     for (int i = 0; i < 50; i++) {
       byte[] message = new byte[256];
       message[0] = 0x42;

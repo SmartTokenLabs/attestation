@@ -43,28 +43,31 @@ public class  TicketDecoder implements ObjectDecoder<Ticket> {
 
   @Override
   public Ticket decode(byte[] encoding) throws IOException {
-    ASN1InputStream input = new ASN1InputStream(encoding);
-    ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-    input.close();
-    ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-    String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
-    BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
-    int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
-    byte[] commitment = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
-    /* refactored 2021-01-05 : we don't care about the ticket class set on our level
-    TicketClass ticketClass = null;
-    for (TicketClass current : TicketClass.values()) {
-      if (current.getValue() == ticketClassInt) {
-        ticketClass = current;
+    ASN1InputStream input = null;
+    try {
+      input = new ASN1InputStream(encoding);
+      ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+      ASN1Sequence ticket = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+      String devconId = (DERUTF8String.getInstance(ticket.getObjectAt(0))).getString();
+      BigInteger ticketId = (ASN1Integer.getInstance(ticket.getObjectAt(1))).getValue();
+      int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
+      byte[] commitment = (ASN1OctetString.getInstance(ticket.getObjectAt(3))).getOctets();
+      /* refactored 2021-01-05 : we don't care about the ticket class set on our level
+      TicketClass ticketClass = null;
+      for (TicketClass current : TicketClass.values()) {
+        if (current.getValue() == ticketClassInt) {
+          ticketClass = current;
+        }
       }
-    }
-    if (ticketClass == null) {
-      throw new IOException("Not valid ticket class");
-    }
-
+      if (ticketClass == null) {
+        throw new IOException("Not valid ticket class");
+      }
      */
-    byte[] signature = parsePKandSignature(asn1, devconId, 1);
-    return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
+      byte[] signature = parsePKandSignature(asn1, devconId, 1);
+      return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
+    } finally {
+      input.close();
+    }
   }
 
   /**
