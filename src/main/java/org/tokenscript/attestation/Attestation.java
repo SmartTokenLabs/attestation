@@ -26,7 +26,6 @@ import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.asn1.x509.Time;
 import org.tokenscript.attestation.core.ASNEncodable;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.Validateable;
@@ -34,6 +33,7 @@ import org.tokenscript.attestation.core.Validateable;
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
+  public boolean blockchainFriendly = true;
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(
@@ -42,8 +42,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   private AlgorithmIdentifier signingAlgorithm;
   private X500Name issuer;                              // Optional
-  private ASN1GeneralizedTime notValidBefore;           // Optional
-  private ASN1GeneralizedTime notValidAfter;            // Optional
+  private Date notValidBefore;                          // Optional
+  private Date notValidAfter;                           // Optional
   private X500Name subject;  // CN=Ethereum address     // Optional
   private SubjectPublicKeyInfo subjectPublicKeyInfo;    // Optional
   private ASN1Sequence smartcontracts; // ASN1integers  // Optional
@@ -82,9 +82,40 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       notValidBefore = null;
       notValidAfter = null;
     } else {
-      ASN1Sequence validity = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos));
-      notValidBefore = ASN1GeneralizedTime.getInstance(validity.getObjectAt(0));
-      notValidAfter = ASN1GeneralizedTime.getInstance(validity.getObjectAt(1));
+      try {
+        int validityCtr = 0;
+        ASN1Sequence validity = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos));
+        notValidBefore = ASN1GeneralizedTime.getInstance(validity.getObjectAt(validityCtr++)).getDate();
+        // Check if the attestation is blockchain friendly
+        Long notValidBeforeLong = null;
+        try {
+          notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
+          validityCtr++;
+        } catch (IllegalArgumentException e) {
+          // Optional long timestamp is not included
+          blockchainFriendly = false;
+        }
+        if (notValidBeforeLong != null && notValidBeforeLong != notValidBefore.getTime()) {
+          logger.error("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
+          throw new IllegalArgumentException("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
+        }
+        notValidAfter = ASN1GeneralizedTime.getInstance(validity.getObjectAt(validityCtr++)).getDate();
+        // Check if the attestation is blockchain friendly
+        Long notValidAfterLong = null;
+        try {
+          notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
+          validityCtr++;
+        } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
+          // Optional long timestamp is not included
+          blockchainFriendly = false;
+        }
+        if (notValidAfterLong != null && notValidAfterLong != notValidAfter.getTime()) {
+          logger.error("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
+          throw new IllegalArgumentException("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
+        }
+      } catch (ParseException e) {
+        ExceptionUtil.throwException(logger, new IllegalArgumentException("Could not parse dates"));
+      }
     }
     currentPos++;
 
@@ -164,27 +195,23 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   public Date getNotValidBefore() {
-    try {
-      return notValidBefore != null ? notValidBefore.getDate() : null;
-    } catch (ParseException e) {
-      throw ExceptionUtil.makeRuntimeException(logger, "Could not validate notValidBefore", e);
-    }
+    return notValidBefore != null ? notValidBefore : null;
   }
 
   public void setNotValidBefore(Date notValidBefore) {
-    this.notValidBefore = new ASN1GeneralizedTime(notValidBefore);
+    // Remove milliseconds since they are not included in Generalized Time
+    Date time = new Date(notValidBefore.getTime()-(notValidBefore.getTime() % 1000));
+    this.notValidBefore = time;
   }
 
   public Date getNotValidAfter() {
-    try {
-      return notValidAfter != null ? notValidAfter.getDate() : null;
-    } catch (ParseException e) {
-      throw ExceptionUtil.makeRuntimeException(logger, "Could not validate notValidAfter", e);
-    }
+    return notValidAfter != null ? notValidAfter : null;
   }
 
   public void setNotValidAfter(Date notValidAfter) {
-    this.notValidAfter = new ASN1GeneralizedTime(notValidAfter);
+    // Remove milliseconds since they are not included in Generalized Time
+    Date time = new Date(notValidAfter.getTime()-(notValidAfter.getTime() % 1000));
+    this.notValidAfter = time;
   }
 
   public String getSubject() {
@@ -312,7 +339,10 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
 
   @Override
   public byte[] getDerEncoding() throws InvalidObjectException {
-    byte[] attEncoded = getPrehash();
+    return getDerEncoding(blockchainFriendly);
+  }
+  public byte[] getDerEncoding(boolean blockchainFriendlyEncoding) throws InvalidObjectException {
+    byte[] attEncoded = getPrehash(blockchainFriendlyEncoding);
     // The method returns null if the encoding is invalid
     if (attEncoded == null) {
       throw ExceptionUtil.throwException(logger, new InvalidObjectException("The attestation is not valid"));
@@ -320,12 +350,15 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     return attEncoded;
   }
 
+  @Override
+  public byte[] getPrehash() {
+    return getPrehash(blockchainFriendly);
+  }
   /**
    * Construct the DER encoded byte array to be signed. Returns null if the Attestation object is
    * not valid
    */
-  @Override
-  public byte[] getPrehash() {
+  public byte[] getPrehash(boolean blockchainFriendlyEncoding) {
     if (!checkValidity()) {
       logger.error("Attestation is not valid");
       return null;
@@ -337,8 +370,14 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     res.add(this.issuer == null ? new DERSequence() : this.issuer);
     if (this.notValidAfter != null && this.notValidBefore != null) {
       ASN1EncodableVector date = new ASN1EncodableVector();
-      date.add(new Time(this.notValidBefore));
-      date.add(new Time(this.notValidAfter));
+      date.add(new ASN1GeneralizedTime(this.notValidBefore));
+      if (blockchainFriendlyEncoding) {
+        date.add(new ASN1Integer(this.notValidBefore.getTime()));
+      }
+      date.add(new ASN1GeneralizedTime(this.notValidAfter));
+      if (blockchainFriendlyEncoding) {
+        date.add(new ASN1Integer(this.notValidAfter.getTime()));
+      }
       res.add(new DERSequence(date));
     } else {
       res.add(DERNull.INSTANCE);

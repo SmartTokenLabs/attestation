@@ -47,8 +47,7 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.apache.logging.log4j:log4j-api:2.+'
-    implementation 'org.apache.logging.log4j:log4j-core:2.+'
+    implementation 'ch.qos.logback:logback-classic:1.2.+'
     implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.+'

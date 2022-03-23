@@ -13,6 +13,7 @@ import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -237,6 +238,7 @@ public class NFTAttestationTest {
         assertEquals("Could not decode SignedNFTAttestation", e.getMessage());
     }
 
+    @Disabled//This test should be removed once PR 210 gets merged
     @Test
     public void badSignatureV1() {
         Signature wrongSignature = new PersonalSignature(subjectKeys.getPrivate(), "something wrong".getBytes(

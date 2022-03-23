@@ -92,6 +92,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   private final String identifier;
   private final String type;
+
+
   /**
    * Constructs a new identifier attestation based on a secret, with unlimited validity by default
    * You still need to set the optional fields, that is
