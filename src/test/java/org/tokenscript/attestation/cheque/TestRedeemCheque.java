@@ -107,7 +107,8 @@ public class TestRedeemCheque {
         attestedCheque.getAttestableObject().getDerEncoding(), newRedeem.getAttestableObject().getDerEncoding());
     assertArrayEquals(attestedCheque.getAtt().getDerEncoding(), newRedeem.getAtt().getDerEncoding());
     assertArrayEquals(attestedCheque.getPok().getDerEncoding(), newRedeem.getPok().getDerEncoding());
-    assertEquals(attestedCheque.getUserPublicKey(), subjectKeys.getPublic());
+    assertEquals(SignatureUtility.addressFromKey(attestedCheque.getAttestedUserKey()),
+        SignatureUtility.addressFromKey(subjectKeys.getPublic()));
     assertArrayEquals(attestedCheque.getDerEncoding(), newRedeem.getDerEncoding());
 
     AttestedObject newConstructor = new AttestedObject(attestedCheque.getAttestableObject(), attestedCheque

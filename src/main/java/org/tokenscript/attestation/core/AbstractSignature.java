@@ -1,16 +1,14 @@
-package io.alchemynft.attestation;
+package org.tokenscript.attestation.core;
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.tokenscript.attestation.core.SignatureUtility;
 
 public abstract class AbstractSignature implements Signature {
   private final String type;
   private final byte[] rawSignature;
 
-  public AbstractSignature(AsymmetricCipherKeyPair keys, byte[] unprocessedMessage, String type) {
+  public AbstractSignature(AsymmetricKeyParameter signingKey, byte[] unprocessedMessage, String type) {
     this.type = type;
-    this.rawSignature = sign(keys, unprocessedMessage);
+    this.rawSignature = sign(signingKey, unprocessedMessage);
   }
 
   public AbstractSignature(byte[] rawSignature, String type) {
@@ -18,8 +16,8 @@ public abstract class AbstractSignature implements Signature {
     this.rawSignature = rawSignature;
   }
 
-  protected byte[] sign(AsymmetricCipherKeyPair keys, byte[] unprocessedMessage) {
-    return SignatureUtility.signWithEthereum(processMessage(unprocessedMessage), keys.getPrivate());
+  protected byte[] sign(AsymmetricKeyParameter keys, byte[] unprocessedMessage) {
+    return SignatureUtility.signWithEthereum(processMessage(unprocessedMessage), keys);
   }
 
   @Override

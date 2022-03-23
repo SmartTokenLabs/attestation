@@ -1,4 +1,4 @@
-package org.tokenscript.auth;
+package org.devcon.ticket;
 
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.ExceptionUtil;

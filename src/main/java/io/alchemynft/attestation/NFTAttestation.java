@@ -10,12 +10,13 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.tokenscript.attestation.AttestedKeyObject;
 import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.Validateable;
+import org.tokenscript.attestation.core.ExceptionUtil;
 
-public class NFTAttestation implements ASNEncodable, Validateable {
+public class NFTAttestation extends AttestedKeyObject {
     private static final Logger logger = LogManager.getLogger(NFTAttestation.class);
 
     private final SignedIdentifierAttestation signedIdentifierAttestation;
@@ -86,5 +87,16 @@ public class NFTAttestation implements ASNEncodable, Validateable {
 
     public boolean verify() {
         return signedIdentifierAttestation.verify();
+    }
+
+    @Override
+    public AsymmetricKeyParameter getAttestedUserKey() {
+        try {
+            return PublicKeyFactory.createKey(
+                getSignedIdentifierAttestation().getUnsignedAttestation()
+                    .getSubjectPublicKeyInfo());
+        } catch (IOException e) {
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not restore key from signed signed attestation", e);
+        }
     }
 }

@@ -5,15 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.spy;
 
-import org.tokenscript.attestation.AttestationRequest;
-import org.tokenscript.attestation.FullProofOfExponent;
-import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import org.tokenscript.attestation.Timestamp;
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.URLUtility;
-import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Objects;
@@ -26,7 +19,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.attestation.AttestationRequest;
+import org.tokenscript.attestation.FullProofOfExponent;
+import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.Timestamp;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.URLUtility;
+import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
+import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Test;
 
 public class TestAttestationRequestEip712 {
@@ -133,9 +134,25 @@ public class TestAttestationRequestEip712 {
     AttestationRequestInternalData data = new AttestationRequestInternalData(
         encoder.getUsageValue(),
         MAIL, URLUtility.encodeData(attRequest.getDerEncoding()), new Timestamp());
-    Eip712Issuer issuer = new Eip712Issuer<AttestationRequestInternalData>(userSigningKey, encoder);
+    Eip712Signer issuer = new Eip712Signer<AttestationRequestInternalData>(userSigningKey, encoder);
     String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN);
     Eip712Test.validateEncoding(encoder, json);
+  }
+
+  @Mock
+  Eip712AttestationRequestEncoder mockedEncoder;
+  @Test
+  public void badDescription() {
+    byte[] nonce = Nonce.makeNonce(userAddress, DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
+    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey);
+    Eip712AttestationRequestEncoder encoder = new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LEGACY_USAGE_VALUE);
+    mockedEncoder = spy(encoder);
+    Mockito.when(mockedEncoder.getUsageValue()).thenReturn("Something wrong");
+    Eip712AttestationRequest badRequest = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS, request.getJsonEncoding(), mockedEncoder);
+    assertTrue(badRequest.verify());
+    assertFalse(badRequest.checkValidity());
   }
 
   @Test
@@ -160,7 +177,11 @@ public class TestAttestationRequestEip712 {
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL,
         attRequest, userSigningKey);
-    assertThrows( IllegalArgumentException.class, () ->   new Eip712AttestationRequest("http://www.someOtherDomain.com", request.getJsonEncoding()));
+    assertTrue(request.checkValidity());
+    assertTrue(request.verify());
+    Eip712AttestationRequest newRequest = new Eip712AttestationRequest("http://www.someOtherDomain.com", request.getJsonEncoding());
+    assertTrue(newRequest.verify());
+    assertFalse(newRequest.checkValidity());
   }
 
   @Test

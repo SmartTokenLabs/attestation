@@ -1,190 +1,98 @@
 package io.alchemynft.attestation;
 
 import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.nio.charset.StandardCharsets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1BitString;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.tokenscript.attestation.core.ASNEncodable;
+import org.tokenscript.attestation.core.CompressedMsgSignature;
 import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.core.Verifiable;
+import org.tokenscript.attestation.core.PersonalSignature;
+import org.tokenscript.attestation.core.Signature;
 
-public class SignedNFTAttestation implements ASNEncodable, Verifiable, Validateable {
-    private static final Logger logger = LogManager.getLogger(SignedNFTAttestation.class);
-    public static final int DEFAULT_SIGNING_VERSION = 2;
-    public static final String PREFIX_MSG = "The digest of the ERC721 tokens for AlchemyNFT is: ";
-    public static final String POSTFIX_MSG = "";
+public class SignedNFTAttestation implements InternalSignedNFTAttestation {
+  private static final Logger logger = LogManager.getLogger(SignedNFTAttestation.class);
+  public static final String PREFIX_MSG = "The digest of the ERC721 tokens for AlchemyNFT is: ";
+  public static final String POSTFIX_MSG = "";
 
-    private final NFTAttestation att;
-    private final int signingVersion;
-    private final Signature signature;
-    private final AsymmetricKeyParameter attestationVerificationKey;
+  private final InternalSignedNFTAttestation internalNftAtt;
 
-    public SignedNFTAttestation(NFTAttestation att, AsymmetricCipherKeyPair subjectSigningKey) {
-        this(att, subjectSigningKey, DEFAULT_SIGNING_VERSION);
+  public SignedNFTAttestation(NFTAttestation nftAtt, Signature signature) {
+    if (signature instanceof PersonalSignature || signature instanceof CompressedMsgSignature) {
+      this.internalNftAtt = new LegacySignedNFTAttestation(nftAtt, signature);
+    } else {
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Signature is not version 1 or 2, this constructor only works with version 1 or version 2"));
     }
+  }
 
-    public SignedNFTAttestation(NFTAttestation att, AsymmetricCipherKeyPair subjectSigningKey, int signingVersion) {
-        this.att = att;
-        this.attestationVerificationKey = subjectSigningKey.getPublic();
-        this.signature =  makeSignature(subjectSigningKey, signingVersion);
-        this.signingVersion = signingVersion;
-
-        if (!verify()) {
-            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
-        }
+  public SignedNFTAttestation(NFTAttestation att, AsymmetricKeyParameter subjectSigningKey, int signingVersion) {
+    if (signingVersion == 1 || signingVersion == 2) {
+      this.internalNftAtt = new LegacySignedNFTAttestation(att, subjectSigningKey, signingVersion);
+    } else if (signingVersion == 3) {
+      this.internalNftAtt = new Eip712SignedNFTAttestation(att, subjectSigningKey);
+    } else {
+      throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Unknown signature version"));
     }
+  }
 
-    /**
-     * Constructor used for when we supply the signature separately
-     */
-    public SignedNFTAttestation(NFTAttestation att, Signature signature) {
-        this.att = att;
-        this.attestationVerificationKey = getKeyFromAttestation();
-        this.signature = signature;
-        this.signingVersion = determineSigningVersion();
-        if (!verify()) {
-            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("The signature is not valid"));
-        }
+  public SignedNFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
+    InternalSignedNFTAttestation tempAtt = constructLegacy(derEncoding, identifierAttestationVerificationKey);
+    if (tempAtt != null) {
+      this.internalNftAtt = tempAtt;
+      return;
     }
-
-    public SignedNFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
-        ASN1InputStream input = null;
-        try {
-            input = new ASN1InputStream(derEncoding);
-            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-            int currentPos = 0;
-            ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos++));
-            this.att = new NFTAttestation(nftEncoding.getEncoded(),
-                identifierAttestationVerificationKey);
-            if (asn1.getObjectAt(currentPos) instanceof ASN1Integer) {
-                this.signingVersion = ASN1Integer.getInstance(asn1.getObjectAt(currentPos++))
-                    .intValueExact();
-            } else {
-                // If signingVersion is not present we default to version 1
-                this.signingVersion = 1;
-            }
-            // todo this actually not used
-            AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(
-                asn1.getObjectAt(currentPos++));
-            ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(currentPos++));
-            this.signature = makeSignature(signatureEnc.getBytes(), signingVersion);
-            this.attestationVerificationKey = getKeyFromAttestation();
-        } finally {
-            input.close();
-        }
+    tempAtt = constructEip(derEncoding, identifierAttestationVerificationKey);
+    if (tempAtt != null) {
+      this.internalNftAtt = tempAtt;
+      return;
     }
+    throw ExceptionUtil.throwException(logger,
+          new IllegalArgumentException("Could not decode SignedNFTAttestation"));
+  }
 
-    private int determineSigningVersion() {
-        if (signature instanceof PersonalSignature) {
-            return 1;
-        }
-        else if (signature instanceof CompressedMsgSignature) {
-            return 2;
-        } else {
-            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Unexpected signature type used"));
-        }
+  private LegacySignedNFTAttestation constructLegacy(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) {
+    try {
+     return new LegacySignedNFTAttestation(derEncoding, identifierAttestationVerificationKey);
+    } catch (IllegalArgumentException|IOException e) {
+      // The NFTAttestation is not version 1
+      return null;
     }
+  }
 
-    Signature makeSignature(byte[] encodedBytes, int signingVersion) {
-        if (signingVersion == 1) {
-            return new PersonalSignature(encodedBytes);
-        }
-        else if (signingVersion == 2) {
-            return new CompressedMsgSignature(encodedBytes, PREFIX_MSG, POSTFIX_MSG);
-        } else {
-            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Unknown signing version"));
-        }
+  private Eip712SignedNFTAttestation constructEip(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) {
+    try {
+      return new Eip712SignedNFTAttestation(new String(derEncoding, StandardCharsets.UTF_8), identifierAttestationVerificationKey);
+    } catch (IllegalArgumentException|IOException e) {
+      // The NFTAttestation is not version 1
+      return null;
     }
+  }
 
-    Signature makeSignature(AsymmetricCipherKeyPair keys, int signingVersion) {
-        if (signingVersion == 1) {
-            return new PersonalSignature(keys, att.getDerEncoding());
-        }
-        else if (signingVersion == 2) {
-            return new CompressedMsgSignature(keys, att.getDerEncoding(), PREFIX_MSG, POSTFIX_MSG);
-        } else {
-            throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Unknown signing version"));
-        }
-    }
+  @Override
+  public AsymmetricKeyParameter getNFTAttestationVerificationKey() {
+    return internalNftAtt.getNFTAttestationVerificationKey();
+  }
 
-    private AsymmetricKeyParameter getKeyFromAttestation() {
-        AsymmetricKeyParameter key = null;
-        try {
-            key = PublicKeyFactory.createKey(
-                att.getSignedIdentifierAttestation().getUnsignedAttestation()
-                    .getSubjectPublicKeyInfo());
-        } catch (IOException e) {
-            throw ExceptionUtil.makeRuntimeException(logger, "Could not restore key from signed signed attestation", e);
-        }
-        return key;
-    }
+  @Override
+  public NFTAttestation getUnsignedAttestation() {
+    return internalNftAtt.getUnsignedAttestation();
+  }
 
-    public NFTAttestation getUnsignedAttestation() {
-        return att;
-    }
+  @Override
+  public byte[] getDerEncoding() throws InvalidObjectException {
+    return internalNftAtt.getDerEncoding();
+  }
 
-    public Signature getSignature() {
-        return signature;
-    }
+  @Override
+  public boolean checkValidity() {
+    return internalNftAtt.checkValidity();
+  }
 
-    /**
-     * Returns the public key of the attestation signer
-     */
-    public AsymmetricKeyParameter getAttestationVerificationKey() { return attestationVerificationKey; }
-
-    @Override
-    public byte[] getDerEncoding() {
-        return constructSignedAttestation(this.att, this.signingVersion, this.signature.getRawSignature());
-    }
-
-    static byte[] constructSignedAttestation(NFTAttestation unsignedAtt, int signingVersion, byte[] signature) {
-        try {
-            byte[] rawAtt = unsignedAtt.getDerEncoding();
-            ASN1EncodableVector res = new ASN1EncodableVector();
-            res.add(ASN1Primitive.fromByteArray(rawAtt));
-            //  Only include version number if it is greater than 1
-            if (signingVersion > 1) {
-                res.add(new ASN1Integer(signingVersion));
-            }
-            res.add(unsignedAtt.getSigningAlgorithm());
-            res.add(new DERBitString(signature));
-            return new DERSequence(res).getEncoded();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public boolean checkValidity() {
-        return getUnsignedAttestation().checkValidity();
-    }
-
-    @Override
-    public boolean verify() {
-        if (!signature.verify(att.getDerEncoding(), attestationVerificationKey)) {
-            return false;
-        }
-        if (!att.verify()) {
-            return false;
-        }
-        // Verify that signature is done using thew right key
-        if (!SignatureUtility.addressFromKey(attestationVerificationKey).equals(
-            SignatureUtility.addressFromKey(getKeyFromAttestation()))) {
-            return false;
-        }
-        return true;
-    }
+  @Override
+  public boolean verify() {
+    return internalNftAtt.verify();
+  }
 }

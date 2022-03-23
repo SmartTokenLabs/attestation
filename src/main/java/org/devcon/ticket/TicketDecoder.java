@@ -18,11 +18,11 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.tokenscript.attestation.AttestableObjectDecoder;
+import org.tokenscript.attestation.ObjectDecoder;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 
-public class TicketDecoder implements AttestableObjectDecoder<Ticket> {
+public class  TicketDecoder implements ObjectDecoder<Ticket> {
   private static final Logger logger = LogManager.getLogger(TicketDecoder.class);
   private static final String DEFAULT = "default";
 
