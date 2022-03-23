@@ -25,7 +25,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class Cheque implements Attestable {
+public class Cheque extends Attestable {
   private static final Logger logger = LogManager.getLogger(Cheque.class);
   private final byte[] commitment;
   private final long amount;

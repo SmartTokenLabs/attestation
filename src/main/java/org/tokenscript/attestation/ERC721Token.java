@@ -54,15 +54,19 @@ public class ERC721Token implements ASNEncodable {
     }
 
     public ERC721Token(byte[] derEncoding) throws IOException {
-        ASN1InputStream input = new ASN1InputStream(derEncoding);
-        ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-        ASN1OctetString address = DEROctetString.getInstance(asn1.getObjectAt(0));
-        ASN1OctetString tokenId = DEROctetString.getInstance(asn1.getObjectAt(1));
-        input.close();
-        // Remove the # added by BouncyCastle
-        this.address = address.toString().substring(1);
-        this.tokenId = new BigInteger(1, tokenId.getOctets());
-        this.encoding = constructEncoding();
+        ASN1InputStream input = null;
+        try {
+            input = new ASN1InputStream(derEncoding);
+            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+            ASN1OctetString address = DEROctetString.getInstance(asn1.getObjectAt(0));
+            ASN1OctetString tokenId = DEROctetString.getInstance(asn1.getObjectAt(1));
+            // Remove the # added by BouncyCastle
+            this.address = address.toString().substring(1);
+            this.tokenId = new BigInteger(1, tokenId.getOctets());
+            this.encoding = constructEncoding();
+        } finally {
+            input.close();
+        }
     }
 
     public String getAddress() {

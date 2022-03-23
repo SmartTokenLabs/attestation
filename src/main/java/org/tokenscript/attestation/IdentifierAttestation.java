@@ -41,7 +41,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
   public enum AttestationType {
     PHONE ("phone"),
     EMAIL ("email"),
-    INETPERSONA("InetPersona");
+    INETPERSONA("inetpersona");
 
     private final String type;
 
@@ -92,6 +92,8 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   private final String identifier;
   private final String type;
+
+
   /**
    * Constructs a new identifier attestation based on a secret, with unlimited validity by default
    * You still need to set the optional fields, that is
@@ -144,7 +146,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
    * issuer, smartcontracts.
    * This is done using labeledURL, hence URL must be a valid URL
    */
-  public IdentifierAttestation(String label, String URL, AsymmetricKeyParameter key) throws MalformedURLException {
+  public IdentifierAttestation(String label, String URL, AsymmetricKeyParameter subjectKey) throws MalformedURLException {
     super();
     super.setVersion(NFT_VERSION);
     super.setSubject(makeLabeledURI(label, URL));
@@ -152,7 +154,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super.setIssuer("CN=attestation.id");
     super.setSerialNumber(1);
     try {
-      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
+      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(subjectKey);
       super.setSubjectPublicKeyInfo(spki);
     } catch (IOException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode asn1", e);

@@ -1,13 +1,12 @@
-package io.alchemynft.attestation;
+package org.tokenscript.attestation.core;
 
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.tokenscript.attestation.core.SignatureUtility;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
 public class PersonalSignature extends AbstractSignature {
   private static final String TYPE_OF_SIGNATURE = "personal";
 
-  public PersonalSignature(AsymmetricCipherKeyPair keys, byte[] unprocessedMsg) {
-    super(keys, unprocessedMsg, TYPE_OF_SIGNATURE);
+  public PersonalSignature(AsymmetricKeyParameter signingKey, byte[] unprocessedMsg) {
+    super(signingKey, unprocessedMsg, TYPE_OF_SIGNATURE);
   }
 
   public PersonalSignature(byte[] rawSignature) {

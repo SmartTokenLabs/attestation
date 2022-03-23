@@ -15,20 +15,21 @@ public class Timestamp {
   private static final Logger logger = LogManager.getLogger(Timestamp.class);
 
   public static final int ALLOWED_ROUNDING = 10000; // 10 sec to account for both rounding down to nearest second and remote clock issues
-  // Timestamp with millisecond accuracy and timezone info
-  public static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
 
   // See RFC 5282, https://tools.ietf.org/html/rfc5280#section-4.1.2.5, based on the GeneralizedTime value of 99991231235959Z
   public static final long UNLIMITED = 253402297199000L;
-  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000 * 60 * 60 * 24 * 365; // 1 year
-  public static final long DEFAULT_TIME_LIMIT_MS = 1000*60*20; // 20 minutes
-
-  static {
-    TIMESTAMP_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
-  }
+  public static final long DEFAULT_TOKEN_TIME_LIMIT = 1000L * 60 * 60 * 24 * 365; // 1 year
+  public static final long DEFAULT_TIME_LIMIT_MS = 1000L*60*20; // 20 minutes
 
   private final long time;
   private long validity = 0;
+
+  // Timestamp with millisecond accuracy and timezone info
+  public static final SimpleDateFormat getTimestampFormat() {
+    SimpleDateFormat format = new SimpleDateFormat("EEE MMM d yyyy HH:mm:ss 'GMT'Z", Locale.US);
+    format.setTimeZone(TimeZone.getTimeZone("UTC"));
+    return format;
+  }
 
   public Timestamp() {
     long tempTime = getCurrentTime();
@@ -58,7 +59,7 @@ public class Timestamp {
   }
 
   public String getTimeAsString() {
-    return Timestamp.TIMESTAMP_FORMAT.format(new Date(time));
+    return Timestamp.getTimestampFormat().format(new Date(time));
   }
 
   public boolean validateTimestamp() {
@@ -98,7 +99,7 @@ public class Timestamp {
 
   public static long stringTimestampToLong(String timestamp) {
     try {
-      return TIMESTAMP_FORMAT.parse(timestamp).getTime();
+      return getTimestampFormat().parse(timestamp).getTime();
     } catch (ParseException e) {
       throw ExceptionUtil.makeRuntimeException(logger, "Could not decode timestamp", e);
     }

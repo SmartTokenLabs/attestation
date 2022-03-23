@@ -251,6 +251,35 @@ public class TicketTest {
     assertTrue(restoredSecondTicket.checkValidity());
   }
 
+
+  @Test
+  public void testLisconTicketSunshine() throws Exception {
+    LisconTicket ticket = new LisconTicket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    assertEquals(TICKET_ID, new BigInteger(ticket.getTicketId()));
+    assertEquals(TICKET_CLASS, ticket.getTicketClass());
+    assertEquals(CONFERENCE_ID, ticket.getDevconId());
+    SubjectPublicKeyInfo ticketSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(ticket.getPublicKey());
+    SubjectPublicKeyInfo senderSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(senderKeys.getPublic());
+    assertArrayEquals(senderSpki.getEncoded(), ticketSpki.getEncoded());
+  }
+
+  @Test
+  public void testLisconTicketDecoder() throws Exception {
+    String lisconTicket = "MIGWMA0MATYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNCAOOZKRpcE6tLBuPbfE_SmwPk2wNjbj5vpa6kkD7eqQXvBOCa0WNo8dEHKvipeUGZZEWWjJKxooB44dEYdQO70Vgc";
+    byte[] binaryLisconTicket = Base64.getUrlDecoder().decode(lisconTicket);
+    // Normal ticket decoder is not compatible with Liscon ticket
+    assertThrows(Exception.class, () -> new TicketDecoder(senderKeys.getPublic()).decode(binaryLisconTicket));
+    Ticket ticket = new LisconTicketDecoder(senderKeys.getPublic()).decode(binaryLisconTicket);
+    assertTrue(ticket.verify());
+    assertTrue(ticket.checkValidity());
+  }
+
+  @Test
+  public void saveDerEncodedLiscon() {
+    LisconTicket ticket = new LisconTicket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    assertThrows(InternalError.class, () -> ticket.getDerEncodingWithPK());
+  }
+
   @Test
   public void testMissingKey() {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);

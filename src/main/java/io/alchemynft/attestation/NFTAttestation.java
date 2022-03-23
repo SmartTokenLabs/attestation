@@ -10,12 +10,13 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.tokenscript.attestation.AttestedKeyObject;
 import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.Validateable;
+import org.tokenscript.attestation.core.ExceptionUtil;
 
-public class NFTAttestation implements ASNEncodable, Validateable {
+public class NFTAttestation extends AttestedKeyObject {
     private static final Logger logger = LogManager.getLogger(NFTAttestation.class);
 
     private final SignedIdentifierAttestation signedIdentifierAttestation;
@@ -35,17 +36,24 @@ public class NFTAttestation implements ASNEncodable, Validateable {
     }
 
     public NFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
-        ASN1InputStream input = new ASN1InputStream(derEncoding);
-        ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-        input.close();
-        ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0)); //root attestation, should be signed att
-        this.signedIdentifierAttestation = new SignedIdentifierAttestation(attestationEnc.getEncoded(), identifierAttestationVerificationKey);
+        ASN1InputStream input = null;
+        try {
+            input = new ASN1InputStream(derEncoding);
+            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+            ASN1Sequence attestationEnc = ASN1Sequence.getInstance(
+                asn1.getObjectAt(0)); //root attestation, should be signed att
+            this.signedIdentifierAttestation = new SignedIdentifierAttestation(
+                attestationEnc.getEncoded(), identifierAttestationVerificationKey);
 
-        ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
-        this.tokens = DERSequence.convert(tokensEnc);
-        this.erc721Tokens = new ERC721Token[tokens.size()];
-        for (int i = 0; i< erc721Tokens.length; i++) {
-            erc721Tokens[i] = new ERC721Token(tokens.getObjectAt(i).toASN1Primitive().getEncoded());
+            ASN1Sequence tokensEnc = ASN1Sequence.getInstance(asn1.getObjectAt(1));
+            this.tokens = DERSequence.convert(tokensEnc);
+            this.erc721Tokens = new ERC721Token[tokens.size()];
+            for (int i = 0; i < erc721Tokens.length; i++) {
+                erc721Tokens[i] = new ERC721Token(
+                    tokens.getObjectAt(i).toASN1Primitive().getEncoded());
+            }
+        } finally {
+            input.close();
         }
     }
 
@@ -79,5 +87,16 @@ public class NFTAttestation implements ASNEncodable, Validateable {
 
     public boolean verify() {
         return signedIdentifierAttestation.verify();
+    }
+
+    @Override
+    public AsymmetricKeyParameter getAttestedUserKey() {
+        try {
+            return PublicKeyFactory.createKey(
+                getSignedIdentifierAttestation().getUnsignedAttestation()
+                    .getSubjectPublicKeyInfo());
+        } catch (IOException e) {
+            throw ExceptionUtil.makeRuntimeException(logger, "Could not restore key from signed signed attestation", e);
+        }
     }
 }

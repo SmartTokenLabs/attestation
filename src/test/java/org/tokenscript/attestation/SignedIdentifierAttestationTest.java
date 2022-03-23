@@ -4,12 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.tokenscript.attestation.core.SignatureUtility;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.tokenscript.attestation.core.SignatureUtility;
 
 public class SignedIdentifierAttestationTest {
   private static AsymmetricCipherKeyPair subjectKeys;
@@ -51,5 +51,4 @@ public class SignedIdentifierAttestationTest {
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
     assertThrows(IllegalArgumentException.class, () ->  new SignedIdentifierAttestation(signed.getDerEncoding(), subjectKeys.getPublic()));
   }
-  
 }

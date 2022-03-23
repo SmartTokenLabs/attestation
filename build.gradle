@@ -11,6 +11,7 @@ plugins {
     id 'java-library'
     id 'signing'
     id 'maven-publish'
+    id "org.sonarqube" version "3.0"
 }
 
 node {
@@ -20,6 +21,8 @@ node {
 
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.owasp.dependencycheck'
+
+project.tasks["sonarqube"].dependsOn "test"
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -44,23 +47,22 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.apache.logging.log4j:log4j-api:2.+'
-    implementation 'org.apache.logging.log4j:log4j-core:2.+'
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
-    implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
-    implementation 'org.apache.logging.log4j:log4j-slf4j18-impl:2.+'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
-    intTestImplementation 'org.junit.jupiter:junit-jupiter-api:5.+'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    implementation 'org.web3j:core:4.+'
-    implementation 'com.auth0:java-jwt:3.+'
-    implementation group: 'com.github.cliftonlabs', name: 'json-simple', version: '4.+'
-    implementation group: 'commons-cli', name: 'commons-cli', version: '1.5.+'
-    implementation group: 'com.google.code.gson', name: 'gson', version: '2.+'
-    testImplementation 'org.mockito:mockito-core:4.+'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.+'
-    implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '1.5.+'
+    runtimeOnly 'ch.qos.logback:logback-classic:[1.2.11,)'
+    implementation 'org.bouncycastle:bcprov-jdk15on:[1.70,)'
+    implementation 'org.bouncycastle:bcpkix-jdk15on:[1.70,)'
+    implementation 'org.apache.logging.log4j:log4j-to-slf4j:[2.17.1,)'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:[5.8.2,)'
+    intTestImplementation 'org.junit.jupiter:junit-jupiter-api:[5.8.2,)'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:[5.8.2,)'
+    intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:[5.8.2,)'
+    implementation 'org.web3j:core:[4.+,5.0.0)'
+    implementation 'com.auth0:java-jwt:[3.19.0,)'
+    implementation group: 'com.github.cliftonlabs', name: 'json-simple', version: '[4.0.1,)'
+    implementation group: 'commons-cli', name: 'commons-cli', version: '[1.5.0,)'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '[2.9.0,)'
+    testImplementation 'org.mockito:mockito-core:[4.4.0,)'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:[2.13.2,)'
+    implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '[1.5.2,)'
 }
 
 sourceSets {
@@ -160,7 +162,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.8"
+version = "0.3.13"
 
 /** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
  * For actually updating the Maven repo update the version reference in README.md,

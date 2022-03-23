@@ -24,7 +24,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
-public class Ticket implements Attestable {
+public class Ticket extends Attestable {
   private static final Logger logger = LogManager.getLogger(Ticket.class);
 
   private final String ticketId;
@@ -106,7 +106,7 @@ public class Ticket implements Attestable {
     }
   }
 
-  private ASN1Sequence makeTicket() {
+  ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new DERUTF8String(devconId));
     addTicketId(ticket);
@@ -118,7 +118,7 @@ public class Ticket implements Attestable {
   /**
    * Add TicketId as integer if possible, otherwise add it as string
    */
-  private void addTicketId(ASN1EncodableVector ticket) {
+  protected void addTicketId(ASN1EncodableVector ticket) {
     try {
       BigInteger ticketIdInteger = new BigInteger(ticketId);
       ticket.add(new ASN1Integer(ticketIdInteger));
@@ -128,14 +128,14 @@ public class Ticket implements Attestable {
     }
   }
 
-  private byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
+  protected byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
     ASN1EncodableVector signedTicket = new ASN1EncodableVector();
     signedTicket.add(ticket);
     signedTicket.add(new DERBitString(signature));
     return new DERSequence(signedTicket).getEncoded();
   }
 
-  public byte[] getDerEncodingWithPK() {
+  byte[] getDerEncodingWithPK() {
     try {
       ASN1Sequence ticket = makeTicket();
       ASN1EncodableVector signedTicket = new ASN1EncodableVector();

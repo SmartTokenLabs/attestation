@@ -24,8 +24,6 @@ import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.auth.UnpredictableNumberBundle;
-import org.tokenscript.auth.UnpredictableNumberTool;
 
 public class UseTicketBundleTest {
   private static final String DOMAIN = "http://www.hotel-bogota.com";
@@ -73,12 +71,12 @@ public class UseTicketBundleTest {
         .makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    useTicket = new AttestedObject<Ticket>(ticket, signed, subjectKeys.getPublic(), ATTESTATION_SECRET,
+    useTicket = new AttestedObject<Ticket>(ticket, signed, ATTESTATION_SECRET,
         TICKET_SECRET, un.getNumber().getBytes(StandardCharsets.UTF_8), crypto);
 
     Mockito.when(mockedUseTicket.verify()).thenReturn(true);
     Mockito.when(mockedUseTicket.getDerEncoding()).thenReturn(new byte[] {0x00});
-    Mockito.when(mockedUseTicket.getUserPublicKey()).thenReturn(subjectKeys.getPublic());
+    Mockito.when(mockedUseTicket.getAttestedUserKey()).thenReturn(subjectKeys.getPublic());
 
     Mockito.when(mockedUn.getDomain()).thenReturn(DOMAIN);
     Mockito.when(mockedUn.getExpiration()).thenReturn(Long.MAX_VALUE);
@@ -151,7 +149,7 @@ public class UseTicketBundleTest {
   @Test
   public void badChallengeSignatureConstructor() throws Exception {
     // Return wrong key, it is supposed to be the subjectKey
-    Mockito.when(mockedUseTicket.getUserPublicKey()).thenReturn(attestorKeys.getPublic());
+    Mockito.when(mockedUseTicket.getAttestedUserKey()).thenReturn(attestorKeys.getPublic());
     assertThrows(IllegalArgumentException.class, ()-> new UseTicketBundle(mockedUseTicket, un, subjectKeys.getPrivate()));
   }
 

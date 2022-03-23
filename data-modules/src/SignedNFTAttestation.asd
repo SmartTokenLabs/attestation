@@ -6,6 +6,7 @@
     <import name="AlgorithmIdentifier"
          schemaLocation="AuthenticationFramework.asd"/>
 
+    <!-- VERSION 1 or 2 since newer versions do not use ASN but instead EIP for the signing -->
     <namedType name="SignedNFTAttestation">
         <type>
             <sequence>

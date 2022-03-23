@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.tokenscript.eip712.Eip712Issuer;
+import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Test;
 
 public class TestAttestationRequestWithUsageEip712 {
@@ -147,7 +147,7 @@ public class TestAttestationRequestWithUsageEip712 {
     Timestamp expirationTime = new Timestamp(now.getTime() + 1000);
     AttestationRequestWUsageData data = new AttestationRequestWUsageData(
         encoder.getUsageValue(), MAIL, URLUtility.encodeData(requestWithUsage.getDerEncoding()), now, expirationTime);
-    Eip712Issuer issuer = new Eip712Issuer<AttestationRequestWUsageData>(userSigningKey, encoder);
+    Eip712Signer issuer = new Eip712Signer<AttestationRequestWUsageData>(userSigningKey, encoder);
     String json = issuer.buildSignedTokenFromJsonObject(data.getSignableVersion(), DOMAIN);
     Eip712Test.validateEncoding(encoder, json);
   }

@@ -9,6 +9,7 @@ IMPORTS
     AlgorithmIdentifier
         FROM AuthenticationFramework;
 
+-- Version 1 or 2, newer uses EIP712 --
 SignedNFTAttestation ::= SEQUENCE {
     nftAttestation       NFTAttestation,
     signingVersion       INTEGER OPTIONAL,
