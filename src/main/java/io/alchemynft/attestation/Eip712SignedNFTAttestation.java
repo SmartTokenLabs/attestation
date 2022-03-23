@@ -9,8 +9,8 @@ import org.tokenscript.attestation.eip712.Eip712ObjectSigner;
 import org.tokenscript.attestation.eip712.Eip712ObjectValidator;
 import org.tokenscript.eip712.FullEip712InternalData;
 
-public class SignedNFTAttestationV2 implements SignedNFTAttestation {
-  private static final Logger logger = LogManager.getLogger(SignedNFTAttestationV2.class);
+public class Eip712SignedNFTAttestation implements InternalSignedNFTAttestation {
+  private static final Logger logger = LogManager.getLogger(Eip712SignedNFTAttestation.class);
   public static final String DEFAULT_DOMAIN = "https://autographnft.io";
 
   private Eip712ObjectValidator<NFTAttestation> validator;
@@ -19,7 +19,7 @@ public class SignedNFTAttestationV2 implements SignedNFTAttestation {
   private final String signature;
   private final String signedEIP712;
 
-  public SignedNFTAttestationV2(NFTAttestation att, AsymmetricKeyParameter subjectSigningKey) {
+  public Eip712SignedNFTAttestation(NFTAttestation att, AsymmetricKeyParameter subjectSigningKey) {
     try {
       NFTAttestationDecoder decoder = new NFTAttestationDecoder(
           att.getSignedIdentifierAttestation().getAttestationVerificationKey());
@@ -36,7 +36,7 @@ public class SignedNFTAttestationV2 implements SignedNFTAttestation {
     constructorCheck();
   }
 
-  public SignedNFTAttestationV2(String signedEIP712, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
+  public Eip712SignedNFTAttestation(String signedEIP712, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
     NFTAttestationDecoder decoder = new NFTAttestationDecoder(identifierAttestationVerificationKey);
     validator = new Eip712ObjectValidator<NFTAttestation>(decoder, new NFTAttestationEncoder(), DEFAULT_DOMAIN);
     this.signedEIP712 = signedEIP712;

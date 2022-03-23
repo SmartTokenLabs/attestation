@@ -27,7 +27,7 @@ public class NFTSmartContractTest {
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
      */
     static SignedIdentifierAttestation attestation;
-    private SignedNFTAttestationV1 nftAttestation;
+    private LegacySignedNFTAttestation nftAttestation;
     private final SmartContract contract = new SmartContract();
     // the URL as King Mida's public ID, plus a label (in case of twitter, the permanent numeric ID)
     static final String labeledURI = "https://twitter.com/zhangweiwu 205521676";
@@ -58,7 +58,7 @@ public class NFTSmartContractTest {
 
         NFTAttestation nftAtt = new NFTAttestation(attestation, myNFTs);
         //construct SignedNFTAttestation using subject key
-        nftAttestation = new SignedNFTAttestationV1(nftAtt, subjectKeys.getPrivate()); // <-- signing step, NFT attestation is signed by owner of identifier, referenced below
+        nftAttestation = new LegacySignedNFTAttestation(nftAtt, subjectKeys.getPrivate()); // <-- signing step, NFT attestation is signed by owner of identifier, referenced below
 
         System.out.println("DER: " + Numeric.toHexString(nftAttestation.getDerEncoding()));
 
@@ -69,7 +69,7 @@ public class NFTSmartContractTest {
         assertTrue(nftAttestation2.verify());
 
         //Generate SignedNFTAttestation using the reconstructed NFTAttestation and the extracted Ethereum signature
-        SignedNFTAttestationV1 signedNFTAttestation2 = new SignedNFTAttestationV1(nftAttestation2, subjectKeys.getPrivate());
+        LegacySignedNFTAttestation signedNFTAttestation2 = new LegacySignedNFTAttestation(nftAttestation2, subjectKeys.getPrivate());
         assertTrue(signedNFTAttestation2.checkValidity());
         assertTrue(nftAttestation.checkValidity());
         assertArrayEquals(signedNFTAttestation2.getUnsignedAttestation().getDerEncoding(), nftAtt.getDerEncoding());
