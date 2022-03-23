@@ -36,7 +36,7 @@ class TicketClass {
 
 export class Ticket extends AttestableObject implements Attestable {
 
-    private ticketId: bigint;
+    private ticketId: string;
     private ticketClass: number;
     private devconId: string;
     private magicLinkURLPrefix:string = "https://ticket.devcon.org/";
@@ -50,24 +50,25 @@ export class Ticket extends AttestableObject implements Attestable {
         super();
     }
 
-    fromData(devconId: string, ticketId: bigint, ticketClass:number, keys: {[index: string]:KeyPair} ) {
+    fromData(devconId: string, ticketId: string, ticketClass:number, keys: {[index: string]:KeyPair} ) {
         this.ticketId = ticketId;
         this.ticketClass = ticketClass;
         this.devconId = devconId;
         this.keys = keys;
     }
 
-    createWithCommitment(devconId: string, ticketId: bigint, ticketClass: number, commitment: Uint8Array, signature: string, keys: {[index: string]:KeyPair}) {
+    createWithCommitment(devconId: string, ticketId: string, ticketClass: number, commitment: Uint8Array, signature: string, keys: {[index: string]:KeyPair}) {
         this.fromData(devconId, ticketId, ticketClass, keys);
         this.commitment = commitment;
         this.signature = signature;
         this.encoded = this.encodeSignedTicket(this.makeTicket());
+
         if (!this.verify()) {
             throw new Error("Signature is invalid");
         }
     }
 
-    static createWithMail(mail: string, devconId:string , ticketId: bigint, ticketClass: number, keys: {[index: string]:KeyPair}, secret: bigint): Ticket {
+    static createWithMail(mail: string, devconId:string , ticketId: string, ticketClass: number, keys: {[index: string]:KeyPair}, secret: bigint): Ticket {
         let me = new this();
         me.fromData(devconId, ticketId, ticketClass, keys);
         let crypto = new AttestationCrypto();
@@ -86,9 +87,21 @@ export class Ticket extends AttestableObject implements Attestable {
     }
 
     private makeTicket() {
+        let asnTicketIdType;
+        try {
+            let recoded = BigInt(this.ticketId).toString();
+            if (this.ticketId == recoded) {
+                asnTicketIdType = 'INTEGER';
+            } else {
+                asnTicketIdType = 'UTF8STRING';
+            }
+        } catch(e){
+            asnTicketIdType = 'UTF8STRING';
+        }
+       
         let ticket: string =
             Asn1Der.encode('UTF8STRING', this.devconId)
-            + Asn1Der.encode('INTEGER', this.ticketId)
+            + Asn1Der.encode(asnTicketIdType, this.ticketId)
             + Asn1Der.encode('INTEGER', this.ticketClass)
             + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
         return Asn1Der.encode('SEQUENCE_30', ticket);
@@ -125,7 +138,7 @@ export class Ticket extends AttestableObject implements Attestable {
         return true;
     }
 
-    public getTicketId():bigint {
+    public getTicketId():string {
         return this.ticketId;
     }
 
@@ -147,12 +160,17 @@ export class Ticket extends AttestableObject implements Attestable {
         const signedDevconTicket: SignedDevconTicket = AsnParser.parse(uint8toBuffer(bytes), SignedDevconTicket);
 
         let devconId:string = signedDevconTicket.ticket.devconId;
-        let ticketId:bigint = BigInt(signedDevconTicket.ticket.ticketId);
+        let ticketId:string;
+        if (signedDevconTicket.ticket.ticketId.tiketIdNumber) {
+            ticketId = signedDevconTicket.ticket.ticketId.tiketIdNumber.toString();
+        } else {
+            ticketId = signedDevconTicket.ticket.ticketId.tiketIdString;
+        }
         let ticketClassInt:number = signedDevconTicket.ticket.ticketClass;
         let commitment:Uint8Array = signedDevconTicket.ticket.commitment;
 
         let signature:Uint8Array = signedDevconTicket.signatureValue;
-
+        
         this.createWithCommitment(devconId, ticketId, ticketClassInt, new Uint8Array(commitment), uint8tohex(new Uint8Array(signature)) , keys );
     }
 

@@ -266,10 +266,20 @@ describe("MagicLink reader", () => {
 
     test('Encode/Decode Magic Link from JS', async () => {
         let res;
+        let senderKey;
         try {
-            let senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
             
-            res = await Issuer.constructTicket("mail@mail.com", "6", 222n, 9, senderKey);
+            senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
+            res = await Issuer.constructTicket("mail@mail.com", "6", "222", 9, senderKey);
+            testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${res}`);
+        } catch (e) {
+            testsLogger(DEBUGLEVEL.LOW, e);
+            throw new Error('verifyUsage failed');
+        }
+
+        try {
+            
+            res = await Issuer.constructTicket("mail@mail.com", "6", "test", 9, senderKey);
             testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${res}`);
         } catch (e) {
             testsLogger(DEBUGLEVEL.LOW, e);

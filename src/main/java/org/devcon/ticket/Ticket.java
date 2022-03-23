@@ -27,7 +27,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 public class Ticket extends Attestable {
   private static final Logger logger = LogManager.getLogger(Ticket.class);
 
-  private final BigInteger ticketId;
+  private final String ticketId;
   private final int ticketClass;
   private final String devconId;
   private final byte[] commitment;
@@ -37,6 +37,11 @@ public class Ticket extends Attestable {
   private final AsymmetricKeyParameter publicKey;
   private final byte[] encoded;
 
+  public Ticket(String mail, String devconId, BigInteger ticketId, int ticketClass,
+      AsymmetricCipherKeyPair keys, BigInteger secret ) {
+    this(mail, devconId, ticketId.toString(), ticketClass, keys, secret);
+  }
+
   /**
    *  @param mail The mail address of the recipient
    * @param devconId The id of the conference for which the ticket should be used
@@ -45,7 +50,7 @@ public class Ticket extends Attestable {
    * @param keys The keys used to sign the ticket
    * @param secret the secret that must be known to cash the cheque
    */
-  public Ticket(String mail, String devconId, BigInteger ticketId, int ticketClass,
+  public Ticket(String mail, String devconId, String ticketId, int ticketClass,
       AsymmetricCipherKeyPair keys, BigInteger secret ) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
@@ -73,6 +78,10 @@ public class Ticket extends Attestable {
   }
 
   public Ticket(String devconId, BigInteger ticketId, int ticketClass, byte[] commitment, byte[] signature, AsymmetricKeyParameter publicKey) {
+    this(devconId, ticketId.toString(), ticketClass, commitment, signature, publicKey);
+  }
+
+  public Ticket(String devconId, String ticketId, int ticketClass, byte[] commitment, byte[] signature, AsymmetricKeyParameter publicKey) {
     this.ticketId = ticketId;
     this.ticketClass = ticketClass;
     this.devconId = devconId;
@@ -100,13 +109,26 @@ public class Ticket extends Attestable {
   ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new DERUTF8String(devconId));
-    ticket.add(new ASN1Integer(ticketId));
+    addTicketId(ticket);
     ticket.add(new ASN1Integer(ticketClass));
     ticket.add(new DEROctetString(commitment));
     return new DERSequence(ticket);
   }
 
-  byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
+  /**
+   * Add TicketId as integer if possible, otherwise add it as string
+   */
+  protected void addTicketId(ASN1EncodableVector ticket) {
+    try {
+      BigInteger ticketIdInteger = new BigInteger(ticketId);
+      ticket.add(new ASN1Integer(ticketIdInteger));
+    } catch (NumberFormatException e) {
+      // The ticketID cannot be expressed as an integer
+      ticket.add(new DERUTF8String(ticketId));
+    }
+  }
+
+  protected byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
     ASN1EncodableVector signedTicket = new ASN1EncodableVector();
     signedTicket.add(ticket);
     signedTicket.add(new DERBitString(signature));
@@ -168,7 +190,7 @@ public class Ticket extends Attestable {
     return true;
   }
 
-  public BigInteger getTicketId() {
+  public String getTicketId() {
     return ticketId;
   }
 
