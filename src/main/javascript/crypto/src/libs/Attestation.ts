@@ -9,6 +9,7 @@ import {DEBUGLEVEL} from "../config";
 import {AttributeTypeAndValue} from "../asn1/shemas/InformationFramework";
 
 export class Attestation {
+    private BLOCKCHAIN_FRIENDLY_BY_DEFAULT = true;
     static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
     protected version = 18; // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
     protected serialNumber: any;
@@ -63,6 +64,12 @@ export class Attestation {
         if (decodedAttestationObj.validity){
             me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+            if (
+                (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt * 1000 != me.notValidAfter)) ||
+                (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt * 1000 != me.notValidBefore))
+                ) {
+                throw new Error("Date doesnt fit");
+            }
         }
 
         let rdn = decodedAttestationObj.subject.rdnSequence;
@@ -207,9 +214,11 @@ export class Attestation {
     getExtensions(){
         return this.extensions;
     }
+
     setVersion(version: number){
         this.version = version;
     }
+
     getVersion(): number{
         return this.version;
     }
@@ -239,8 +248,11 @@ export class Attestation {
         res += this.issuer ? Asn1Der.encodeName(this.issuer) : Asn1Der.encode('NULL_VALUE','');
 
         if (this.notValidAfter != null && this.notValidBefore != null) {
-            let date = Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
-            + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
+            let date = 
+                Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
+                + this.BLOCKCHAIN_FRIENDLY_BY_DEFAULT ? Asn1Der.encode('INTEGER', Math.floor(this.notValidBefore)): ""
+                + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter)
+                + this.BLOCKCHAIN_FRIENDLY_BY_DEFAULT ? Asn1Der.encode('INTEGER', Math.floor(this.notValidAfter)) : "";
             res += Asn1Der.encode('SEQUENCE_30', date);
         } else {
             res += Asn1Der.encode('NULL_VALUE','');

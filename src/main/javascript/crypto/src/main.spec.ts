@@ -355,8 +355,8 @@ describe("Attestation request/construct", () => {
     test("Construct Attestation(from ready attest request)", () => {
 
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
-
-        let attestationResult = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
+        let usageValue = "Creating email attestation";
+        let attestationResult = Authenticator.constructAttest(attestorKey, 'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN, usageValue);
 
         testsLogger(DEBUGLEVEL.HIGH, "attestationResult = " + attestationResult);
         // OK if no Errors
@@ -364,6 +364,7 @@ describe("Attestation request/construct", () => {
 
     });
 
+/*
     test('Authenticator.requestAttest', async () => {
 
         let secret = BigInt(12345);
@@ -389,9 +390,9 @@ describe("Attestation request/construct", () => {
         expect(1).toBe(1);
 
     });
-
+*/
 });
-
+/*
 describe("executeEipFlow", () => {
 
     test('executeEipFlow - signMessage', async () => {
@@ -568,11 +569,7 @@ describe("executeCombinedEipFlow", () => {
     })
 
 })
-
-
-
-
-
+*/
 
 
 

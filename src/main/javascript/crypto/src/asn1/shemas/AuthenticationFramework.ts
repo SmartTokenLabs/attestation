@@ -18,6 +18,7 @@ export class Version {
 // export class Time {
 //     @AsnProp({ type: AsnPropTypes.GeneralizedTime }) public generalizedTime: AsnPropTypes.GeneralizedTime;
 // }
+
 @AsnType({ type: AsnTypeTypes.Choice })
 class Time {
     @AsnProp({ type: AsnPropTypes.UTCTime})
@@ -28,7 +29,9 @@ class Time {
 
 export class ValidityValue {
     @AsnProp({ type: Time }) public notBefore: Time;
+    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public notBeforeInt?: number;
     @AsnProp({ type: Time }) public notAfter: Time;
+    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public notAfterInt?: number;
 }
 
 @AsnType({ type: AsnTypeTypes.Choice })
