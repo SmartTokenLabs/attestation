@@ -72,6 +72,13 @@ interface postMessageData {
     force?: boolean,
     email?: string,
     magicLink?: string,
+    address?: string,
+    provider_name?: string,
+}
+
+interface WalletMetaData {
+    address?: string,
+    wallet?: string,
 }
 
 export class Authenticator {
@@ -93,6 +100,9 @@ export class Authenticator {
     private base64attestorPubKey: string;
 
     private webDomain: string;
+    private walletMetaData: WalletMetaData;
+
+    private attestationListener: any;
 
     constructor(private negotiator: any = false) {
         let XMLconfig = XMLconfigData;
@@ -102,7 +112,7 @@ export class Authenticator {
         this.webDomain = XMLconfig.webDomain;
     }
 
-    getAuthenticationBlob(tokenObj: devconToken, authResultCallback: Function) {
+    getAuthenticationBlob(tokenObj: devconToken, walletMetaData:WalletMetaData = {}, authResultCallback: Function) {
         // TODO - what is tokenType, where can we see structure etc.
         // 1. Find the token type (using TokenScript)
         // Oleg: we can avoid Autenticator -> Negotiator request, just have to receive everything in single input object
@@ -112,6 +122,7 @@ export class Authenticator {
         // unless DevCon changed their tokenscript and moved all tickets to the contract
 
         this.signedTokenBlob = tokenObj.ticketBlob;
+        this.walletMetaData = walletMetaData;
         this.magicLink = tokenObj.magicLink;
         this.email = tokenObj.email;
         this.signedTokenSecret = tokenObj.ticketSecret;
@@ -127,8 +138,9 @@ export class Authenticator {
     getIdentifierAttestation() {
         logger(DEBUGLEVEL.HIGH,'getIdentifierAttestation. create iframe with ' + this.attestationOrigin);
 
+        this.attestationListener = this.postMessageAttestationListener.bind(this);
         // attach postMessage listener and wait for attestation data
-        this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
+        this.attachPostMessageListener(this.attestationListener);
         const iframe = document.createElement('iframe');
         this.iframe = iframe;
         iframe.src = this.attestationOrigin;
@@ -236,6 +248,19 @@ export class Authenticator {
             let sendData:postMessageData = {force: false};
             if (this.magicLink) sendData.magicLink = this.magicLink;
             if (this.email) sendData.email = this.email;
+            if (this.walletMetaData.address) sendData.address = this.walletMetaData.address;
+            if (this.walletMetaData.wallet) {
+                switch (this.walletMetaData.wallet) {
+                    case "Metamask": 
+                        sendData.provider_name = "injected";
+                        break;
+                    // case "WalletConnect": 
+                    //     sendData.provider_name = "injected";
+                    //     break;
+                    default: 
+                        sendData.force = true; 
+                }
+            } 
 
             logger(DEBUGLEVEL.HIGH,'sendData',sendData);
 
@@ -269,6 +294,7 @@ export class Authenticator {
         ) {
             return;
         }
+        this.detachPostMessageListener(this.attestationListener);
         this.iframeWrap.remove();
         this.attestationBlob = event.data.attestation;
         this.attestationSecret = event.data.requestSecret;
@@ -326,6 +352,15 @@ export class Authenticator {
             window.attachEvent("onmessage", (e: MessageEvent) => {
                 listener(e);
             });
+        }
+    }
+
+    detachPostMessageListener(listener:EventListener) {
+        if (window.addEventListener) {
+          window.removeEventListener("message", listener, false);
+        } else {
+          // IE8
+          window.detachEvent("onmessage", listener);
         }
     }
 
