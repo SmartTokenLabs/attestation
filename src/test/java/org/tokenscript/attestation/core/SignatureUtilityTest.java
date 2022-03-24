@@ -189,6 +189,17 @@ public class SignatureUtilityTest {
         SignatureUtility.addressFromKey(userKeys.getPublic()), 5));
   }
 
+  @Test
+  public void nonEip155Sig() {
+    byte[] message = new byte[] {0x42};
+    byte[] testSignature = SignatureUtility.signWithEthereum(message, userKeys.getPrivate());
+    // Change the normal EIP155 signature to one just storing the parity directly
+    testSignature[64] = (byte) (1 - (testSignature[64] % 2));
+    String address = SignatureUtility.addressFromKey(userKeys.getPublic());
+    AsymmetricKeyParameter key = SignatureUtility.recoverEthPublicKeyFromSignature(message, testSignature);
+    assertEquals(address, SignatureUtility.addressFromKey(key));
+  }
+
   private static BigInteger[] signDeterministic(byte[] toSign, AsymmetricKeyParameter key) {
     Digest keccak = new KeccakDigest(256);
     keccak.update(toSign, 0, toSign.length);
