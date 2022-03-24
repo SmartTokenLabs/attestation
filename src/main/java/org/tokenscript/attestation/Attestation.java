@@ -95,7 +95,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
           // Optional long timestamp is not included
           blockchainFriendly = false;
         }
-        if (notValidBeforeLong != null && notValidBeforeLong != notValidBefore.getTime()) {
+
+        if (notValidBeforeLong != null && !notValidBeforeLong.equals(notValidBefore.toInstant().getEpochSecond())) {
           logger.error("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
           throw new IllegalArgumentException("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
         }
@@ -109,7 +110,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
           // Optional long timestamp is not included
           blockchainFriendly = false;
         }
-        if (notValidAfterLong != null && notValidAfterLong != notValidAfter.getTime()) {
+        if (notValidAfterLong != null && !notValidAfterLong.equals(notValidAfter.toInstant().getEpochSecond())) {
           logger.error("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
           throw new IllegalArgumentException("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
         }
@@ -199,8 +200,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   public void setNotValidBefore(Date notValidBefore) {
-    // Remove milliseconds since they are not included in Generalized Time
-    Date time = new Date(notValidBefore.getTime()-(notValidBefore.getTime() % 1000));
+    // Convert to milliseconds, rounded down
+    Date time = new Date(notValidBefore.toInstant().getEpochSecond()*1000);
     this.notValidBefore = time;
   }
 
@@ -209,8 +210,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   public void setNotValidAfter(Date notValidAfter) {
-    // Remove milliseconds since they are not included in Generalized Time
-    Date time = new Date(notValidAfter.getTime()-(notValidAfter.getTime() % 1000));
+    // Convert to milliseconds, rounded down
+    Date time = new Date(notValidAfter.toInstant().getEpochSecond()*1000);
     this.notValidAfter = time;
   }
 
@@ -372,11 +373,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       ASN1EncodableVector date = new ASN1EncodableVector();
       date.add(new ASN1GeneralizedTime(this.notValidBefore));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidBefore.getTime()));
+        date.add(new ASN1Integer(this.notValidBefore.toInstant().getEpochSecond()));
       }
       date.add(new ASN1GeneralizedTime(this.notValidAfter));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidAfter.getTime()));
+        date.add(new ASN1Integer(this.notValidAfter.toInstant().getEpochSecond()));
       }
       res.add(new DERSequence(date));
     } else {
