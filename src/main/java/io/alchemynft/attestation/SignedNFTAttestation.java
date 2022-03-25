@@ -24,10 +24,12 @@ public class SignedNFTAttestation implements InternalSignedNFTAttestation {
   /**
    * Constructor ONLY for version 1 signatures
    * @param nftAtt Unsigned NFT attestation
+   * @param pk Legacy parameter, which will be ignored
    * @param rawPersonalSignature raw bytes of the signature
    */
   @Deprecated
-  public SignedNFTAttestation(NFTAttestation nftAtt, byte[] rawPersonalSignature) {
+  public SignedNFTAttestation(NFTAttestation nftAtt,
+      AsymmetricKeyParameter pk, byte[] rawPersonalSignature) {
     this(nftAtt, new PersonalSignature(rawPersonalSignature));
   }
 

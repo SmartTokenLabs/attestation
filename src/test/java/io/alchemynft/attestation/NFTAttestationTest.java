@@ -143,7 +143,8 @@ public class NFTAttestationTest {
     @Test
     public void legacyAPICall() {
         SignedNFTAttestation signedNftAtt = new SignedNFTAttestation(nftAtt, subjectKeys.getPrivate(), 1);
-        SignedNFTAttestation attLegacyConstructor = new SignedNFTAttestation(signedNftAtt.getUnsignedAttestation(), signedNftAtt.getRawSignature());
+        SignedNFTAttestation attLegacyConstructor = new SignedNFTAttestation(signedNftAtt.getUnsignedAttestation(), null,
+            signedNftAtt.getRawSignature());
         assertTrue(attLegacyConstructor.verify());
         assertTrue(attLegacyConstructor.checkValidity());
         assertEquals(1, signedNftAtt.getSigningVersion());
@@ -190,7 +191,8 @@ public class NFTAttestationTest {
     public void APIWrapperV1() throws Exception {
         LegacySignedNFTAttestation refAtt = new LegacySignedNFTAttestation(nftAtt, subjectKeys.getPrivate(), 1);
         sunshine(new SignedNFTAttestation(refAtt.getDerEncoding(), attestorKeys.getPublic()));
-        sunshine(new SignedNFTAttestation(refAtt.getUnsignedAttestation(), refAtt.getRawSignature()));
+        sunshine(new SignedNFTAttestation(refAtt.getUnsignedAttestation(), null,
+            refAtt.getRawSignature()));
     }
 
     @Test
