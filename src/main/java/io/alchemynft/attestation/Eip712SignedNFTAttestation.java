@@ -1,6 +1,7 @@
 package io.alchemynft.attestation;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -9,6 +10,9 @@ import org.tokenscript.attestation.eip712.Eip712ObjectSigner;
 import org.tokenscript.attestation.eip712.Eip712ObjectValidator;
 import org.tokenscript.eip712.FullEip712InternalData;
 
+/**
+ * Class for EIP712 signed NFT attestations, which is signing version 3.
+ */
 public class Eip712SignedNFTAttestation implements InternalSignedNFTAttestation {
   private static final Logger logger = LogManager.getLogger(Eip712SignedNFTAttestation.class);
   public static final String DEFAULT_DOMAIN = "https://autographnft.io";
@@ -67,8 +71,14 @@ public class Eip712SignedNFTAttestation implements InternalSignedNFTAttestation 
     return att;
   }
 
-  public String getSignature() {
-    return signature;
+  @Override
+  public byte[] getRawSignature() {
+    return signature.getBytes(StandardCharsets.UTF_8);
+  }
+
+  @Override
+  public int getSigningVersion() {
+    return 3;
   }
 
   /**

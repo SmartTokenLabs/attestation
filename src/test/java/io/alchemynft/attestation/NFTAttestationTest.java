@@ -96,7 +96,7 @@ public class NFTAttestationTest {
         Files.write(p, signedNFTAttestation.getDerEncoding());
 
         //Extract the Ethereum signature
-        Signature sig = signedNFTAttestation.getSignature();
+        Signature sig = new PersonalSignature(signedNFTAttestation.getRawSignature());
 
         //generate NFTAttestation from the NFTAttestation bytes
         NFTAttestation nftAttestation2 = new NFTAttestation(nftAtt.getDerEncoding(),
@@ -136,7 +136,19 @@ public class NFTAttestationTest {
         SignedNFTAttestation otherAtt = new SignedNFTAttestation(att.getUnsignedAttestation(), att.getSignature());
         assertTrue(otherAtt.checkValidity());
         assertTrue(otherAtt.verify());
+        assertEquals(2, att.getSigningVersion());
         assertArrayEquals(att.getDerEncoding(), otherAtt.getDerEncoding());
+    }
+
+    @Test
+    public void legacyAPICall() {
+        SignedNFTAttestation signedNftAtt = new SignedNFTAttestation(nftAtt, subjectKeys.getPrivate(), 1);
+        SignedNFTAttestation attLegacyConstructor = new SignedNFTAttestation(signedNftAtt.getUnsignedAttestation(), signedNftAtt.getRawSignature());
+        assertTrue(attLegacyConstructor.verify());
+        assertTrue(attLegacyConstructor.checkValidity());
+        assertEquals(1, signedNftAtt.getSigningVersion());
+        assertEquals(SignatureUtility.addressFromKey(subjectKeys.getPublic()), SignatureUtility.addressFromKey(attLegacyConstructor.getNFTAttestationVerificationKey()));
+        assertArrayEquals(nftAtt.getDerEncoding(), attLegacyConstructor.getUnsignedAttestation().getDerEncoding());
     }
 
     @Test
@@ -153,7 +165,7 @@ public class NFTAttestationTest {
         LegacySignedNFTAttestation decodedNFTAtt = new LegacySignedNFTAttestation(signedNFTAttestation.getDerEncoding(), attestorKeys.getPublic());
         assertTrue(decodedNFTAtt.verify());
         assertTrue(decodedNFTAtt.checkValidity());
-        assertArrayEquals(signedNFTAttestation.getSignature().getRawSignature(), decodedNFTAtt.getSignature().getRawSignature());
+        assertArrayEquals(signedNFTAttestation.getRawSignature(), decodedNFTAtt.getRawSignature());
         assertEquals(SignatureUtility.addressFromKey(signedNFTAttestation.getNFTAttestationVerificationKey()),
             SignatureUtility.addressFromKey(signedNFTAttestation.getNFTAttestationVerificationKey()));
         assertArrayEquals(signedNFTAttestation.getDerEncoding(), decodedNFTAtt.getDerEncoding());
@@ -165,7 +177,8 @@ public class NFTAttestationTest {
         Eip712SignedNFTAttestation decodedNFTAtt = new Eip712SignedNFTAttestation(signedNFTAttestation.getSignedEIP712(), attestorKeys.getPublic());
         assertTrue(decodedNFTAtt.verify());
         assertTrue(decodedNFTAtt.checkValidity());
-        assertEquals(signedNFTAttestation.getSignature(), decodedNFTAtt.getSignature());
+        assertEquals(3, decodedNFTAtt.getSigningVersion());
+        assertArrayEquals(signedNFTAttestation.getRawSignature(), decodedNFTAtt.getRawSignature());
         assertEquals(SignatureUtility.addressFromKey(signedNFTAttestation.getNFTAttestationVerificationKey()),
             SignatureUtility.addressFromKey(signedNFTAttestation.getNFTAttestationVerificationKey()));
         assertEquals(signedNFTAttestation.getSignedEIP712(), decodedNFTAtt.getSignedEIP712());
@@ -177,7 +190,7 @@ public class NFTAttestationTest {
     public void APIWrapperV1() throws Exception {
         LegacySignedNFTAttestation refAtt = new LegacySignedNFTAttestation(nftAtt, subjectKeys.getPrivate(), 1);
         sunshine(new SignedNFTAttestation(refAtt.getDerEncoding(), attestorKeys.getPublic()));
-        sunshine(new SignedNFTAttestation(refAtt.getUnsignedAttestation(), refAtt.getSignature()));
+        sunshine(new SignedNFTAttestation(refAtt.getUnsignedAttestation(), refAtt.getRawSignature()));
     }
 
     @Test
