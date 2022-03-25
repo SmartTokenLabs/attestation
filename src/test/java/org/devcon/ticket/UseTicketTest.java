@@ -23,7 +23,6 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.Attestation;
 import org.tokenscript.attestation.AttestedObject;
@@ -126,7 +125,7 @@ public class UseTicketTest {
 
   @Test
   public void testDecoding() throws InvalidObjectException {
-    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncoding(), new TicketDecoder(
+    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncoding(), new DevconTicketDecoder(
         ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.verify());
@@ -174,7 +173,7 @@ public class UseTicketTest {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
-    AttestedObject<Ticket> newUseTicket = new AttestedObject<Ticket>(useTicket.getDerEncoding(), new TicketDecoder(
+    AttestedObject<Ticket> newUseTicket = new AttestedObject<Ticket>(useTicket.getDerEncoding(), new DevconTicketDecoder(
             ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
 
     assertTrue(newUseTicket.getAttestableObject().verify());
