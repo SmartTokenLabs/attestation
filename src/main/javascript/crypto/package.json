@@ -1,7 +1,7 @@
 {
-  "name": "wpts",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@tokenscript/attestation",
+  "version": "1.0.0-alpha",
+  "description": "A library for integrating cryptographic attestations into applications",
   "main": "index.js",
   "scripts": {
     "test": "mocha src/**/*.test.ts",
