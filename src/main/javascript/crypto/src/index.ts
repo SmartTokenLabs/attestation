@@ -8,3 +8,5 @@ import {IntegrationExample} from "./IntegrationExample";
 (window as any).AttestationCrypto = AttestationCrypto;
 (window as any).IntegrationExample = IntegrationExample;
 
+export {Authenticator, Eip712AttestationRequest, AttestationCrypto};
+
