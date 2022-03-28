@@ -1,4 +1,4 @@
-package io.alchemynft.attestation;
+package org.tokenscript.attestation.core;
 
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 

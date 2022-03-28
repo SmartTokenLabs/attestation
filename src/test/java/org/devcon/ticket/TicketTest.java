@@ -14,6 +14,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HashMap;
@@ -26,13 +27,8 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.nio.file.Paths;
-
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import org.tokenscript.attestation.UseAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
@@ -51,9 +47,6 @@ public class TicketTest {
 
   private static final String PREFIX = "build/test-results/";
 
-  @Mock
-  UseAttestation mockedTicket;
-
   @BeforeEach
   public void init() {
     MockitoAnnotations.initMocks(this);
@@ -70,7 +63,7 @@ public class TicketTest {
   @Test
   public void sunshine() throws Exception {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
-    assertEquals(TICKET_ID, ticket.getTicketId());
+    assertEquals(TICKET_ID, new BigInteger(ticket.getTicketId()));
     assertEquals(TICKET_CLASS, ticket.getTicketClass());
     assertEquals(CONFERENCE_ID, ticket.getDevconId());
     SubjectPublicKeyInfo ticketSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(ticket.getPublicKey());
@@ -166,6 +159,50 @@ public class TicketTest {
   }
 
   @Test
+  public void stringTicketId() throws Exception {
+    String ticketId = "some none integer ticket id";
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, ticketId, TICKET_CLASS, senderKeys, SECRET);
+    assertEquals(ticketId, ticket.getTicketId());
+    assertEquals(TICKET_CLASS, ticket.getTicketClass());
+    assertEquals(CONFERENCE_ID, ticket.getDevconId());
+
+    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    Ticket newTicket = decoder.decode(ticket.getDerEncoding());
+    assertTrue(newTicket.verify());
+    assertTrue(newTicket.checkValidity());
+
+    assertEquals(ticket.getTicketId(), newTicket.getTicketId());
+    assertEquals(ticket.getTicketClass(), newTicket.getTicketClass());
+    assertEquals(ticket.getDevconId(), newTicket.getDevconId());
+    assertEquals(ticket.getAlgorithm(), newTicket.getAlgorithm());
+    assertArrayEquals(ticket.getCommitment(), newTicket.getCommitment());
+    assertArrayEquals(ticket.getSignature(), newTicket.getSignature());
+    assertArrayEquals(ticket.getDerEncoding(), newTicket.getDerEncoding());
+  }
+
+  @Test
+  public void testLegacyTicket() throws Exception {
+    String legacyTicketUrl = "MIGXMFEMBDYuw5gCAwC-BgIBAARBBCtDxEZ1a0_c7qCE3k2UzDZQbziPc_mRgfdCGNi2wJx9GGM0Vg24wFNQX3s98rUVoJ8axKVcHlFAS0E2vFlSyZwDQgCc5Qp0GRCbBLQxw0C7K-pHmaDuuzaFwFO4tIVpjIAz0hNwZtshqRS_Z0R_rz2SbvQJeGcvy8ENnkFyyawubuiMHA==";
+    byte[] legacyTicketBytes = URLUtility.decodeData(legacyTicketUrl);
+    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    Ticket legacyTicket = decoder.decode(legacyTicketBytes);
+    assertTrue(legacyTicket.verify());
+    assertTrue(legacyTicket.checkValidity());
+
+    Ticket newTicket = decoder.decode(legacyTicketBytes);
+    assertTrue(newTicket.verify());
+    assertTrue(newTicket.checkValidity());
+
+    assertEquals(legacyTicket.getTicketId(), newTicket.getTicketId());
+    assertEquals(legacyTicket.getTicketClass(), newTicket.getTicketClass());
+    assertEquals(legacyTicket.getDevconId(), newTicket.getDevconId());
+    assertEquals(legacyTicket.getAlgorithm(), newTicket.getAlgorithm());
+    assertArrayEquals(legacyTicket.getCommitment(), newTicket.getCommitment());
+    assertArrayEquals(legacyTicket.getSignature(), newTicket.getSignature());
+    assertArrayEquals(legacyTicketBytes, newTicket.getDerEncoding());
+  }
+
+  @Test
   public void testFullDecodingWithPK() throws Exception {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncodingWithPK();
@@ -218,7 +255,7 @@ public class TicketTest {
   @Test
   public void testLisconTicketSunshine() throws Exception {
     LisconTicket ticket = new LisconTicket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
-    assertEquals(TICKET_ID, ticket.getTicketId());
+    assertEquals(TICKET_ID, new BigInteger(ticket.getTicketId()));
     assertEquals(TICKET_CLASS, ticket.getTicketClass());
     assertEquals(CONFERENCE_ID, ticket.getDevconId());
     SubjectPublicKeyInfo ticketSpki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(ticket.getPublicKey());

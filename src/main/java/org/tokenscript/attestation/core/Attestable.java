@@ -1,5 +1,7 @@
 package org.tokenscript.attestation.core;
 
-public interface Attestable extends ASNEncodable, Verifiable, Validateable {
-  public byte[] getCommitment();
+import org.tokenscript.attestation.CheckableObject;
+
+public abstract class Attestable implements CheckableObject {
+  public abstract byte[] getCommitment();
 }

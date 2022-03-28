@@ -1,9 +1,15 @@
-import { AsnProp, AsnPropTypes } from "@peculiar/asn1-schema";
+import { AsnProp, AsnPropTypes, AsnType, AsnTypeTypes} from "@peculiar/asn1-schema";
 import { ValidityValue, AlgorithmIdentifierASN} from "./AuthenticationFramework";
+
+@AsnType({ type: AsnTypeTypes.Choice })
+class StringOrInteger {
+    @AsnProp({ type: AsnPropTypes.Integer}) public tiketIdNumber?: BigInt;
+    @AsnProp({ type: AsnPropTypes.Utf8String }) public tiketIdString?: string;
+}
 
 export class DevconTicket {
     @AsnProp({ type: AsnPropTypes.Utf8String }) public devconId: string;
-    @AsnProp({ type: AsnPropTypes.Integer }) public ticketId: number;
+    @AsnProp({ type: StringOrInteger }) public ticketId: StringOrInteger;
     @AsnProp({ type: AsnPropTypes.Integer }) public ticketClass: number;
     @AsnProp({ type: AsnPropTypes.OctetString }) public commitment: Uint8Array;
 }

@@ -1,11 +1,5 @@
 package org.tokenscript.attestation;
 
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.Attestable;
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Verifiable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
@@ -17,8 +11,12 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.tokenscript.attestation.core.Attestable;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 
-public class AttestedObject<T extends Attestable> implements ASNEncodable, Verifiable {
+public class AttestedObject<T extends Attestable> extends AttestedKeyObject {
   private static final Logger logger = LogManager.getLogger(AttestedObject.class);
   private final T attestableObject;
   private final SignedIdentifierAttestation att;
@@ -30,18 +28,18 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
   public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
       BigInteger attestationSecret, BigInteger chequeSecret, AttestationCrypto crypto) {
-    this(attestableObject, att, userPublicKey, attestationSecret, chequeSecret, new byte[0], crypto);
+    this(attestableObject, att, attestationSecret, chequeSecret, new byte[0], crypto);
   }
 
-  public AttestedObject(T attestableObject, SignedIdentifierAttestation att, AsymmetricKeyParameter userPublicKey,
-                        BigInteger attestationSecret, BigInteger chequeSecret, byte[] unpredictableNumber,
-                        AttestationCrypto crypto)
+  public AttestedObject(T attestableObject, SignedIdentifierAttestation att,
+      BigInteger attestationSecret, BigInteger chequeSecret, byte[] unpredictableNumber,
+      AttestationCrypto crypto)
   {
     this.attestableObject = attestableObject;
     this.att = att;
-    this.userPublicKey = userPublicKey;
 
     try {
+      this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
       this.pok = makeProof(attestationSecret, chequeSecret, unpredictableNumber, crypto);
       ASN1EncodableVector vec = new ASN1EncodableVector();
       vec.add(ASN1Sequence.getInstance(this.attestableObject.getDerEncoding()));
@@ -72,14 +70,14 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     constructorCheck();
   }
 
-  public AttestedObject(byte[] derEncoding, AttestableObjectDecoder<T> decoder,
+  public AttestedObject(byte[] derEncoding, ObjectDecoder<T> attestableObjectDecoder,
                         AsymmetricKeyParameter publicAttestationSigningKey) {
     this.encoding = derEncoding;
     try {
       ASN1InputStream input = new ASN1InputStream(derEncoding);
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       input.close();
-      this.attestableObject = decoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
+      this.attestableObject = attestableObjectDecoder.decode(asn1.getObjectAt(0).toASN1Primitive().getEncoded());
       this.att = new SignedIdentifierAttestation(asn1.getObjectAt(1).toASN1Primitive().getEncoded(), publicAttestationSigningKey);
       this.pok = new UsageProofOfExponent(asn1.getObjectAt(2).toASN1Primitive().getEncoded());
       this.userPublicKey = PublicKeyFactory.createKey(att.getUnsignedAttestation().getSubjectPublicKeyInfo());
@@ -108,7 +106,8 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
     return pok;
   }
 
-  public AsymmetricKeyParameter getUserPublicKey() {
+  @Override
+  public AsymmetricKeyParameter getAttestedUserKey() {
     return userPublicKey;
   }
 
@@ -116,6 +115,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
    * Verifies that the redeem request will be accepted by the smart contract
    * @return true if the redeem request should be accepted by the smart contract
    */
+  @Override
   public boolean checkValidity() {
     // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
     try {
@@ -142,7 +142,7 @@ public class AttestedObject<T extends Attestable> implements ASNEncodable, Verif
 
     // CHECK: the Ethereum address on the attestation matches receivers signing key
     String attestationEthereumAddress = getAtt().getUnsignedAttestation().getAddress();
-    if (!attestationEthereumAddress.equals(SignatureUtility.addressFromKey(getUserPublicKey()))) {
+    if (!attestationEthereumAddress.equals(SignatureUtility.addressFromKey(getAttestedUserKey()))) {
       logger.error("The attestation is not to the same Ethereum user who is sending this request");
       return false;
     }

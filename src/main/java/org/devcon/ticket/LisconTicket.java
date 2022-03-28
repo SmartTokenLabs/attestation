@@ -32,13 +32,13 @@ public class LisconTicket extends Ticket {
   ASN1Sequence makeTicket() {
     ASN1EncodableVector ticket = new ASN1EncodableVector();
     ticket.add(new DERUTF8String(getDevconId()));
-    ticket.add(new ASN1Integer(getTicketId()));
+    addTicketId(ticket);
     ticket.add(new ASN1Integer(getTicketClass()));
     return new DERSequence(ticket);
   }
 
   @Override
-  byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
+  protected byte[] encodeSignedTicket(ASN1Sequence ticket) throws IOException {
     ASN1EncodableVector signedTicket = new ASN1EncodableVector();
     signedTicket.add(ticket);
     signedTicket.add(new DEROctetString(getCommitment()));
