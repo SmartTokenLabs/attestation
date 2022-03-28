@@ -370,7 +370,7 @@ export class Authenticator {
         validityInMilliseconds: number ,
         attestRequestJson: string,
         attestorDomain: string,
-        usageValue: string ){
+        usageValue: string = "" ){
         let att: IdentifierAttestation;
         let crypto = new AttestationCrypto();
         let attestationRequest;
@@ -381,7 +381,9 @@ export class Authenticator {
             // set usageValue as "Creating email attestation"
             attestationRequest = new Eip712AttestationRequest();
             attestationRequest.setDomain(attestorDomain);
-            attestationRequest.setUsageValue(usageValue);
+            if (usageValue){
+                attestationRequest.setUsageValue(usageValue);
+            }
             attestationRequest.fillJsonData(attestRequestJson);
             Authenticator.checkAttestRequestVerifiability(attestationRequest);
             Authenticator.checkAttestRequestValidity(attestationRequest);

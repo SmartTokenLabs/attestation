@@ -64,12 +64,13 @@ export class Attestation {
         if (decodedAttestationObj.validity){
             me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
-            if (
-                (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt * 1000 != me.notValidAfter)) ||
-                (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt * 1000 != me.notValidBefore))
-                ) {
-                throw new Error("Date doesnt fit");
-            }
+            // TODO validate time when it will be updated in Java code
+            // if (
+            //     (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt * 1000 != me.notValidAfter)) ||
+            //     (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt * 1000 != me.notValidBefore))
+            //     ) {
+            //     throw new Error("Date doesnt fit");
+            // }
         }
 
         let rdn = decodedAttestationObj.subject.rdnSequence;
@@ -250,9 +251,9 @@ export class Attestation {
         if (this.notValidAfter != null && this.notValidBefore != null) {
             let date = 
                 Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
-                + this.BLOCKCHAIN_FRIENDLY_BY_DEFAULT ? Asn1Der.encode('INTEGER', Math.floor(this.notValidBefore)): ""
+                + (this.BLOCKCHAIN_FRIENDLY_BY_DEFAULT ? Asn1Der.encode('INTEGER', Math.floor(this.notValidBefore)): "")
                 + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter)
-                + this.BLOCKCHAIN_FRIENDLY_BY_DEFAULT ? Asn1Der.encode('INTEGER', Math.floor(this.notValidAfter)) : "";
+                + (this.BLOCKCHAIN_FRIENDLY_BY_DEFAULT ? Asn1Der.encode('INTEGER', Math.floor(this.notValidAfter)) : "");
             res += Asn1Der.encode('SEQUENCE_30', date);
         } else {
             res += Asn1Der.encode('NULL_VALUE','');
