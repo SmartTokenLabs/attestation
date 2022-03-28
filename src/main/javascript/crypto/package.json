@@ -9,6 +9,11 @@
     "watch": "webpack --watch --progress",
     "testjest": "jest"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TokenScript/attestation.git",
+    "directory": "/src/main/javascript/crypto"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
