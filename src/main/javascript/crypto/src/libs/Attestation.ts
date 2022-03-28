@@ -18,6 +18,7 @@ export class Attestation {
     protected issuer: string; // X500Name value Optional
     private notValidBefore: any;// Optional
     private notValidAfter: any;// Optional
+    private blockchainFriendly: boolean = true;
     //private subject: Name;  //X500Name  CN=Ethereum address     // Optional
     // der encoded
     protected subject: string;  //X500Name  CN=Ethereum address     // Optional
@@ -63,6 +64,9 @@ export class Attestation {
         if (decodedAttestationObj.validity){
             me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+            if (typeof decodedAttestationObj.validity.notBeforeInt === 'undefined' || typeof decodedAttestationObj.validity.notAfterInt === 'undefined') {
+                this.blockchainFriendly = false;
+            }
         }
 
         let rdn = decodedAttestationObj.subject.rdnSequence;
@@ -239,8 +243,14 @@ export class Attestation {
         res += this.issuer ? Asn1Der.encodeName(this.issuer) : Asn1Der.encode('NULL_VALUE','');
 
         if (this.notValidAfter != null && this.notValidBefore != null) {
-            let date = Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
-            + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
+            let date = Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore);
+            // if (this.blockchainFriendly) {
+            //     date += Asn1Der.encode('INTEGER', this.notValidBefore);
+            // }
+            date += Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
+            // if (this.blockchainFriendly) {
+            //     date += Asn1Der.encode('INTEGER', this.notValidAfter);
+            // }
             res += Asn1Der.encode('SEQUENCE_30', date);
         } else {
             res += Asn1Der.encode('NULL_VALUE','');
