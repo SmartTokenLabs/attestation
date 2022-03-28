@@ -1,6 +1,8 @@
 {
-  "name": "tokenscript-attestation",
+  "name": "@tokenscript/attestation",
+  "main": "src/main/javascript/crypto/src/index.ts",
   "version": "0.0.1",
+  "author": "Smart Token Labs <sayhi@smarttokenlabs.com>",
   "type": "module",
   "dependencies": {
     "asn1js": "^2.0.26",
