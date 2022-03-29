@@ -72,7 +72,7 @@ export class Authenticator {
             logger(DEBUGLEVEL.MEDIUM,'ticked valid (signature OK)');
         } catch (e) {
             logger(DEBUGLEVEL.MEDIUM,'getUseTicket: ticket validation failed',e);
-            throw new Error("getUseTicket: ticked validation failed");
+            throw new Error("getUseTicket: ticked validation failed: " + e.message);
         }
 
         try {
@@ -89,11 +89,11 @@ export class Authenticator {
                 logger(DEBUGLEVEL.LOW,"Could not verify attestation");
                 throw new Error("Verification failed");
             }
-            logger(DEBUGLEVEL.HIGH,'attestaion valid');
+            logger(DEBUGLEVEL.HIGH,'attestation valid');
         } catch (e) {
             logger(DEBUGLEVEL.LOW,'getUseTicket: attestation validation failed');
             logger(DEBUGLEVEL.MEDIUM,e);
-            throw new Error("getUseTicket: attestation validation failed");
+            throw new Error("getUseTicket: attestation validation failed: " + e.message);
         }
 
 
@@ -111,7 +111,7 @@ export class Authenticator {
         } catch (e) {
             logger(DEBUGLEVEL.LOW,'getUseTicket: redeem failed');
             logger(DEBUGLEVEL.MEDIUM,e);
-            throw new Error("getUseTicket: redeem failed");
+            throw new Error("getUseTicket: redeem failed: " + e.message);
         }
 
 
