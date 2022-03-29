@@ -62,7 +62,7 @@ dependencies {
     implementation group: 'commons-cli', name: 'commons-cli', version: '[1.5.0, 2)'
     implementation group: 'com.google.code.gson', name: 'gson', version: '[2.9.0, 3)'
     testImplementation 'org.mockito:mockito-core:[4.4.0, 5)'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:[2.13.2.1,)'
     implementation group: 'org.java-websocket', name: 'Java-WebSocket'
 }
 
@@ -163,7 +163,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.14"
+version = "0.3.15"
 
 /** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
  * For actually updating the Maven repo update the version reference in README.md,

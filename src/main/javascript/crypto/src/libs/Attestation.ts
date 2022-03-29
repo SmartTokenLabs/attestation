@@ -244,13 +244,13 @@ export class Attestation {
 
         if (this.notValidAfter != null && this.notValidBefore != null) {
             let date = Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore);
-            // if (this.blockchainFriendly) {
-            //     date += Asn1Der.encode('INTEGER', this.notValidBefore);
-            // }
+            if (this.blockchainFriendly) {
+                date += Asn1Der.encode('INTEGER', this.notValidBefore);
+            }
             date += Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
-            // if (this.blockchainFriendly) {
-            //     date += Asn1Der.encode('INTEGER', this.notValidAfter);
-            // }
+            if (this.blockchainFriendly) {
+                date += Asn1Der.encode('INTEGER', this.notValidAfter);
+            }
             res += Asn1Der.encode('SEQUENCE_30', date);
         } else {
             res += Asn1Der.encode('NULL_VALUE','');
