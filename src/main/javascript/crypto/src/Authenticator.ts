@@ -1,4 +1,5 @@
 import {Ticket} from "./Ticket";
+import {Ticket as TicketTNCompat} from "./tn-compat/Ticket";
 import {KeyPair} from "./libs/KeyPair";
 import {base64ToUint8array, uint8ToBn, uint8tohex, logger} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
@@ -52,15 +53,21 @@ export class Authenticator {
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKey: string
+        base64senderPublicKey: string,
+        useOldTicketSchema: boolean = false
     )
     {
-        let ticket: Ticket;
+        let ticket: Ticket|TicketTNCompat;
         let att: SignedIdentifierAttestation;
 
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         try {
-            ticket = Ticket.fromBase64(base64ticket,{"6": KeyPair.publicFromBase64(base64senderPublicKey)});
+            if (useOldTicketSchema){
+                ticket = TicketTNCompat.fromBase64(base64ticket,KeyPair.publicFromBase64(base64senderPublicKey));
+            } else {
+                ticket = Ticket.fromBase64(base64ticket,{"6": KeyPair.publicFromBase64(base64senderPublicKey)});
+            }
+
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
                 throw new Error("Validation failed");
