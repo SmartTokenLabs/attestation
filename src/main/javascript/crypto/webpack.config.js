@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-    entry: './src/index.ts',
+    entry: './src/bundle.ts',
     module: {
         rules: [
             {
@@ -28,7 +28,7 @@ module.exports = {
         mainFields: ['loader', 'main']
     },
     output: {
-        filename: 'authenticator.js',
+        filename: 'authenticator.bundle.js',
         path: path.resolve(__dirname, 'dist'),
     },
     // watch: true,
