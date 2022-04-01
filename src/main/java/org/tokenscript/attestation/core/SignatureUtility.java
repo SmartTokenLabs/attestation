@@ -440,7 +440,14 @@ public class SignatureUtility {
                 new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
         byte recoveryValue = signature[64];
-        byte yParity = (byte) (1 - (recoveryValue % 2));
+        byte yParity;
+        if (recoveryValue == 0 || recoveryValue == 1) {
+            // Handle the edge case where EIP-155 is not supported and the parity bit is stored directly
+            yParity = recoveryValue;
+        } else {
+            // Set parity bit according to EIP-155, i.e. as yParty + chainID * 2 + 35
+            yParity = (byte) (1 - (recoveryValue % 2));
+        }
         return computePublicKeyFromSignature(new BigInteger[]{r, s}, yParity, message);
     }
 

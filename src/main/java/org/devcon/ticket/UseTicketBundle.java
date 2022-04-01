@@ -46,7 +46,7 @@ public class UseTicketBundle implements Verifiable {
   public UseTicketBundle(String jsonBundle, AsymmetricKeyParameter ticketIssuerPublicKey, AsymmetricKeyParameter attestorPublicKey) throws Exception {
     this.jsonMapper = new ObjectMapper();
     JsonUseTicketBundle decodedBundle = jsonMapper.readValue(jsonBundle, JsonUseTicketBundle.class);
-    this.useTicket = new AttestedObject(decodedBundle.getUseTicketDer(), new TicketDecoder(ticketIssuerPublicKey), attestorPublicKey);
+    this.useTicket = new AttestedObject(decodedBundle.getUseTicketDer(), new DevconTicketDecoder(ticketIssuerPublicKey), attestorPublicKey);
     this.un = decodedBundle.getUn();
     this.messageToSign = computeMessage(un);
     this.signature = decodedBundle.getSignature();

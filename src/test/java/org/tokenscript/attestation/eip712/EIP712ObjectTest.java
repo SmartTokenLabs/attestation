@@ -15,7 +15,7 @@ import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.devcon.ticket.Ticket;
-import org.devcon.ticket.TicketDecoder;
+import org.devcon.ticket.DevconTicketDecoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ public class EIP712ObjectTest {
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     ticketKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    ObjectDecoder<Ticket> ticketDecoder = new TicketDecoder(ticketKeys.getPublic());
+    ObjectDecoder<Ticket> ticketDecoder = new DevconTicketDecoder(ticketKeys.getPublic());
     ObjectDecoder<AttestedObject<Ticket>> attestedObjectDecoder = new AttestedObjectDecoder<Ticket>(ticketDecoder,
         attestorKeys.getPublic());
     encoder = new AuthenticatorEncoder(0, rand);
@@ -114,7 +114,7 @@ public class EIP712ObjectTest {
     Eip712ObjectSigner localIssuer = new Eip712ObjectSigner(userKeys.getPrivate(), localAuthenticator);
     AttestedObject attestedTicket = makeAttestedTicket();
     String token = localIssuer.buildSignedToken(attestedTicket, validatorDomain);
-    ObjectDecoder<Ticket> ticketDecoder = new TicketDecoder(ticketKeys.getPublic());
+    ObjectDecoder<Ticket> ticketDecoder = new DevconTicketDecoder(ticketKeys.getPublic());
     ObjectDecoder<AttestedObject<Ticket>> attestedObjectDecoder = new AttestedObjectDecoder<Ticket>(ticketDecoder,
         attestorKeys.getPublic());
     Eip712ObjectValidator localValidator = new Eip712ObjectValidator(attestedObjectDecoder, localAuthenticator,
@@ -174,7 +174,7 @@ public class EIP712ObjectTest {
     long testTimestamp = 10000;
     Eip712ObjectSigner testIssuer = new TestEip712ObjectSigner(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
-    ObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
+    ObjectDecoder<Ticket> decoder = new DevconTicketDecoder(ticketKeys.getPublic());
     Eip712ObjectValidator newValidator = new Eip712ObjectValidator(decoder, encoder, validatorDomain);
     assertFalse(newValidator.validateRequest(token));
   }
@@ -199,7 +199,7 @@ public class EIP712ObjectTest {
 
   @Test
   public void invalidDomainVerifier() {
-    ObjectDecoder<Ticket> decoder = new TicketDecoder(ticketKeys.getPublic());
+    ObjectDecoder<Ticket> decoder = new DevconTicketDecoder(ticketKeys.getPublic());
     assertThrows( RuntimeException.class, () -> {
       new Eip712ObjectValidator(decoder, encoder, "www.noHttpPrefix.com");
     });
