@@ -43,8 +43,8 @@ public class Validator {
   static void validateTicket(String ticketInUrl, String pokInUrl, String mail, Path keyFile) throws IOException {
     byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
     AsymmetricKeyParameter issuerPubKey = DERUtility.restoreRFCRFC5915Key(dataCER);
-    TicketDecoder ticketDecoder = new TicketDecoder(issuerPubKey);
-    Ticket ticket = ticketDecoder.decode(URLUtility.decodeData(ticketInUrl));
+    DevconTicketDecoder devconTicketDecoder = new DevconTicketDecoder(issuerPubKey);
+    Ticket ticket = devconTicketDecoder.decode(URLUtility.decodeData(ticketInUrl));
     if (!ticket.checkValidity()) {
       throw new RuntimeException(
           "Something went wrong and the constructed ticket could not be validated");

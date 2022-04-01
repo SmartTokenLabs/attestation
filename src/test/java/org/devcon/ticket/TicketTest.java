@@ -96,7 +96,7 @@ public class TicketTest {
 
     
     List<byte[]> decoded = URLUtility.decodeList(ticket.getUrlEncoding());
-    Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
+    Ticket newTicket = (new DevconTicketDecoder(senderKeys.getPublic())).decode(decoded.get(0));
     assertTrue(newTicket.verify());
     assertTrue(newTicket.checkValidity());
     assertArrayEquals(ticket.getDerEncoding(), newTicket.getDerEncoding());
@@ -114,7 +114,7 @@ public class TicketTest {
     BigInteger senderSecret = new BigInteger("186416");
     Ticket ticket = new Ticket("ticket@test.ts", "6", ticketID, ticketClass, senderKeys, senderSecret);
     String url = URLUtility.encodeData(ticket.getDerEncoding());
-    Ticket newTicket =  (new TicketDecoder(senderKeys.getPublic())).decode(URLUtility.decodeData(url));
+    Ticket newTicket =  (new DevconTicketDecoder(senderKeys.getPublic())).decode(URLUtility.decodeData(url));
     String newUrl = URLUtility.encodeData(newTicket.getDerEncoding());
     assertEquals(url, newUrl);
     /*** PRINT URL ***/
@@ -128,7 +128,7 @@ public class TicketTest {
     // write the ticket data
     Files.write(new File(PREFIX + "signed-devcon-ticket.der").toPath(), encoded);
 
-    Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
+    Ticket newTicket = (new DevconTicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
     assertTrue(newTicket.verify());
     assertArrayEquals(encoded, newTicket.getDerEncoding());
@@ -166,7 +166,7 @@ public class TicketTest {
     assertEquals(TICKET_CLASS, ticket.getTicketClass());
     assertEquals(CONFERENCE_ID, ticket.getDevconId());
 
-    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    DevconTicketDecoder decoder = new DevconTicketDecoder(senderKeys.getPublic());
     Ticket newTicket = decoder.decode(ticket.getDerEncoding());
     assertTrue(newTicket.verify());
     assertTrue(newTicket.checkValidity());
@@ -184,7 +184,7 @@ public class TicketTest {
   public void testLegacyTicket() throws Exception {
     String legacyTicketUrl = "MIGXMFEMBDYuw5gCAwC-BgIBAARBBCtDxEZ1a0_c7qCE3k2UzDZQbziPc_mRgfdCGNi2wJx9GGM0Vg24wFNQX3s98rUVoJ8axKVcHlFAS0E2vFlSyZwDQgCc5Qp0GRCbBLQxw0C7K-pHmaDuuzaFwFO4tIVpjIAz0hNwZtshqRS_Z0R_rz2SbvQJeGcvy8ENnkFyyawubuiMHA==";
     byte[] legacyTicketBytes = URLUtility.decodeData(legacyTicketUrl);
-    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    DevconTicketDecoder decoder = new DevconTicketDecoder(senderKeys.getPublic());
     Ticket legacyTicket = decoder.decode(legacyTicketBytes);
     assertTrue(legacyTicket.verify());
     assertTrue(legacyTicket.checkValidity());
@@ -207,7 +207,7 @@ public class TicketTest {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoded = ticket.getDerEncodingWithPK();
 
-    Ticket newTicket = (new TicketDecoder(senderKeys.getPublic())).decode(encoded);
+    Ticket newTicket = (new DevconTicketDecoder(senderKeys.getPublic())).decode(encoded);
     assertTrue(ticket.verify());
     assertTrue(newTicket.verify());
     assertArrayEquals(encoded, newTicket.getDerEncodingWithPK());
@@ -226,7 +226,7 @@ public class TicketTest {
 
     assertArrayEquals(encoded, otherConstructor.getDerEncodingWithPK());
 
-    Ticket noPKDecodingTicket = (new TicketDecoder()).decode(encoded);
+    Ticket noPKDecodingTicket = (new DevconTicketDecoder()).decode(encoded);
     assertTrue(noPKDecodingTicket.verify());
     assertArrayEquals(encoded, noPKDecodingTicket.getDerEncodingWithPK());
   }
@@ -242,7 +242,7 @@ public class TicketTest {
     keys.put("secondConference", otherKeys.getPublic());
     AsymmetricCipherKeyPair yetAnotherKey = SignatureUtility.constructECKeysWithSmallestY(rand);
     keys.put("some conference", yetAnotherKey.getPublic());
-    TicketDecoder decoder = new TicketDecoder(keys);
+    DevconTicketDecoder decoder = new DevconTicketDecoder(keys);
     Ticket restoredFirstTicket = decoder.decode(firstEncodedTicket);
     Ticket restoredSecondTicket = decoder.decode(secondEncodedTicket);
     assertTrue(restoredFirstTicket.verify());
@@ -268,10 +268,39 @@ public class TicketTest {
     String lisconTicket = "MIGWMA0MATYCBWE3ap3-AgEABEEEKJZVxMEXbkSZZBWnNUTX_5ieu8GUqf0bx_a0tBPF6QYskABaMJBYhDOXsmQt3csk_TfMZ2wdmfRkK7ePCOI2kgNCAOOZKRpcE6tLBuPbfE_SmwPk2wNjbj5vpa6kkD7eqQXvBOCa0WNo8dEHKvipeUGZZEWWjJKxooB44dEYdQO70Vgc";
     byte[] binaryLisconTicket = Base64.getUrlDecoder().decode(lisconTicket);
     // Normal ticket decoder is not compatible with Liscon ticket
-    assertThrows(Exception.class, () -> new TicketDecoder(senderKeys.getPublic()).decode(binaryLisconTicket));
+    assertThrows(Exception.class, () -> new DevconTicketDecoder(senderKeys.getPublic()).decode(binaryLisconTicket));
     Ticket ticket = new LisconTicketDecoder(senderKeys.getPublic()).decode(binaryLisconTicket);
     assertTrue(ticket.verify());
     assertTrue(ticket.checkValidity());
+  }
+
+  @Test
+  public void universalDecoderDevconTicket() throws Exception {
+    Ticket devconTicket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    Map<String, AsymmetricKeyParameter> keys = new HashMap<>();
+    keys.put(CONFERENCE_ID, senderKeys.getPublic());
+    TicketDecoder decoder = new TicketDecoder(keys);
+    Ticket decodedTicket = decoder.decode(devconTicket.getDerEncoding());
+    assertArrayEquals(devconTicket.getDerEncoding(), decodedTicket.getDerEncoding());
+    assertTrue(decodedTicket.checkValidity());
+    assertTrue(decodedTicket.verify());
+  }
+
+  @Test
+  public void universalDecoderLisconTicket() throws Exception {
+    Ticket lisconTicket = new LisconTicket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
+    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    Ticket decodedTicket = decoder.decode(lisconTicket.getDerEncoding());
+    assertArrayEquals(lisconTicket.getDerEncoding(), decodedTicket.getDerEncoding());
+    assertTrue(decodedTicket.checkValidity());
+    assertTrue(decodedTicket.verify());
+  }
+
+  @Test
+  public void universalDecoderInvalidTicket() throws Exception {
+    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    Exception e = assertThrows(RuntimeException.class, ()-> decoder.decode(new byte[] {0x00}));
+    assertEquals(e.getMessage(), "Could not decode ticket");
   }
 
   @Test
@@ -284,7 +313,7 @@ public class TicketTest {
   public void testMissingKey() {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encodedTicket = ticket.getDerEncoding();
-    TicketDecoder decoder = new TicketDecoder();
+    DevconTicketDecoder decoder = new DevconTicketDecoder();
     assertThrows(RuntimeException.class, ()-> decoder.decode(encodedTicket));
   }
 
@@ -296,7 +325,7 @@ public class TicketTest {
     // Incorrect conference name
     keys.put("incorrect conference", senderKeys.getPublic());
     keys.put("secondConference", otherKeys.getPublic());
-    TicketDecoder decoder = new TicketDecoder(keys);
+    DevconTicketDecoder decoder = new DevconTicketDecoder(keys);
     assertThrows(RuntimeException.class, ()-> decoder.decode(encodedTicket));
   }
 
@@ -308,7 +337,7 @@ public class TicketTest {
     // Incorrect conference name
     keys.put("incorrect conference", senderKeys.getPublic());
     keys.put("secondConference", otherKeys.getPublic());
-    TicketDecoder decoder = new TicketDecoder(keys);
+    DevconTicketDecoder decoder = new DevconTicketDecoder(keys);
     Ticket restoredTicket = decoder.decode(encodedTicket);
     // TODO Currently supplied key is blankly accepted. Should throw exception. See https://github.com/TokenScript/attestation/issues/198
     assertTrue(restoredTicket.verify());
@@ -323,7 +352,7 @@ public class TicketTest {
     field.set(ticket, otherKeys.getPublic());
 
     byte[] encodingWithPK = ticket.getDerEncodingWithPK();
-    TicketDecoder decoder = new TicketDecoder(senderKeys.getPublic());
+    DevconTicketDecoder decoder = new DevconTicketDecoder(senderKeys.getPublic());
     // The constructor verification will fail
     assertThrows(IllegalArgumentException.class, ()-> decoder.decode(encodingWithPK));
   }
@@ -352,7 +381,7 @@ public class TicketTest {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoding = ticket.getDerEncodingWithPK();
     try {
-      Ticket otherTicket = (new TicketDecoder(otherKeys.getPublic())).decode(encoding);
+      Ticket otherTicket = (new DevconTicketDecoder(otherKeys.getPublic())).decode(encoding);
       fail();
     } catch (IllegalArgumentException e) {
       // Expected
@@ -364,7 +393,7 @@ public class TicketTest {
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, senderKeys, SECRET);
     byte[] encoding = ticket.getDerEncoding();
     try {
-      Ticket otherTicket = (new TicketDecoder(otherKeys.getPublic())).decode(encoding);
+      Ticket otherTicket = (new DevconTicketDecoder(otherKeys.getPublic())).decode(encoding);
       fail();
     } catch (IllegalArgumentException e) {
       // Expected
