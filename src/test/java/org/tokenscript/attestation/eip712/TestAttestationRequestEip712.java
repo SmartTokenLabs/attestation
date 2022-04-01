@@ -68,6 +68,15 @@ public class TestAttestationRequestEip712 {
   }
 
   @Test
+  public void eipBugFix() {
+    String request = "{\"signatureInHex\":\"0x9fe797bff20a1b5904f8589c7af06363b56bb97c4d3aa0f802a8b669645f3efe69ea0fcf3b910b9277dfafc382667552488b4adc8a8eacdbf34835b24ef9541500\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAgIBATCB_ARBBCMZ7_4K5jupelJXNctmyd3VvuV9fBMnATo0iEOfgaynL6StRLSmD_qvn_h6l7gyRj6vdg2LF9XCFnXfBqQ2rnEEIA8YIDJ4tN8RK8k0MdE1MKigxk2vrHX9OdnccFQ588zQBEEEDfCh9NDuU-TLojJa-rzBPdNXnkyT5PuZeSYXYNh-h9IV8i8pNS7KzKDuGL6lPHoREq7ZZFo07tvDdZdh-qvl7ARSMFgzRkYxQUVENUU5RkI1QTc1QUEzNEYzMzE2OTQzOEMxM0IzQzE5Qjc2qZU50y9kqXbiNUmNpswjqJjyXO1uD4eQiw8qoNwfgHwAAAF_pyFZfA\\\",\\\"description\\\":\\\"Creating email attestation\\\",\\\"timestamp\\\":\\\"Sun Mar 20 2022 13:40:55 GMT+0200\\\",\\\"identifier\\\":\\\"mah@mah.com\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://wwww.attestation.id\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    Eip712AttestationRequest eiprequest = new Eip712AttestationRequest("http://wwww.attestation.id", Timestamp.UNLIMITED,
+        request);
+    assertTrue(eiprequest.verify());
+    assertTrue(eiprequest.checkValidity());
+  }
+
+  @Test
   public void referenceJsonFormat() {
     String request = "{\"signatureInHex\":\"0x439cfdc3422621c1a77ad12bdf19e80876ddd7317b59055f352fe8d03a3dabba64c1a628321997b260658b098b490f6455c8724bffa859ec191d248a9e5015de1b\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAgIBATCB_ARBBBmSwTCP4VSOr07WYbuIZjR6oUIigLCB-o_ygrN2b2xxHKXEocXBQM3NLqQ5OkRuj0ogmOpKgwn7LhWYWkqNzvMEICJmtJRx1tdMmkl2aurO3CCzauIr2G3rsR0VoUkub2M6BEEECsnXLNQdO2PgaHzQWGWg4KAQ4IvSkn1hPJotLPXMhPIuZeSry7aaOEQt64wyXUolp8an18193r5MKhfZ-E3AjQRSMFg3QTE4MUNCNzI1MDc3NkUxNjc4M0Y5RDNDOTE2NkRFMEY5NUFCMjgzr4crx6TxqXpXW2o9byWM8Ya4h7ATlfLav-aSz8hWQ8YAAAF41bojKA==\\\",\\\"description\\\":\\\"Linking Ethereum address to phone or email\\\",\\\"timestamp\\\":\\\"Thu Apr 15 2021 15:30:49 GMT+0200\\\",\\\"identifier\\\":\\\"test@test.ts\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
     Eip712AttestationRequest eiprequest = new Eip712AttestationRequest(DOMAIN, Timestamp.UNLIMITED,

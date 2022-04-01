@@ -108,6 +108,11 @@ public class LegacySignedNFTAttestation implements InternalSignedNFTAttestation 
         return nftAtt;
     }
 
+    @Override
+    public byte[] getRawSignature() {
+        return signature.getRawSignature();
+    }
+
     public Signature getSignature() {
         return signature;
     }
@@ -140,6 +145,11 @@ public class LegacySignedNFTAttestation implements InternalSignedNFTAttestation 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public int getSigningVersion() {
+        return signingVersion;
     }
 
     @Override

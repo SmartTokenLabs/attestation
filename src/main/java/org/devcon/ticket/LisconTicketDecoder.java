@@ -14,7 +14,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
  * It is significantly less secure than the regular Ticket format and should only be used in legacy settings!
  */
 @Deprecated
-public class LisconTicketDecoder extends TicketDecoder {
+public class LisconTicketDecoder extends DevconTicketDecoder {
   public LisconTicketDecoder(AsymmetricKeyParameter publicKey) {
     super(publicKey);
   }

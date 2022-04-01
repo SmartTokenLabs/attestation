@@ -11,12 +11,27 @@ import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.PersonalSignature;
 import org.tokenscript.attestation.core.Signature;
 
+/**
+ * Wrapper class to ensure legacy API compatibility of signed NFT attestations.
+ */
 public class SignedNFTAttestation implements InternalSignedNFTAttestation {
   private static final Logger logger = LogManager.getLogger(SignedNFTAttestation.class);
   public static final String PREFIX_MSG = "The digest of the ERC721 tokens for AlchemyNFT is: ";
   public static final String POSTFIX_MSG = "";
 
   private final InternalSignedNFTAttestation internalNftAtt;
+
+  /**
+   * Constructor ONLY for version 1 signatures
+   * @param nftAtt Unsigned NFT attestation
+   * @param pk Legacy parameter, which will be ignored
+   * @param rawPersonalSignature raw bytes of the signature
+   */
+  @Deprecated
+  public SignedNFTAttestation(NFTAttestation nftAtt,
+      AsymmetricKeyParameter pk, byte[] rawPersonalSignature) {
+    this(nftAtt, new PersonalSignature(rawPersonalSignature));
+  }
 
   public SignedNFTAttestation(NFTAttestation nftAtt, Signature signature) {
     if (signature instanceof PersonalSignature || signature instanceof CompressedMsgSignature) {
@@ -79,6 +94,16 @@ public class SignedNFTAttestation implements InternalSignedNFTAttestation {
   @Override
   public NFTAttestation getUnsignedAttestation() {
     return internalNftAtt.getUnsignedAttestation();
+  }
+
+  @Override
+  public int getSigningVersion() {
+    return internalNftAtt.getSigningVersion();
+  }
+
+  @Override
+  public byte[] getRawSignature() {
+    return internalNftAtt.getRawSignature();
   }
 
   @Override
