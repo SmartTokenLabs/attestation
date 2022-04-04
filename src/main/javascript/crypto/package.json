@@ -7,9 +7,10 @@
   "scripts": {
     "test": "mocha src/**/*.test.ts",
     "build": "tsc && webpack",
+    "clean": "rm -R dist",
     "watch": "webpack --watch --progress",
     "testjest": "jest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run clean && npm run build"
   },
   "repository": {
     "type": "git",
