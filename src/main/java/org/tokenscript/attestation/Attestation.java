@@ -33,6 +33,7 @@ import org.tokenscript.attestation.core.Validateable;
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
+  // TODO should be true, once https://github.com/TokenScript/attestation/pull/237 gets merged
   public boolean blockchainFriendly = true;
 
   // Attestation fields
@@ -91,6 +92,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         try {
           notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
           validityCtr++;
+          blockchainFriendly = true;
         } catch (IllegalArgumentException e) {
           // Optional long timestamp is not included
           blockchainFriendly = false;
@@ -106,6 +108,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         try {
           notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
           validityCtr++;
+          blockchainFriendly = true;
         } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
           // Optional long timestamp is not included
           blockchainFriendly = false;
