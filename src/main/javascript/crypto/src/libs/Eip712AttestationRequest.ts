@@ -13,6 +13,7 @@ import {DEBUGLEVEL} from "../config";
 
 export class Eip712AttestationRequest extends Eip712Token implements JsonEncodable, Verifiable, Validateable {
     private jsonEncoding: string;
+    private usageValue: string;
     private attestationRequest: AttestationRequest;
     private acceptableTimeLimit: number;
     private userKey: KeyPair;
@@ -34,6 +35,11 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         super();
         this.userKey = userKey;
         this.acceptableTimeLimit = acceptableTimeLimit;
+        this.usageValue = this.Eip712UserDataDescription;
+    }
+
+    setUsageValue(usageValue: string){
+        this.usageValue = usageValue;
     }
 
     async addData(attestorDomain: string, acceptableTimeLimit: number = Timestamp.DEFAULT_TIME_LIMIT_MS, identifier: string, request: AttestationRequest) {
@@ -103,7 +109,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
 
         let userData = {
             payload: hexStringToBase64Url(this.attestationRequest.getDerEncoding()),
-            description: this.Eip712UserDataDescription,
+            description: this.usageValue,
             timestamp: ts,
             identifier: identifier,
             // address: userAddress,
@@ -122,6 +128,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     }
 
     public verify(): boolean {
+
         if (!this.attestationRequest.verify()) {
             return false;
         }
@@ -141,11 +148,10 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
 
     public checkValidity(): boolean {
 
-        if (this.data.description !== this.Eip712UserDataDescription) {
-            logger(DEBUGLEVEL.MEDIUM,'Description is not correct. :' + this.data.description + ' !== ' + this.Eip712UserDataDescription);
+        if (this.data.description !== this.usageValue) {
+            logger(DEBUGLEVEL.MEDIUM,'Description is not correct. :' + this.data.description + ' !== ' + this.usageValue);
             return false;
         };
-
 
         let timestamp: Timestamp = new Timestamp(this.data.timestamp);
         timestamp.setValidity(this.acceptableTimeLimit);
@@ -164,7 +170,6 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
             logger(DEBUGLEVEL.LOW, 'nonce is not correct');
             return false;
         }
-
         return true;
     }
 

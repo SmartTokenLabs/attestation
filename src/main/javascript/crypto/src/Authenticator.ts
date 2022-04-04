@@ -178,7 +178,8 @@ export class Authenticator {
         issuerName: string,
         validityInMilliseconds: number ,
         attestRequestJson: string,
-        attestorDomain: string ){
+        attestorDomain: string,
+        usageValue: string = "" ){
         let att: IdentifierAttestation;
         let crypto = new AttestationCrypto();
         let attestationRequest;
@@ -186,13 +187,15 @@ export class Authenticator {
 
         try {
             // decode JSON and fill publicKey
+            // set usageValue as "Creating email attestation"
             attestationRequest = new Eip712AttestationRequest();
             attestationRequest.setDomain(attestorDomain);
+            if (usageValue){
+                attestationRequest.setUsageValue(usageValue);
+            }
             attestationRequest.fillJsonData(attestRequestJson);
-
             Authenticator.checkAttestRequestVerifiability(attestationRequest);
             Authenticator.checkAttestRequestValidity(attestationRequest);
-
         } catch (e){
             let m = "Failed to fill attestation data from json. " + e + "\nRestores as an Eip712AttestationRequestWithUsage object instead";
             logger(DEBUGLEVEL.MEDIUM,m);
