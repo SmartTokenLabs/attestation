@@ -9,7 +9,6 @@ import {DEBUGLEVEL} from "../config";
 import {AttributeTypeAndValue} from "../asn1/shemas/InformationFramework";
 
 export class Attestation {
-    private BLOCKCHAIN_FRIENDLY_BY_DEFAULT = true;
     static OID_OCTETSTRING: string = "1.3.6.1.4.1.1466.115.121.1.40";
     protected version = 18; // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
     protected serialNumber: any;
@@ -67,13 +66,15 @@ export class Attestation {
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
             // TODO validate time when it will be updated in Java code
             // if (
-            //     (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt * 1000 != me.notValidAfter)) ||
-            //     (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt * 1000 != me.notValidBefore))
+            //     (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt * 1000 != me.notValidAfter )) ||
+            //     (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt * 1000!= me.notValidBefore ))
             //     ) {
             //     throw new Error("Date doesnt fit");
             // }
             if (typeof decodedAttestationObj.validity.notBeforeInt === 'undefined' || typeof decodedAttestationObj.validity.notAfterInt === 'undefined') {
                 this.blockchainFriendly = false;
+            } else {
+                this.blockchainFriendly = true;
             }
         }
 
