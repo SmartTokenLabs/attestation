@@ -39,6 +39,10 @@ export function hexStringToUint8(str: string = '') {
     return Uint8Array.from(hexStringToArray(str));
 }
 
+export function hexStringToBase64(str: string = ''): string {
+    return uint8arrayToBase64(hexStringToUint8(str));
+}
+
 export function hexStringToBase64Url(str: string = ''): string {
     return base64toBase64Url(uint8arrayToBase64(hexStringToUint8(str)))
 }
