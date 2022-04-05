@@ -1,40 +1,11 @@
-import {AttestationCrypto} from "./libs/AttestationCrypto";
-import {KeyPair} from "./libs/KeyPair";
-import {Asn1Der} from "./libs/DerUtility";
-import {AttestableObject} from "./libs/AttestableObject";
-import {base64ToUint8array, hexStringToArray, uint8toBuffer, uint8tohex} from "./libs/utils";
-import {SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
-import {AsnParser} from "@peculiar/asn1-schema";
-import {Attestable} from "./libs/Attestable";
-/*
-class TicketClass {
-    list: {[index:string]: number} = {
-        REGULAR: 0,
-        VIP: 1,
-        SPEAKER: 2,
-        STAFF: 3,
-    }
-
-    static decodeList: {[index:number]: string} = {
-        0: "REGULAR",
-        1: "VIP",
-        2: "SPEAKER",
-        3: "STAFF"
-    }
-
-    constructor(private value: string) {
-    }
-
-    static fromInt(value: number): TicketClass {
-        return new this(TicketClass.decodeList[value]);
-    }
-
-    public getValue() { return this.list[this.value]; }
-}
-
- */
-
-interface keysArray {[index: string]:KeyPair}
+import { AttestationCrypto } from "./libs/AttestationCrypto";
+import { KeyPair, keysArray } from "./libs/KeyPair";
+import { Asn1Der } from "./libs/DerUtility";
+import { AttestableObject } from "./libs/AttestableObject";
+import { base64ToUint8array, hexStringToArray, uint8toBuffer, uint8tohex } from "./libs/utils";
+import { SignedDevconTicket } from "./asn1/shemas/SignedDevconTicket";
+import { AsnParser } from "@peculiar/asn1-schema";
+import { Attestable } from "./libs/Attestable";
 
 export class Ticket extends AttestableObject implements Attestable {
 

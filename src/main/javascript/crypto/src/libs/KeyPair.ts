@@ -18,9 +18,9 @@ import {ethers} from "ethers";
 import {Signature} from "../asn1/shemas/Signature";
 import {DEBUGLEVEL} from "../config";
 
-const { Crypto } = require("@peculiar/webcrypto");
-
 let EC = require("elliptic");
+
+export interface keysArray {[index: string]:KeyPair}
 
 export let subtle:any;
 
