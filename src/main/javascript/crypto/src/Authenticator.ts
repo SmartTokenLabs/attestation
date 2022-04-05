@@ -28,15 +28,6 @@ import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
 import {DEBUGLEVEL} from "./config";
 
-let subtle:any;
-
-if (typeof crypto === "object" && crypto.subtle){
-    subtle = crypto.subtle;
-} else {
-    subtle = require('crypto').webcrypto.subtle;
-}
-
-
 declare global {
     interface Window {
         attachEvent: any;

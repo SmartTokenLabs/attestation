@@ -34,6 +34,8 @@ class TicketClass {
 
  */
 
+interface keysArray {[index: string]:KeyPair}
+
 export class Ticket extends AttestableObject implements Attestable {
 
     private ticketId: string;
@@ -42,8 +44,10 @@ export class Ticket extends AttestableObject implements Attestable {
     private magicLinkURLPrefix:string = "https://ticket.devcon.org/";
 
     private signature: string;
-    private keys: {[index: string]:string};
+    private keys: keysArray;
     private key: KeyPair;
+
+    private isLegasy = false;
 
     // protected encoded: string;
 
@@ -52,16 +56,16 @@ export class Ticket extends AttestableObject implements Attestable {
         super();
     }
 
-    fromData(devconId: string, ticketId: string, ticketClass:number, keys: {[index: string]:string} ) {
+    fromData(devconId: string, ticketId: string, ticketClass:number, keys: keysArray ) {
         this.ticketId = ticketId;
         this.ticketClass = ticketClass;
         this.devconId = devconId;
         this.keys = keys;
 
-        this.key = KeyPair.publicFromBase64(keys[devconId]);
+        this.key = keys[devconId];
     }
 
-    createWithCommitment(devconId: string, ticketId: string, ticketClass: number, commitment: Uint8Array, signature: string, keys: {[index: string]:string}) {
+    createWithCommitment(devconId: string, ticketId: string, ticketClass: number, commitment: Uint8Array, signature: string, keys: keysArray) {
         this.fromData(devconId, ticketId, ticketClass, keys);
         this.commitment = commitment;
         this.signature = signature;
@@ -72,7 +76,7 @@ export class Ticket extends AttestableObject implements Attestable {
         }
     }
 
-    static createWithMail(mail: string, devconId:string , ticketId: string, ticketClass: number, keys: {[index: string]:string}, secret: bigint): Ticket {
+    static createWithMail(mail: string, devconId:string , ticketId: string, ticketClass: number, keys: keysArray, secret: bigint): Ticket {
         let me = new this();
         me.fromData(devconId, ticketId, ticketClass, keys);
 
@@ -97,24 +101,28 @@ export class Ticket extends AttestableObject implements Attestable {
         try {
             const asBN = BigInt(this.ticketId);
             ticketId = Asn1Der.encode('INTEGER', asBN);
-            console.log("ticketID is BN");
         } catch(e){
             ticketId = Asn1Der.encode('UTF8STRING', this.ticketId);
-            console.log("ticketID is string: ", this.ticketId);
+            // console.log("ticketID is string: ", this.ticketId);
         }
+
         let ticket: string =
             Asn1Der.encode('UTF8STRING', this.devconId)
             + ticketId
             + Asn1Der.encode('INTEGER', this.ticketClass);
-            //+ Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+
+            if (!this.isLegasy) {
+                ticket += Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+            }
         return Asn1Der.encode('SEQUENCE_30', ticket);
     }
 
     encodeSignedTicket(ticket: string)  {
-        let signedTicket:string =
-            ticket
-            + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
-            + Asn1Der.encode('BIT_STRING', this.signature);
+        let signedTicket:string = ticket;
+            if (this.isLegasy) {
+                ticket += Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+            }
+            ticket += Asn1Der.encode('BIT_STRING', this.signature);
         return Asn1Der.encode('SEQUENCE_30', signedTicket);
     }
 
@@ -133,9 +141,6 @@ export class Ticket extends AttestableObject implements Attestable {
     }
 
     public verify(): boolean {
-        console.log("verify ticket");
-        console.log(this.devconId);
-        console.log(this.keys[this.devconId]);
         return this.key.verifyBytesWithEthereum(hexStringToArray(this.makeTicket()), this.signature);
     }
 
@@ -157,25 +162,31 @@ export class Ticket extends AttestableObject implements Attestable {
         return this.signature;
     }
 
-    static fromBase64(base64str: string, keys: {[index: string]:string}): Ticket {
+    static fromBase64(base64str: string, keys: keysArray): Ticket {
         let me = new this();
         me.fromBytes(base64ToUint8array(base64str), keys);
         return me;
     }
 
-    fromBytes(bytes: Uint8Array, keys: {[index: string]:string}) {
+    fromBytes(bytes: Uint8Array, keys: keysArray) {
         const signedDevconTicket: SignedDevconTicket = AsnParser.parse(uint8toBuffer(bytes), SignedDevconTicket);
 
         let devconId:string = signedDevconTicket.ticket.devconId;
 
-        this.key = KeyPair.publicFromBase64(keys[devconId]);
+        this.key = keys[devconId];
 
         let idAsNumber = signedDevconTicket.ticket.tiketIdNumber;
         let ticketId:string = idAsNumber ? idAsNumber.toString() : signedDevconTicket.ticket.tiketIdString;
         let ticketClassInt:number = signedDevconTicket.ticket.ticketClass;
 
-
-        let commitment:Uint8Array = signedDevconTicket.ticket.commitment? signedDevconTicket.ticket.commitment : signedDevconTicket.commitment;
+        let commitment:Uint8Array;
+        if (signedDevconTicket.ticket.commitment) {
+            commitment = signedDevconTicket.ticket.commitment;
+        } else {
+            commitment = signedDevconTicket.commitment;
+            this.isLegasy = true;
+        }
+         
         let signature:Uint8Array = signedDevconTicket.signatureValue;
         this.createWithCommitment(devconId, ticketId, ticketClassInt, new Uint8Array(commitment), uint8tohex(new Uint8Array(signature)) , keys );
     }

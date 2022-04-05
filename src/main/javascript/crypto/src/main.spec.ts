@@ -262,7 +262,13 @@ describe("MagicLink reader", () => {
         let params = querystring.parse(magicLink);
 
         let senderKey = KeyPair.publicFromPEM(magicLinkPublicPEM);
-        let res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
+        let res;
+        try {
+            res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
+        } catch(e){
+            console.log("Issuer.validateTicket failed");
+            console.log(e);
+        }
         expect(res).toBe(true);
     });
 
@@ -272,6 +278,7 @@ describe("MagicLink reader", () => {
         try {
             
             senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
+
             res = await Issuer.constructTicket("mail@mail.com", "6", "222", 9, senderKey);
             testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${res}`);
         } catch (e) {
@@ -300,13 +307,13 @@ describe("magicLink", () => {
         if (magicLink.substring(0,1) == "?") magicLink = magicLink.substring(1);
         let str = querystring.parse(magicLink);
         let ticket = new Ticket();
-        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' :KeyPair.publicFromPEM(magicLinkPublicPEM)});
+        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' : KeyPair.publicFromBase64orPEM( magicLinkPublicPEM) });
         expect(ticket.verify()).toBe(true);
 
     })
 })
 
-
+/*
 describe("Subtle import test", () => {
     let res: boolean;
     let messageToSign = 'message';
@@ -350,6 +357,7 @@ describe("Subtle import test", () => {
         expect(res).toBe(true);
     })
 });
+*/
 
 describe("Attestation request/construct", () => {
 

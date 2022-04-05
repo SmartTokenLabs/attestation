@@ -32,6 +32,7 @@ export class Issuer {
 
     static validateTicket(base64urlTicket:string, base64urlPok: string, mail: string, issuerPubKey:KeyPair) {
         let ticket = new Ticket();
+
         ticket.fromBytes(base64ToUint8array(base64urlTicket),  {'6':issuerPubKey});
         if (!ticket.checkValidity()) {
             throw new Error("Something went wrong and the constructed ticket could not be validated");
