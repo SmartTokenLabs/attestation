@@ -65,12 +65,12 @@ export class Attestation {
             me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
             // TODO validate time when it will be updated in Java code
-            // if (
-            //     (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt * 1000 != me.notValidAfter )) ||
-            //     (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt * 1000!= me.notValidBefore ))
-            //     ) {
-            //     throw new Error("Date doesnt fit");
-            // }
+            if (
+                (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt != Math.floor( me.notValidAfter / 1000 ) )) ||
+                (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt != Math.floor( me.notValidBefore / 1000 ) ))
+            ) {
+                throw new Error("Date doesnt fit");
+            }
             if (typeof decodedAttestationObj.validity.notBeforeInt === 'undefined' || typeof decodedAttestationObj.validity.notAfterInt === 'undefined') {
                 this.blockchainFriendly = false;
             } else {
@@ -256,9 +256,9 @@ export class Attestation {
         if (this.notValidAfter != null && this.notValidBefore != null) {
             let date = 
                 Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
-                + (this.blockchainFriendly ? Asn1Der.encode('INTEGER', Math.floor(this.notValidBefore)): "")
+                + (this.blockchainFriendly ? Asn1Der.encode('INTEGER', Math.floor(this.notValidBefore / 1000)): "")
                 + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter)
-                + (this.blockchainFriendly ? Asn1Der.encode('INTEGER', Math.floor(this.notValidAfter)) : "");
+                + (this.blockchainFriendly ? Asn1Der.encode('INTEGER', Math.floor(this.notValidAfter / 1000)) : "");
             res += Asn1Der.encode('SEQUENCE_30', date);
         } else {
             res += Asn1Der.encode('NULL_VALUE','');
