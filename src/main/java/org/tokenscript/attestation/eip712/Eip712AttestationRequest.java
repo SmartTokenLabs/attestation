@@ -28,6 +28,10 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
   private final AsymmetricKeyParameter publicKey;
   private final long acceptableTimeLimit;
 
+  /**
+   *  For security reasons it should not be possible to accept both legacy and current usage values in the future.
+   */
+  @Deprecated
   public static Eip712AttestationRequest decodeAndValidateAttestation(String attestorDomain, String jsonEncoding) {
     Eip712AttestationRequest attestationRequest;
     try {

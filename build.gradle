@@ -58,12 +58,12 @@ dependencies {
     implementation 'org.web3j:core:[4,5.0.0)'
     implementation 'com.auth0:java-jwt:[3, 4)'
     implementation 'org.json:json:20220320' // To ensure obsolete trulioo code can compile
-    implementation group: 'com.github.cliftonlabs', name: 'json-simple', version: '[4, 5)'
+    implementation group: 'com.github.cliftonlabs', name: 'json-simple', version: '[4.0.1, 5)'
     implementation group: 'commons-cli', name: 'commons-cli', version: '[1.5.0, 2)'
     implementation group: 'com.google.code.gson', name: 'gson', version: '[2.9.0, 3)'
     testImplementation 'org.mockito:mockito-core:[4.4.0, 5)'
     implementation 'com.fasterxml.jackson.core:jackson-databind:[2.13.2.1,)'
-    implementation group: 'org.java-websocket', name: 'Java-WebSocket'
+    implementation group: 'org.java-websocket', name: 'Java-WebSocket', version: '[1.5.2,)'
 }
 
 sourceSets {
@@ -163,7 +163,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.15"
+version = "0.3.16"
 
 /** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
  * For actually updating the Maven repo update the version reference in README.md,

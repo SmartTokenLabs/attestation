@@ -132,6 +132,7 @@ describe("SignedIdentifierAttestation", () => {
     })
 
     test('testNFTAttestation', () => {
+
         nftAtt = NFTAttestation.fromAttAndTokens(signedIdentifierAtt, nfts);
         //construct SignedNFTAttestation using subject key
         signedNftAttestation = SignedNFTAttestation.fromAtt(nftAtt, subjectKeys);
@@ -146,13 +147,13 @@ describe("SignedIdentifierAttestation", () => {
         let realSignedNFTAtt =  "MIICkjCCAj8wggIdMIIByqADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTExMDMyMTM0NDFaGA85OTk5MTIzMTIzNTk1OVowPzE9MDsGCSsGAQQBgXoBOQwuaHR0cHM6Ly90d2l0dGVyLmNvbS9PbGVoUnYgMTM4NzgwNjM2NzY2NzMzOTI3NTCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP////////////////////////////////////7///wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm+Zn753LusVaBilc6HCwcCm/zbLc4o2VnygVsW+BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj/sQ1LgCIQD////////////////////+uq7c5q9IoDu/0l6M0DZBQQIBAQNCAAQvGW7DOtBMY5j+ju8ahNiFU5dkG7TLu89XbjuqNMUWpRsurGsgHdJJULZRPL2F9r0aEbe61RE0PZ2t7Msw9yZCMAkGByqGSM49BAIDQgCT5mb1dcBRLlxJa3RLi25KIjWMAErnZDIJ1Wc4dJrFkSh/TU5D9cIS0lbOoAUfEFvJB39k0aqHuIwNLM8Xe+BBGzAcMBoEFAAAgMCSZPVRYLcZ1nAEJLh3yNl3BAIBDTAJBgcqhkjOPQQCA0IAijX0yxUsm53EIG35ffgGDGfmd34ENfSGVNcK8EVllTsC8+WjmpBykKJsFDH++zgY14MuHNBUB2/ZTt3PpTIKSBw=";
 
         //generate NFTAttestation from the NFTAttestation bytes
+
         let nftAttestation2:NFTAttestation = NFTAttestation.fromDer(hexStringToUint8(nftAtt.getDerEncoding()), attestorPubKey);
 
         //check recovered signed attestation within the wrapping
         expect(nftAttestation2.verify()).toBe(true);
 
         //Generate SignedNFTAttestation using the reconstructed NFTAttestation and the extracted Ethereum signature
-
 
         let signedNFTAttestation2:SignedNFTAttestation = SignedNFTAttestation.fromAttAndSign(nftAttestation2, sig);
         expect(signedNFTAttestation2.checkValidity()).toBe(true);
@@ -248,6 +249,7 @@ describe("SignedIdentifierAttestation", () => {
         } ).toThrowError();
     })
 
+
 });
 
 describe("SignatureTest ", () => {
@@ -260,7 +262,13 @@ describe("MagicLink reader", () => {
         let params = querystring.parse(magicLink);
 
         let senderKey = KeyPair.publicFromPEM(magicLinkPublicPEM);
-        let res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
+        let res;
+        try {
+            res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
+        } catch(e){
+            console.log("Issuer.validateTicket failed");
+            console.log(e);
+        }
         expect(res).toBe(true);
     });
 
@@ -270,6 +278,7 @@ describe("MagicLink reader", () => {
         try {
             
             senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
+
             res = await Issuer.constructTicket("mail@mail.com", "6", "222", 9, senderKey);
             testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${res}`);
         } catch (e) {
@@ -298,13 +307,13 @@ describe("magicLink", () => {
         if (magicLink.substring(0,1) == "?") magicLink = magicLink.substring(1);
         let str = querystring.parse(magicLink);
         let ticket = new Ticket();
-        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' :KeyPair.publicFromPEM(magicLinkPublicPEM)});
+        ticket.fromBytes(base64ToUint8array(str.ticket),{'6' : KeyPair.publicFromBase64orPEM( magicLinkPublicPEM) });
         expect(ticket.verify()).toBe(true);
 
     })
 })
 
-
+/*
 describe("Subtle import test", () => {
     let res: boolean;
     let messageToSign = 'message';
@@ -348,21 +357,22 @@ describe("Subtle import test", () => {
         expect(res).toBe(true);
     })
 });
+*/
 
 describe("Attestation request/construct", () => {
-
 
     test("Construct Attestation(from ready attest request)", () => {
 
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id"
-
-        let attestationResult = Authenticator.constructAttest(attestorKey,'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN);
+        let usageValue = "Creating email attestation";
+        let attestationResult = Authenticator.constructAttest(attestorKey, 'AlphaWallet', 60*60*1000, attestationRequestJson, ATTESTOR_DOMAIN, usageValue);
 
         testsLogger(DEBUGLEVEL.HIGH, "attestationResult = " + attestationResult);
         // OK if no Errors
         expect(1).toBe(1);
 
     });
+
 
     test('Authenticator.requestAttest', async () => {
 
@@ -391,6 +401,8 @@ describe("Attestation request/construct", () => {
     });
 
 });
+
+
 
 describe("executeEipFlow", () => {
 
@@ -568,10 +580,6 @@ describe("executeCombinedEipFlow", () => {
     })
 
 })
-
-
-
-
 
 
 

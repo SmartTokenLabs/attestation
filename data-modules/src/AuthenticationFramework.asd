@@ -44,11 +44,11 @@
    <sequence>
     <element name="notBefore" type="asnx:GeneralizedTime"/>
     <optional>
-     <element name="notBeforeInt" type="asnx:INTEGER"/>
+     <element name="notBeforeInt" type="asnx:INTEGER"/>  <!-- time in seconds since epoch -->
     </optional>
     <element name="notAfter" type="asnx:GeneralizedTime"/>
     <optional>
-     <element name="notAfterInt" type="asnx:INTEGER"/>
+     <element name="notAfterInt" type="asnx:INTEGER"/>  <!-- time in seconds since epoch -->
     </optional>
    </sequence>
   </type>

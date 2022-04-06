@@ -3,9 +3,9 @@ package org.tokenscript.attestation;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.tokenscript.attestation.core.SignatureUtility;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -14,13 +14,17 @@ import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Date;
-
-import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.ASN1Boolean;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.util.encoders.Base64;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.tokenscript.attestation.core.SignatureUtility;
 
 public class AttestationTest {
 
@@ -155,6 +159,20 @@ public class AttestationTest {
         byte[] encoding = HelperTest.makeMinimalAtt().getPrehash();
         Attestation newAtt = new Attestation(encoding);
         assertArrayEquals(encoding, newAtt.getPrehash());
+    }
+
+    @Test
+    public void inconsistentNotBefore() {
+        String attString = "MIIBp6ADAgETAgEqMAoGCCqGSM49BAMCMA4xDDAKBgNVBAMMA0FMWDAvGA8yMDIyMDMyNDEyMzExM1oCBGI8ZJIYDzk5OTkxMjMxMjI1OTU5WgIFOv/0M28wDTELMAkGA1UEAwwCbWUwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQEDQgAElQx8C+0jw8rFzDG7uarZu1UyOHiCZwrCsc3weZqw68dkwmf3BOj92geWq4OXpNIQECTSTE7/9pWzpBfy7Q5IzTAGAgEqAgENowIwAA==";
+        Exception exception = assertThrows(IllegalArgumentException.class, ()-> new Attestation(Base64.decode(attString)));
+        assertEquals(exception.getMessage(),"NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
+    }
+
+    @Test
+    public void inconsistentNotAfter() {
+        String attString = "MIIBp6ADAgETAgEqMAoGCCqGSM49BAMCMA4xDDAKBgNVBAMMA0FMWDAvGA8yMDIyMDMyNDEyMzQyNVoCBGI8ZVEYDzk5OTkxMjMxMjI1OTU5WgIFOv/0M3AwDTELMAkGA1UEAwwCbWUwggEzMIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQEDQgAElQx8C+0jw8rFzDG7uarZu1UyOHiCZwrCsc3weZqw68dkwmf3BOj92geWq4OXpNIQECTSTE7/9pWzpBfy7Q5IzTAGAgEqAgENowIwAA==";
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->  new Attestation(Base64.decode(attString)));
+        assertEquals(exception.getMessage(),"NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
     }
 }
 

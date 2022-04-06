@@ -20,12 +20,20 @@ import {DEBUGLEVEL} from "../config";
 
 let EC = require("elliptic");
 
-let subtle:any;
+export interface keysArray {[index: string]:KeyPair}
+
+export let subtle:any;
 
 if (typeof crypto === "object" && crypto.subtle){
     subtle = crypto.subtle;
 } else {
-    subtle = require('crypto').webcrypto.subtle;
+    let webcrypto = require('crypto').webcrypto;
+    if (webcrypto) {
+        subtle = webcrypto.subtle;
+    } else  {
+        console.log("Webcrypto not accessible");
+        throw new Error("webcrypto.subtle missing");
+    }
 }
 
 let ec = new EC.ec('secp256k1');
@@ -107,14 +115,28 @@ export class KeyPair {
         return me;
     }
 
+    static publicFromBase64orPEM(encoded: string): KeyPair {
+        return KeyPair.publicFromPEM(encoded);
+    }
+
     static publicFromBase64(base64: string): KeyPair {
+        return KeyPair.publicFromPEM(base64);
+    }
+
+    static publicFromPEM(pem: string): KeyPair {
+        const pubUint8 = base64ToUint8array(pem);
+        let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
+        return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
+    }
+
+    static publicFromUint(key: Uint8Array): KeyPair {
         let me = new this();
 
-        let publicUint8 = base64ToUint8array(base64);
-
-        let pub: PublicKeyInfoValue = AsnParser.parse( uint8toBuffer(publicUint8), PublicKeyInfoValue);
-
-        me.pubKey = new Uint8Array(pub.publicKey);
+        if (key.byteLength != 65) {
+            logger(DEBUGLEVEL.LOW, 'Wrong public key length');
+            throw new Error('Wrong public key length');
+        }
+        me.pubKey = new Uint8Array(key);
         return me;
     }
 
@@ -131,16 +153,7 @@ export class KeyPair {
         return me;
     }
 
-    static publicFromUint(key: Uint8Array): KeyPair {
-        let me = new this();
 
-        if (key.byteLength != 65) {
-            logger(DEBUGLEVEL.LOW, 'Wrong public key length');
-            throw new Error('Wrong public key length');
-        }
-        me.pubKey = new Uint8Array(key);
-        return me;
-    }
 
     static privateFromKeyInfo(spki: PrivateKeyInfo): KeyPair {
         let me = new this();
@@ -191,11 +204,7 @@ export class KeyPair {
         return KeyPair.privateFromKeyInfo(privateKeyObj);
     }
 
-    static publicFromPEM(pem: string): KeyPair {
-        const pubUint8 = base64ToUint8array(pem);
-        let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
-        return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
-    }
+
 
     // Generate a private key
     static async generateKeyAsync(): Promise<KeyPair> {
