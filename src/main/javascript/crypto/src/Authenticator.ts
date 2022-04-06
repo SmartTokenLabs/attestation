@@ -87,7 +87,7 @@ export class Authenticator {
 
     private iframe: any;
     private iframeWrap: any;
-    private base64senderPublicKeys: {[index: string]: string};
+    private base64senderPublicKeys: {[index: string]: KeyPair};
     private base64attestorPubKey: string;
 
     private webDomain: string;
@@ -155,7 +155,7 @@ export class Authenticator {
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKeys: {[index: string]:string}
+        base64senderPublicKeys: {[index: string]:KeyPair}
     )
     {
         let ticket: Ticket;
