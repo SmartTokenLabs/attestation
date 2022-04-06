@@ -32,7 +32,7 @@ public class SmartContract {
   private static final String ATTESTATION_CHECKING_CONTRACT = "0xBfF9E858796Bc8443dd1026D14Ae018EfBE87aD5";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   private static final String ATTESTATION_VERIFICATION_CONTRACT = "0xE5Eb8348f5dFcA8D6BF82A0DBcA461110F9FE1c9";
-  private static final String TICKET_VERIFICATION_CONTRACT = "0x94E53e764d0CD47C94a4EF0EFabf62880a172675";
+  private static final String TICKET_VERIFICATION_CONTRACT = "0xb017F537aE47CC71986c1F64FaCeb09B15f8c6b7";
 
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception

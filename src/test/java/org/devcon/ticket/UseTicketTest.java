@@ -150,11 +150,11 @@ public class UseTicketTest {
   @Test
   public void testSmartContractDecode() throws Exception {
     //try building all components
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 20); //valid for 20 seconds
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 15); //valid for 15 seconds
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
-
+    
     //now attempt to dump data from contract:
     TicketAttestationReturn tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
 
