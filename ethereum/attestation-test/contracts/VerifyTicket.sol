@@ -1,10 +1,15 @@
 /* Attestation decode and validation */
-/* AlphaWallet 2021 */
+/* AlphaWallet 2021 - 2022 */
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 contract VerifyTicket {
+    using ECDSA for bytes32;
+
     address payable owner;
 
     bytes1 constant BOOLEAN_TAG         = bytes1(0x01);
@@ -91,7 +96,7 @@ contract VerifyTicket {
     function verifyTicketAttestationPayable(bytes memory attestation) public returns(bool)
     {
         address attestor;
-        (attestor,,,) = verifyTicketAttestation(attestation);
+        (attestor,,,,) = verifyTicketAttestation(attestation);
         if (attestor != address(0))
         {
             callCount++;
@@ -103,22 +108,22 @@ contract VerifyTicket {
         }
     }
 
-    function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) public view returns(address subject, bytes memory ticketId)
+    function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) public view returns(address subject, bytes memory ticketId, bool timeStampValid)
     {
         //ensure the attestor and issuer keys are correct
         address recoveredAttestor;
         address recoveredIsuer;
 
-        (recoveredAttestor, recoveredIsuer, subject, ticketId) = verifyTicketAttestation(attestation);
+        (recoveredAttestor, recoveredIsuer, subject, ticketId, timeStampValid) = verifyTicketAttestation(attestation);
 
-        if (recoveredAttestor != attestor || recoveredIsuer != ticketIssuer)
+        if (recoveredAttestor != attestor || recoveredIsuer != ticketIssuer || !timeStampValid)
         {
             subject = address(0);
             ticketId = emptyBytes;
         }
     }
 
-    function verifyTicketAttestation(bytes memory attestation) public view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
+    function verifyTicketAttestation(bytes memory attestation) public view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bool timeStampValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
     {
         uint256 decodeIndex = 0;
         uint256 length = 0;
@@ -132,12 +137,12 @@ contract VerifyTicket {
 
         (ticketIssuer, ticketId, commitment2, decodeIndex) = recoverTicketSignatureAddress(attestation, decodeIndex);
 
-        (attestor, subject, commitment1, decodeIndex) = recoverSignedIdentifierAddress(attestation, decodeIndex);
+        (attestor, subject, commitment1, decodeIndex, timeStampValid) = recoverSignedIdentifierAddress(attestation, decodeIndex);
 
         //now pull ZK (Zero-Knowledge) POK (Proof Of Knowledge) data
         (pok, decodeIndex) = recoverPOK(attestation, decodeIndex);
 
-        if (!verifyPOK(commitment1, commitment2, pok))
+        if (!timeStampValid || !verifyPOK(commitment1, commitment2, pok))
         {
             attestor = address(0);
             ticketIssuer = address(0);
@@ -166,7 +171,7 @@ contract VerifyTicket {
     // DER Structure Decoding
     //////////////////////////////////////////////////////////////
 
-    function recoverSignedIdentifierAddress(bytes memory attestation, uint256 hashIndex) public pure returns(address signer, address subject, bytes memory commitment1, uint256 resultIndex)
+    function recoverSignedIdentifierAddress(bytes memory attestation, uint256 hashIndex) public view returns(address signer, address subject, bytes memory commitment1, uint256 resultIndex, bool timeStampValid)
     {
         bytes memory sigData;
 
@@ -189,7 +194,7 @@ contract VerifyTicket {
         (length, sigData, resultIndex) = decodeElementOffset(attestation, decodeIndex + length, 1); // Signature
 
         //get signing address
-        signer = recoverSigner(keccak256(preHash), sigData);
+        signer = recoverSigner(preHash, sigData);
 
         //Recover public key
         (length, decodeIndex, ) = decodeLength(attestation, headerIndex); //read Version
@@ -200,15 +205,36 @@ contract VerifyTicket {
 
         (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
 
-        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Validity time
+        (decodeIndex, timeStampValid) = decodeTimeBlock(attestation, decodeIndex + length);
 
-        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Smartcontract?
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // Smartcontract?
 
         (subject, decodeIndex) = addressFromPublicKey(attestation, decodeIndex + length);
 
         (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // ID code (07)
         (commitment1, decodeIndex) = recoverCommitment(attestation, decodeIndex + length); // Commitment 1, generated by
                                                                                            // IdentifierAttestation constructor
+    }
+
+    function decodeTimeBlock(bytes memory attestation, uint256 decodeIndex) public view returns (uint256 index, bool valid)
+    {
+        bytes memory timeBlock;
+        uint256 length;
+        index = decodeIndex;
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //30 32
+
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //18 0f
+        (, timeBlock, decodeIndex,) = decodeElement(attestation, decodeIndex + length); //02 06
+        uint256 startTime = bytesToUint(timeBlock);
+        (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //18 0F
+        (, timeBlock, decodeIndex,) = decodeElement(attestation, decodeIndex + length); //02 06
+        uint256 endTime = bytesToUint(timeBlock);
+        index = decodeIndex;
+
+        uint256 currentTimeMillis = block.timestamp * 1000;
+
+        valid = currentTimeMillis > startTime && currentTimeMillis < endTime;
     }
 
     function recoverCommitment(bytes memory attestation, uint256 decodeIndex) private pure returns(bytes memory commitment, uint256 resultIndex)
@@ -243,7 +269,7 @@ contract VerifyTicket {
         (length, sigData, resultIndex) = decodeElementOffset(attestation, decodeIndex, 1); // Signature
 
         //ecrecover
-        signer = recoverSigner(keccak256(preHash), sigData);
+        signer = recoverSigner(preHash, sigData);
     }
 
     function recoverPOK(bytes memory attestation, uint256 decodeIndex) private pure returns(FullProofOfExponent memory pok, uint256 resultIndex)
@@ -325,14 +351,14 @@ contract VerifyTicket {
        (identifier, such as email address) in both commitments are the
        same, and the one constructing the proof knows the secret of
        both these commitments.  See:
-     
+
      Commitment1: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/IdentifierAttestation.java
-     
+
      Commitment2: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/devcon/ticket/Ticket.java
-     
+
      Reference implementation: https://github.com/TokenScript/attestation/blob/main/src/main/java/org/tokenscript/attestation/core/AttestationCrypto.java
     */
-    
+
     function verifyPOK(bytes memory com1, bytes memory com2, FullProofOfExponent memory pok) private view returns(bool)
     {
         // Riddle is H*(r1-r2) with r1, r2 being the secret randomness of com1, respectively com2
@@ -373,11 +399,11 @@ contract VerifyTicket {
         }
     }
 
-    function recoverSigner(bytes32 hash, bytes memory signature) internal pure returns(address signer)
+    function recoverSigner(bytes memory prehash, bytes memory signature) internal pure returns(address signer)
     {
         (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
 
-        return ecrecover(hash, v, r, s);
+        return ecrecover(keccak256(prehash), v, r, s);
     }
 
     function splitSignature(bytes memory sig)

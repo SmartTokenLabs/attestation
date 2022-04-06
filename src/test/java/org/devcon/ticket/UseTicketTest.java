@@ -150,7 +150,7 @@ public class UseTicketTest {
   @Test
   public void testSmartContractDecode() throws Exception {
     //try building all components
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 20); //valid for 20 seconds
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
@@ -158,11 +158,25 @@ public class UseTicketTest {
     //now attempt to dump data from contract:
     TicketAttestationReturn tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
 
+    System.out.println("Call SmartContract to check Ticket");
+
     //check returned values
     assertTrue(tar.subjectAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(subjectKeys.getPublic())));
     assertTrue(tar.issuerAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic())));
     assertTrue(tar.attestorAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(attestorKeys.getPublic())));
+    assertTrue(tar.timeStampValid);
     assertEquals(Numeric.toBigInt(tar.ticketId), TICKET_ID);
+
+    System.out.println("Test passed");
+    System.out.println("Wait for 30 seconds for Attestation to become invalid...");
+
+    //wait for 30 seconds
+    Thread.sleep(1000*30);
+
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
+    assertFalse(tar.timeStampValid);
+
+    System.out.println("Ticket now invalid");
   }
 
   @Test

@@ -6,4 +6,5 @@ public class TicketAttestationReturn
     public String issuerAddress;
     public String attestorAddress;
     public byte[] ticketId;
+    public boolean timeStampValid;
 }
