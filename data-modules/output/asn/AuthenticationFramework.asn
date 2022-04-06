@@ -19,9 +19,9 @@ Validity ::= CHOICE {
 		
 ValidityValue ::= SEQUENCE {
     notBefore       GeneralizedTime,
-    notBeforeInt    INTEGER OPTIONAL, -- NotBefore time since epoch in milliseconds
+    notBeforeInt    INTEGER OPTIONAL, -- NotBefore time since epoch in seconds
     notAfter        GeneralizedTime,
-    notAfterInt     INTEGER OPTIONAL -- NotAfter time since epoch in milliseconds
+    notAfterInt     INTEGER OPTIONAL -- NotAfter time since epoch in seconds
 }
 
 Extensions ::= SEQUENCE OF Extension
