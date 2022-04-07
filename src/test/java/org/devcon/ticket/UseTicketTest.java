@@ -177,6 +177,32 @@ public class UseTicketTest {
     assertFalse(tar.timeStampValid);
 
     System.out.println("Ticket now invalid");
+
+    //Now run a test without the blockchain friendly timestamp:
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 15); //valid for 15 seconds
+    att.blockchainFriendly = false;
+    signed = new SignedIdentifierAttestation(att, attestorKeys);
+    ticket = new Ticket(MAIL, "6", TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET); //using conferenceId 6 should pass (legacy test)
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    //test should pass using legacy "6" value
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
+    assertTrue(tar.timeStampValid);
+
+    System.out.println("Test with ConferenceID 6 passed: " + Numeric.toHexString(tar.conferenceId));
+
+    //now use legacy conferenceId 7, should fail
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 15); //valid for 15 seconds
+    att.blockchainFriendly = false;
+    signed = new SignedIdentifierAttestation(att, attestorKeys);
+    ticket = new Ticket(MAIL, "7", TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET); //using conferenceId 6 should pass (legacy test)
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    //test should fail:
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
+    assertFalse(tar.timeStampValid);
+
+    System.out.println("Test with ConferenceID 7 passed (negative test): " + Numeric.toHexString(tar.conferenceId));
   }
 
   @Test

@@ -1,6 +1,7 @@
 package org.tokenscript.attestation.demo;
 
 import com.alphawallet.ethereum.ERC721Token;
+import com.alphawallet.token.tools.Numeric;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.ProofOfExponent;
 
@@ -32,7 +33,7 @@ public class SmartContract {
   private static final String ATTESTATION_CHECKING_CONTRACT = "0xBfF9E858796Bc8443dd1026D14Ae018EfBE87aD5";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   private static final String ATTESTATION_VERIFICATION_CONTRACT = "0xE5Eb8348f5dFcA8D6BF82A0DBcA461110F9FE1c9";
-  private static final String TICKET_VERIFICATION_CONTRACT = "0xb017F537aE47CC71986c1F64FaCeb09B15f8c6b7";
+  private static final String TICKET_VERIFICATION_CONTRACT = "0xC169Da0630031658437fA12E59818A5F2ec53bC8";
 
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
@@ -61,13 +62,14 @@ public class SmartContract {
     List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
     TicketAttestationReturn retVal = new TicketAttestationReturn();
 
-    if (responseValues.size() == 5)
+    if (responseValues.size() == 6)
     {
       retVal.attestorAddress = responseValues.get(0).getValue().toString();
       retVal.issuerAddress = responseValues.get(1).getValue().toString();
       retVal.subjectAddress = responseValues.get(2).getValue().toString();
       retVal.ticketId = (byte[]) responseValues.get(3).getValue();
-      retVal.timeStampValid = (boolean) responseValues.get(4).getValue();
+      retVal.conferenceId = (byte[]) responseValues.get(4).getValue();
+      retVal.timeStampValid = (boolean) responseValues.get(5).getValue();
     }
 
     return retVal;
@@ -225,6 +227,7 @@ public class SmartContract {
                     new TypeReference<Address>() {},      //Issuer
                     new TypeReference<Address>() {},      //Subject
                     new TypeReference<DynamicBytes>() {},  //TicketId
+                    new TypeReference<DynamicBytes>() {},  //ConferenceId
                     new TypeReference<Bool>() {}
             ));
   }
