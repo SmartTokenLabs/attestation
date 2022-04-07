@@ -89,7 +89,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         // Check if the attestation is blockchain friendly
         Long notValidBeforeLong = null;
         try {
-          notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
+          notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact() * 1000L;
           validityCtr++;
         } catch (IllegalArgumentException e) {
           // Optional long timestamp is not included
@@ -103,7 +103,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         // Check if the attestation is blockchain friendly
         Long notValidAfterLong = null;
         try {
-          notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
+          notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact() * 1000L;
           validityCtr++;
         } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
           // Optional long timestamp is not included
@@ -372,11 +372,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       ASN1EncodableVector date = new ASN1EncodableVector();
       date.add(new ASN1GeneralizedTime(this.notValidBefore));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidBefore.getTime()));
+        date.add(new ASN1Integer(this.notValidBefore.getTime() / 1000)); //Ethereum uses blocktime in seconds
       }
       date.add(new ASN1GeneralizedTime(this.notValidAfter));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidAfter.getTime()));
+        date.add(new ASN1Integer(this.notValidAfter.getTime() / 1000)); //Ethereum uses blocktime in seconds
       }
       res.add(new DERSequence(date));
     } else {
