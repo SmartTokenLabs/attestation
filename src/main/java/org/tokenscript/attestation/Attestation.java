@@ -90,7 +90,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         // Check if the attestation is blockchain friendly
         Long notValidBeforeLong = null;
         try {
-          notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact() * 1000L;
+          notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
           validityCtr++;
           blockchainFriendly = true;
         } catch (IllegalArgumentException e) {
@@ -106,7 +106,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         // Check if the attestation is blockchain friendly
         Long notValidAfterLong = null;
         try {
-          notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact() * 1000L;
+          notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
           validityCtr++;
           blockchainFriendly = true;
         } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
