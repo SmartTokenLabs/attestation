@@ -65,12 +65,12 @@ export class Attestation {
             me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
             // TODO validate time when it will be updated in Java code
-            if (
-                (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt != Math.floor( me.notValidAfter / 1000 ) )) ||
-                (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt != Math.floor( me.notValidBefore / 1000 ) ))
-            ) {
-                throw new Error("Date doesnt fit");
-            }
+            // if (
+            //     (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt != Math.floor( me.notValidAfter / 1000 ) )) ||
+            //     (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt != Math.floor( me.notValidBefore / 1000 ) ))
+            // ) {
+            //     throw new Error("Date doesnt fit");
+            // }
             if (typeof decodedAttestationObj.validity.notBeforeInt === 'undefined' || typeof decodedAttestationObj.validity.notAfterInt === 'undefined') {
                 this.blockchainFriendly = false;
             } else {

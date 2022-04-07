@@ -89,12 +89,11 @@ export class Ticket extends AttestableObject implements Attestable {
     }
 
     encodeSignedTicket(ticket: string)  {
-        let signedTicket:string = ticket;
-            if (this.isLegasy) {
-                ticket += Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
-            }
-            ticket += Asn1Der.encode('BIT_STRING', this.signature);
-        return Asn1Der.encode('SEQUENCE_30', signedTicket);
+        if (this.isLegasy) {
+            ticket += Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+        }
+        ticket += Asn1Der.encode('BIT_STRING', this.signature);
+        return Asn1Der.encode('SEQUENCE_30', ticket);
     }
 
     public getDerEncodingWithPK(): string {
