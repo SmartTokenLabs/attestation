@@ -18,6 +18,7 @@ export class Version {
 // export class Time {
 //     @AsnProp({ type: AsnPropTypes.GeneralizedTime }) public generalizedTime: AsnPropTypes.GeneralizedTime;
 // }
+
 @AsnType({ type: AsnTypeTypes.Choice })
 class Time {
     @AsnProp({ type: AsnPropTypes.UTCTime})

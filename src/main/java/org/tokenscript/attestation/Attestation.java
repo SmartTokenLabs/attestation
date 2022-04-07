@@ -33,6 +33,7 @@ import org.tokenscript.attestation.core.Validateable;
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
+  // TODO should be true, once https://github.com/TokenScript/attestation/pull/237 gets merged
   public boolean blockchainFriendly = true;
 
   // Attestation fields
@@ -91,11 +92,13 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         try {
           notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact() * 1000L;
           validityCtr++;
+          blockchainFriendly = true;
         } catch (IllegalArgumentException e) {
           // Optional long timestamp is not included
           blockchainFriendly = false;
         }
-        if (notValidBeforeLong != null && notValidBeforeLong != notValidBefore.getTime()) {
+
+        if (notValidBeforeLong != null && !notValidBeforeLong.equals(notValidBefore.toInstant().getEpochSecond())) {
           logger.error("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
           throw new IllegalArgumentException("NotValidBefore integer encoding is inconsistent with the GeneralizedTime encoding");
         }
@@ -105,11 +108,12 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         try {
           notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact() * 1000L;
           validityCtr++;
+          blockchainFriendly = true;
         } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
           // Optional long timestamp is not included
           blockchainFriendly = false;
         }
-        if (notValidAfterLong != null && notValidAfterLong != notValidAfter.getTime()) {
+        if (notValidAfterLong != null && !notValidAfterLong.equals(notValidAfter.toInstant().getEpochSecond())) {
           logger.error("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
           throw new IllegalArgumentException("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
         }
@@ -199,8 +203,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   public void setNotValidBefore(Date notValidBefore) {
-    // Remove milliseconds since they are not included in Generalized Time
-    Date time = new Date(notValidBefore.getTime()-(notValidBefore.getTime() % 1000));
+    // Convert to milliseconds, rounded down
+    Date time = new Date(notValidBefore.toInstant().getEpochSecond()*1000);
     this.notValidBefore = time;
   }
 
@@ -209,8 +213,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   }
 
   public void setNotValidAfter(Date notValidAfter) {
-    // Remove milliseconds since they are not included in Generalized Time
-    Date time = new Date(notValidAfter.getTime()-(notValidAfter.getTime() % 1000));
+    // Convert to milliseconds, rounded down
+    Date time = new Date(notValidAfter.toInstant().getEpochSecond()*1000);
     this.notValidAfter = time;
   }
 
@@ -372,11 +376,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       ASN1EncodableVector date = new ASN1EncodableVector();
       date.add(new ASN1GeneralizedTime(this.notValidBefore));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidBefore.toInstant().getEpochSecond())); //Ethereum uses blocktime in seconds
+        date.add(new ASN1Integer(this.notValidBefore.toInstant().getEpochSecond()));
       }
       date.add(new ASN1GeneralizedTime(this.notValidAfter));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidAfter.toInstant().getEpochSecond())); //Ethereum uses blocktime in seconds
+        date.add(new ASN1Integer(this.notValidAfter.toInstant().getEpochSecond()));
       }
       res.add(new DERSequence(date));
     } else {

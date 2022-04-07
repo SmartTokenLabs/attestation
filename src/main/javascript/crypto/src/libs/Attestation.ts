@@ -64,8 +64,17 @@ export class Attestation {
         if (decodedAttestationObj.validity){
             me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
             me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+            // TODO validate time when it will be updated in Java code
+            // if (
+            //     (decodedAttestationObj.validity.notAfterInt && (decodedAttestationObj.validity.notAfterInt != Math.floor( me.notValidAfter / 1000 ) )) ||
+            //     (decodedAttestationObj.validity.notBeforeInt && (decodedAttestationObj.validity.notBeforeInt != Math.floor( me.notValidBefore / 1000 ) ))
+            // ) {
+            //     throw new Error("Date doesnt fit");
+            // }
             if (typeof decodedAttestationObj.validity.notBeforeInt === 'undefined' || typeof decodedAttestationObj.validity.notAfterInt === 'undefined') {
                 this.blockchainFriendly = false;
+            } else {
+                this.blockchainFriendly = true;
             }
         }
 
@@ -211,9 +220,11 @@ export class Attestation {
     getExtensions(){
         return this.extensions;
     }
+
     setVersion(version: number){
         this.version = version;
     }
+
     getVersion(): number{
         return this.version;
     }
@@ -243,14 +254,11 @@ export class Attestation {
         res += this.issuer ? Asn1Der.encodeName(this.issuer) : Asn1Der.encode('NULL_VALUE','');
 
         if (this.notValidAfter != null && this.notValidBefore != null) {
-            let date = Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore);
-            if (this.blockchainFriendly) {
-                date += Asn1Der.encode('INTEGER', this.notValidBefore);
-            }
-            date += Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter);
-            if (this.blockchainFriendly) {
-                date += Asn1Der.encode('INTEGER', this.notValidAfter);
-            }
+            let date = 
+                Asn1Der.encode('GENERALIZED_TIME', this.notValidBefore)
+                + (this.blockchainFriendly ? Asn1Der.encode('INTEGER', Math.floor(this.notValidBefore / 1000)): "")
+                + Asn1Der.encode('GENERALIZED_TIME', this.notValidAfter)
+                + (this.blockchainFriendly ? Asn1Der.encode('INTEGER', Math.floor(this.notValidAfter / 1000)) : "");
             res += Asn1Der.encode('SEQUENCE_30', date);
         } else {
             res += Asn1Der.encode('NULL_VALUE','');

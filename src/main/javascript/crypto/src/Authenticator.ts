@@ -1,6 +1,14 @@
 import {Ticket} from "./Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString, logger} from "./libs/utils";
+import {
+    base64ToUint8array,
+    uint8ToBn,
+    uint8tohex,
+    uint8toString,
+    logger,
+    hexStringToBase64Url,
+    hexStringToBase64
+} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {XMLconfigData} from "./data/tokenData";
@@ -19,15 +27,6 @@ import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequest
 import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
 import {DEBUGLEVEL} from "./config";
-
-let subtle:any;
-
-if (typeof crypto === "object" && crypto.subtle){
-    subtle = crypto.subtle;
-} else {
-    subtle = require('crypto').webcrypto.subtle;
-}
-
 
 declare global {
     interface Window {
@@ -64,6 +63,13 @@ interface postMessageData {
     force?: boolean,
     email?: string,
     magicLink?: string,
+    address?: string,
+    provider_name?: string,
+}
+
+interface WalletMetaData {
+    address?: string,
+    wallet?: string,
 }
 
 export class Authenticator {
@@ -81,20 +87,23 @@ export class Authenticator {
 
     private iframe: any;
     private iframeWrap: any;
-    private base64senderPublicKey: string;
+    private base64senderPublicKeys: {[index: string]: KeyPair};
     private base64attestorPubKey: string;
 
     private webDomain: string;
+    private walletMetaData: WalletMetaData;
+
+    private attestationListener: any;
 
     constructor(private negotiator: any = false) {
         let XMLconfig = XMLconfigData;
 
-        this.base64senderPublicKey = XMLconfig.base64senderPublicKey;
+        this.base64senderPublicKeys = XMLconfig.base64senderPublicKeys;
         this.base64attestorPubKey = XMLconfig.base64attestorPubKey;
         this.webDomain = XMLconfig.webDomain;
     }
 
-    getAuthenticationBlob(tokenObj: devconToken, authResultCallback: Function) {
+    getAuthenticationBlob(tokenObj: devconToken, walletMetaData:WalletMetaData = {}, authResultCallback: Function) {
         // TODO - what is tokenType, where can we see structure etc.
         // 1. Find the token type (using TokenScript)
         // Oleg: we can avoid Autenticator -> Negotiator request, just have to receive everything in single input object
@@ -104,6 +113,7 @@ export class Authenticator {
         // unless DevCon changed their tokenscript and moved all tickets to the contract
 
         this.signedTokenBlob = tokenObj.ticketBlob;
+        this.walletMetaData = walletMetaData;
         this.magicLink = tokenObj.magicLink;
         this.email = tokenObj.email;
         this.signedTokenSecret = tokenObj.ticketSecret;
@@ -119,18 +129,20 @@ export class Authenticator {
     getIdentifierAttestation() {
         logger(DEBUGLEVEL.HIGH,'getIdentifierAttestation. create iframe with ' + this.attestationOrigin);
 
+        this.attestationListener = this.postMessageAttestationListener.bind(this);
         // attach postMessage listener and wait for attestation data
-        this.attachPostMessageListener(this.postMessageAttestationListener.bind(this));
+        this.attachPostMessageListener(this.attestationListener);
         const iframe = document.createElement('iframe');
         this.iframe = iframe;
         iframe.src = this.attestationOrigin;
         iframe.style.width = '800px';
         iframe.style.height = '700px';
         iframe.style.maxWidth = '100%';
+        iframe.style.border = 'none';
         iframe.style.background = '#fff';
         let iframeWrap = document.createElement('div');
         this.iframeWrap = iframeWrap;
-        iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #fffa');
+        iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #000a');
         iframeWrap.appendChild(iframe);
 
         document.body.appendChild(iframeWrap);
@@ -143,7 +155,7 @@ export class Authenticator {
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKey: string
+        base64senderPublicKeys: {[index: string]:KeyPair}
     )
     {
         let ticket: Ticket;
@@ -151,7 +163,7 @@ export class Authenticator {
 
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         try {
-            ticket = Ticket.fromBase64(base64ticket,{"6": KeyPair.publicFromBase64(base64senderPublicKey)});
+            ticket = Ticket.fromBase64(base64ticket, base64senderPublicKeys);
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
                 throw new Error("Validation failed");
@@ -197,8 +209,11 @@ export class Authenticator {
             // let signed = await redeem.sign();
 
             let unSigned = redeem.getDerEncoding();
+
             logger(DEBUGLEVEL.HIGH,unSigned);
-            return unSigned;
+            return hexStringToBase64(unSigned);
+            // return unSigned;
+
         } catch (e) {
             logger(DEBUGLEVEL.LOW,'getUseTicket: redeem failed');
             logger(DEBUGLEVEL.MEDIUM,e);
@@ -221,9 +236,27 @@ export class Authenticator {
             typeof event.data.ready !== "undefined"
             && event.data.ready === true
         ) {
+            logger(DEBUGLEVEL.HIGH,'this.magicLink',this.magicLink);
+            logger(DEBUGLEVEL.HIGH,'this.email',this.email);
+
             let sendData:postMessageData = {force: false};
             if (this.magicLink) sendData.magicLink = this.magicLink;
             if (this.email) sendData.email = this.email;
+            if (this.walletMetaData.address) sendData.address = this.walletMetaData.address;
+            if (this.walletMetaData.wallet) {
+                switch (this.walletMetaData.wallet) {
+                    case "Metamask": 
+                        sendData.provider_name = "injected";
+                        break;
+                    // case "WalletConnect": 
+                    //     sendData.provider_name = "injected";
+                    //     break;
+                    default: 
+                        sendData.force = true; 
+                }
+            } 
+
+            logger(DEBUGLEVEL.HIGH,'sendData',sendData);
 
             this.iframe.contentWindow.postMessage(sendData, this.attestationOrigin);
             return;
@@ -255,6 +288,7 @@ export class Authenticator {
         ) {
             return;
         }
+        this.detachPostMessageListener(this.attestationListener);
         this.iframeWrap.remove();
         this.attestationBlob = event.data.attestation;
         this.attestationSecret = event.data.requestSecret;
@@ -271,16 +305,17 @@ export class Authenticator {
                 this.signedTokenBlob ,
                 this.attestationBlob ,
                 this.base64attestorPubKey,
-                this.base64senderPublicKey,
+                this.base64senderPublicKeys,
             ).then(useToken => {
                 if (useToken){
                     logger(DEBUGLEVEL.HIGH,'this.authResultCallback( useToken ): ');
-                    this.authResultCallback(useToken);
                 } else {
                     logger(DEBUGLEVEL.HIGH,'this.authResultCallback( empty ): ');
-                    this.authResultCallback(useToken);
                 }
-
+                this.authResultCallback(useToken);
+            }).catch(e=>{
+                logger(DEBUGLEVEL.LOW,`UseDevconTicket . Something went wrong. ${e}`);
+                this.authResultCallback(false);
             })
 
 
@@ -311,6 +346,15 @@ export class Authenticator {
             window.attachEvent("onmessage", (e: MessageEvent) => {
                 listener(e);
             });
+        }
+    }
+
+    detachPostMessageListener(listener:EventListener) {
+        if (window.addEventListener) {
+          window.removeEventListener("message", listener, false);
+        } else {
+          // IE8
+          window.detachEvent("onmessage", listener);
         }
     }
 
@@ -369,7 +413,8 @@ export class Authenticator {
         issuerName: string,
         validityInMilliseconds: number ,
         attestRequestJson: string,
-        attestorDomain: string ){
+        attestorDomain: string,
+        usageValue: string = "" ){
         let att: IdentifierAttestation;
         let crypto = new AttestationCrypto();
         let attestationRequest;
@@ -377,8 +422,12 @@ export class Authenticator {
 
         try {
             // decode JSON and fill publicKey
+            // set usageValue as "Creating email attestation"
             attestationRequest = new Eip712AttestationRequest();
             attestationRequest.setDomain(attestorDomain);
+            if (usageValue){
+                attestationRequest.setUsageValue(usageValue);
+            }
             attestationRequest.fillJsonData(attestRequestJson);
 
             Authenticator.checkAttestRequestVerifiability(attestationRequest);
@@ -395,7 +444,7 @@ export class Authenticator {
                 Authenticator.checkAttestRequestValidity(attestationRequest);
             } catch (e) {
                 let m = "Failed to parse Eip712AttestationRequestWithUsage. " + e;
-                logger(DEBUGLEVEL.MEDIUM,m);
+                logger(DEBUGLEVEL.LOW,m);
                 logger(DEBUGLEVEL.MEDIUM,e);
                 throw new Error(m);
             }
