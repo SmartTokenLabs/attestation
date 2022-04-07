@@ -372,11 +372,11 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
       ASN1EncodableVector date = new ASN1EncodableVector();
       date.add(new ASN1GeneralizedTime(this.notValidBefore));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidBefore.getTime() / 1000)); //Ethereum uses blocktime in seconds
+        date.add(new ASN1Integer(this.notValidBefore.toInstant().getEpochSecond())); //Ethereum uses blocktime in seconds
       }
       date.add(new ASN1GeneralizedTime(this.notValidAfter));
       if (blockchainFriendlyEncoding) {
-        date.add(new ASN1Integer(this.notValidAfter.getTime() / 1000)); //Ethereum uses blocktime in seconds
+        date.add(new ASN1Integer(this.notValidAfter.toInstant().getEpochSecond())); //Ethereum uses blocktime in seconds
       }
       res.add(new DERSequence(date));
     } else {
