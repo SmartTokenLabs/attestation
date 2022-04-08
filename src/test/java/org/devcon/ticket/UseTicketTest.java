@@ -47,6 +47,7 @@ public class UseTicketTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricCipherKeyPair ticketIssuerKeys;
+  private static AsymmetricCipherKeyPair fakeSupplimentalKey;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
   private AttestedObject<Ticket> attestedTicket;
@@ -61,6 +62,7 @@ public class UseTicketTest {
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeys(rand);
     ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
+    fakeSupplimentalKey = SignatureUtility.constructECKeys(rand);
 
     System.out.println("subject: " + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
     System.out.println("attestor: " + SignatureUtility.addressFromKey(attestorKeys.getPublic()));
@@ -192,6 +194,27 @@ public class UseTicketTest {
     assertFalse(tar.timeStampValid);
 
     System.out.println("Test with Legacy attestation correctly returned attestation invalid (negative test): " + Numeric.toHexString(tar.conferenceId));
+
+    //Now test with wrong issuer key
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, -19); //expires instantly
+    signed = new SignedIdentifierAttestation(att, attestorKeys);
+    ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, fakeSupplimentalKey, TICKET_SECRET); //using conferenceId 6 should pass (legacy test)
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding(), SignatureUtility.addressFromKey(attestorKeys.getPublic()), SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
+    assertFalse(tar.timeStampValid);
+
+    System.out.println("Test with incorrect issuer key passed");
+
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, -19); //expires instantly
+    signed = new SignedIdentifierAttestation(att, fakeSupplimentalKey);
+    ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET); //using conferenceId 6 should pass (legacy test)
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding(), SignatureUtility.addressFromKey(attestorKeys.getPublic()), SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
+    assertFalse(tar.timeStampValid);
+
+    System.out.println("Test with incorrect issuer key passed");
   }
 
   @Test
