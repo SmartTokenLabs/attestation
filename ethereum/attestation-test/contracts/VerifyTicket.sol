@@ -91,18 +91,16 @@ contract VerifyTicket {
         uint length;
     }
 
+    /**
+    * Perform TicketAttestation verification
+    * NOTE: This function DOES NOT VALIDATE the subject; you must perform validation of the subject from the calling function.
+    **/
     function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid)
     {
-        ( subject, ticketId, conferenceId, timeStampValid ) = _verifyTicketAttestation( attestation, attestor, ticketIssuer);
-    }
-
-    function _verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) public view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid)
-    {
-        //ensure the attestor and issuer keys are correct
         address recoveredAttestor;
         address recoveredIssuer;
 
-        (recoveredAttestor, recoveredIssuer, subject, ticketId, conferenceId, timeStampValid) = verifyTicketAttestation(attestation);
+        (recoveredAttestor, recoveredIssuer, subject, ticketId, conferenceId, timeStampValid) = _verifyTicketAttestation(attestation);
 
         if (recoveredAttestor != attestor || recoveredIssuer != ticketIssuer || !timeStampValid)
         {
@@ -112,6 +110,11 @@ contract VerifyTicket {
     }
 
     function verifyTicketAttestation(bytes memory attestation) external view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
+    {
+        (attestor, ticketIssuer, subject, ticketId, conferenceId, timeStampValid) = _verifyTicketAttestation(attestation);
+    }
+
+    function _verifyTicketAttestation(bytes memory attestation) public view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
     {
         uint256 decodeIndex = 0;
         uint256 length = 0;
@@ -125,7 +128,7 @@ contract VerifyTicket {
 
         (ticketIssuer, ticketId, conferenceId, commitment2, decodeIndex) = recoverTicketSignatureAddress(attestation, decodeIndex);
 
-        (attestor, subject, commitment1, decodeIndex, timeStampValid) = recoverSignedIdentifierAddress(attestation, decodeIndex, conferenceId);
+        (attestor, subject, commitment1, decodeIndex, timeStampValid) = recoverSignedIdentifierAddress(attestation, decodeIndex);
 
         //now pull ZK (Zero-Knowledge) POK (Proof Of Knowledge) data
         (pok, decodeIndex) = recoverPOK(attestation, decodeIndex);
@@ -159,7 +162,7 @@ contract VerifyTicket {
     // DER Structure Decoding
     //////////////////////////////////////////////////////////////
 
-    function recoverSignedIdentifierAddress(bytes memory attestation, uint256 hashIndex, bytes memory ticketId) public view returns(address signer, address subject, bytes memory commitment1, uint256 resultIndex, bool timeStampValid)
+    function recoverSignedIdentifierAddress(bytes memory attestation, uint256 hashIndex) public view returns(address signer, address subject, bytes memory commitment1, uint256 resultIndex, bool timeStampValid)
     {
         bytes memory sigData;
 
@@ -193,7 +196,7 @@ contract VerifyTicket {
 
         (length, decodeIndex, ) = decodeLength(attestation, decodeIndex + length); // Issuer Sequence (14) [[2.5.4.3, ALX]]], (Issuer: CN=ALX)
 
-        (decodeIndex, timeStampValid) = decodeTimeBlock(attestation, decodeIndex + length, ticketId);
+        (decodeIndex, timeStampValid) = decodeTimeBlock(attestation, decodeIndex + length);
 
         (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // Smartcontract?
 
@@ -211,7 +214,7 @@ contract VerifyTicket {
         // IdentifierAttestation constructor
     }
 
-    function decodeTimeBlock(bytes memory attestation, uint256 decodeIndex, bytes memory ticketId) public view returns (uint256 index, bool valid)
+    function decodeTimeBlock(bytes memory attestation, uint256 decodeIndex) public view returns (uint256 index, bool valid)
     {
         bytes memory timeBlock;
         uint256 length;
@@ -231,8 +234,7 @@ contract VerifyTicket {
         }
         else
         {
-            //only pass if ticketId is DEVCON_ID
-            valid = (ticketId.length == 1 && ticketId[0] == DEVCON_ID);
+            valid = false; //fail attestation without blockchain friendly timestamps
         }
 
         index = index + blockLength;

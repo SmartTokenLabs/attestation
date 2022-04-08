@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-/* Retort contract for handling offer commitment and 'transmogrification' of NFTs */
-/* AlphaWallet 2021 */
+/* AlphaWallet 2021 - 2022 */
 
 pragma solidity ^0.8.4;
 

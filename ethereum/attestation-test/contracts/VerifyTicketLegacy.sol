@@ -1,5 +1,6 @@
 /* Attestation decode and validation */
 /* AlphaWallet 2021 */
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;

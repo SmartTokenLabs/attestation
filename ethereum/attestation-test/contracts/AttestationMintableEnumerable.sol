@@ -11,10 +11,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "hardhat/console.sol";
-
-interface IVerifyTicket {
-    function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId);
-}
+import "./interface/IVerifyTicket.sol";
 
 /**
  * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
@@ -68,10 +65,11 @@ contract AttestationMintableEnumerable is ERC721Enumerable, Ownable {
     function mintUsingAttestation(bytes memory attestation) public returns (uint256 tokenId) {
         address subject;
         bytes memory tokenBytes;
+        bool timeStampValid;
         IVerifyTicket verifier = IVerifyTicket(_verificationAddress);
-        (subject, tokenBytes) = verifier.verifyTicketAttestation(attestation, _attestorKey, _issuerKey);
+        (subject, tokenBytes,, timeStampValid) = verifier.verifyTicketAttestation(attestation, _attestorKey, _issuerKey);
         tokenId = bytesToUint(tokenBytes);
-        require(subject != address(0) && tokenId != 0, "Attestation not valid"); 
+        require(subject != address(0) && tokenId != 0 && timeStampValid, "Attestation not valid");
         _mint(subject, tokenId);
     }
     
