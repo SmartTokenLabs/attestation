@@ -77,7 +77,8 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     }
 
     fillPresignData(){
-        this.preSignEncoded = this.attestableObject.getDerEncoding() +
+        this.preSignEncoded = 
+            this.attestableObject.getDerEncoding() +
             this.att.getDerEncoding() +
             this.pok.getDerEncoding();
 
