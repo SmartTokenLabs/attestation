@@ -93,7 +93,7 @@ contract VerifyTicket {
 
     /**
     * Perform TicketAttestation verification
-    * NOTE: This function DOES NOT VALIDATE the subject; you must perform validation of the subject from the calling function.
+    * NOTE: This function DOES NOT VALIDATE whether the public key attested to is the same as the one who signed this transaction; you must perform validation of the subject from the calling function.
     **/
     function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid)
     {
