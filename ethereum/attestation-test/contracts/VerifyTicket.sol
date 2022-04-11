@@ -95,26 +95,27 @@ contract VerifyTicket {
     * Perform TicketAttestation verification
     * NOTE: This function DOES NOT VALIDATE the subject; you must perform validation of the subject from the calling function.
     **/
-    function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid)
+    function verifyTicketAttestation(bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool attestationValid)
     {
         address recoveredAttestor;
         address recoveredIssuer;
 
-        (recoveredAttestor, recoveredIssuer, subject, ticketId, conferenceId, timeStampValid) = _verifyTicketAttestation(attestation);
+        (recoveredAttestor, recoveredIssuer, subject, ticketId, conferenceId, attestationValid) = _verifyTicketAttestation(attestation);
 
-        if (recoveredAttestor != attestor || recoveredIssuer != ticketIssuer || !timeStampValid)
+        if (recoveredAttestor != attestor || recoveredIssuer != ticketIssuer || !attestationValid)
         {
             subject = address(0);
             ticketId = emptyBytes;
+            conferenceId = emptyBytes;
         }
     }
 
-    function verifyTicketAttestation(bytes memory attestation) external view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
+    function verifyTicketAttestation(bytes memory attestation) external view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bytes memory conferenceId, bool attestationValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
     {
-        (attestor, ticketIssuer, subject, ticketId, conferenceId, timeStampValid) = _verifyTicketAttestation(attestation);
+        (attestor, ticketIssuer, subject, ticketId, conferenceId, attestationValid) = _verifyTicketAttestation(attestation);
     }
 
-    function _verifyTicketAttestation(bytes memory attestation) public view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
+    function _verifyTicketAttestation(bytes memory attestation) public view returns(address attestor, address ticketIssuer, address subject, bytes memory ticketId, bytes memory conferenceId, bool attestationValid) //public pure returns(address payable subject, bytes memory ticketId, string memory identifier, address issuer, address attestor)
     {
         uint256 decodeIndex = 0;
         uint256 length = 0;
@@ -128,16 +129,19 @@ contract VerifyTicket {
 
         (ticketIssuer, ticketId, conferenceId, commitment2, decodeIndex) = recoverTicketSignatureAddress(attestation, decodeIndex);
 
-        (attestor, subject, commitment1, decodeIndex, timeStampValid) = recoverSignedIdentifierAddress(attestation, decodeIndex);
+        (attestor, subject, commitment1, decodeIndex, attestationValid) = recoverSignedIdentifierAddress(attestation, decodeIndex);
 
         //now pull ZK (Zero-Knowledge) POK (Proof Of Knowledge) data
         (pok, decodeIndex) = recoverPOK(attestation, decodeIndex);
 
-        if (!timeStampValid || !verifyPOK(commitment1, commitment2, pok))
+        if (!attestationValid || !verifyPOK(commitment1, commitment2, pok))
         {
             attestor = address(0);
             ticketIssuer = address(0);
             subject = address(0);
+            ticketId = emptyBytes;
+            conferenceId = emptyBytes;
+            attestationValid = false;
         }
     }
 
