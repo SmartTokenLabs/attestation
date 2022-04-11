@@ -56,42 +56,35 @@ public class SmartContract {
 
   public TicketAttestationReturn callVerifyTicketAttestation(byte[] attestation) throws Exception
   {
-    Web3j web3j = getRinkebyWeb3j();
-    Function function = verifyTicketAttestation(attestation);
-    String result = callSmartContractFunction(web3j, function, TICKET_VERIFICATION_CONTRACT);
-    List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
-    TicketAttestationReturn retVal = new TicketAttestationReturn();
-
-    if (responseValues.size() == 6)
-    {
-      retVal.attestorAddress = responseValues.get(0).getValue().toString();
-      retVal.issuerAddress = responseValues.get(1).getValue().toString();
-      retVal.subjectAddress = responseValues.get(2).getValue().toString();
-      retVal.ticketId = (byte[]) responseValues.get(3).getValue();
-      retVal.conferenceId = (byte[]) responseValues.get(4).getValue();
-      retVal.timeStampValid = (boolean) responseValues.get(5).getValue();
-    }
-
-    return retVal;
+    return runVerifyTicketAttestationSC(verifyTicketAttestation(attestation));
   }
 
   /*
   bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid);
    */
-  public TicketAttestationReturn callVerifyTicketAttestation(byte[] attestation, String attestor, String issuer) throws Exception
-  {
+  public TicketAttestationReturn callVerifyTicketAttestation(byte[] attestation, String attestor, String issuer) throws Exception {
+    return runVerifyTicketAttestationSC(verifyTicketAttestation(attestation, attestor, issuer));
+
+  }
+
+  private TicketAttestationReturn runVerifyTicketAttestationSC(Function function) {
     Web3j web3j = getRinkebyWeb3j();
-    Function function = verifyTicketAttestation(attestation, attestor, issuer);
     String result = callSmartContractFunction(web3j, function, TICKET_VERIFICATION_CONTRACT);
     List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
     TicketAttestationReturn retVal = new TicketAttestationReturn();
 
-    if (responseValues.size() == 4)
-    {
+    if (responseValues.size() == 4) {
       retVal.subjectAddress = responseValues.get(0).getValue().toString();
-      retVal.ticketId = (byte[]) responseValues.get(1).getValue();
       retVal.conferenceId = (byte[]) responseValues.get(2).getValue();
+      retVal.ticketId = (byte[]) responseValues.get(1).getValue();
       retVal.timeStampValid = (boolean) responseValues.get(3).getValue();
+    } else if (responseValues.size() > 4) {
+      retVal.attestorAddress = responseValues.get(0).getValue().toString();
+      retVal.issuerAddress = responseValues.get(1).getValue().toString();
+      retVal.subjectAddress = responseValues.get(2).getValue().toString();
+      retVal.ticketId = (byte[]) responseValues.get(3).getValue();
+      retVal.conferenceId =  (byte[]) responseValues.get(4).getValue();
+      retVal.timeStampValid = (boolean) responseValues.get(5).getValue();
     }
 
     return retVal;

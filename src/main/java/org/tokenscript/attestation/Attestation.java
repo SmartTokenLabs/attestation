@@ -33,8 +33,7 @@ import org.tokenscript.attestation.core.Validateable;
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
-  // TODO should be true, once https://github.com/TokenScript/attestation/pull/237 gets merged
-  public boolean blockchainFriendly = true;
+  public static final boolean DEFAULT_BLOCKCHAIN_FRIENDLY = true;
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(
@@ -50,6 +49,8 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   private ASN1Sequence smartcontracts; // ASN1integers  // Optional
   private ASN1Sequence dataObject;
   private ASN1Sequence extensions;
+
+  boolean blockchainFriendly = DEFAULT_BLOCKCHAIN_FRIENDLY;
 
   public Attestation() {
   }
