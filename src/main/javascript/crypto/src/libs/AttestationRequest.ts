@@ -3,7 +3,7 @@ import { Asn1Der } from "./DerUtility";
 import {logger, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {FullProofOfExponent} from "./FullProofOfExponent";
-import {AsnParser} from "@peculiar/asn1-schema";
+import {AsnParser, AsnSerializer} from "@peculiar/asn1-schema";
 import {Identifier} from "../asn1/shemas/AttestationRequest";
 import {DEBUGLEVEL} from "../config";
 
@@ -81,6 +81,21 @@ export class AttestationRequest {
 
     getType(): number{
         return this.type;
+    }
+
+    getAsn(): Identifier {
+
+        const pok = this.getPok().getAsnType();
+
+        const identity = new Identifier();
+        identity.type = this.getType()
+        identity.proof = pok;
+
+        return identity;
+    }
+
+    getAsnEncoded(){
+        return AsnSerializer.serialize(this.getAsn());
     }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@tokenscript/attestation",
-  "version": "1.0.7-alpha",
+  "version": "1.0.8-alpha",
   "description": "A library for integrating cryptographic attestations into applications",
   "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.js",

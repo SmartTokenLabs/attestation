@@ -68,3 +68,10 @@ export class MyAttestation {
     @AsnProp({ type: AlgorithmIdentifierASN }) public signatureAlgorithm: AlgorithmIdentifierASN;
     @AsnProp({ type: AsnPropTypes.BitString }) public signatureValue: Uint8Array;
 }
+
+export class MyAttestationDecoded {
+    @AsnProp({ type: SignedInfo }) public signedInfo: SignedInfo;
+    // @AsnProp({ type: SignedInfo }) public signedInfo:SignedInfo;
+    @AsnProp({ type: AlgorithmIdentifierASN }) public signatureAlgorithm: AlgorithmIdentifierASN;
+    @AsnProp({ type: AsnPropTypes.BitString }) public signatureValue: Uint8Array;
+}
