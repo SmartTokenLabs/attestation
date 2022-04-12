@@ -166,7 +166,7 @@ public class UseTicketTest {
     assertTrue(tar.subjectAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(subjectKeys.getPublic())));
     assertTrue(tar.issuerAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic())));
     assertTrue(tar.attestorAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(attestorKeys.getPublic())));
-    assertTrue(tar.timeStampValid);
+    assertTrue(tar.attestationValid);
     assertEquals(Numeric.toBigInt(tar.ticketId), TICKET_ID);
 
     System.out.println("Test passed");
@@ -178,8 +178,8 @@ public class UseTicketTest {
     useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
     tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
-    assertFalse(tar.timeStampValid);
-//    assertArrayEquals(new byte[0], tar.ticketId);
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
     assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
     assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
     assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
@@ -194,8 +194,8 @@ public class UseTicketTest {
 
     //test should fail
     tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
-//    assertTrue(tar.timeStampValid);
-//    assertArrayEquals(new byte[0], tar.ticketId);
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
     assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
     assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
     assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
@@ -209,11 +209,11 @@ public class UseTicketTest {
     useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
     tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding(), SignatureUtility.addressFromKey(attestorKeys.getPublic()), SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
-//    assertTrue(tar.timeStampValid);
+    assertFalse(tar.attestationValid);
     assertArrayEquals(new byte[0], tar.ticketId);
-//    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
     assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
-//    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
     System.out.println("Ticket now invalid");
 
     System.out.println("Test with incorrect attestation issuer key passed");
@@ -223,11 +223,11 @@ public class UseTicketTest {
     useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
     tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding(), SignatureUtility.addressFromKey(attestorKeys.getPublic()), SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
-//    assertTrue(tar.timeStampValid);
-//    assertArrayEquals(new byte[0], tar.ticketId);
-//    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
     assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
-//    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
     System.out.println("Ticket now invalid");
 
     System.out.println("Test with incorrect issuer key passed");

@@ -33,7 +33,7 @@ public class SmartContract {
   private static final String ATTESTATION_CHECKING_CONTRACT = "0xBfF9E858796Bc8443dd1026D14Ae018EfBE87aD5";
   private static final String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   private static final String ATTESTATION_VERIFICATION_CONTRACT = "0xE5Eb8348f5dFcA8D6BF82A0DBcA461110F9FE1c9";
-  private static final String TICKET_VERIFICATION_CONTRACT = "0x3c44518e94a98F2A00175B5F467ac5E593eC9720";
+  private static final String TICKET_VERIFICATION_CONTRACT = "0x2dbBfF82B466fA76e6B1AD81A4C40E0BbA109ff9";
 
 
   public boolean verifyEqualityProof(byte[] com1, byte[] com2, ProofOfExponent pok) throws Exception
@@ -59,9 +59,6 @@ public class SmartContract {
     return runVerifyTicketAttestationSC(verifyTicketAttestation(attestation));
   }
 
-  /*
-  bytes memory attestation, address attestor, address ticketIssuer) external view returns(address subject, bytes memory ticketId, bytes memory conferenceId, bool timeStampValid);
-   */
   public TicketAttestationReturn callVerifyTicketAttestation(byte[] attestation, String attestor, String issuer) throws Exception {
     return runVerifyTicketAttestationSC(verifyTicketAttestation(attestation, attestor, issuer));
 
@@ -77,14 +74,14 @@ public class SmartContract {
       retVal.subjectAddress = responseValues.get(0).getValue().toString();
       retVal.conferenceId = (byte[]) responseValues.get(2).getValue();
       retVal.ticketId = (byte[]) responseValues.get(1).getValue();
-      retVal.timeStampValid = (boolean) responseValues.get(3).getValue();
+      retVal.attestationValid = (boolean) responseValues.get(3).getValue();
     } else if (responseValues.size() > 4) {
       retVal.attestorAddress = responseValues.get(0).getValue().toString();
       retVal.issuerAddress = responseValues.get(1).getValue().toString();
       retVal.subjectAddress = responseValues.get(2).getValue().toString();
       retVal.ticketId = (byte[]) responseValues.get(3).getValue();
       retVal.conferenceId =  (byte[]) responseValues.get(4).getValue();
-      retVal.timeStampValid = (boolean) responseValues.get(5).getValue();
+      retVal.attestationValid = (boolean) responseValues.get(5).getValue();
     }
 
     return retVal;
@@ -247,18 +244,20 @@ public class SmartContract {
             ));
   }
 
+  /*
+  address subject, bytes memory ticketId, bytes memory conferenceId, bool attestationValid
+   */
   private static Function verifyTicketAttestation(byte[] encoding, String attestor, String issuer) {
     return new Function(
             "verifyTicketAttestation",
             Arrays.asList(new DynamicBytes(encoding),
                     new org.web3j.abi.datatypes.Address(160, attestor),
                     new org.web3j.abi.datatypes.Address(160, issuer)),
-            Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, //Attestor
-                    new TypeReference<Address>() {},      //Issuer
+            Arrays.<TypeReference<?>>asList(
                     new TypeReference<Address>() {},      //Subject
                     new TypeReference<DynamicBytes>() {},  //TicketId
                     new TypeReference<DynamicBytes>() {},  //ConferenceId
-                    new TypeReference<Bool>() {}
+                    new TypeReference<Bool>() {} //attestation valid
             ));
   }
 

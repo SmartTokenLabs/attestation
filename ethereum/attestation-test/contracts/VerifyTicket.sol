@@ -107,6 +107,7 @@ contract VerifyTicket {
             subject = address(0);
             ticketId = emptyBytes;
             conferenceId = emptyBytes;
+            attestationValid = false;
         }
     }
 
