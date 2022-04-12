@@ -83,15 +83,23 @@ describe("NFTMinter.Enumerable.deploy", function () {
 
     })
 
+    // Note: this test was created before we checked the timestamp
+    // It appears that it should fail now we handle timestamps
     it("Validate Legacy Liscon Attestation v2", async function(){
         let result = await lisconVerification["verifyTicketAttestation(bytes)"](lisconAttestationV2Legacy);
+
+        //console.log("Attestor: " + result.attestor);
+        //console.log("ticketIssuer: " + result.ticketIssuer);
+        //console.log("subject: " + result.subject);
+        //console.log("ticketId: " + result.ticketId);
+        //console.log("isValid: " + result.attestationValid);
+        expect(result.ticketId).to.be.eq('0x'); // Because if timestamp fails, we blank the attestation return
+        expect(result.attestationValid).to.be.eq(false); // Timestamp fails
 
         // disable this tests, because it will fail in 1 hour
         //expect(result.attestor).to.be.eq('0x538080305560986811c3c1A2c5BCb4F37670EF7e');
         //expect(result.ticketIssuer).to.be.eq('0x4f3ceF0C905Eb4EDF9c4fFC71C4C4b06417BAC3E');
         // expect(result.subject).to.be.eq('0x2F21dC12dd43bd15b86643332041ab97010357D7');
-        expect(result.ticketId).to.be.eq('0x4c54374b5151335a575a');
-
     })
 
     it("Mint NFT from Attestation", async function(){
