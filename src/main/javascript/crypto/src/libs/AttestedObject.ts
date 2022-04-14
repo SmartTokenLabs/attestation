@@ -1,6 +1,6 @@
 import {AttestationCrypto} from "./AttestationCrypto";
 import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
-import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, hexStringToUint8, logger, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {KeyPair} from "./KeyPair";
@@ -133,6 +133,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     }
 
     static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
+
         let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
 
         let me = new this();
@@ -146,13 +147,12 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         pok.fromBytes( new Uint8Array(attested.proof) ) ;
         me.pok = pok;
 
-        let attCom: Uint8Array = me.att.getUnsignedAttestation().getCommitment();
-        let objCom: Uint8Array = me.attestableObject.getCommitment();
-        let crypto = new AttestationCrypto();
+        me.userKeyPair = me.att.getUnsignedAttestation().getSubjectPublicKeyInfo();
 
-        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
-            throw new Error("The redeem proof did not verify");
-        }
+        // TODO: Use getter to instantiate AttestationCrypto when required
+        me.crypto = new AttestationCrypto();
+
+        me.constructorCheck();
 
         return me;
     }
@@ -197,13 +197,21 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return this.userPublicKey;
     }
 
+    public setUserPublicKey(userPublicKey:string){
+        this.userPublicKey = hexStringToUint8(userPublicKey);
+    }
+
     private constructorCheck() {
         if (!this.verify()) {
             throw new Error("The redeem request is not valid");
         }
     }
 
-    public checkValidity(): boolean {
+    public checkValidity(userEthKey:string = null): boolean {
+
+        if (userEthKey)
+            this.setUserPublicKey(userEthKey);
+
         // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
         try {
             let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();

@@ -1,7 +1,7 @@
 import {Ticket} from "./Ticket";
 import {Ticket as TicketTNCompat} from "./tn-compat/Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, logger} from "./libs/utils";
+import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToUint8} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
@@ -19,6 +19,7 @@ import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequest
 import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
 import {DEBUGLEVEL} from "./config";
+import {UseToken} from "./asn1/shemas/UseToken";
 
 let subtle:any;
 
@@ -46,6 +47,7 @@ const ALPHA_CONFIG = {
 
 export class Authenticator {
 
+    // TODO: Pass in Ticket schema object
     async getUseTicket(
         // userKey: KeyPair,
         ticketSecret: bigint,
@@ -121,6 +123,29 @@ export class Authenticator {
             throw new Error("getUseTicket: redeem failed: " + e.message);
         }
 
+
+    }
+
+    // TODO: Pass in Ticket schema object
+    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKey:string, userEthKey:string){
+
+        let attestorKey = KeyPair.publicFromBase64(base64attestorPublicKey);
+        let issuerKey = KeyPair.publicFromBase64(base64issuerPublicKey);
+
+        try {
+            let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(proof), UseToken, attestorKey, TicketTNCompat, issuerKey);
+
+            console.log("Verified attested object");
+
+            if (!decodedAttestedObject.checkValidity(userEthKey)){
+                throw new Error("Ticket validity check failed!");
+            }
+
+        } catch (e) {
+            let message = "Ticket proof validation failed! " + e.message;
+            console.log(message);
+            throw new Error(message);
+        }
 
     }
 
