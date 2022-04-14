@@ -48,7 +48,7 @@ const ALPHA_CONFIG = {
 export class Authenticator {
 
     // TODO: Pass in Ticket schema object
-    async getUseTicket(
+    static async getUseTicket(
         // userKey: KeyPair,
         ticketSecret: bigint,
         attestationSecret: bigint,
@@ -135,7 +135,7 @@ export class Authenticator {
         try {
             let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(proof), UseToken, attestorKey, TicketTNCompat, issuerKey);
 
-            console.log("Verified attested object");
+            logger(DEBUGLEVEL.LOW,"Verified attested object");
 
             if (!decodedAttestedObject.checkValidity(userEthKey)){
                 throw new Error("Ticket validity check failed!");
@@ -143,7 +143,7 @@ export class Authenticator {
 
         } catch (e) {
             let message = "Ticket proof validation failed! " + e.message;
-            console.log(message);
+            logger(DEBUGLEVEL.MEDIUM, message);
             throw new Error(message);
         }
 

@@ -44,8 +44,6 @@ export class IntegrationExample {
 
     private webDomain: string;
 
-    private authenticator: Authenticator = new Authenticator();
-
     constructor(private negotiator: any = false) {
         let XMLconfig = XMLconfigData;
 
@@ -153,7 +151,7 @@ export class IntegrationExample {
         logger(DEBUGLEVEL.HIGH,this.base64attestorPubKey);
 
         try {
-            this.authenticator.getUseTicket(
+            Authenticator.getUseTicket(
                 this.signedTokenSecret,
                 this.attestationSecret,
                 this.signedTokenBlob ,

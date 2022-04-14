@@ -294,12 +294,12 @@ export function isDomainValid(domain: string): boolean {
     return true;
 }
 
-export function logger(level:number, ...args: any){
+export function logger(level:number, ...args: any[]){
     if (level > displayDebugLevel) return;
     console.log(...args);
 }
 
-export function testsLogger(level:number, ...args: any){
+export function testsLogger(level:number, ...args: any[]){
     if (level > testsDisplayDebugLevel) return;
     console.log(...args);
 }

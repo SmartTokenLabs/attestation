@@ -1,6 +1,6 @@
 import {AttestationCrypto} from "./AttestationCrypto";
 import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
-import {hexStringToArray, hexStringToUint8, logger, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {KeyPair} from "./KeyPair";
@@ -29,9 +29,8 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     private encoding: string;
     private attestableObject: any;
     private att: SignedIdentifierAttestation;
-    private attestationSecret: bigint ;
+    private attestationSecret: bigint;
     private objectSecret: bigint;
-    private userPublicKey: Uint8Array;
     private userKeyPair: KeyPair;
 
     private preSignEncoded: string;
@@ -193,24 +192,13 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return this.encoding;
     }
 
-    public getUserPublicKey() {
-        return this.userPublicKey;
-    }
-
-    public setUserPublicKey(userPublicKey:string){
-        this.userPublicKey = hexStringToUint8(userPublicKey);
-    }
-
     private constructorCheck() {
         if (!this.verify()) {
             throw new Error("The redeem request is not valid");
         }
     }
 
-    public checkValidity(userEthKey:string = null): boolean {
-
-        if (userEthKey)
-            this.setUserPublicKey(userEthKey);
+    public checkValidity(ethAddress:string = null): boolean {
 
         // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
         try {
@@ -244,10 +232,9 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             // let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
             let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getAddress();
             logger(DEBUGLEVEL.HIGH, 'attestationEthereumAddress: ' + attestationEthereumAddress);
-            logger(DEBUGLEVEL.HIGH, this.getUserPublicKey());
-            logger(DEBUGLEVEL.HIGH, 'this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
+            logger(DEBUGLEVEL.HIGH, 'providedEthereumAddress: ' + ethAddress);
 
-            if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
+            if (attestationEthereumAddress.toLowerCase() !== ethAddress.toLowerCase()) {
                 logger(DEBUGLEVEL.LOW, "The attestation is not to the same Ethereum user who is sending this request");
                 return false;
             }
