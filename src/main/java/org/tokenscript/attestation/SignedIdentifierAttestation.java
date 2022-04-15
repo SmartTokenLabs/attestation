@@ -53,7 +53,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
       // TODO ideally this should be refactored to SignedAttestation being augmented with an generic
       // Attestation type and an encoder to construct such an attestation
       this.att = new IdentifierAttestation(attestationEnc.getEncoded());
-      this.blockchainFriendly = att.blockchainFriendly;
+      this.blockchainFriendly = att.isBlockchainFriendly();
       DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
       this.signature = signatureEnc.getBytes();
       this.attestationVerificationKey = verificationKey;
