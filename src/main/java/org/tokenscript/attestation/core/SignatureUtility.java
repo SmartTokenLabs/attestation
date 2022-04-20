@@ -482,13 +482,4 @@ public class SignatureUtility {
         // Constant time branch, up to underlying library.
         return (params.getN().subtract(s)).multiply(branch).add((BigInteger.ONE.subtract(branch)).multiply(s));
     }
-
-    private void validatePoint(ECPrivateKeyParameters key, ECDomainParameters domain) {
-        if (key.getD().compareTo(domain.getN()) >= 0) {
-            throw new IllegalArgumentException("Private key is too large");
-        }
-        if (key.getD().compareTo(BigInteger.ZERO) < 0) {
-            throw new IllegalArgumentException("Private key is negative");
-        }
-    }
 }
