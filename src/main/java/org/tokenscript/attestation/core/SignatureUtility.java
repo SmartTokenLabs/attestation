@@ -283,13 +283,10 @@ public class SignatureUtility {
         BigInteger baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
         BigInteger normalizedS = normalizeS(baseS, key.getParameters());
         BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
-        // Normalize parity in case s needs normalization
-        if (!normalizedS.equals(baseS)) {
-            logger.info("Normalizing s value");
-            // Flip the bit value
-            v = BigInteger.ONE.subtract(v);
-        }
-        return new BigInteger[] {r, normalizedS, v};
+        // Normalize parity in case s needs normalization, based on constant time, up to the underlying implementation
+        BigInteger branch = !normalizedS.equals(baseS) ? BigInteger.ONE : BigInteger.ZERO;
+        BigInteger normalizedV = (BigInteger.ONE.subtract(v)).multiply(branch).add((BigInteger.ONE.subtract(branch)).multiply(v));
+        return new BigInteger[] {r, normalizedS, normalizedV};
     }
 
     static final String MESSAGE_PREFIX = "\u0019Ethereum Signed Message:\n";
@@ -481,10 +478,17 @@ public class SignatureUtility {
     private static BigInteger normalizeS(BigInteger s, ECDomainParameters params) {
         // Normalize number s to be the lowest of its two legal values
         BigInteger half_curve = params.getN().shiftRight(1);
-        if (s.compareTo(half_curve) > 0) {
-            logger.info("Inverting s value");
-            return params.getN().subtract(s);
+        BigInteger branch = s.compareTo(half_curve) > 0 ? BigInteger.ONE : BigInteger.ZERO;
+        // Constant time branch, up to underlying library.
+        return (params.getN().subtract(s)).multiply(branch).add((BigInteger.ONE.subtract(branch)).multiply(s));
+    }
+
+    private void validatePoint(ECPrivateKeyParameters key, ECDomainParameters domain) {
+        if (key.getD().compareTo(domain.getN()) >= 0) {
+            throw new IllegalArgumentException("Private key is too large");
         }
-        return s;
+        if (key.getD().compareTo(BigInteger.ZERO) < 0) {
+            throw new IllegalArgumentException("Private key is negative");
+        }
     }
 }

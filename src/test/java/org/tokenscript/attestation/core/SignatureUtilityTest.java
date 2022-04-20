@@ -1,8 +1,8 @@
 package org.tokenscript.attestation.core;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_CURVE;
+import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_DOMAIN;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -11,16 +11,21 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
+import org.bouncycastle.jce.ECPointUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -119,8 +124,8 @@ public class SignatureUtilityTest {
       BigInteger[] refSig = signDeterministic(message, userKeys.getPrivate());
       // We need to adjust the s part of the signature if it happens to be
       // less than N/2+1 since these are the only valid Ethereum signatures.
-      if (refSig[1].compareTo(SignatureUtility.ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
-        refSig[1] = SignatureUtility.ECDSA_DOMAIN.getN().subtract(refSig[1]);
+      if (refSig[1].compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
+        refSig[1] = ECDSA_DOMAIN.getN().subtract(refSig[1]);
       }
       assertEquals(refSig[0], ourSig[0]);
       assertEquals(refSig[1], ourSig[1]);
@@ -209,5 +214,14 @@ public class SignatureUtilityTest {
     ECDSASigner signer = new ECDSASigner(randomnessProvider);
     signer.init(true, key);
     return signer.generateSignature(digest);
+  }
+
+  @Test
+  public void failureOnInvalidKeys() {
+    ECPoint invalidPoint = ECDSA_DOMAIN.getCurve().createPoint(ECDSA_CURVE.getG().getAffineXCoord().toBigInteger(), ECDSA_CURVE.getG().getAffineYCoord().toBigInteger().add(BigInteger.ONE));
+    // Not on curve
+    assertThrows( IllegalArgumentException.class, ()-> new ECDomainParameters(ECDSA_CURVE.getCurve(), invalidPoint, ECDSA_CURVE.getN(), ECDSA_CURVE.getH()));
+    // Too big
+    assertThrows( IllegalArgumentException.class, ()->  new ECPrivateKeyParameters(ECDSA_CURVE.getN(), ECDSA_DOMAIN));
   }
 }
