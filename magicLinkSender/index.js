@@ -3,11 +3,13 @@ const nodemailer = require("nodemailer");
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
 
+const QRCode = require('qrcode')
+
 const fs = require('fs').promises;
 
 require('dotenv').config();
 
-let outletPath = "https://some_domain";
+let outletPath = "https://localhost/outlet/";
 let fileWithEmails = 'data/ticketReceivers.txt';
 let fileWithParsedData = 'data/parsed.json';
 
@@ -65,6 +67,11 @@ async function readEmailsFromFile(){
 
 async function sendEmail(item){
 
+  let qr = "";
+  try {
+    qr =  await QRCode.toDataURL(outletPath + item.magicLink);
+  } catch(e){}
+
   try {
     // prepare data to send
     let inputData = {
@@ -72,7 +79,15 @@ async function sendEmail(item){
       to: item.email, // list of receivers
       subject: "AttestatonDAO MagicLink", // Subject line
       text: outletPath + item.magicLink, // plain text body
-      html: `<a href="${outletPath + item.magicLink}">Click this MagicLink to save it in the browser</a>`, // html body
+      html: `Hello. In this email you can see QR code and link.<br> <a href="${outletPath + item.magicLink}">Click this MagicLink to save it in the browser</a><br>Or scan this QR with some device to save ticket to your browser.` + ( qr ? '<img src="cid:magicLink@smarttokenlabs.com"/>' : ""), // html body
+    }
+
+    if (qr) {
+      inputData.attachments = [{
+        filename: 'magicLink.png',
+        path: qr,
+        cid: 'magicLink@smarttokenlabs.com' //same cid value as in the html img src
+      }]
     }
 
     // send mail with defined transport object
@@ -186,6 +201,7 @@ async function main() {
     return;
   }
 
+  // return;
   let newEmailsSent = 0;
   for (let i = 0; i < allData.length; i++) {
     // dont send email again
