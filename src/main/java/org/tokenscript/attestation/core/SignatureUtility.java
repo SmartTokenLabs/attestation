@@ -275,12 +275,15 @@ public class SignatureUtility {
         BigInteger n = key.getParameters().getN();
         BigInteger r, k;
         ECPoint R;
+        BigInteger baseS;
         do {
-            k = randomnessProvider.nextK();
-            R = key.getParameters().getG().multiply(k).normalize();
-            r = R.getAffineXCoord().toBigInteger().mod(n);
-        } while (r.equals(BigInteger.ZERO));
-        BigInteger baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
+            do {
+                k = randomnessProvider.nextK();
+                R = key.getParameters().getG().multiply(k).normalize();
+                r = R.getAffineXCoord().toBigInteger().mod(n);
+            } while (r.equals(BigInteger.ZERO));
+            baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
+        } while (baseS.equals(BigInteger.ZERO));
         BigInteger normalizedS = normalizeS(baseS, key.getParameters());
         BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
         // Normalize parity in case s needs normalization, based on constant time, up to the underlying implementation
@@ -357,6 +360,21 @@ public class SignatureUtility {
      * Verify an Ethereum signature directly on @unsigned.
      */
     public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
+        ECPoint Q = ((ECPublicKeyParameters) publicKey).getQ();
+        // Check point is not infinity
+        if (Q.isInfinity()) {
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("PK is point at infinity"));
+        }
+        // Check point is on curve
+        try {
+            ECDSA_CURVE.getCurve().validatePoint(Q.getAffineXCoord().toBigInteger(), Q.getAffineYCoord().toBigInteger());
+        } catch (IllegalArgumentException e) {
+            ExceptionUtil.throwException(logger, e);
+        }
+        // Validate full order
+        if (!Q.multiply(ECDSA_CURVE.getN()).isInfinity()) {
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("Curve is not full order"));
+        }
         return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
     }
 
@@ -430,10 +448,16 @@ public class SignatureUtility {
     public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
+        if (r.compareTo(BigInteger.ONE) < 0 || r.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("R value is not in the range [1, n-1]"));
+        }
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
         BigInteger s = new BigInteger(1, sBytes);
+        if (s.compareTo(BigInteger.ONE) < 0 || s.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("S value is not in the range [1, n-1]"));
+        }
         if (s.compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
-            throw ExceptionUtil.throwException(logger,
+            ExceptionUtil.throwException(logger,
                 new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
         byte recoveryValue = signature[64];
@@ -457,6 +481,7 @@ public class SignatureUtility {
         BigInteger u1 = z.multiply(rInverse).mod(ECDSA_DOMAIN.getN());
         BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSA_DOMAIN.getN());
         ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSA_DOMAIN.getG().multiply(u1)).normalize();
+        // TODO explicite do validation
         return new ECPublicKeyParameters(publicKeyPoint, ECDSA_DOMAIN);
     }
 
