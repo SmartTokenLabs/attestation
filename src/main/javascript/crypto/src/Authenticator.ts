@@ -1,5 +1,5 @@
 import {Ticket} from "./Ticket";
-import {KeyPair} from "./libs/KeyPair";
+import {KeyPair, keysArray} from "./libs/KeyPair";
 import {
     base64ToUint8array,
     uint8ToBn,
@@ -70,6 +70,13 @@ interface postMessageData {
 interface WalletMetaData {
     address?: string,
     wallet?: string,
+}
+
+export interface TicketValidate {
+    valid: boolean,
+    ticketId?: string,
+    ticketClass?: number,
+    massage?: string
 }
 
 export class Authenticator {
@@ -163,6 +170,10 @@ export class Authenticator {
 
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         try {
+            console.log("----validate ticket____");
+            console.log(base64ticket);
+            console.log(base64senderPublicKeys);
+            
             ticket = Ticket.fromBase64(base64ticket, base64senderPublicKeys);
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
@@ -667,4 +678,34 @@ export class Authenticator {
 
  */
 
+    
+    static validateTicket(ticketBase64: string, confernceId: string,  publicKeyPEM: string): TicketValidate{
+        let keys: keysArray = {};
+        
+        try {
+            keys[confernceId] = KeyPair.publicFromBase64orPEM(publicKeyPEM);
+        } catch(e){
+            return {
+                valid: false,
+                massage: "Broken Public Key"
+            }
+        }
+
+        let ticket;
+        try {
+            ticket = Ticket.fromBase64(ticketBase64, keys);
+        } catch(e) {
+            console.log(e);
+            return {
+                valid: false,
+                massage: "Wrong Ticket"
+            }
+        }
+
+        return {
+            valid: true,
+            ticketId: ticket.getTicketId(),
+            ticketClass: ticket.getTicketClass(),
+        }
+    }
 }

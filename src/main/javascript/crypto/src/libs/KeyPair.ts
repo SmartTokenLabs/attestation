@@ -1,5 +1,5 @@
 import {
-    base64ToUint8array, ecSignatureToSRVhex, hexStringToArray, hexStringToUint8, logger, SignatureSRV,
+    base64ToUint8array, ecSignatureToSRVhex, hexStringToArray, hexStringToUint8, logger, pemOrBase64Orbase64urlToString, SignatureSRV,
     stringToArray,
     uint8arrayToBase64,
     uint8ToBn,
@@ -116,7 +116,7 @@ export class KeyPair {
     }
 
     static publicFromBase64orPEM(encoded: string): KeyPair {
-        return KeyPair.publicFromPEM(encoded);
+        return KeyPair.publicFromPEM(pemOrBase64Orbase64urlToString(encoded));
     }
 
     static publicFromBase64(base64: string): KeyPair {
