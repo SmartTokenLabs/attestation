@@ -2,6 +2,7 @@ import {XMLconfigData} from "./data/tokenData";
 import {logger} from "./libs/utils";
 import {DEBUGLEVEL} from "./config";
 import {Authenticator} from "./Authenticator";
+import {KeyPair} from "./libs/KeyPair";
 
 declare global {
     interface Window {
@@ -39,7 +40,7 @@ export class IntegrationExample {
 
     private iframe: any;
     private iframeWrap: any;
-    private base64senderPublicKey: string;
+    private base64senderPublicKeys: { [key: string]: KeyPair };
     private base64attestorPubKey: string;
 
     private webDomain: string;
@@ -47,7 +48,7 @@ export class IntegrationExample {
     constructor(private negotiator: any = false) {
         let XMLconfig = XMLconfigData;
 
-        this.base64senderPublicKey = XMLconfig.base64senderPublicKey;
+        this.base64senderPublicKeys = XMLconfig.base64senderPublicKeys;
         this.base64attestorPubKey = XMLconfig.base64attestorPubKey;
         this.webDomain = XMLconfig.webDomain;
     }
@@ -157,7 +158,7 @@ export class IntegrationExample {
                 this.signedTokenBlob ,
                 this.attestationBlob ,
                 this.base64attestorPubKey,
-                this.base64senderPublicKey,
+                this.base64senderPublicKeys,
             ).then(useToken => {
                 if (useToken){
                     logger(DEBUGLEVEL.HIGH,'this.authResultCallback( useToken ): ');

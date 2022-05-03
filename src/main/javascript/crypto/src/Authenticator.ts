@@ -1,6 +1,5 @@
 import {Ticket} from "./Ticket";
-import {Ticket as TicketTNCompat} from "./tn-compat/Ticket";
-import {KeyPair} from "./libs/KeyPair";
+import {KeyPair, keysArray} from "./libs/KeyPair";
 import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToUint8, hexStringToBase64} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
@@ -49,26 +48,24 @@ export class Authenticator {
 
     // TODO: Pass in Ticket schema object
     static async getUseTicket(
-        // userKey: KeyPair,
         ticketSecret: bigint,
         attestationSecret: bigint,
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKey: string,
-        useOldTicketSchema: boolean = false
+        base64senderPublicKeys: {[key: string]: KeyPair|string}
     )
     {
-        let ticket: Ticket|TicketTNCompat;
+        let ticket: Ticket;
         let att: SignedIdentifierAttestation;
 
-        // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
+        for (let i in base64senderPublicKeys){
+            if (typeof base64senderPublicKeys[i] === "string")
+                base64senderPublicKeys[i] = KeyPair.publicFromBase64orPEM(<string>base64senderPublicKeys[i]);
+        }
+
         try {
-            if (useOldTicketSchema){
-                ticket = TicketTNCompat.fromBase64(base64ticket,KeyPair.publicFromBase64(base64senderPublicKey));
-            } else {
-                ticket = Ticket.fromBase64(base64ticket,{"6": KeyPair.publicFromBase64(base64senderPublicKey)});
-            }
+            ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
 
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
@@ -136,7 +133,7 @@ export class Authenticator {
         let issuerKey = KeyPair.publicFromBase64(base64issuerPublicKey);
 
         try {
-            let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(proof), UseToken, attestorKey, TicketTNCompat, issuerKey);
+            let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(proof), UseToken, attestorKey, Ticket, issuerKey);
 
             logger(DEBUGLEVEL.LOW,"Verified attested object");
 
