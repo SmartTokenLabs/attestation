@@ -1,6 +1,6 @@
 import {Ticket} from "./Ticket";
 import {KeyPair, keysArray} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToUint8, hexStringToBase64} from "./libs/utils";
+import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToBase64} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
@@ -58,11 +58,7 @@ export class Authenticator {
     {
         let ticket: Ticket;
         let att: SignedIdentifierAttestation;
-
-        for (let i in base64senderPublicKeys){
-            if (typeof base64senderPublicKeys[i] === "string")
-                base64senderPublicKeys[i] = KeyPair.publicFromBase64orPEM(<string>base64senderPublicKeys[i]);
-        }
+        base64senderPublicKeys = KeyPair.parseKeyArrayStrings(base64senderPublicKeys);
 
         try {
             ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
@@ -127,13 +123,13 @@ export class Authenticator {
     }
 
     // TODO: Pass in Ticket schema object
-    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKey:string, userEthKey:string){
+    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey:string){
 
         let attestorKey = KeyPair.publicFromBase64(base64attestorPublicKey);
-        let issuerKey = KeyPair.publicFromBase64(base64issuerPublicKey);
+        let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
 
         try {
-            let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(proof), UseToken, attestorKey, Ticket, issuerKey);
+            let decodedAttestedObject = AttestedObject.fromBytes(base64ToUint8array(proof), UseToken, attestorKey, Ticket, issuerKeys);
 
             logger(DEBUGLEVEL.LOW,"Verified attested object");
 

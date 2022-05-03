@@ -554,4 +554,13 @@ export class KeyPair {
         return output;
     }
 
+    static parseKeyArrayStrings(keys: {[key: string]: KeyPair|string}): keysArray {
+        for (let i in keys){
+            if (typeof keys[i] === "string")
+                keys[i] = KeyPair.publicFromBase64orPEM(<string>keys[i]);
+        }
+
+        return <keysArray>keys;
+    }
+
 }
