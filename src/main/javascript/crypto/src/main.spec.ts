@@ -298,6 +298,44 @@ describe("MagicLink reader", () => {
 
     })
 
+    test('Verify Ticket', async () => {
+        let magicLink;
+        let senderKey;
+        try {
+            
+            senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
+
+            magicLink = await Issuer.constructTicket("mail@mail.com", "6", "222", 9, senderKey);
+            testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${magicLink}`);
+        } catch (e) {
+            testsLogger(DEBUGLEVEL.LOW, e);
+            throw new Error('construct Ticket failed');
+        }
+
+
+        try {
+
+            let params = new URLSearchParams(magicLink);
+			let ticketOnly = params.get("ticket");
+            
+            let res = Authenticator.validateTicket(ticketOnly, "6", magicLinkPublicPEM);
+
+            testsLogger(DEBUGLEVEL.VERBOSE, res);
+            expect(res).toStrictEqual({
+                valid: true,
+                ticketId: '222',
+                ticketClass: 9,
+            });
+        } catch (e) {
+            testsLogger(DEBUGLEVEL.LOW, e);
+            throw new Error('verifyUsage failed');
+        }
+
+    })
+
+
+
+
 
 });
 

@@ -1,6 +1,7 @@
 import {Ticket} from "./Ticket";
 import {KeyPair, keysArray} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToBase64} from "./libs/utils";
+import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString, logger, hexStringToBase64Url,
+hexStringToBase64} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
@@ -44,6 +45,14 @@ const ALPHA_CONFIG = {
     }
 };
 
+
+export interface TicketValidate {
+    valid: boolean,
+    ticketId?: string,
+    ticketClass?: number,
+    massage?: string
+}
+
 export class Authenticator {
 
     // TODO: Pass in Ticket schema object
@@ -62,6 +71,10 @@ export class Authenticator {
 
         try {
             ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
+
+            console.log("----validate ticket____");
+            console.log(base64ticket);
+            console.log(base64senderPublicKeys);
 
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
@@ -453,4 +466,34 @@ export class Authenticator {
 
  */
 
+    
+    static validateTicket(ticketBase64: string, confernceId: string,  publicKeyPEM: string): TicketValidate{
+        let keys: keysArray = {};
+        
+        try {
+            keys[confernceId] = KeyPair.publicFromBase64orPEM(publicKeyPEM);
+        } catch(e){
+            return {
+                valid: false,
+                massage: "Broken Public Key"
+            }
+        }
+
+        let ticket;
+        try {
+            ticket = Ticket.fromBase64(ticketBase64, keys);
+        } catch(e) {
+            console.log(e);
+            return {
+                valid: false,
+                massage: "Wrong Ticket"
+            }
+        }
+
+        return {
+            valid: true,
+            ticketId: ticket.getTicketId(),
+            ticketClass: ticket.getTicketClass(),
+        }
+    }
 }
