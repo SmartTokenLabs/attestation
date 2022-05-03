@@ -1,6 +1,27 @@
 import {CURVE_BN256, CURVE_SECP256k1} from "./Point";
-import {displayDebugLevel, testsDisplayDebugLevel} from "../config";
 let sha3 = require("js-sha3");
+
+declare global {
+    interface Window {
+        DISPLAY_DEBUG_LEVEL: string;
+    }
+}
+
+let displayDebugLevel: number;
+let testsDisplayDebugLevel: number;
+
+// process.env.DISPLAY_DEBUG_LEVEL used to set LOG level for NODE.JS
+// window.DISPLAY_DEBUG_LEVEL used to set LOG level for browser
+if (process && process.env && process.env.DISPLAY_DEBUG_LEVEL) {
+    displayDebugLevel = parseInt(process.env.DISPLAY_DEBUG_LEVEL);
+} else if (window && window.DISPLAY_DEBUG_LEVEL) {
+    displayDebugLevel = parseInt(window.DISPLAY_DEBUG_LEVEL);
+} 
+
+// process.env.DISPLAY_DEBUG_LEVEL_TESTS used to set LOG level for NODE.JS jest tests
+if (process && process.env && process.env.DISPLAY_DEBUG_LEVEL_TESTS) {
+    testsDisplayDebugLevel = parseInt(process.env.DISPLAY_DEBUG_LEVEL_TESTS);
+} 
 
 export function stringToHex(str: string) {
     var hex = '';
@@ -298,13 +319,13 @@ export function isDomainValid(domain: string): boolean {
     return true;
 }
 
-export function logger(level:number, ...args: any){
-    if (level > displayDebugLevel) return;
+export function logger(level:number, ...args: any[]){
+    if (!displayDebugLevel || level > displayDebugLevel) return;
     console.log(...args);
 }
 
-export function testsLogger(level:number, ...args: any){
-    if (level > testsDisplayDebugLevel) return;
+export function testsLogger(level:number, ...args: any[]){
+    if (!testsDisplayDebugLevel || level > testsDisplayDebugLevel) return;
     console.log(...args);
 }
 

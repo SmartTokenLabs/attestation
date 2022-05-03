@@ -1,17 +1,9 @@
 import {Ticket} from "./Ticket";
+import {Ticket as TicketTNCompat} from "./tn-compat/Ticket";
 import {KeyPair} from "./libs/KeyPair";
-import {
-    base64ToUint8array,
-    uint8ToBn,
-    uint8tohex,
-    uint8toString,
-    logger,
-    hexStringToBase64Url,
-    hexStringToBase64
-} from "./libs/utils";
+import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToUint8, hexStringToBase64} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
-import {XMLconfigData} from "./data/tokenData";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
 import {AttestationRequest} from "./libs/AttestationRequest";
 import {Nonce} from "./libs/Nonce";
@@ -27,12 +19,14 @@ import {Eip712AttestationRequestWithUsage} from "./libs/Eip712AttestationRequest
 import {AttestationRequestWithUsage} from "./libs/AttestationRequestWithUsage";
 import {Validateable} from "./libs/Validateable";
 import {DEBUGLEVEL} from "./config";
+import {UseToken} from "./asn1/shemas/UseToken";
 
-declare global {
-    interface Window {
-        attachEvent: any;
-        detachEvent: any;
-    }
+let subtle:any;
+
+if (typeof crypto === "object" && crypto.subtle){
+    subtle = crypto.subtle;
+} else {
+    subtle = require('crypto').webcrypto.subtle;
 }
 
 const ALPHA_CONFIG = {
@@ -51,119 +45,31 @@ const ALPHA_CONFIG = {
     }
 };
 
-export interface devconToken {
-    ticketBlob: string,
-    ticketSecret: bigint,
-    email?: string,
-    magicLink?: string,
-    attestationOrigin: string,
-}
-
-interface postMessageData {
-    force?: boolean,
-    email?: string,
-    magicLink?: string,
-    address?: string,
-    provider_name?: string,
-}
-
-interface WalletMetaData {
-    address?: string,
-    wallet?: string,
-}
-
 export class Authenticator {
-    private signedTokenBlob: string;
-    private signedTokenSecret: bigint;
 
-    private attestationBlob: string;
-    private attestationSecret: bigint;
-
-    private magicLink: string;
-    private email: string;
-
-    private attestationOrigin: string;
-    private authResultCallback: Function;
-
-    private iframe: any;
-    private iframeWrap: any;
-    private base64senderPublicKeys: {[index: string]: KeyPair};
-    private base64attestorPubKey: string;
-
-    private webDomain: string;
-    private walletMetaData: WalletMetaData;
-
-    private attestationListener: any;
-
-    constructor(private negotiator: any = false) {
-        let XMLconfig = XMLconfigData;
-
-        this.base64senderPublicKeys = XMLconfig.base64senderPublicKeys;
-        this.base64attestorPubKey = XMLconfig.base64attestorPubKey;
-        this.webDomain = XMLconfig.webDomain;
-    }
-
-    getAuthenticationBlob(tokenObj: devconToken, walletMetaData:WalletMetaData = {}, authResultCallback: Function) {
-        // TODO - what is tokenType, where can we see structure etc.
-        // 1. Find the token type (using TokenScript)
-        // Oleg: we can avoid Autenticator -> Negotiator request, just have to receive everything in single input object
-        // let tokenType = Negotiator.getTokenType(tokenObj.tokenClass);
-        // 2. Trace from its TokenScript which website has the needed data object
-        // if (tokenType.attestationOrigin) { // always return true in Devcon project,
-        // unless DevCon changed their tokenscript and moved all tickets to the contract
-
-        this.signedTokenBlob = tokenObj.ticketBlob;
-        this.walletMetaData = walletMetaData;
-        this.magicLink = tokenObj.magicLink;
-        this.email = tokenObj.email;
-        this.signedTokenSecret = tokenObj.ticketSecret;
-        this.attestationOrigin = tokenObj.attestationOrigin;
-        this.authResultCallback = authResultCallback;
-        this.getIdentifierAttestation();
-
-    }
-
-    /*
-     *  - Since this token depends on identifier attestation, continue to open iframe to attestation.id who needs to provide the proof
-     */
-    getIdentifierAttestation() {
-        logger(DEBUGLEVEL.HIGH,'getIdentifierAttestation. create iframe with ' + this.attestationOrigin);
-
-        this.attestationListener = this.postMessageAttestationListener.bind(this);
-        // attach postMessage listener and wait for attestation data
-        this.attachPostMessageListener(this.attestationListener);
-        const iframe = document.createElement('iframe');
-        this.iframe = iframe;
-        iframe.src = this.attestationOrigin;
-        iframe.style.width = '800px';
-        iframe.style.height = '700px';
-        iframe.style.maxWidth = '100%';
-        iframe.style.border = 'none';
-        iframe.style.background = '#fff';
-        let iframeWrap = document.createElement('div');
-        this.iframeWrap = iframeWrap;
-        iframeWrap.setAttribute('style', 'width:100%;min-height: 100vh; position: fixed; align-items: center; justify-content: center;display: none;top: 0; left: 0; background: #000a');
-        iframeWrap.appendChild(iframe);
-
-        document.body.appendChild(iframeWrap);
-    }
-
-    async getUseTicket(
+    // TODO: Pass in Ticket schema object
+    static async getUseTicket(
         // userKey: KeyPair,
         ticketSecret: bigint,
         attestationSecret: bigint,
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKeys: {[index: string]:KeyPair}
+        base64senderPublicKey: string,
+        useOldTicketSchema: boolean = false
     )
     {
-        let ticket: Ticket;
+        let ticket: Ticket|TicketTNCompat;
         let att: SignedIdentifierAttestation;
 
         // let ticket: Ticket = Ticket.fromBase64(base64ticket, KeyPair.fromPublicHex(base64senderPublicKey));
         try {
-            ticket = Ticket.fromBase64(base64ticket, base64senderPublicKeys);
+            if (useOldTicketSchema){
+                ticket = TicketTNCompat.fromBase64(base64ticket,KeyPair.publicFromBase64(base64senderPublicKey));
+            } else {
+                ticket = Ticket.fromBase64(base64ticket,{"6": KeyPair.publicFromBase64(base64senderPublicKey)});
+            }
+
             if (!ticket.checkValidity()) {
                 logger(DEBUGLEVEL.LOW,"Could not validate ticket");
                 throw new Error("Validation failed");
@@ -175,7 +81,7 @@ export class Authenticator {
             logger(DEBUGLEVEL.MEDIUM,'ticked valid (signature OK)');
         } catch (e) {
             logger(DEBUGLEVEL.MEDIUM,'getUseTicket: ticket validation failed',e);
-            throw new Error("getUseTicket: ticked validation failed");
+            throw new Error("getUseTicket: ticked validation failed: " + e.message);
         }
 
         try {
@@ -192,11 +98,11 @@ export class Authenticator {
                 logger(DEBUGLEVEL.LOW,"Could not verify attestation");
                 throw new Error("Verification failed");
             }
-            logger(DEBUGLEVEL.HIGH,'attestaion valid');
+            logger(DEBUGLEVEL.HIGH,'attestation valid');
         } catch (e) {
             logger(DEBUGLEVEL.LOW,'getUseTicket: attestation validation failed');
             logger(DEBUGLEVEL.MEDIUM,e);
-            throw new Error("getUseTicket: attestation validation failed");
+            throw new Error("getUseTicket: attestation validation failed: " + e.message);
         }
 
 
@@ -217,147 +123,34 @@ export class Authenticator {
         } catch (e) {
             logger(DEBUGLEVEL.LOW,'getUseTicket: redeem failed');
             logger(DEBUGLEVEL.MEDIUM,e);
-            throw new Error("getUseTicket: redeem failed");
+            throw new Error("getUseTicket: redeem failed: " + e.message);
         }
 
 
     }
 
-    postMessageAttestationListener(event: MessageEvent){
-        let attestURL = new URL(this.attestationOrigin);
+    // TODO: Pass in Ticket schema object
+    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKey:string, userEthKey:string){
 
-        if (event.origin !== attestURL.origin) {
-            return;
-        }
-
-        logger(DEBUGLEVEL.HIGH,'postMessageAttestationListener event (Authenticator)',event);
-
-        if (
-            typeof event.data.ready !== "undefined"
-            && event.data.ready === true
-        ) {
-            logger(DEBUGLEVEL.HIGH,'this.magicLink',this.magicLink);
-            logger(DEBUGLEVEL.HIGH,'this.email',this.email);
-
-            let sendData:postMessageData = {force: false};
-            if (this.magicLink) sendData.magicLink = this.magicLink;
-            if (this.email) sendData.email = this.email;
-            if (this.walletMetaData.address) sendData.address = this.walletMetaData.address;
-            if (this.walletMetaData.wallet) {
-                switch (this.walletMetaData.wallet) {
-                    case "Metamask": 
-                        sendData.provider_name = "injected";
-                        break;
-                    // case "WalletConnect": 
-                    //     sendData.provider_name = "injected";
-                    //     break;
-                    default: 
-                        sendData.force = true; 
-                }
-            } 
-
-            logger(DEBUGLEVEL.HIGH,'sendData',sendData);
-
-            this.iframe.contentWindow.postMessage(sendData, this.attestationOrigin);
-            return;
-        }
-
-
-        if (
-            typeof event.data.display !== "undefined"
-        ) {
-            if (event.data.display === true) {
-                this.iframeWrap.style.display = 'flex';
-                this.negotiator && this.negotiator.commandDisplayIframe();
-            } else {
-
-                if (event.data.error){
-                    logger(DEBUGLEVEL.LOW, "Error received from the iframe: " + event.data.error);
-                    this.authResultCallback(null, event.data.error);
-                }
-
-                this.iframeWrap.style.display = 'none';
-                this.negotiator && this.negotiator.commandHideIframe();
-
-            }
-        }
-
-        if (
-            !event.data.hasOwnProperty('attestation')
-            || !event.data.hasOwnProperty('requestSecret')
-        ) {
-            return;
-        }
-        this.detachPostMessageListener(this.attestationListener);
-        this.iframeWrap.remove();
-        this.attestationBlob = event.data.attestation;
-        this.attestationSecret = event.data.requestSecret;
-
-        logger(DEBUGLEVEL.HIGH,'attestation data received.');
-        logger(DEBUGLEVEL.HIGH,this.attestationBlob);
-        logger(DEBUGLEVEL.HIGH,this.attestationSecret);
-        logger(DEBUGLEVEL.HIGH,this.base64attestorPubKey);
+        let attestorKey = KeyPair.publicFromBase64(base64attestorPublicKey);
+        let issuerKey = KeyPair.publicFromBase64(base64issuerPublicKey);
 
         try {
-            this.getUseTicket(
-                this.signedTokenSecret,
-                this.attestationSecret,
-                this.signedTokenBlob ,
-                this.attestationBlob ,
-                this.base64attestorPubKey,
-                this.base64senderPublicKeys,
-            ).then(useToken => {
-                if (useToken){
-                    logger(DEBUGLEVEL.HIGH,'this.authResultCallback( useToken ): ');
-                } else {
-                    logger(DEBUGLEVEL.HIGH,'this.authResultCallback( empty ): ');
-                }
-                this.authResultCallback(useToken);
-            }).catch(e=>{
-                logger(DEBUGLEVEL.LOW,`UseDevconTicket . Something went wrong. ${e}`);
-                this.authResultCallback(false);
-            })
+            let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(proof), UseToken, attestorKey, TicketTNCompat, issuerKey);
 
+            logger(DEBUGLEVEL.LOW,"Verified attested object");
 
-        } catch (e){
-            logger(DEBUGLEVEL.LOW,`UseDevconTicket. Something went wrong. ${e}`);
-            this.authResultCallback(false);
+            if (!decodedAttestedObject.checkValidity(userEthKey)){
+                throw new Error("Ticket validity check failed!");
+            }
+
+        } catch (e) {
+            let message = "Ticket proof validation failed! " + e.message;
+            logger(DEBUGLEVEL.MEDIUM, message);
+            throw new Error(message);
         }
-        // construct UseDevconTicket, see
-        // https://github.com/TokenScript/attestation/blob/main/data-modules/src/UseDevconTicket.asd
 
-        // TODO we dont have ready UseDevconTicket constructor yet
-        // let useDevconTicket = new UseDevconTicket({
-        //     signedDevconTicket: signedDevonTicket,
-        //     identifierAttestation: identifierAttestation,
-        //     proof: proof
-        // })
-        // // Serialise it (for use as a transaction parameter) and return it
-        // return useDevconTicket.serialize();
     }
-
-    attachPostMessageListener(listener: Function){
-        if (window.addEventListener) {
-            window.addEventListener("message", (e) => {
-                listener(e);
-            }, false);
-        } else {
-            // IE8
-            window.attachEvent("onmessage", (e: MessageEvent) => {
-                listener(e);
-            });
-        }
-    }
-
-    detachPostMessageListener(listener:EventListener) {
-        if (window.addEventListener) {
-          window.removeEventListener("message", listener, false);
-        } else {
-          // IE8
-          window.detachEvent("onmessage", listener);
-        }
-    }
-
 
     /*
      * get ticket attestation from wallet, or issuer site's local storage through iframe

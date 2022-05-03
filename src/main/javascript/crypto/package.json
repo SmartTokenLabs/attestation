@@ -1,13 +1,23 @@
 {
-  "name": "wpts",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@tokenscript/attestation",
+  "version": "0.3.1",
+  "description": "A library for integrating cryptographic attestations into applications",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "mocha src/**/*.test.ts",
-    "build": "webpack",
+    "build": "rm -fr dist/* && tsc -p tsconfig.json",
+    "pack": "webpack",
+    "clean": "rm -R dist",
     "watch": "webpack --watch --progress",
-    "testjest": "jest"
+    "testjest": "jest",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TokenScript/attestation.git",
+    "directory": "/src/main/javascript/crypto"
   },
   "keywords": [],
   "author": "",

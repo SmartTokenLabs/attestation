@@ -1,7 +1,7 @@
 import {CURVE_BN256, Point} from "./Point";
 import {Proof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {base64ToUint8array, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {base64ToUint8array, uint8ToBn, uint8toBuffer, uint8tohex, bnToUint8} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
 
@@ -81,5 +81,16 @@ export class FullProofOfExponent {
 
     public getDerEncoding(): string {
         return this.encoding;
+    }
+    
+    public getAsnType(): Proof {
+
+        const proof = new Proof();
+        proof.nonce = this.getNonce();
+        proof.challengePoint = bnToUint8(this.getChallenge());
+        proof.riddle = this.getRiddle().getEncoded();
+        proof.responseValue = this.getPoint().getEncoded();
+
+        return proof;
     }
 }
