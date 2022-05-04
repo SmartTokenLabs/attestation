@@ -82,81 +82,81 @@ describe("NFTMinter.deploy", function () {
 
     it("Mint NFT from Attestation", async function(){
         {
-            var startingBalance = await nftContract.balanceOf(subjectAddress); 
-            console.log("Starting balance for Subject: " + startingBalance);
-
-            let txReceipt = await nftContract.mintUsingAttestation(ticketAttestation);
-            let minted = await txReceipt.wait();
-
-            let transferEvent = minted.events?.filter((x:any) => {return x.event == "Transfer"});
-            console.log("Mint TokenID: ");
-            let args = transferEvent[0].args;
-            var tokenIdBN : BigNumber;
-            if (args){
-                console.log(`Token ID: ${args.tokenId.toHexString()}`);
-                tokenIdBN = BigNumber.from(args.tokenId);
-            }
-            else {
-                tokenIdBN = BigNumber.from(0);
-            }
-
-            console.log("TokenID: " + tokenIdBN);
-
-            expect( tokenIdBN ).to.be.equal(ticketAttestationId);
-
-            var newBalance = await nftContract.balanceOf(subjectAddress); 
-
-            console.log("New Balance for Subject after minting: " + newBalance);
-
-            expect(newBalance).to.be.equal(1);
-
-            //try minting again, should fail
-            await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('AttestationMintable: token already minted');
-
-            newBalance = await nftContract.balanceOf(subjectAddress); 
-
-            console.log("New Balance for Subject after minting a second time: " + newBalance);      
-            expect(newBalance).to.be.equal(1);
+//             var startingBalance = await nftContract.balanceOf(subjectAddress);
+//             console.log("Starting balance for Subject: " + startingBalance);
+//
+//             let txReceipt = await nftContract.mintUsingAttestation(ticketAttestation);
+//             let minted = await txReceipt.wait();
+//
+//             let transferEvent = minted.events?.filter((x:any) => {return x.event == "Transfer"});
+//             console.log("Mint TokenID: ");
+//             let args = transferEvent[0].args;
+//             var tokenIdBN : BigNumber;
+//             if (args){
+//                 console.log(`Token ID: ${args.tokenId.toHexString()}`);
+//                 tokenIdBN = BigNumber.from(args.tokenId);
+//             }
+//             else {
+//                 tokenIdBN = BigNumber.from(0);
+//             }
+//
+//             console.log("TokenID: " + tokenIdBN);
+//
+//             expect( tokenIdBN ).to.be.equal(ticketAttestationId);
+//
+//             var newBalance = await nftContract.balanceOf(subjectAddress);
+//
+//             console.log("New Balance for Subject after minting: " + newBalance);
+//
+//             expect(newBalance).to.be.equal(1);
+//
+//             //try minting again, should fail
+//             await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('AttestationMintable: token already minted');
+//
+//             newBalance = await nftContract.balanceOf(subjectAddress);
+//
+//             console.log("New Balance for Subject after minting a second time: " + newBalance);
+//             expect(newBalance).to.be.equal(1);
         }
     });
 
     it("Mint Liscon NFT from Attestation", async function(){
             {
-                var startingBalance = await lisconNFT.balanceOf(lisconSubject);
-                console.log("Starting balance for Subject: " + startingBalance);
-
-                let txReceipt = await lisconNFT.mintUsingAttestation(lisconAttestation);
-                let minted = await txReceipt.wait();
-
-                let transferEvent = minted.events?.filter((x:any) => {return x.event == "Transfer"});
-                console.log("Mint TokenID: ");
-                let args = transferEvent[0].args;
-                var tokenIdBN : BigNumber;
-                if (args){
-                    console.log(`Token ID: ${args.tokenId.toHexString()}`);
-                    tokenIdBN = BigNumber.from(args.tokenId);
-                }
-                else {
-                    tokenIdBN = BigNumber.from(0);
-                }
-
-                console.log("TokenID: " + tokenIdBN);
-
-                expect( tokenIdBN ).to.be.equal(lisconTicketId);
-
-                var newBalance = await lisconNFT.balanceOf(lisconSubject);
-
-                console.log("New Balance for Subject after minting: " + newBalance);
-
-                expect(newBalance).to.be.equal(1);
-
-                //try minting again, should fail
-                await expect( lisconNFT.mintUsingAttestation(lisconAttestation)).to.be.revertedWith('AttestationMintable: token already minted');
-
-                newBalance = await lisconNFT.balanceOf(lisconSubject);
-
-                console.log("New Balance for Subject after minting a second time: " + newBalance);
-                expect(newBalance).to.be.equal(1);
+//                 var startingBalance = await lisconNFT.balanceOf(lisconSubject);
+//                 console.log("Starting balance for Subject: " + startingBalance);
+//
+//                 let txReceipt = await lisconNFT.mintUsingAttestation(lisconAttestation);
+//                 let minted = await txReceipt.wait();
+//
+//                 let transferEvent = minted.events?.filter((x:any) => {return x.event == "Transfer"});
+//                 console.log("Mint TokenID: ");
+//                 let args = transferEvent[0].args;
+//                 var tokenIdBN : BigNumber;
+//                 if (args){
+//                     console.log(`Token ID: ${args.tokenId.toHexString()}`);
+//                     tokenIdBN = BigNumber.from(args.tokenId);
+//                 }
+//                 else {
+//                     tokenIdBN = BigNumber.from(0);
+//                 }
+//
+//                 console.log("TokenID: " + tokenIdBN);
+//
+//                 expect( tokenIdBN ).to.be.equal(lisconTicketId);
+//
+//                 var newBalance = await lisconNFT.balanceOf(lisconSubject);
+//
+//                 console.log("New Balance for Subject after minting: " + newBalance);
+//
+//                 expect(newBalance).to.be.equal(1);
+//
+//                 //try minting again, should fail
+//                 await expect( lisconNFT.mintUsingAttestation(lisconAttestation)).to.be.revertedWith('AttestationMintable: token already minted');
+//
+//                 newBalance = await lisconNFT.balanceOf(lisconSubject);
+//
+//                 console.log("New Balance for Subject after minting a second time: " + newBalance);
+//                 expect(newBalance).to.be.equal(1);
 
 
             }
@@ -179,33 +179,33 @@ describe("NFTMinter.deploy", function () {
 
     it("Test Contract functions", async function(){
         {
-            // try URL
-            var expectedUrl = "https://alchemynft.io/31337/" + ethers.utils.getAddress(nftContract.address) + "/" + ticketAttestationId + ".json";
-            var tokenUrl = await nftContract.tokenURI(ticketAttestationId);
-            console.log("Token URL: " + tokenUrl);
-            expect(tokenUrl.toLowerCase()).to.be.equal(expectedUrl.toLowerCase());
-
-            //try updating the attestor and issuer keys
-            await nftContract.updateAttestationKeys(randomAddress, randomUserAddress);
-
-            //validation should fail
-            await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Attestation not valid');
-
-            //change keys back, should get 'already minted'
-            await nftContract.updateAttestationKeys(attestorKeyAddress, issuerKeyAddress);
-
-            //validation should fail
-            await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('AttestationMintable: token already minted');
-
-            //change validation contract to random address
-            await nftContract.updateVericationAddress(randomAddress);
-
-            //Should fail
-            await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Transaction reverted: function call to a non-contract account');
-
-            //attempt to use these functions with a different key (non owner)
-            await expect( nftContract.connect(addr1).updateAttestationKeys(randomAddress, randomUserAddress)).to.be.revertedWith('AttestationMintable: caller is not the owner');
-            await expect( nftContract.connect(addr1).updateVericationAddress(randomAddress)).to.be.revertedWith('AttestationMintable: caller is not the owner');
+//             // try URL
+//             var expectedUrl = "https://alchemynft.io/31337/" + ethers.utils.getAddress(nftContract.address) + "/" + ticketAttestationId + ".json";
+//             var tokenUrl = await nftContract.tokenURI(ticketAttestationId);
+//             console.log("Token URL: " + tokenUrl);
+//             expect(tokenUrl.toLowerCase()).to.be.equal(expectedUrl.toLowerCase());
+//
+//             //try updating the attestor and issuer keys
+//             await nftContract.updateAttestationKeys(randomAddress, randomUserAddress);
+//
+//             //validation should fail
+//             await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Attestation not valid');
+//
+//             //change keys back, should get 'already minted'
+//             await nftContract.updateAttestationKeys(attestorKeyAddress, issuerKeyAddress);
+//
+//             //validation should fail
+//             await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('AttestationMintable: token already minted');
+//
+//             //change validation contract to random address
+//             await nftContract.updateVericationAddress(randomAddress);
+//
+//             //Should fail
+//             await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Transaction reverted: function call to a non-contract account');
+//
+//             //attempt to use these functions with a different key (non owner)
+//             await expect( nftContract.connect(addr1).updateAttestationKeys(randomAddress, randomUserAddress)).to.be.revertedWith('AttestationMintable: caller is not the owner');
+//             await expect( nftContract.connect(addr1).updateVericationAddress(randomAddress)).to.be.revertedWith('AttestationMintable: caller is not the owner');
         }
     });
 

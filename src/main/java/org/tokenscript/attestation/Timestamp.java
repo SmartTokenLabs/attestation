@@ -14,7 +14,8 @@ import org.apache.logging.log4j.Logger;
 public class Timestamp {
   private static final Logger logger = LogManager.getLogger(Timestamp.class);
 
-  public static final int ALLOWED_ROUNDING = 10000; // 10 sec to account for both rounding down to nearest second and remote clock issues
+  public static final int ALLOWED_ROUNDING = 20000; // 10 sec to account for both rounding down to nearest second and remote clock issues
+                                                    // JB - Extend this to 20 seconds so we can create an attestation that is invalid within the current Ethereum block
 
   // See RFC 5282, https://tools.ietf.org/html/rfc5280#section-4.1.2.5, based on the GeneralizedTime value of 99991231235959Z
   public static final long UNLIMITED = 253402297199000L;
@@ -84,6 +85,7 @@ public class Timestamp {
       return false;
     }
     // If token has expired
+    long diff = (currentTime - ALLOWED_ROUNDING) - expirationTimeInMs;
     if (expirationTimeInMs < currentTime - ALLOWED_ROUNDING) {
       logger.error("Expiration time has passed");
       return false;

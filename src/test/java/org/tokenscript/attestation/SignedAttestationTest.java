@@ -1,9 +1,5 @@
 package org.tokenscript.attestation;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import org.tokenscript.attestation.core.SignatureUtility;
 import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
@@ -22,6 +18,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class SignedAttestationTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair issuerKeys;
@@ -38,11 +36,27 @@ public class SignedAttestationTest {
   @Test
   public void testSignAttestation() {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
-    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
+    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys, true);
     assertTrue(signed.checkValidity());
     assertTrue(signed.verify());
+    assertTrue(signed.isBlockchainFriendly());
     assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(), signed.getSignature(), issuerKeys.getPublic()));
     assertArrayEquals(att.getPrehash(), signed.getUnsignedAttestation().getPrehash());
+  }
+
+  @Test
+  public void testSignAttestationNotBlockchainFriendly() throws Exception {
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
+    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys, false);
+    assertTrue(signed.checkValidity());
+    assertTrue(signed.verify());
+    assertFalse(signed.isBlockchainFriendly());
+    assertTrue(SignatureUtility.verifyEthereumSignature(att.getPrehash(false), signed.getSignature(), issuerKeys.getPublic()));
+    assertArrayEquals(att.getPrehash(true), signed.getUnsignedAttestation().getPrehash(true));
+    assertArrayEquals(att.getPrehash(false), signed.getUnsignedAttestation().getPrehash(false));
+    SignedIdentifierAttestation newSigned = new SignedIdentifierAttestation(signed.getDerEncoding(), issuerKeys.getPublic());
+    // test we keep blockchain friendliness in the encoding
+    assertArrayEquals(signed.getDerEncoding(), newSigned.getDerEncoding());
   }
 
   @Test
@@ -58,25 +72,25 @@ public class SignedAttestationTest {
 
   // TODO enable once PR 121 gets merged as this holds a fix
 //  @Test
-  public void testX509() throws Exception {
-    Attestation att = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
-    byte[] toSign = att.getPrehash();
-    byte[] digestBytes = new byte[32];
-    Digest digest = new SHA256Digest();
-    digest.update(toSign, 0, toSign.length);
-    digest.doFinal(digestBytes, 0);
-    byte[] signature = SignatureUtility.signHashedRandomized(digestBytes, issuerKeys.getPrivate());
-    byte[] signed = SignedIdentifierAttestation.constructSignedAttestation(att, signature);
-    // Test X509 compliance
-    CertificateFactory fact = CertificateFactory.getInstance("X.509");
-    ByteArrayInputStream stream = new ByteArrayInputStream(signed);
-    X509Certificate cert = (X509Certificate) fact.generateCertificate(stream);
-    try {
-      cert.checkValidity();
-    } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-      fail();
-    }
-    PublicKey pk = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
-    cert.verify(pk, new BouncyCastleProvider());
-  }
+//  public void testX509() throws Exception {
+//    Attestation att = HelperTest.makeUnsignedx509Att(subjectKeys.getPublic());
+//    byte[] toSign = att.getPrehash();
+//    byte[] digestBytes = new byte[32];
+//    Digest digest = new SHA256Digest();
+//    digest.update(toSign, 0, toSign.length);
+//    digest.doFinal(digestBytes, 0);
+//    byte[] signature = SignatureUtility.signHashedRandomized(digestBytes, issuerKeys.getPrivate());
+//    byte[] signed = SignedIdentifierAttestation.constructSignedAttestation(att, signature);
+//    // Test X509 compliance
+//    CertificateFactory fact = CertificateFactory.getInstance("X.509");
+//    ByteArrayInputStream stream = new ByteArrayInputStream(signed);
+//    X509Certificate cert = (X509Certificate) fact.generateCertificate(stream);
+//    try {
+//      cert.checkValidity();
+//    } catch (CertificateExpiredException | CertificateNotYetValidException e) {
+//      fail();
+//    }
+//    PublicKey pk = new EC().generatePublic(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(issuerKeys.getPublic()));
+//    cert.verify(pk, new BouncyCastleProvider());
+//  }
 }

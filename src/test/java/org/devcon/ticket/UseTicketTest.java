@@ -47,6 +47,7 @@ public class UseTicketTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricCipherKeyPair ticketIssuerKeys;
+  private static AsymmetricCipherKeyPair fakeSupplimentalKey;
   private static SecureRandom rand;
   private static AttestationCrypto crypto;
   private AttestedObject<Ticket> attestedTicket;
@@ -61,6 +62,7 @@ public class UseTicketTest {
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeys(rand);
     ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
+    fakeSupplimentalKey = SignatureUtility.constructECKeys(rand);
 
     System.out.println("subject: " + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
     System.out.println("attestor: " + SignatureUtility.addressFromKey(attestorKeys.getPublic()));
@@ -150,7 +152,7 @@ public class UseTicketTest {
   @Test
   public void testSmartContractDecode() throws Exception {
     //try building all components
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 15); //valid for 15 seconds
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
@@ -158,11 +160,77 @@ public class UseTicketTest {
     //now attempt to dump data from contract:
     TicketAttestationReturn tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
 
+    System.out.println("Call SmartContract to check Ticket");
+
     //check returned values
     assertTrue(tar.subjectAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(subjectKeys.getPublic())));
     assertTrue(tar.issuerAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic())));
     assertTrue(tar.attestorAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(attestorKeys.getPublic())));
+    assertTrue(tar.attestationValid);
     assertEquals(Numeric.toBigInt(tar.ticketId), TICKET_ID);
+
+    System.out.println("Test passed");
+    System.out.println("Creating an attestation which only just expired ...");
+
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, -19); //expires instantly
+    signed = new SignedIdentifierAttestation(att, attestorKeys);
+    ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
+    System.out.println("Ticket now invalid");
+
+    //Now run a test without the blockchain friendly timestamp
+    System.out.println("Creating a non blockchain friendly attestation");
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL); //valid for 15 seconds
+    signed = new SignedIdentifierAttestation(att, attestorKeys, false);
+    ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    //test should fail
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
+    System.out.println("Ticket now invalid");
+
+    System.out.println("Test with wrong ticket issuer key");
+    //Now test with wrong ticket issuer key
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    signed = new SignedIdentifierAttestation(att, attestorKeys);
+    ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, fakeSupplimentalKey, TICKET_SECRET);
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding(), SignatureUtility.addressFromKey(attestorKeys.getPublic()), SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
+    System.out.println("Ticket now invalid");
+
+    System.out.println("Test with incorrect attestation issuer key passed");
+    att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    signed = new SignedIdentifierAttestation(att, fakeSupplimentalKey);
+    ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+
+    tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding(), SignatureUtility.addressFromKey(attestorKeys.getPublic()), SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic()));
+    assertFalse(tar.attestationValid);
+    assertArrayEquals(new byte[0], tar.ticketId);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.subjectAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.attestorAddress);
+    assertEquals("0x0000000000000000000000000000000000000000", tar.issuerAddress);
+    System.out.println("Ticket now invalid");
+
+    System.out.println("Test with incorrect issuer key passed");
   }
 
   @Test

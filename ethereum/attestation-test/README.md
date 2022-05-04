@@ -13,3 +13,6 @@ npm install
 ```shell
 npm test
 ```
+```shell
+npx hardhat test
+```
