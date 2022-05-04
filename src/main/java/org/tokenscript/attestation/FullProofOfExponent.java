@@ -13,6 +13,7 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.math.ec.ECPoint;
+import org.tokenscript.attestation.core.Verifiable;
 
 public class FullProofOfExponent implements ProofOfExponent {
   private static final Logger logger = LogManager.getLogger(FullProofOfExponent.class);
@@ -92,4 +93,15 @@ public class FullProofOfExponent implements ProofOfExponent {
     return encoding;
   }
 
+  @Override
+  public boolean verify() {
+    try {
+      AttestationCrypto.validatePointToCurve(riddle, AttestationCrypto.curve);
+      AttestationCrypto.validatePointToCurve(tPoint, AttestationCrypto.curve);
+      // TODO do they also need to be different from base element?!?!
+      return true;
+    } catch (SecurityException e) {
+      return false;
+    }
+  }
 }

@@ -285,6 +285,8 @@ public class SignatureUtility {
             baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
         } while (baseS.equals(BigInteger.ZERO));
         BigInteger normalizedS = normalizeS(baseS, key.getParameters());
+        // Validate R as a sanity check
+        AttestationCrypto.validatePointToCurve(R, ECDSA_CURVE.getCurve());
         BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
         // Normalize parity in case s needs normalization, based on constant time, up to the underlying implementation
         BigInteger branch = !normalizedS.equals(baseS) ? BigInteger.ONE : BigInteger.ZERO;
@@ -361,20 +363,7 @@ public class SignatureUtility {
      */
     public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
         ECPoint Q = ((ECPublicKeyParameters) publicKey).getQ();
-        // Check point is not infinity
-        if (Q.isInfinity()) {
-            ExceptionUtil.throwException(logger, new IllegalArgumentException("PK is point at infinity"));
-        }
-        // Check point is on curve
-        try {
-            ECDSA_CURVE.getCurve().validatePoint(Q.getAffineXCoord().toBigInteger(), Q.getAffineYCoord().toBigInteger());
-        } catch (IllegalArgumentException e) {
-            ExceptionUtil.throwException(logger, e);
-        }
-        // Validate full order
-        if (!Q.multiply(ECDSA_CURVE.getN()).isInfinity()) {
-            ExceptionUtil.throwException(logger, new IllegalArgumentException("Curve is not full order"));
-        }
+        AttestationCrypto.validatePointToCurve(Q, ECDSA_CURVE.getCurve());
         return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
     }
 
@@ -481,7 +470,7 @@ public class SignatureUtility {
         BigInteger u1 = z.multiply(rInverse).mod(ECDSA_DOMAIN.getN());
         BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSA_DOMAIN.getN());
         ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSA_DOMAIN.getG().multiply(u1)).normalize();
-        // TODO explicite do validation
+        AttestationCrypto.validatePointToCurve(publicKeyPoint, ECDSA_CURVE.getCurve());
         return new ECPublicKeyParameters(publicKeyPoint, ECDSA_DOMAIN);
     }
 

@@ -79,4 +79,14 @@ public class UsageProofOfExponent implements ProofOfExponent {
     return encoding;
   }
 
+  @Override
+  public boolean verify() {
+    try {
+      AttestationCrypto.validatePointToCurve(tPoint, AttestationCrypto.curve);
+      // TODO do they also need to be different from base element?!?!
+      return true;
+    } catch (SecurityException e) {
+      return false;
+    }
+  }
 }
