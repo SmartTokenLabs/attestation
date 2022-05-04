@@ -43,6 +43,9 @@ describe("NFTMinter.Enumerable.deploy", function () {
     const ticketAttestationId = BigNumber.from('0x692a445689ca93d992fd24098b3dc6');
     const lisconTicketId = BigNumber.from('0x4c54374b5151335a575a');
 
+    // real life attestation
+    const att2     = '0x3082036130819f30590c0e4174746573746174696f6e44414f0201040201000441041879356d9b56e4bd56313db34203629c97a22f6377b54f81a469db3c5cc6c46d24500ded69e170d4014bcb5175507ffaf601e61c162fe4f2a414e9a0eef1c9800342000ccc8835b2aff4c5f6dad57c3b3abda847ab0885438d53598b33b30a0049410367b00dd3cf8297eaf2f178c4da0fb509801d6f22f0ba5be9bc8dcec18256e94c1b30820252308201ffa0030201120208b87e97897399e8bd300906072a8648ce3d040230163114301206035504030c0b416c70686157616c6c6574302e180f32303232303530343230333935385a02046272e49e180f32303232303530343231333935385a02046272f2ae300b3109300706035504030c00308201333081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f3044042000000000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000000704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101034200042f196ec33ad04c6398fe8eef1a84d8855397641bb4cbbbcf576e3baa34c516a51b2eac6b201dd24950b6513cbd85f6bd1a11b7bad511343d9dadeccb30f72642a35730553053060b2b060104018b3a737901280101ff0441041246a015d46185b629dadb77a3ff8f43be7e6374e7c40529f018b8b98d89893b0e568a4e4950d90c8ebfc28a27764d23a398f39ff1c25e94ace6423b3b9c6ccb300906072a8648ce3d040203420016301181d5a938737480b7fd4f17785a179912f7879d343572771c2e2cbbfb1c7af5ffbf00dc348120ee1d217d7c147d5933fc3674235f51593373b408a0031b1c306704200a5caa05cd01c8156826e26e98b65a1924c66651ec3603257a384382d0caf2710441040a86c5a47d176f1c4fcae36e6f1a612cb3f21f8d647eb2a1203a43e66ab267342594ddf72f16e773b5d1bfda0ba7ac1b32cbd5fbd2f673b1989b004966ba6e5c0400';
+
     function calcContractAddress(sender: SignerWithAddress, nonce: number)
     {
         const rlp = require('rlp');
@@ -83,9 +86,21 @@ describe("NFTMinter.Enumerable.deploy", function () {
 
     })
 
+    it("Validate Attestation v2", async function(){
+
+        await expect(verifyAttestation["verifyTicketAttestation(bytes)"](att2)).to.not.throw;
+
+        // if it doesnt throw then all good
+        // expect(1).to.be.eq(1); 
+    });
+
     // Note: this test was created before we checked the timestamp
     // It appears that it should fail now we handle timestamps
     it("Validate Legacy Liscon Attestation v2", async function(){
+
+        let result1 = await verifyAttestation["verifyTicketAttestation(bytes)"](att2);
+        console.log(result1);
+
         let result = await lisconVerification["verifyTicketAttestation(bytes)"](lisconAttestationV2Legacy);
 
         //console.log("Attestor: " + result.attestor);
