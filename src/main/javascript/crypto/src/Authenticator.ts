@@ -46,6 +46,7 @@ const ALPHA_CONFIG = {
 };
 
 
+
 export interface TicketValidate {
     valid: boolean,
     ticketId?: string,
@@ -54,6 +55,10 @@ export interface TicketValidate {
 }
 
 export class Authenticator {
+
+    static decodePublicKey(file: string) {
+        return KeyPair.publicFromBase64orPEM(file);
+    }
 
     // TODO: Pass in Ticket schema object
     static async getUseTicket(
@@ -92,7 +97,7 @@ export class Authenticator {
 
         try {
             // let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.publicKey)));
-            let attestorKey = KeyPair.publicFromBase64(base64attestationPublicKey);
+            let attestorKey = KeyPair.publicFromBase64orPEM(base64attestationPublicKey);
 
             att = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
 
@@ -138,7 +143,7 @@ export class Authenticator {
     // TODO: Pass in Ticket schema object
     static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey:string){
 
-        let attestorKey = KeyPair.publicFromBase64(base64attestorPublicKey);
+        let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
         let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
 
         try {
