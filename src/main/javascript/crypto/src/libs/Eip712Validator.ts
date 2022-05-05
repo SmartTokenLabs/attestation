@@ -99,7 +99,7 @@ export class Eip712Validator {
     retrieveAttestedObject(auth: any){
         let attestedObjectHex = auth.payload;
 
-        let attestorKey = KeyPair.publicFromBase64(XMLconfigData.base64attestorPubKey);
+        let attestorKey = KeyPair.publicFromBase64orPEM(XMLconfigData.base64attestorPubKey);
         let issuerKeys = XMLconfigData.base64senderPublicKeys;
 
         let decodedAttestedObject = AttestedObject.fromBytes(hexStringToUint8(attestedObjectHex), UseToken, attestorKey, Ticket, issuerKeys);

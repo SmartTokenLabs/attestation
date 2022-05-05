@@ -116,15 +116,7 @@ export class KeyPair {
     }
 
     static publicFromBase64orPEM(encoded: string): KeyPair {
-        return KeyPair.publicFromPEM(pemOrBase64Orbase64urlToString(encoded));
-    }
-
-    static publicFromBase64(base64: string): KeyPair {
-        return KeyPair.publicFromPEM(base64);
-    }
-
-    static publicFromPEM(pem: string): KeyPair {
-        const pubUint8 = base64ToUint8array(pem);
+        const pubUint8 = base64ToUint8array(encoded);
         let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
         return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
     }
