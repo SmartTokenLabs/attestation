@@ -271,7 +271,6 @@ public class SignatureUtility {
 
         HMacDSAKCalculator randomnessProvider = new HMacDSAKCalculator(new KeccakDigest(256));
         randomnessProvider.init(key.getParameters().getN(), key.getD(), digest);
-
         BigInteger n = key.getParameters().getN();
         BigInteger r, k;
         ECPoint R;
@@ -286,7 +285,7 @@ public class SignatureUtility {
         } while (baseS.equals(BigInteger.ZERO));
         BigInteger normalizedS = normalizeS(baseS, key.getParameters());
         // Validate R as a sanity check
-        AttestationCrypto.validatePointToCurve(R, ECDSA_CURVE.getCurve());
+        AttestationCrypto.validatePointToCurve(R, key.getParameters().getCurve());
         BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
         // Normalize parity in case s needs normalization, based on constant time, up to the underlying implementation
         BigInteger branch = !normalizedS.equals(baseS) ? BigInteger.ONE : BigInteger.ZERO;

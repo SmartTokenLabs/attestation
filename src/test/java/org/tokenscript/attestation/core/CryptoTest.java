@@ -45,31 +45,13 @@ public class CryptoTest {
     issuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
+  // NOTE it is crucial that failures of this test and the constructor validation of the curve does not get ignored!
+  // This is guarding against using insecure parameters and curves!!!!
   @Test
-  public void tooSmallCurveOrder() throws Exception {
-    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+  public void curveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder");
     verifyCurveOrder.setAccessible(true);
-    // Set 2^253-1
-    BigInteger smallCurveOrder = BigInteger.ONE.shiftLeft(253).subtract(BigInteger.ONE);
-    assertFalse((boolean) verifyCurveOrder.invoke(crypto, smallCurveOrder));
-  }
-
-  @Test
-  public void tooLargeCurveOrder() throws Exception {
-    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
-    verifyCurveOrder.setAccessible(true);
-    // Set the final curveOrder field to 2^254
-    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(254);
-    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
-  }
-
-  @Test
-  public void veryLargeCurveOrder() throws Exception {
-    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
-    verifyCurveOrder.setAccessible(true);
-    // Set the final curveOrder field to 2^256
-    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(256);
-    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
+    assertTrue((boolean) verifyCurveOrder.invoke(crypto));
   }
 
   @Test
@@ -391,7 +373,7 @@ public class CryptoTest {
     assertEquals(AttestationCrypto.G, g);
     // Check order
     assertTrue(g.multiply(AttestationCrypto.curveOrder).isInfinity());
-    assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), g.normalize().getXCoord().getEncoded());
+    assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getAffineXCoord().getEncoded(), g.normalize().getAffineXCoord().getEncoded());
 
     BigInteger hVal = rejectionSample(BigInteger.ONE);
     ECPoint h = computePoint(hVal);

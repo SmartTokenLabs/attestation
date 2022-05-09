@@ -43,6 +43,7 @@ public class SignatureUtilityTest {
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
+  // Note that secp256k1 is not accepted by default in java due to security reasons, hence only the large keys are validated here
   @Test
   public void testKeyConversion() throws Exception {
     byte[] message = "test".getBytes(StandardCharsets.UTF_8);
@@ -70,24 +71,34 @@ public class SignatureUtilityTest {
   }
 
   @Test
-  public void testSignDeterministic() throws Exception  {
+  public void signDeterministic() throws Exception  {
+    testSignDeterministic(userKeys);
+    testSignDeterministic(largeKeys);
+  }
+
+  public void testSignDeterministic(AsymmetricCipherKeyPair keys) throws Exception  {
     byte[] message = new byte[515];
     message[0] = 42;
     message[514] = 13;
 
-    byte[] signature = SignatureUtility.signDeterministicSHA256(message, largeKeys.getPrivate());
-    assertTrue(SignatureUtility.verifySHA256(message, signature, largeKeys.getPublic()));
+    byte[] signature = SignatureUtility.signDeterministicSHA256(message, keys.getPrivate());
+    assertTrue(SignatureUtility.verifySHA256(message, signature, keys.getPublic()));
   }
 
   @Test
-  public void testSignRandomized() throws Exception {
+  public void signRandomized() throws Exception {
+    testSignRandomized(largeKeys);
+    testSignRandomized(userKeys);
+  }
+
+  public void testSignRandomized(AsymmetricCipherKeyPair keys) throws Exception {
     for (int i = 0; i < 50; i++) {
       byte[] message = new byte[256];
       message[0] = 0x42;
       message[255] = (byte) i;
 
-      byte[] signature = SignatureUtility.signHashedRandomized(message, largeKeys.getPrivate());
-      assertTrue(SignatureUtility.verifyHashed(message, signature, largeKeys.getPublic()));
+      byte[] signature = SignatureUtility.signHashedRandomized(message, keys.getPrivate());
+      assertTrue(SignatureUtility.verifyHashed(message, signature, keys.getPublic()));
     }
   }
 
@@ -274,7 +285,7 @@ public class SignatureUtilityTest {
     // point not on curve
     ECPoint invalidPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.valueOf(42), BigInteger.valueOf(43));
     ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(invalidPoint, ECDSA_DOMAIN);
-    Exception e = assertThrows(IllegalArgumentException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
+    Exception e = assertThrows(SecurityException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
     assertEquals("Invalid point coordinates", e.getMessage());
   }
 
@@ -282,9 +293,9 @@ public class SignatureUtilityTest {
   public void invalidPk2() {
     byte[] msg = new byte[] {0x42};
     byte[] sig = new byte[] {0x42};
+    // Point contains 0 coordinate
     ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(ECDSA_DOMAIN.getCurve().getInfinity(), ECDSA_DOMAIN);
-    Exception e = assertThrows(IllegalArgumentException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
-    assertEquals("PK is point at infinity", e.getMessage());
+    Exception e = assertThrows(SecurityException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
   }
 
 

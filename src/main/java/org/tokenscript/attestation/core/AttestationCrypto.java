@@ -297,8 +297,9 @@ public class AttestationCrypto {
    */
   public static void validatePointToCurve(ECPoint point, ECCurve curve) throws SecurityException {
     try {
+     ECPoint normalizedPoint = point.normalize();
       // Ensure the point is on the curve
-      curve.validatePoint(point.getXCoord().toBigInteger(), point.getYCoord().toBigInteger());
+      curve.validatePoint(normalizedPoint.getAffineXCoord().toBigInteger(), normalizedPoint.getAffineYCoord().toBigInteger());
       if (point.isInfinity()) {
         throw new SecurityException("Point is at infinity");
       }
@@ -306,7 +307,7 @@ public class AttestationCrypto {
         throw new SecurityException("Point does not have correct order");
       }
     } catch (Exception e) {
-      ExceptionUtil.throwException(logger, new SecurityException(e));
+      ExceptionUtil.throwException(logger, new SecurityException(e.getMessage()));
     }
   }
 }
