@@ -44,7 +44,7 @@ contract VerifyTicket {
     bytes1 constant VERSION_TAG         = bytes1(0xA0);
     bytes1 constant COMPOUND_TAG        = bytes1(0xA3);
 
-    bytes1 constant DEVCON_ID = bytes1("6");
+    uint constant TTL_GAP = 300;// 5 min
 
     uint256 constant IA5_CODE = uint256(bytes32("IA5")); //tags for disambiguating content
     uint256 constant DEROBJ_CODE = uint256(bytes32("OBJID"));
@@ -240,7 +240,8 @@ contract VerifyTicket {
             (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); //18 0F
             (, timeBlock, decodeIndex,) = decodeElement(attestation, decodeIndex + length);
             uint256 endTime = bytesToUint(timeBlock);
-            valid = block.timestamp > startTime && block.timestamp < endTime;
+            valid = block.timestamp > (startTime - TTL_GAP) && block.timestamp < endTime;
+
         }
         else
         {
