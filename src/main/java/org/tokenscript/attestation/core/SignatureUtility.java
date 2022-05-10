@@ -187,6 +187,9 @@ public class SignatureUtility {
      * @return
      */
     public static String addressFromKey(AsymmetricKeyParameter key) {
+        ECPublicKeyParameters ecKey = (ECPublicKeyParameters) key;
+        // Validate that the key is correct
+        AttestationCrypto.validatePointToCurve(ecKey.getQ(), ECDSA_CURVE.getCurve());
         byte[] pubKey;
         try {
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);

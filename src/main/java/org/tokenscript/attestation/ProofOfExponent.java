@@ -7,6 +7,6 @@ import org.tokenscript.attestation.core.Verifiable;
 
 public interface ProofOfExponent extends ASNEncodable, Verifiable {
   public ECPoint getPoint();
-  public BigInteger getChallenge();
+  public BigInteger getChallengeResponse();
   public byte[] getUnpredictableNumber();
 }

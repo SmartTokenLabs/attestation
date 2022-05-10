@@ -217,7 +217,7 @@ public class AttestationCrypto {
     // Compute the value the riddle should have
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, comPoint1, comPoint2), pok.getUnpredictableNumber());
-    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge(), pok.getUnpredictableNumber()), c);
+    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallengeResponse(), pok.getUnpredictableNumber()), c);
   }
 
   private static boolean verifyPok(FullProofOfExponent pok, BigInteger c) {
@@ -226,7 +226,7 @@ public class AttestationCrypto {
       logger.error("Challenge is not of the correct size");
       return false;
     }
-    ECPoint lhs = H.multiply(pok.getChallenge());
+    ECPoint lhs = H.multiply(pok.getChallengeResponse());
     ECPoint rhs = pok.getRiddle().multiply(c).add(pok.getPoint());
     return lhs.equals(rhs);
   }
@@ -297,12 +297,12 @@ public class AttestationCrypto {
    */
   public static void validatePointToCurve(ECPoint point, ECCurve curve) throws SecurityException {
     try {
-     ECPoint normalizedPoint = point.normalize();
-      // Ensure the point is on the curve
-      curve.validatePoint(normalizedPoint.getAffineXCoord().toBigInteger(), normalizedPoint.getAffineYCoord().toBigInteger());
       if (point.isInfinity()) {
         throw new SecurityException("Point is at infinity");
       }
+      ECPoint normalizedPoint = point.normalize();
+      // Ensure the point is on the curve
+      curve.validatePoint(normalizedPoint.getAffineXCoord().toBigInteger(), normalizedPoint.getAffineYCoord().toBigInteger());
       if (!point.multiply(curve.getOrder()).isInfinity()) {
         throw new SecurityException("Point does not have correct order");
       }

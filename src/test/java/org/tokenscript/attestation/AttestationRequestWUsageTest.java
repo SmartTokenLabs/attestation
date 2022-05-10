@@ -65,7 +65,7 @@ public class AttestationRequestWUsageTest {
   @Test
   public void badPok() {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
-    FullProofOfExponent badPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge(), new byte[] {0x01} );
+    FullProofOfExponent badPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallengeResponse(), new byte[] {0x01} );
     assertFalse(AttestationCrypto.verifyFullProof(badPok));
     assertThrows(IllegalArgumentException.class, ()-> new AttestationRequestWithUsage(TYPE, badPok, sessionKey));
   }
