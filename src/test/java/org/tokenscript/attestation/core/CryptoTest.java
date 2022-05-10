@@ -146,16 +146,19 @@ public class CryptoTest {
   public void testAttestationRequestProof() {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyFullProof(pok));
+    assertTrue(pok.validateParameters());
     // Test with other randomness
     FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyFullProof(pok2));
+    assertTrue(pok2.validateParameters());
     assertNotEquals(pok.getPoint(), pok2.getPoint());
     assertNotEquals(pok.getChallengeResponse(), pok2.getChallengeResponse());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other secret
-    pok = crypto.computeAttestationProof(BigInteger.ONE);
+    pok = crypto.computeAttestationProof(BigInteger.valueOf(2));
     assertTrue(AttestationCrypto.verifyFullProof(pok));
+    assertTrue(pok.validateParameters());
 
     // Negative tests
     pok = crypto.computeAttestationProof(SECRET1);

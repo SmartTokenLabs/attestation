@@ -95,12 +95,13 @@ public class FullProofOfExponent implements ProofOfExponent {
   }
 
   /**
-   * Verify that the proof is correct AND that the values contained are correct according to RFC 8235
+   * Verify the values contained are correct according to RFC 8235
    * The latter part is _crucial_ in preventing attacks through edge cases.
+   * NOTE: The proof itself is not verified!!!
    * @return true if everything is ok
    */
   @Override
-  public boolean verify() {
+  public boolean validateParameters() {
     try {
       // Validate that points are valid on the given curve, have correct order and are not at infinity
       AttestationCrypto.validatePointToCurve(riddle, AttestationCrypto.curve);
@@ -116,7 +117,7 @@ public class FullProofOfExponent implements ProofOfExponent {
       if (tPoint.equals(AttestationCrypto.G) || tPoint.equals(AttestationCrypto.H)) {
         return false;
       }
-      return AttestationCrypto.verifyFullProof(this);
+      return true;
     } catch (SecurityException e) {
       return false;
     }

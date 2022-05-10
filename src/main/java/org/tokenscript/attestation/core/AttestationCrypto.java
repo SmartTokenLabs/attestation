@@ -199,6 +199,10 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyFullProof(FullProofOfExponent pok)  {
+    if (!pok.validateParameters()) {
+      logger.error("The parameters in the ZK proof are not correct");
+      return false;
+    }
     BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getUnpredictableNumber());
     return verifyPok(pok, c);
   }
@@ -212,6 +216,10 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyEqualityProof(byte[] commitment1, byte[] commitment2, ProofOfExponent pok)  {
+    if (!pok.validateParameters()) {
+      logger.error("The parameters in the ZK proof are not correct");
+      return false;
+    }
     ECPoint comPoint1 = decodePoint(commitment1);
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute the value the riddle should have

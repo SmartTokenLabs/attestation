@@ -82,11 +82,11 @@ public class UsageProofOfExponent implements ProofOfExponent {
   /**
    * Verify that the values contained are correct according to RFC 8235
    * The latter part is _crucial_ in preventing attacks through edge cases.
-   * NOTE: The proof itself is not verified!!!`
+   * NOTE: The proof itself is not verified!!!
    * @return true if everything is ok
    */
   @Override
-  public boolean verify() {
+  public boolean validateParameters() {
     try {
       // Validate that point is valid on the given curve, have correct order and are not at infinity
       AttestationCrypto.validatePointToCurve(tPoint, AttestationCrypto.curve);
