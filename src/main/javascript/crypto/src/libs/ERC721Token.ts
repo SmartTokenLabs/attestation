@@ -1,8 +1,7 @@
 import {ASNEncodable} from "./ASNEncodable";
-import {Identifier} from "../asn1/shemas/AttestationRequest";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {bnToUint8, stringToHex, uint8ToBn, uint8toBuffer, uint8tohex, uint8toString} from "./utils";
-import {ERC721, Tokens} from "../asn1/shemas/NFTAttestation";
+import {bnToUint8, uint8ToBn, uint8tohex} from "./utils";
+import {ERC721} from "../asn1/shemas/NFTAttestation";
 import {Asn1Der} from "./DerUtility";
 
 export class ERC721Token implements ASNEncodable {
@@ -42,7 +41,7 @@ export class ERC721Token implements ASNEncodable {
 
     static fromBytes(asn1: Uint8Array) {
         try {
-            let token = AsnParser.parse( uint8toBuffer(asn1), ERC721);
+            let token = AsnParser.parse(asn1, ERC721);
             return ERC721Token.fromASNObj(token);
         } catch (e){
             throw new Error('Cant parse AttestationRequest Identifier');

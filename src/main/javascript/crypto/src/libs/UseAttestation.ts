@@ -7,7 +7,6 @@ import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
 import {ASNEncodable} from "./ASNEncodable";
 import {UseAttestation as UseAttestationASN} from "../asn1/shemas/UseAttestation";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {uint8toBuffer} from "./utils";
 import {Asn1Der} from "./DerUtility";
 
 export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
@@ -33,7 +32,7 @@ export class UseAttestation implements ASNEncodable, Verifiable, Validateable {
         let useAttest: UseAttestationASN;
 
         try {
-            useAttest = AsnParser.parse( uint8toBuffer(derEncoding), UseAttestationASN);
+            useAttest = AsnParser.parse(derEncoding, UseAttestationASN);
         } catch (e){
             throw new Error('Cant parse UseAttestationASN. ' + e);
         }

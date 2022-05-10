@@ -5,7 +5,7 @@ import {ERC721Token} from "./ERC721Token";
 import {Asn1Der} from "./DerUtility";
 import {KeyPair} from "./KeyPair";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {logger, uint8ToBn, uint8toBuffer, uint8tohex, uint8toString} from "./utils";
+import {logger} from "./utils";
 import {ERC721, NFTAttestationASN, Tokens} from "../asn1/shemas/NFTAttestation";
 import {DEBUGLEVEL} from "../config";
 
@@ -49,7 +49,7 @@ export class NFTAttestation implements ASNEncodable, Validateable {
 
     static fromDer(asn1: Uint8Array, identifierAttestationVerificationKey:KeyPair) {
         try {
-            return NFTAttestation.fromAsnObj(AsnParser.parse( uint8toBuffer(asn1), NFTAttestationASN), identifierAttestationVerificationKey);
+            return NFTAttestation.fromAsnObj(AsnParser.parse(asn1, NFTAttestationASN), identifierAttestationVerificationKey);
         } catch (e){
             console.log(e);
             throw new Error('Cant parse NFTAttestationASN');

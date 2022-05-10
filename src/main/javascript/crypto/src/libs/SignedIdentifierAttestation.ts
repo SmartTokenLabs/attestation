@@ -1,7 +1,7 @@
 import {AsnParser} from "@peculiar/asn1-schema";
 import {MyAttestation} from "../asn1/shemas/AttestationFramework";
 import {KeyPair} from "./KeyPair";
-import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToArray, logger, uint8tohex} from "./utils";
 import {Attestation} from "./Attestation";
 import {Verifiable} from "./Verifiable";
 import {Validateable} from "./Validateable";
@@ -21,7 +21,7 @@ export class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
     constructor() {}
 
     static fromBytes(uint8data: Uint8Array, attestorKeys: KeyPair): SignedIdentifierAttestation {
-        const myAttestation: MyAttestation = AsnParser.parse( uint8toBuffer( uint8data ), MyAttestation);
+        const myAttestation: MyAttestation = AsnParser.parse(uint8data, MyAttestation);
         return this.fromASNType(myAttestation, attestorKeys, uint8data);
     }
 

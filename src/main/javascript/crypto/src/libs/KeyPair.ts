@@ -1,9 +1,14 @@
 import {
-    base64ToUint8array, ecSignatureToSRVhex, hexStringToArray, hexStringToUint8, logger, pemOrBase64Orbase64urlToString, SignatureSRV,
+    base64ToUint8array,
+    ecSignatureToSRVhex,
+    hexStringToArray,
+    hexStringToUint8,
+    logger,
+    pemOrBase64Orbase64urlToString,
+    SignatureSRV,
     stringToArray,
     uint8arrayToBase64,
     uint8ToBn,
-    uint8toBuffer,
     uint8tohex
 } from "./utils";
 import {Asn1Der} from "./DerUtility";
@@ -125,7 +130,7 @@ export class KeyPair {
 
     static publicFromPEM(pem: string): KeyPair {
         const pubUint8 = base64ToUint8array(pem);
-        let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
+        let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(pubUint8, PublicKeyInfoValue);
         return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
     }
 
@@ -169,7 +174,7 @@ export class KeyPair {
     static privateFromKeyDataPEM(pem: string): KeyPair {
 
         const receiverPrivUint8 = base64ToUint8array(pem);
-        let privateKeyObj: PrivateKeyData = AsnParser.parse(uint8toBuffer( receiverPrivUint8), PrivateKeyData);
+        let privateKeyObj: PrivateKeyData = AsnParser.parse(receiverPrivUint8, PrivateKeyData);
 
         let me = new this();
         // TODO detect and validate algorithm
@@ -200,7 +205,7 @@ export class KeyPair {
 
     static privateFromPEM(pem: string): KeyPair {
         const receiverPrivUint8 = base64ToUint8array(pem);
-        let privateKeyObj: PrivateKeyInfo = AsnParser.parse(uint8toBuffer( receiverPrivUint8), PrivateKeyInfo);
+        let privateKeyObj: PrivateKeyInfo = AsnParser.parse(receiverPrivUint8, PrivateKeyInfo);
         return KeyPair.privateFromKeyInfo(privateKeyObj);
     }
 
@@ -357,7 +362,7 @@ export class KeyPair {
             };
 
         } else {
-            let signatureAsn1: Signature = AsnParser.parse( uint8toBuffer(hexStringToUint8(signature)), Signature);
+            let signatureAsn1: Signature = AsnParser.parse(hexStringToUint8(signature), Signature);
             sign = {
                 r: BigInt(signatureAsn1.r).toString(16).padStart(64,'0'),
                 s: BigInt(signatureAsn1.s).toString(16).padStart(64,'0')
@@ -503,7 +508,7 @@ export class KeyPair {
     }
 
     async verifyStringWithSubtleDerSignature(signature: Uint8Array, msg: string): Promise<boolean>{
-        let signatureAsn1: Signature = AsnParser.parse( uint8toBuffer(signature), Signature);
+        let signatureAsn1: Signature = AsnParser.parse(signature, Signature);
         const javaSignatureHexRaw = BigInt(signatureAsn1.r).toString(16).padStart(64,'0') + BigInt(signatureAsn1.s).toString(16).padStart(64,'0');
         return this.verifyStringWithSubtle(hexStringToUint8( javaSignatureHexRaw), msg);
     }
@@ -541,7 +546,7 @@ export class KeyPair {
             case 70:
             case 71:
             case 72:
-                let signatureAsn1: Signature = AsnParser.parse( uint8toBuffer(signatureUint8), Signature);
+                let signatureAsn1: Signature = AsnParser.parse(signatureUint8, Signature);
                 output = hexStringToUint8(
                     BigInt(signatureAsn1.r).toString(16).padStart(64,'0') +
                     BigInt(signatureAsn1.s).toString(16).padStart(64,'0'));

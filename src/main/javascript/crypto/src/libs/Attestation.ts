@@ -1,4 +1,4 @@
-import {hexStringToUint8, uint8toBuffer, uint8tohex, logger} from "./utils";
+import {hexStringToUint8, uint8tohex, logger} from "./utils";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {SignedInfo} from "../asn1/shemas/AttestationFramework";
 import {Extensions} from "../asn1/shemas/AuthenticationFramework";
@@ -53,7 +53,7 @@ export class Attestation {
     fromBytes( uint8bytes: Uint8Array) {
 
         const me = this;
-        let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8toBuffer(uint8bytes), SignedInfo);
+        let decodedAttestationObj: SignedInfo = AsnParser.parse(uint8bytes, SignedInfo);
 
         me.signedInfo = uint8bytes;
         me.version = decodedAttestationObj.version.version;

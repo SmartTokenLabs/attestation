@@ -4,14 +4,12 @@ import {Validateable} from "./Validateable";
 import {NFTAttestation} from "./NFTAttestation";
 import {Signature} from "./Signature";
 import {KeyPair} from "./KeyPair";
-import {NFTAttestationASN} from "../asn1/shemas/NFTAttestation";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {hexStringToUint8, logger, uint8toBuffer, uint8tohex} from "./utils";
+import {hexStringToUint8, logger, uint8tohex} from "./utils";
 import {SignedNFTAttestationASN} from "../asn1/shemas/SignedNFTAttestation";
 import {CompressedMsgSignature} from "./CompressedMsgSignature";
 import { PersonalSignature } from "./PersonalSignature";
 import {Asn1Der} from "./DerUtility";
-import {SignatureUtility} from "./SignatureUtility";
 import {DEBUGLEVEL} from "../config";
 
 
@@ -61,7 +59,7 @@ export class SignedNFTAttestation implements ASNEncodable, Verifiable, Validatea
         let me = new this();
         let sNFTatt: SignedNFTAttestationASN;
         try {
-            sNFTatt = AsnParser.parse( uint8toBuffer(asn1), SignedNFTAttestationASN);
+            sNFTatt = AsnParser.parse(asn1, SignedNFTAttestationASN);
         } catch (e){
             throw new Error('Cant parse SignedNFTAttestationASN');
         }

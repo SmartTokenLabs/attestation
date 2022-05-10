@@ -1,6 +1,6 @@
 import {CURVE_BN256, Point} from "./Point";
 import { Asn1Der } from "./DerUtility";
-import {logger, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {logger, uint8ToBn, uint8tohex} from "./utils";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {FullProofOfExponent} from "./FullProofOfExponent";
 import {AsnParser, AsnSerializer} from "@peculiar/asn1-schema";
@@ -34,7 +34,7 @@ export class AttestationRequest {
         let identifier: Identifier;
 
         try {
-            identifier = AsnParser.parse( uint8toBuffer(asn1), Identifier);
+            identifier = AsnParser.parse(asn1, Identifier);
             me.type = identifier.type;
         } catch (e){
             throw new Error('Cant parse AttestationRequest Identifier');

@@ -2,7 +2,7 @@ import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {CURVE_BN256, Point} from "./Point";
 import {UsageProof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {base64ToUint8array, bnToUint8, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {base64ToUint8array, bnToUint8, uint8ToBn, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 
 export class UsageProofOfExponent implements ProofOfExponentInterface {
@@ -33,7 +33,7 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
         this.encodingBytes = bytes;
         // UsageProof
 
-        let usageProof: UsageProof = AsnParser.parse( uint8toBuffer(bytes), UsageProof);
+        let usageProof: UsageProof = AsnParser.parse(bytes, UsageProof);
 
         this.challenge = uint8ToBn( new Uint8Array(usageProof.challengePoint) );
         let tPointEnc = new Uint8Array(usageProof.responseValue);
