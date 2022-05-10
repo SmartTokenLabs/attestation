@@ -482,7 +482,6 @@ public class SignatureUtility {
         // Normalize number s to be the lowest of its two legal values
         BigInteger half_curve = params.getN().shiftRight(1);
         if (s.compareTo(half_curve) > 0) {
-            logger.info("Inverting s value");
             return params.getN().subtract(s);
         }
         return s;
