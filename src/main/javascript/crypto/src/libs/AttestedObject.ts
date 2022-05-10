@@ -3,7 +3,7 @@ import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
 import {hexStringToArray, logger, uint8toBuffer, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
-import {KeyPair} from "./KeyPair";
+import {KeyPair, keysArray} from "./KeyPair";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {UseToken} from "../asn1/shemas/UseToken";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
@@ -29,9 +29,8 @@ export class AttestedObject implements ASNEncodable, Verifiable {
     private encoding: string;
     private attestableObject: any;
     private att: SignedIdentifierAttestation;
-    private attestationSecret: bigint ;
+    private attestationSecret: bigint;
     private objectSecret: bigint;
-    private userPublicKey: Uint8Array;
     private userKeyPair: KeyPair;
 
     private preSignEncoded: string;
@@ -133,13 +132,14 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return true;
     }
 
-    static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKey: KeyPair): AttestedObject{
+    static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKeys: keysArray): AttestedObject{
+
         let attested: D = AsnParser.parse( uint8toBuffer(asn1), decoder);
 
         let me = new this();
 
         me.attestableObject = new attestable();
-        me.attestableObject.fromBytes(attested.signedToken, issuerKey);
+        me.attestableObject.fromBytes(attested.signedToken, issuerKeys);
 
         me.att = SignedIdentifierAttestation.fromBytes(new Uint8Array(attested.attestation), attestorKey);
 
@@ -147,13 +147,12 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         pok.fromBytes( new Uint8Array(attested.proof) ) ;
         me.pok = pok;
 
-        let attCom: Uint8Array = me.att.getUnsignedAttestation().getCommitment();
-        let objCom: Uint8Array = me.attestableObject.getCommitment();
-        let crypto = new AttestationCrypto();
+        me.userKeyPair = me.att.getUnsignedAttestation().getSubjectPublicKeyInfo();
 
-        if (!crypto.verifyEqualityProof(attCom, objCom, pok)) {
-            throw new Error("The redeem proof did not verify");
-        }
+        // TODO: Use getter to instantiate AttestationCrypto when required
+        me.crypto = new AttestationCrypto();
+
+        me.constructorCheck();
 
         return me;
     }
@@ -194,17 +193,14 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return this.encoding;
     }
 
-    public getUserPublicKey() {
-        return this.userPublicKey;
-    }
-
     private constructorCheck() {
         if (!this.verify()) {
             throw new Error("The redeem request is not valid");
         }
     }
 
-    public checkValidity(): boolean {
+    public checkValidity(ethAddress:string = null): boolean {
+
         // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
         try {
             let attEncoded = this.att.getUnsignedAttestation().getDerEncoding();
@@ -237,10 +233,9 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             // let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getSubject().substring(3);
             let attestationEthereumAddress: string = this.getAtt().getUnsignedAttestation().getAddress();
             logger(DEBUGLEVEL.HIGH, 'attestationEthereumAddress: ' + attestationEthereumAddress);
-            logger(DEBUGLEVEL.HIGH, this.getUserPublicKey());
-            logger(DEBUGLEVEL.HIGH, 'this.getUserPublicKey()).getAddress(): ' + KeyPair.publicFromUint(this.getUserPublicKey()).getAddress());
+            logger(DEBUGLEVEL.HIGH, 'providedEthereumAddress: ' + ethAddress);
 
-            if (attestationEthereumAddress.toLowerCase() !== KeyPair.publicFromUint(this.getUserPublicKey()).getAddress().toLowerCase()) {
+            if (attestationEthereumAddress.toLowerCase() !== ethAddress.toLowerCase()) {
                 logger(DEBUGLEVEL.LOW, "The attestation is not to the same Ethereum user who is sending this request");
                 return false;
             }

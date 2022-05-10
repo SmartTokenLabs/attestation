@@ -29,10 +29,16 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
   private final IdentifierAttestation att;
   private final byte[] signature;
   private final AsymmetricKeyParameter attestationVerificationKey;
+  private final boolean blockchainFriendly;
 
   public SignedIdentifierAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningKey) {
+    this(att, attestationSigningKey, Attestation.DEFAULT_BLOCKCHAIN_FRIENDLY);
+  }
+
+  public SignedIdentifierAttestation(IdentifierAttestation att, AsymmetricCipherKeyPair attestationSigningKey, boolean blockchainFriendly) {
     this.att = att;
-    this.signature = SignatureUtility.signWithEthereum(att.getPrehash(), attestationSigningKey.getPrivate());
+    this.blockchainFriendly = blockchainFriendly;
+    this.signature = SignatureUtility.signWithEthereum(att.getPrehash(blockchainFriendly), attestationSigningKey.getPrivate());
     this.attestationVerificationKey = attestationSigningKey.getPublic();
     constructorCheck(attestationSigningKey.getPublic());
   }
@@ -47,6 +53,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
       // TODO ideally this should be refactored to SignedAttestation being augmented with an generic
       // Attestation type and an encoder to construct such an attestation
       this.att = new IdentifierAttestation(attestationEnc.getEncoded());
+      this.blockchainFriendly = att.isBlockchainFriendly();
       DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
       this.signature = signatureEnc.getBytes();
       this.attestationVerificationKey = verificationKey;
@@ -79,6 +86,10 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
     return signature;
   }
 
+  public boolean isBlockchainFriendly() {
+    return blockchainFriendly;
+  }
+
   /**
    * Returns the public key of the attestation signer
    */
@@ -89,9 +100,9 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
     return constructSignedAttestation(this.att, this.signature);
   }
 
-  static byte[] constructSignedAttestation(Attestation unsignedAtt, byte[] signature) {
+  private byte[] constructSignedAttestation(Attestation unsignedAtt, byte[] signature) {
     try {
-      byte[] rawAtt = unsignedAtt.getPrehash();
+      byte[] rawAtt = unsignedAtt.getPrehash(blockchainFriendly);
       ASN1EncodableVector res = new ASN1EncodableVector();
       res.add(ASN1Primitive.fromByteArray(rawAtt));
       res.add(unsignedAtt.getSigningAlgorithm());
@@ -110,7 +121,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
   @Override
   public boolean verify() {
     try {
-      if (!SignatureUtility.verifyEthereumSignature(att.getDerEncoding(), signature, attestationVerificationKey)) {
+      if (!SignatureUtility.verifyEthereumSignature(att.getDerEncoding(blockchainFriendly), signature, attestationVerificationKey)) {
         logger.error("Could not verify signature");
         return false;
       }

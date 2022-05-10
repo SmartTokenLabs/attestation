@@ -42,11 +42,11 @@ public class TimestampTest {
   public void negativeTimestampTest() {
     StaticTime time = new StaticTime(120000);
     time.setValidity(100);
-    time.setCurrentTime(109800);
+    time.setCurrentTime(109800-10000);
     // Too new
     assertFalse(time.validateTimestamp());
     // Too old
-    time.setCurrentTime(130110);
+    time.setCurrentTime(130110+10000);
     assertFalse(time.validateTimestamp());
   }
 
@@ -56,7 +56,7 @@ public class TimestampTest {
     time.setValidity(990);
     time.setCurrentTime(time.getTime());
     // OG added 2s to fix 2 roundings
-    long expiration = time.getTime() + 31000;
+    long expiration = time.getTime() + 31000 + 10000;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 
@@ -64,7 +64,7 @@ public class TimestampTest {
   public void timestampInFuture() {
     StaticTime time = new StaticTime(120000);
     time.setValidity(30000);
-    time.setCurrentTime(100000);
+    time.setCurrentTime(99999);
     long expiration = 130000;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
@@ -76,7 +76,7 @@ public class TimestampTest {
     time.setCurrentTime(140000);
     long expiration = 130000;
     assertTrue(time.validateAgainstExpiration(expiration));
-    expiration = 129990;
+    expiration = 129990 - 10000;
     assertFalse(time.validateAgainstExpiration(expiration));
   }
 

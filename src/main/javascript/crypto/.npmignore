@@ -1,0 +1,5 @@
+assets
+*.html
+src/bundle.ts
+dist/bundle.*
+.idea

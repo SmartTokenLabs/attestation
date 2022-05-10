@@ -17,7 +17,7 @@
     Buffer = buffer.Buffer;
     process = {env: {NODE_DEBUG: "false"}};
 </script>
-    <script type="text/javascript" src="dist/authenticator.js"></script>
+    <script type="text/javascript" src="dist/authenticator.bundle.js"></script>
 <script>
     counter = 1;
     function writeToLog(text){
@@ -52,7 +52,7 @@
         let WEB_DOMAIN = "http://wwww.hotelbogota.com";
 
         try {
-            Authenticator.useAttest(
+            IntegrationExample.useAttest(
                 // userKeyBase64,
                 attestationPEM,
                 attestationSecretPEM,
@@ -70,7 +70,7 @@
         let receiverId = "test@test.com";
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
 
-        let attestJson = await Authenticator.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret);
+        let attestJson = await IntegrationExample.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret);
         writeToLog('attestRequest received:');
         writeToLog(attestJson);
 
@@ -102,7 +102,7 @@
 
         return;
 
-        (new Authenticator()).getAuthenticationBlob({
+        (new IntegrationExample()).getAuthenticationBlob({
             ticketBlob: base64ticket,
             ticketSecret: ticketSecret,
             attestationOrigin: 'https://stage.attestation.id/',

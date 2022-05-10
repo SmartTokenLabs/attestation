@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "outDir": "./dist/",
+    "noImplicitAny": true,
+    "allowJs": true,
+    "moduleResolution": "node",
+    "strict": false,
+    "declaration": true,
+    "sourceMap": true,
+    "types": ["jest", "node"],
+    "jsx": "react",
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "node_modules"
+  ]
+}

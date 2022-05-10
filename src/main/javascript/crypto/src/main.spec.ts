@@ -72,13 +72,13 @@ describe("Read keys and files", () => {
     userKey = KeyPair.privateFromPEM(userPrivPEM);
 
     const userPubPEM = readFileSync(PREFIX_PATH + 'user-pub.pem', 'utf8');
-    userPubKey = KeyPair.publicFromPEM(userPubPEM);
+    userPubKey = KeyPair.publicFromBase64orPEM(userPubPEM);
 
     const senderPubPEM = readFileSync(PREFIX_PATH + 'sender-pub.pem', 'utf8');
-    senderPubKey = KeyPair.publicFromPEM(senderPubPEM);
+    senderPubKey = KeyPair.publicFromBase64orPEM(senderPubPEM);
 
     const attestorPubPEM = readFileSync(PREFIX_PATH + 'attestor-pub.pem', 'utf8');
-    attestorPubKey = KeyPair.publicFromPEM(attestorPubPEM);
+    attestorPubKey = KeyPair.publicFromBase64orPEM(attestorPubPEM);
 
     const attestorPrivPEM = readFileSync(PREFIX_PATH + 'attestor-priv.pem', 'utf8');
     attestorKey = KeyPair.privateFromPEM(attestorPrivPEM);
@@ -261,7 +261,7 @@ describe("MagicLink reader", () => {
         if (magicLink.substring(0,1) == "?") magicLink = magicLink.substring(1);
         let params = querystring.parse(magicLink);
 
-        let senderKey = KeyPair.publicFromPEM(magicLinkPublicPEM);
+        let senderKey = KeyPair.publicFromBase64orPEM(magicLinkPublicPEM);
         let res;
         try {
             res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
@@ -297,6 +297,44 @@ describe("MagicLink reader", () => {
         expect(1).toBe(1);
 
     })
+
+    test('Verify Ticket', async () => {
+        let magicLink;
+        let senderKey;
+        try {
+            
+            senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
+
+            magicLink = await Issuer.constructTicket("mail@mail.com", "6", "222", 9, senderKey);
+            testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${magicLink}`);
+        } catch (e) {
+            testsLogger(DEBUGLEVEL.LOW, e);
+            throw new Error('construct Ticket failed');
+        }
+
+
+        try {
+
+            let params = new URLSearchParams(magicLink);
+			let ticketOnly = params.get("ticket");
+            
+            let res = Authenticator.validateTicket(ticketOnly, "6", magicLinkPublicPEM);
+
+            testsLogger(DEBUGLEVEL.VERBOSE, res);
+            expect(res).toStrictEqual({
+                valid: true,
+                ticketId: '222',
+                ticketClass: 9,
+            });
+        } catch (e) {
+            testsLogger(DEBUGLEVEL.LOW, e);
+            throw new Error('verifyUsage failed');
+        }
+
+    })
+
+
+
 
 
 });
@@ -579,6 +617,26 @@ describe("executeCombinedEipFlow", () => {
 
     })
 
+})
+
+describe("read public key", () => {
+
+    const keyFile1 = '-----BEGIN PUBLIC KEY-----\n' +
+    'MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEQKYTwFMIzSq1QVxoRKoOZXLQ9mUhce8M\n' +
+    'dIzvJx3unbpR3m3TiuWKZKTP4/XCPnS56d1tAhjM43hHjHbZ0k3RKQ==\n' +
+    '-----END PUBLIC KEY-----';
+    let addr1 = "0x4F3CEF0C905EB4EDF9C4FFC71C4C4B06417BAC3E";
+    const keyFile2 = 'MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEOt9mWLpQVOxiOvswFK4GGI0oOZ2GqS2Q6ec0AWIeuVoCuTD+atppPvjMgNLg9qQzJxsDW3zLxnOPFWO/Decnag==';
+    let addr2 = "0x17C0B3B51A75F1A001F255A7CAD4FA45529CAC20";
+ 				
+
+    test('read 2 keys', async () => {
+        let key1 = Authenticator.decodePublicKey(keyFile1);
+        expect(key1.getAddress().toLocaleLowerCase()).toBe(addr1.toLocaleLowerCase());
+        
+        let key2 = Authenticator.decodePublicKey(keyFile2);
+        expect(key2.getAddress().toLocaleLowerCase()).toBe(addr2.toLocaleLowerCase());
+    })
 })
 
 

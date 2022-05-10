@@ -1,5 +1,5 @@
 import {
-    base64ToUint8array, ecSignatureToSRVhex, hexStringToArray, hexStringToUint8, logger, SignatureSRV,
+    base64ToUint8array, ecSignatureToSRVhex, hexStringToArray, hexStringToUint8, logger, pemOrBase64Orbase64urlToString, SignatureSRV,
     stringToArray,
     uint8arrayToBase64,
     uint8ToBn,
@@ -116,15 +116,7 @@ export class KeyPair {
     }
 
     static publicFromBase64orPEM(encoded: string): KeyPair {
-        return KeyPair.publicFromPEM(encoded);
-    }
-
-    static publicFromBase64(base64: string): KeyPair {
-        return KeyPair.publicFromPEM(base64);
-    }
-
-    static publicFromPEM(pem: string): KeyPair {
-        const pubUint8 = base64ToUint8array(pem);
+        const pubUint8 = base64ToUint8array(encoded);
         let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(uint8toBuffer( pubUint8), PublicKeyInfoValue);
         return KeyPair.publicFromUint(new Uint8Array(publicKeyObj.publicKey));
     }
@@ -552,6 +544,15 @@ export class KeyPair {
         }
         logger(DEBUGLEVEL.VERBOSE, "ready signature:" + uint8tohex(output));
         return output;
+    }
+
+    static parseKeyArrayStrings(keys: {[key: string]: KeyPair|string}): keysArray {
+        for (let i in keys){
+            if (typeof keys[i] === "string")
+                keys[i] = KeyPair.publicFromBase64orPEM(<string>keys[i]);
+        }
+
+        return <keysArray>keys;
     }
 
 }
