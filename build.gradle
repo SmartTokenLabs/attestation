@@ -163,7 +163,7 @@ task testJavaScript(type: NodeTask) {
 
 group = "org.tokenscript"
 archivesBaseName = "attestation"
-version = "0.3.17"
+version = "0.3.18"
 
 /** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
  * For actually updating the Maven repo update the version reference in README.md,
