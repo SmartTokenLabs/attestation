@@ -52,22 +52,27 @@ public class LegacySignedNFTAttestation implements InternalSignedNFTAttestation 
     }
 
     public LegacySignedNFTAttestation(byte[] derEncoding, AsymmetricKeyParameter identifierAttestationVerificationKey) throws IOException {
-        ASN1InputStream input = new ASN1InputStream(derEncoding);
-        ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-        input.close();
-        int currentPos = 0;
-        ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos++));
-        this.nftAtt = new NFTAttestation(nftEncoding.getEncoded(), identifierAttestationVerificationKey);
-        if (asn1.getObjectAt(currentPos) instanceof ASN1Integer) {
-            this.signingVersion = ASN1Integer.getInstance(asn1.getObjectAt(currentPos++)).intValueExact();
-        } else {
-            // If signingVersion is not present we default to version 1
-            this.signingVersion = 1;
+        ASN1InputStream input = null;
+        try {
+            input = new ASN1InputStream(derEncoding);
+            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+            input.close();
+            int currentPos = 0;
+            ASN1Sequence nftEncoding = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos++));
+            this.nftAtt = new NFTAttestation(nftEncoding.getEncoded(), identifierAttestationVerificationKey);
+            if (asn1.getObjectAt(currentPos) instanceof ASN1Integer) {
+                this.signingVersion = ASN1Integer.getInstance(asn1.getObjectAt(currentPos++)).intValueExact();
+            } else {
+                // If signingVersion is not present we default to version 1
+                this.signingVersion = 1;
+            }
+            // todo this actually not used
+            AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(asn1.getObjectAt(currentPos++));
+            DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(currentPos++));
+            this.signature = makeSignature(signatureEnc.getBytes(), signingVersion);
+        } finally {
+            input.close();
         }
-        // todo this actually not used
-        AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(asn1.getObjectAt(currentPos++));
-        DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(currentPos++));
-        this.signature = makeSignature(signatureEnc.getBytes(), signingVersion);
     }
 
     private int determineSigningVersion() {
