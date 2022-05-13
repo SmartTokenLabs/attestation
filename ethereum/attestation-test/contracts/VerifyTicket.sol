@@ -213,9 +213,8 @@ contract VerifyTicket {
     function decodeCommitment (bytes memory attestation, uint256 decodeIndex) internal virtual pure returns (bytes memory commitment) {
 
         uint256 length ;
-        bytes1 blockType = attestation[decodeIndex];
         
-        if (blockType != 0xa3) {
+        if (attestation[decodeIndex] != COMPOUND_TAG) {
             // its not commitment, but some other data. example:  SEQUENCE (INTEGER 42, INTEGER 1337)
             (length, decodeIndex, ) = decodeLength(attestation, decodeIndex); // some payload
         }
