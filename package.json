@@ -2,6 +2,10 @@
   "name": "@tokenscript/attestation",
   "main": "src/main/javascript/crypto/src/index.ts",
   "version": "0.0.1",
+  "files": [
+    "/ethereum/attestation-test/contracts/VerifyTicket.sol",
+	"/ethereum/attestation-test/contracts/interface/IVerifyTicket.sol"
+  ],
   "author": "Smart Token Labs <sayhi@smarttokenlabs.com>",
   "type": "module",
   "dependencies": {
