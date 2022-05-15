@@ -16,20 +16,12 @@ export class DevconTicket {
     @AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public commitment?: Uint8Array;
 }
 
-export class PublicKeyInfo {
-    @AsnProp({ type: AlgorithmIdentifierASN }) public algorithm: AlgorithmIdentifierASN;
-    @AsnProp({ type: AsnPropTypes.BitString }) public publicKey:AsnPropTypes.BitString;
-}
-
 export class SignedDevconTicket {
 
     @AsnProp({ type: DevconTicket })
     public ticket: DevconTicket;
 
     @AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public commitment?: Uint8Array;
-
-    @AsnProp({ type: PublicKeyInfo, optional: true })
-    public publicKeyInfo?: PublicKeyInfo;
 
     @AsnProp({ type: AsnPropTypes.BitString })
     public signatureValue: Uint8Array;
