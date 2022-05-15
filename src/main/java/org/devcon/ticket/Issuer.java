@@ -62,7 +62,7 @@ public class Issuer {
             throw new RuntimeException(
                 "Something went wrong and the commitment in the ticket could not be verified according to the email.");
         }
-        String ticketInUrl = URLUtility.encodeData(ticket.getDerEncoding());
+        String ticketInUrl = ticket.getUrlEncoding();
         String pokInUrl = URLUtility.encodeData(pok.getInternalPok().getDerEncoding());
         return String.format("?ticket=%s&pok=%s&secret=%s&mail=%s", ticketInUrl, pokInUrl, sharedSecret.toString(), URLEncoder.encode(mail, StandardCharsets.UTF_8));
     }

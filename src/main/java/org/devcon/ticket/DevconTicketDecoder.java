@@ -30,6 +30,9 @@ public class DevconTicketDecoder implements ObjectDecoder<Ticket> {
   private Map<String, AsymmetricKeyParameter> idsToKeys;
 
   public DevconTicketDecoder(Map<String, AsymmetricKeyParameter> idsToKeys) {
+    if (idsToKeys.containsKey(DEFAULT)) {
+      throw new IllegalArgumentException("A conference cannot be called " + DEFAULT);
+    }
     this.idsToKeys = idsToKeys;
   }
 
@@ -71,60 +74,25 @@ public class DevconTicketDecoder implements ObjectDecoder<Ticket> {
         throw new IOException("Not valid ticket class");
       }
      */
-      byte[] signature = parsePKandSignature(asn1, devconId, 1);
+      byte[] signature = ASN1BitString.getInstance(asn1.getObjectAt(1)).getBytes();
       return new Ticket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
     } finally {
       input.close();
     }
   }
 
-  /**
-   * Returns the signature and ensures that the optional public key is properly restored
-   * @param input The encoded Ticket
-   * @return
-   */
-  byte[] parsePKandSignature(ASN1Sequence input, String devconId, int asnBaseIdx) throws IOException, IllegalArgumentException{
-    byte[] signature;
-    ASN1Encodable object = input.getObjectAt(asnBaseIdx);
-    if (object instanceof ASN1Sequence) {
-      // The optional PublicKeyInfo is included
-      parseEncodingOfPKInfo((ASN1Sequence) object, devconId);
-      signature = ASN1BitString.getInstance(input.getObjectAt(asnBaseIdx+1)).getBytes();
-    } else if (object instanceof DERBitString) {
-      // Only the signature is included
-      signature = ASN1BitString.getInstance(input.getObjectAt(asnBaseIdx)).getBytes();
-    } else {
-      throw ExceptionUtil.throwException(logger,
-          new IllegalArgumentException("Invalid ticket encoding"));
-    }
-    return signature;
-  }
-
-  void parseEncodingOfPKInfo(ASN1Sequence publicKeyInfo, String devconId) throws IOException, IllegalArgumentException {
-    AlgorithmIdentifier algorithm = AlgorithmIdentifier.getInstance(publicKeyInfo.getObjectAt(0));
-    byte[] publicKeyBytes = ASN1BitString.getInstance(publicKeyInfo.getObjectAt(1)).getEncoded();
-    AsymmetricKeyParameter decodedPublicKey = SignatureUtility.restoreDefaultKey(algorithm, publicKeyBytes);
-      SubjectPublicKeyInfo decodedSpki = SubjectPublicKeyInfoFactory
-          .createSubjectPublicKeyInfo(decodedPublicKey);
-    // Ensure that the right type of public key is given
-    if (getPk(devconId) != null) {
-      SubjectPublicKeyInfo referenceSpki = SubjectPublicKeyInfoFactory
-          .createSubjectPublicKeyInfo(getPk(devconId));
-      if (!Arrays.equals(referenceSpki.getEncoded(), decodedSpki.getEncoded())) {
-        throw ExceptionUtil.throwException(logger, new IllegalArgumentException(
-            "The public key is not of the same as supplied as argument"));
-      }
-    }
-    idsToKeys.put(devconId, decodedPublicKey);
-  }
-
   AsymmetricKeyParameter getPk(String devconId) {
     AsymmetricKeyParameter pk;
-    if (idsToKeys.get(devconId) != null) {
-      pk = idsToKeys.get(devconId);
-    } else {
+    // First try to get the key using devconID
+    pk = idsToKeys.get(devconId);
+    if (pk == null && idsToKeys.size() == 1) {
+      // otherwise use default
       pk = idsToKeys.get(DEFAULT);
     }
-    return pk;
+    if (pk != null) {
+      return pk;
+    }
+    ExceptionUtil.throwException(logger, new IllegalArgumentException("Conference ID " + devconId + ", does not match any associated PK"));
+    return null;
   }
 }

@@ -45,10 +45,4 @@ public class LisconTicket extends Ticket {
     signedTicket.add(new DERBitString(getSignature()));
     return new DERSequence(signedTicket).getEncoded();
   }
-
-  @Override
-  public byte[] getDerEncodingWithPK() {
-    throw new InternalError(
-        "This method is not implemented and there should be no need for it as this class should only be used for legacy reasons ");
-  }
 }

@@ -2,11 +2,8 @@ package org.devcon.ticket;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERUTF8String;
+
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 
 /**
@@ -29,7 +26,7 @@ public class LisconTicketDecoder extends DevconTicketDecoder {
     int ticketClassInt = ASN1Integer.getInstance(ticket.getObjectAt(2)).getValue().intValueExact();
 
     byte[] commitment = (ASN1OctetString.getInstance(asn1.getObjectAt(1))).getOctets();
-    byte[] signature = parsePKandSignature(asn1, devconId, 2);
+    byte[] signature = ASN1BitString.getInstance(asn1.getObjectAt(2)).getBytes();
     return new LisconTicket(devconId, ticketId, ticketClassInt, commitment, signature, getPk(devconId));
   }
 }
