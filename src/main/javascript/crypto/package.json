@@ -24,7 +24,7 @@
   "license": "ISC",
   "devDependencies": {
     "@testdeck/mocha": "^0.1.2",
-    "@types/asn1js": "^2.0.0",
+    "@types/asn1js": "^2.0.2",
     "@types/chai": "^4.2.20",
     "@types/jest": "^27.5.0",
     "@types/mocha": "^8.2.3",
@@ -50,9 +50,7 @@
     "crypto": false
   },
   "dependencies": {
-    "@lapo/asn1js": "^1.2.1",
-    "@peculiar/asn1-schema": "^2.0.27",
-    "asn1js": "^2.0.26",
+    "@peculiar/asn1-schema": "^2.1.6",
     "elliptic": "^6.5.3",
     "ethers": "^5.0.31",
     "js-sha3": "^0.8.0",
