@@ -24,6 +24,9 @@ import {PersonalSignature} from "./libs/PersonalSignature";
 
 const querystring = require('querystring');
 import {Issuer} from "./libs/Issuer";
+import { AttestedObject } from './libs/AttestedObject';
+import { AttestableObject } from './libs/AttestableObject';
+import { UseToken } from './asn1/shemas/UseToken';
 const url = require('url');
 
 let EC = require("elliptic");
@@ -639,6 +642,34 @@ describe("read public key", () => {
     })
 })
 
+describe("read attested object", () => {
 
+    const base64senderPublicKeys = { 
+        "AttestationDAO" : 'MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEOt9mWLpQVOxiOvswFK4GGI0oOZ2GqS2Q6ec0AWIeuVoCuTD+atppPvjMgNLg9qQzJxsDW3zLxnOPFWO/Decnag=='
+    }
+    const base64attestorPubKey = "MIIBMzCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBA0IABL+y43T1OJFScEep69/yTqpqnV/jzONz9Sp4TEHyAJ7IPN9+GHweCX1hT4OFxt152sBN3jJc1s0Ymzd8pNGZNoQ="
+
+    // one month attestation up to 15.05.2022
+    const attestation = "3082036130819f30590c0e4174746573746174696f6e44414f02010502010004410403457b7a84a81a9a9e1d52e5b436389105fede62e0cb7211e6db82519cf5b67a14517f3d4288eb9adb8ed957f8e887d1d91bc971cd762994775f4169af789b50034200ca7468483c53f2032e82c8a288dc84ed57a7ebbd5537413d7dd6a4c0958ad7a101ac4f5970feac7861ff62b8e2767428fbc5a353def37d3e9ac44754a7febaa31c30820252308201ffa0030201120208233635fe3b69138e300906072a8648ce3d040230163114301206035504030c0b416c70686157616c6c6574302e180f32303232303531353031343632335a020462805b6f180f32303232303631343031343632335a020462a7e86f300b3109300706035504030c00308201333081ec06072a8648ce3d02013081e0020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f3044042000000000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000000704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101034200042f196ec33ad04c6398fe8eef1a84d8855397641bb4cbbbcf576e3baa34c516a51b2eac6b201dd24950b6513cbd85f6bd1a11b7bad511343d9dadeccb30f72642a35730553053060b2b060104018b3a737901280101ff0441040ab633ddd62c1742977ef34d20dbd75d1ad689b34e1c42a41d696a40c2d2fe851dab5e779ddc8e86c2a7f9e582d3e9204972a6a62d34439d25f22de3bafbec03300906072a8648ce3d04020342008c9d1ed83f9d5eae300ddee572de7c1267700be138b9eaa5a088511aa2ad87f164559c5b7e91f3b83031c19f08e3cdfe37f9258e9311413151c163af2482fa7d1c30670420190beb6bcdf48a2f6cc125a162ef0480b7a6343ac59babf245d877dccc3361e004410405396b26903f8574227c4c240015beb1ed2619e8c88564aeefef8f32527925e52966d8a4c97e2ab4a15c8d0cba230340437feb168af0ff8d46fe2da6a5ece16a0400";
+
+    test('validate attestation', async () => {
+
+        let attestor = KeyPair.publicFromBase64orPEM(base64attestorPubKey);
+        let issuers = {"AttestationDAO" : KeyPair.publicFromBase64orPEM(base64senderPublicKeys.AttestationDAO)}
+
+        let subj = "0x2F21dC12dd43bd15b86643332041ab97010357D7";
+
+        let attest = AttestedObject.fromBytes(
+            hexStringToUint8(attestation),
+            UseToken,
+            attestor,
+            Ticket,
+            issuers
+            );
+        
+        expect(attest.checkValidity(subj)).toBe(true);
+
+    })
+})
 
 
