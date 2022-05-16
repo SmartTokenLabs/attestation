@@ -8,10 +8,6 @@
                 <element name="ticket" type="DevconTicket">
                     <annotation>The actual, unsigned, ticket object</annotation>
                 </element>
-                <!-- The algorithm and public key are optional since they will normally be internally defined from devconId -->
-                <optional>
-                  <element name="publicKeyInfo" type="PublicKeyInfo"/>
-                </optional>
                 <element name="signatureValue" type="asnx:BIT-STRING"/>
             </sequence>
         </type>
@@ -30,14 +26,6 @@
                 </element>
             </sequence>
         </type>
-    </namedType>
-    <namedType name="PublicKeyInfo">
-      <type>
-        <sequence>
-          <element name="signatureAlgorithm" type="AlgorithmIdentifier"/>
-          <element name="publicKey" type="asnx:BIT-STRING"/>
-        </sequence>
-      </type>
     </namedType>
     <namedType name="TicketId">
       <type>

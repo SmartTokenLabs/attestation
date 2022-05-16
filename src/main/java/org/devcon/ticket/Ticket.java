@@ -135,37 +135,13 @@ public class Ticket extends Attestable {
     return new DERSequence(signedTicket).getEncoded();
   }
 
-  byte[] getDerEncodingWithPK() {
-    try {
-      ASN1Sequence ticket = makeTicket();
-      ASN1EncodableVector signedTicket = new ASN1EncodableVector();
-      signedTicket.add(ticket);
-      ASN1EncodableVector publicKeyInfo = new ASN1EncodableVector();
-      SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(publicKey);
-      publicKeyInfo.add(spki.getAlgorithm());
-      publicKeyInfo.add(spki.getPublicKeyData());
-      signedTicket.add(new DERSequence(publicKeyInfo));
-      signedTicket.add(new DERBitString(signature));
-      return new DERSequence(signedTicket).getEncoded();
-    } catch (IOException e) {
-      throw ExceptionUtil.makeRuntimeException(logger, "Could not create public key info", e);
-    }
-  }
-
   @Override
   public byte[] getDerEncoding() {
     return encoded;
   }
 
   public String getUrlEncoding()  {
-    try {
-      SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfoFactory
-          .createSubjectPublicKeyInfo(this.publicKey);
-      return URLUtility
-          .encodeList(Arrays.asList(this.encoded, keyInfo.getPublicKeyData().getEncoded()));
-    } catch (IOException e) {
-      throw ExceptionUtil.makeRuntimeException(logger, "Could not encode public key", e);
-    }
+    return URLUtility.encodeData(getDerEncoding());
   }
 
   @Override

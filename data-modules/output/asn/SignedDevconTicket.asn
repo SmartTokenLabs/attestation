@@ -8,8 +8,6 @@ AlgorithmIdentifier FROM AuthenticationFramework;
 
 SignedDevconTicket ::= SEQUENCE {
     ticket           DevconTicket,
---  The algorithm and public key are optional since they will normally be internally defined from devconId --
-    publicKeyInfo    PublicKeyInfo OPTIONAL,
     signatureValue   BIT STRING
 }
 
@@ -21,11 +19,6 @@ DevconTicket ::= SEQUENCE {
 --  (currently not specified)      --
 --  co2_token         OCTET STRING --
     commitment       OCTET STRING
-}
-
-PublicKeyInfo ::= SEQUENCE {
-    algorithm       AlgorithmIdentifier,
-    publicKey       BIT STRING
 }
 
 TicketId ::= CHOICE {
