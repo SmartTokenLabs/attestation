@@ -352,4 +352,18 @@ export class AttestationCrypto {
         return sha3.keccak256(data);
     }
 
+    public validatePoint(point: Point, curve: {[index: string]:bigint} = CURVE_BN256) {
+        let newPoint = new Point(point.x, point.y, curve);
+        // Ensure the point is on the curve
+        if (point.isInfinity()) {
+            throw new Error("Point is at infinity");
+            }
+        if (!newPoint.validate) {
+            throw new Error("Point is not valid");
+        }
+        if (!newPoint.multiplyDA(curve.n).isInfinity()) {
+          throw new Error("Point does not have correct order");
+        }
+    }
+
 }
