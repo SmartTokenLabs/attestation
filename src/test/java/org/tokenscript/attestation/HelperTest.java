@@ -20,11 +20,14 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 
 
 /* created to help other test-cases - James
- * this class should be refactored away entirely - Weiwu */
+ * this class should be refactored away entirely - Weiwu
+ * It's too useful ... sorry - James */
 
 public class HelperTest {
 
   public static final long VALIDITY = 1000L*60L*60L*24L*365L*10L; // 10 years
+
+  private static final long BLOCK_TIME_OFFSET = 1000L*30L; //30 seconds to avoid false negative to due to block only being written every 10 or so seconds
 
   public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
       BigInteger secret, String mail) {
@@ -32,9 +35,24 @@ public class HelperTest {
         subjectPublicKey, secret);
     att.setIssuer("CN=ALX");
     att.setSerialNumber(1);
-    Date now = new Date();
+    Date now = new Date(System.currentTimeMillis() - 1000*15);
     att.setNotValidBefore(now);
     att.setNotValidAfter(new Date(System.currentTimeMillis() + VALIDITY));
+    att.setSmartcontracts(Arrays.asList(42L, 1337L));
+    assertTrue(att.checkValidity());
+    assertFalse(att.isValidX509()); // Since the version is wrong, and algorithm is non-standard
+    return att;
+  }
+
+  public static IdentifierAttestation makeUnsignedStandardAtt(AsymmetricKeyParameter subjectPublicKey,
+                                                              BigInteger secret, String mail, long secondsValidity) {
+    IdentifierAttestation att = new IdentifierAttestation(mail, AttestationType.EMAIL,
+            subjectPublicKey, secret);
+    att.setIssuer("CN=ALX");
+    att.setSerialNumber(1);
+    Date now = new Date(System.currentTimeMillis() - BLOCK_TIME_OFFSET); // Allow for block time in the test, set to have already been valid for 30 seconds at creation time
+    att.setNotValidBefore(now);
+    att.setNotValidAfter(new Date(System.currentTimeMillis() + secondsValidity * 1000L));
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     assertTrue(att.checkValidity());
     assertFalse(att.isValidX509()); // Since the version is wrong, and algorithm is non-standard

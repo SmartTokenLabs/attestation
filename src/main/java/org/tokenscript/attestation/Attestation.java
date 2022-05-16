@@ -33,8 +33,7 @@ import org.tokenscript.attestation.core.Validateable;
 public class Attestation implements Signable, ASNEncodable, Validateable {
   private static final Logger logger = LogManager.getLogger(Attestation.class);
   public static final ASN1ObjectIdentifier OID_OCTETSTRING = new ASN1ObjectIdentifier("1.3.6.1.4.1.1466.115.121.1.40");
-  // TODO should be true, once https://github.com/TokenScript/attestation/pull/237 gets merged
-  public boolean blockchainFriendly = true;
+  public static final boolean DEFAULT_BLOCKCHAIN_FRIENDLY = true;
 
   // Attestation fields
   private ASN1Integer version = new ASN1Integer(
@@ -51,7 +50,10 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
   private ASN1Sequence dataObject;
   private ASN1Sequence extensions;
 
+  private final boolean blockchainFriendly;
+
   public Attestation() {
+    blockchainFriendly = DEFAULT_BLOCKCHAIN_FRIENDLY;
   }
 
   public Attestation(byte[] derEncoding) throws IOException, IllegalArgumentException {
@@ -79,6 +81,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     }
 
     // Figure out if validity is included
+    boolean expectedBlockchainFriendliness = DEFAULT_BLOCKCHAIN_FRIENDLY;
     if (asn1.getObjectAt(currentPos) instanceof ASN1Null) {
       notValidBefore = null;
       notValidAfter = null;
@@ -92,10 +95,10 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         try {
           notValidBeforeLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
           validityCtr++;
-          blockchainFriendly = true;
+          expectedBlockchainFriendliness = true;
         } catch (IllegalArgumentException e) {
           // Optional long timestamp is not included
-          blockchainFriendly = false;
+          expectedBlockchainFriendliness = false;
         }
 
         if (notValidBeforeLong != null && !notValidBeforeLong.equals(notValidBefore.toInstant().getEpochSecond())) {
@@ -108,10 +111,10 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         try {
           notValidAfterLong = ASN1Integer.getInstance(validity.getObjectAt(validityCtr)).longValueExact();
           validityCtr++;
-          blockchainFriendly = true;
+          expectedBlockchainFriendliness = true;
         } catch (IllegalArgumentException|ArrayIndexOutOfBoundsException e) {
           // Optional long timestamp is not included
-          blockchainFriendly = false;
+          expectedBlockchainFriendliness = false;
         }
         if (notValidAfterLong != null && !notValidAfterLong.equals(notValidAfter.toInstant().getEpochSecond())) {
           logger.error("NotValidAfter integer encoding is inconsistent with the GeneralizedTime encoding");
@@ -121,6 +124,7 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
         ExceptionUtil.throwException(logger, new IllegalArgumentException("Could not parse dates"));
       }
     }
+    blockchainFriendly = expectedBlockchainFriendliness;
     currentPos++;
 
     ASN1Sequence subjectSeq = ASN1Sequence.getInstance(asn1.getObjectAt(currentPos));
@@ -280,6 +284,9 @@ public class Attestation implements Signable, ASNEncodable, Validateable {
     this.dataObject = dataObject;
   }
 
+  public boolean isBlockchainFriendly() {
+    return blockchainFriendly;
+  }
   /**
    * Returns true if the attestation obeys X509v3, RFC 5280
    */

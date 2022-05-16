@@ -124,10 +124,6 @@ export class KeyPair {
         return KeyPair.publicFromPEM(pemOrBase64Orbase64urlToString(encoded));
     }
 
-    static publicFromBase64(base64: string): KeyPair {
-        return KeyPair.publicFromPEM(base64);
-    }
-
     static publicFromPEM(pem: string): KeyPair {
         const pubUint8 = base64ToUint8array(pem);
         let publicKeyObj: PublicKeyInfoValue = AsnParser.parse(pubUint8, PublicKeyInfoValue);
