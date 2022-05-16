@@ -7,7 +7,7 @@ import {Asn1Der} from "./DerUtility";
 
 export class UsageProofOfExponent implements ProofOfExponentInterface {
     private tPoint: Point;
-    private challenge: bigint;
+    private challengeResponse: bigint;
     private encoding: string;
     private encodingBytes: Uint8Array;
     private nonce: Uint8Array;
@@ -15,12 +15,12 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
     constructor() {
     }
 
-    static fromData(tPoint: Point, challenge: bigint, nonce: Uint8Array = new Uint8Array([])): UsageProofOfExponent {
+    static fromData(tPoint: Point, challengeResponse: bigint, nonce: Uint8Array = new Uint8Array([])): UsageProofOfExponent {
         let me = new this();
         me.tPoint = tPoint;
-        me.challenge = challenge;
+        me.challengeResponse = challengeResponse;
         me.nonce = nonce;
-        me.encoding = me.makeEncoding(tPoint, challenge);
+        me.encoding = me.makeEncoding();
         return me;
     }
 
@@ -35,15 +35,15 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
 
         let usageProof: UsageProof = AsnParser.parse( uint8toBuffer(bytes), UsageProof);
 
-        this.challenge = uint8ToBn( new Uint8Array(usageProof.challengePoint) );
+        this.challengeResponse = uint8ToBn( new Uint8Array(usageProof.challengePoint) );
         let tPointEnc = new Uint8Array(usageProof.responseValue);
         this.nonce = new Uint8Array(usageProof.nonce);
         this.tPoint = Point.decodeFromHex(uint8tohex(tPointEnc), CURVE_BN256);
     }
 
 
-    makeEncoding(tPoint: Point, challenge: bigint) {
-        let res: string = Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(this.challenge))) +
+    makeEncoding() {
+        let res: string = Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(this.challengeResponse))) +
             Asn1Der.encode('OCTET_STRING', uint8tohex(this.tPoint.getEncoded(false)))+
             Asn1Der.encode('OCTET_STRING', uint8tohex(this.nonce));
         return Asn1Der.encode('SEQUENCE_30', res);
@@ -54,8 +54,8 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
         return this.tPoint;
     }
 
-    public getChallenge(): bigint {
-        return this.challenge;
+    public getChallengeResponse(): bigint {
+        return this.challengeResponse;
     }
 
     public getDerEncoding(): string {

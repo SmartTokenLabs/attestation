@@ -310,7 +310,7 @@ export class AttestationCrypto {
         let riddle: Point = comPoint1.subtract(comPoint2);
         // let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
         let c: bigint = this.computeChallenge(pok.getPoint(), [Pedestren_H, comPoint1, comPoint2], pok.getNonce());
-        return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallenge(), pok.getNonce()), c);
+        return this.verifyPok(FullProofOfExponent.fromData(riddle, pok.getPoint(), pok.getChallengeResponse(), pok.getNonce()), c);
     }
 
     private verifyPok(pok: FullProofOfExponent, c: bigint): boolean {
@@ -318,7 +318,7 @@ export class AttestationCrypto {
         if (c >= CURVE_BN256.n) {
             return false;
         }
-        let lhs: Point = Pedestren_H.multiplyDA(pok.getChallenge());
+        let lhs: Point = Pedestren_H.multiplyDA(pok.getChallengeResponse());
         let rhs: Point = pok.getRiddle().multiplyDA(c).add(pok.getPoint());
 
         return lhs.equals(rhs);

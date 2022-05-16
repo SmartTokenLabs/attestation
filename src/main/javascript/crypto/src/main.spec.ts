@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import {
     bnToUint8,
     hexStringToUint8,
