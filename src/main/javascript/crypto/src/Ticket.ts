@@ -2,7 +2,7 @@ import { AttestationCrypto } from "./libs/AttestationCrypto";
 import { KeyPair, keysArray } from "./libs/KeyPair";
 import { Asn1Der } from "./libs/DerUtility";
 import { AttestableObject } from "./libs/AttestableObject";
-import { base64ToUint8array, hexStringToArray, uint8toBuffer, uint8tohex } from "./libs/utils";
+import { base64ToUint8array, hexStringToArray, uint8tohex } from "./libs/utils";
 import { SignedDevconTicket } from "./asn1/shemas/SignedDevconTicket";
 import { AsnParser } from "@peculiar/asn1-schema";
 import { Attestable } from "./libs/Attestable";
@@ -139,7 +139,7 @@ export class Ticket extends AttestableObject implements Attestable {
     }
 
     fromBytes(bytes: Uint8Array, keys: keysArray) {
-        const signedDevconTicket: SignedDevconTicket = AsnParser.parse(uint8toBuffer(bytes), SignedDevconTicket);
+        const signedDevconTicket: SignedDevconTicket = AsnParser.parse(bytes, SignedDevconTicket);
 
         let devconId:string = signedDevconTicket.ticket.devconId;
 

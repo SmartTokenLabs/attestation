@@ -4,7 +4,7 @@ import {ASNEncodable} from "./ASNEncodable";
 import {Verifiable} from "./Verifiable";
 import {Identifier} from "../asn1/shemas/AttestationRequestWithUsage";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {logger, uint8ToBn, uint8toBuffer, uint8tohex} from "./utils";
+import {logger, uint8ToBn, uint8tohex} from "./utils";
 import {CURVE_BN256, Point} from "./Point";
 import {AttestationCrypto} from "./AttestationCrypto";
 import {Asn1Der} from "./DerUtility";
@@ -34,7 +34,7 @@ export class AttestationRequestWithUsage implements ASNEncodable, Verifiable {
         let identifier: Identifier;
 
         try {
-            identifier = AsnParser.parse( uint8toBuffer(asn1), Identifier);
+            identifier = AsnParser.parse(asn1, Identifier);
             me.type = identifier.type;
             me.sessionPublicKey = KeyPair.publicFromSubjectPublicKeyValue(identifier.sessionKey);
         } catch (e){

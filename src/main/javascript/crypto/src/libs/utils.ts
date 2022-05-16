@@ -254,16 +254,6 @@ export function uint8tohex(uint8: Uint8Array): string {
     return Array.from(uint8).map(i => ('0' + i.toString(16)).slice(-2)).join('');
 }
 
-
-export function uint8toBuffer(uint8: Uint8Array): any {
-    if (typeof Buffer != "undefined"){
-        // node Buffer
-        return Buffer.from(uint8);
-    } else {
-        // browser ArrayBuffer
-        return uint8;
-    }
-}
 // TODO unit test it
 export function getInt64Bytes(x: number) {
     let y= Math.floor(x/2**32);
