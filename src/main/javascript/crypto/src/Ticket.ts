@@ -145,8 +145,8 @@ export class Ticket extends AttestableObject implements Attestable {
 
         this.key = keys[devconId];
 
-        let idAsNumber = signedDevconTicket.ticket.tiketIdNumber;
-        let ticketId:string = idAsNumber ? idAsNumber.toString() : signedDevconTicket.ticket.tiketIdString;
+        let idAsNumber = signedDevconTicket.ticket.ticketIdNumber;
+        let ticketId:string = idAsNumber ? idAsNumber.toString() : signedDevconTicket.ticket.ticketIdString;
         let ticketClassInt:number = signedDevconTicket.ticket.ticketClass;
 
         let commitment:Uint8Array;
