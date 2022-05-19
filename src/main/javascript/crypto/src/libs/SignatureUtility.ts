@@ -177,17 +177,17 @@ export class SignatureUtility {
 
             // this is internal logic, we can use it for debug
 
-            // console.log('lets try to sign data directly');
+            // logger(DEBUGLEVEL.HIGH, 'lets try to sign data directly');
             // const populated = await _TypedDataEncoder.resolveNames(domainData, dataTypes, userDataValues, (name: string) => {
             //     return window.ethereum.resolveName(name);
             // });
-            // console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-            // console.log(domainData, dataTypes, userDataValues, populated);
+            // logger(DEBUGLEVEL.HIGH, '!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+            // logger(DEBUGLEVEL.HIGH, domainData, dataTypes, userDataValues, populated);
             //
             // let typedMsg = _TypedDataEncoder.getPayload(populated.domain, dataTypes, populated.value);
             // let msgParams = JSON.stringify(typedMsg);
-            // console.log('msgParams');
-            // console.log(msgParams);
+            // logger(DEBUGLEVEL.HIGH, 'msgParams');
+            // logger(DEBUGLEVEL.HIGH, msgParams);
 
             // let directlySigned = await window.ethereum.send("eth_signTypedData_v4", [
             //      userAddresses[0].toLowerCase(), msgParams

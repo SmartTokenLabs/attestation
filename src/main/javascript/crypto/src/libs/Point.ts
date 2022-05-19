@@ -151,7 +151,7 @@ export class Point {
         //     case '04':
         //         let X = BigInt('0x' + hex.slice(2,66));
         //         let Y = BigInt('0x' + hex.slice(66,130));
-        //         // console.log(X,Y);
+        //         // logger(DEBUGLEVEL.HIGH, X,Y);
         //         p = new Point(X, Y, useCurve);
         //         break;
         //     default:
@@ -159,8 +159,8 @@ export class Point {
         // }
         // if (!p.validate()) {
         //     let m = `Point is not valid (${p.x},${p.y})`;
-        //     console.log(m);
-        //     console.log(p);
+        //     logger(DEBUGLEVEL.HIGH, m);
+        //     logger(DEBUGLEVEL.HIGH, p);
         //     throw new Error(m);
         // }
         // return p;

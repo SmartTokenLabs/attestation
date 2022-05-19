@@ -100,7 +100,7 @@ export class AttestationCrypto {
     // TODO use type
     // hashIdentifier(type: number , identifier: string): Point {
     //     let idenNum = this.mapToInteger(type, Uint8Array.from(stringToArray(identifier.trim().toLowerCase())));
-    //     // console.log(`idenNum(for base point) = ${idenNum}`);
+    //     // logger(DEBUGLEVEL.HIGH, `idenNum(for base point) = ${idenNum}`);
     //     return this.computePoint_bn256(idenNum);
     // }
 

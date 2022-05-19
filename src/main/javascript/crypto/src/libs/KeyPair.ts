@@ -36,7 +36,7 @@ if (typeof crypto === "object" && crypto.subtle){
     if (webcrypto) {
         subtle = webcrypto.subtle;
     } else  {
-        console.log("Webcrypto not accessible");
+        logger(DEBUGLEVEL.LOW, "Webcrypto not accessible");
         throw new Error("webcrypto.subtle missing");
     }
 }
@@ -244,16 +244,16 @@ export class KeyPair {
             // we can use it to count pubPoint without external lib, but it can not work for some curves, where we need to do BN reduction before compress point
             // if (CURVES.hasOwnProperty(this.algorithm) && EC_CURVES.includes(this.algorithm)) {
             //     let curve = CURVES[this.algorithm];
-            //     console.log('lets generate public key for ' + this.algorithm);
+            //     logger(DEBUGLEVEL.HIGH, 'lets generate public key for ' + this.algorithm);
             //     let PointG = new Point(curve.GX, curve.GY, curve);
             //     let pubPoint = PointG.multiplyDA(mod(this.getPrivateAsBigInt(),curve.n));
-            //     console.log('point ' + pubPoint.useCurve);
+            //     logger(DEBUGLEVEL.HIGH, 'point ' + pubPoint.useCurve);
             //     // prefix 04 means it is uncompressed key
             //     return '04' + pubPoint.x.toString(16).padStart(64, '0') + pubPoint.y.toString(16).padStart(64, '0')
             if (CURVES.hasOwnProperty(this.algorithm) && EC_CURVES_SUBTLE.hasOwnProperty(this.algorithm)) {
                 let curve = new EC.ec(this.algorithm);
                 if (!this.getPrivateAsHexString()) {
-                    console.log(this);
+                    logger(DEBUGLEVEL.LOW, this);
                     throw new Error("Cant sign. This is only public key.");
 
                 }
@@ -327,7 +327,7 @@ export class KeyPair {
 
     signBytesWithEthereum(bytes: number[]): string{
         let message = '0x' + uint8tohex(new Uint8Array(bytes));
-        console.log("message: " + message);
+        logger(DEBUGLEVEL.HIGH, "message: " + message);
         return this.signStringWithEthereum(message);
     }
 

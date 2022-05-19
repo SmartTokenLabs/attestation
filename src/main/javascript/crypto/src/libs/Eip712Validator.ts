@@ -81,15 +81,15 @@ export class Eip712Validator {
 
         // we dont use that fields at the moment. maybe have to uncomment and fix in the future
         // if (domainToCheck.chainId !== encoder.getChainId())) {
-        //     console.error("Chain ID is wrong");
+        //     logger(DEBUGLEVEL.LOW, "Chain ID is wrong");
         //     return false;
         // }
         // if (domainToCheck.verifyingContract !== encoder.getVerifyingContract()) {
-        //     console.error("Verifying contract is wrong");
+        //     logger(DEBUGLEVEL.LOW, "Verifying contract is wrong");
         //     return false;
         // }
         // if (domainToCheck.salt !== encoder.getSalt()) {
-        //     console.error("Salt is wrong");
+        //     logger(DEBUGLEVEL.LOW, "Salt is wrong");
         //     return false;
         // }
         return true;

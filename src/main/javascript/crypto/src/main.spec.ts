@@ -146,7 +146,7 @@ describe("SignedIdentifierAttestation", () => {
         //Extract the Ethereum signature
         let sig:Signature = signedNftAttestation.getSignature();
 
-        // console.log(nftAtt.getDerEncoding());
+        // testsLogger(DEBUGLEVEL.LOW, nftAtt.getDerEncoding());
         let realSignedNFTAtt =  "MIICkjCCAj8wggIdMIIByqADAgETAgEBMAkGByqGSM49BAIwGTEXMBUGA1UEAwwOYXR0ZXN0YXRpb24uaWQwIhgPMjAyMTExMDMyMTM0NDFaGA85OTk5MTIzMTIzNTk1OVowPzE9MDsGCSsGAQQBgXoBOQwuaHR0cHM6Ly90d2l0dGVyLmNvbS9PbGVoUnYgMTM4NzgwNjM2NzY2NzMzOTI3NTCCATMwgewGByqGSM49AgEwgeACAQEwLAYHKoZIzj0BAQIhAP////////////////////////////////////7///wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm+Zn753LusVaBilc6HCwcCm/zbLc4o2VnygVsW+BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj/sQ1LgCIQD////////////////////+uq7c5q9IoDu/0l6M0DZBQQIBAQNCAAQvGW7DOtBMY5j+ju8ahNiFU5dkG7TLu89XbjuqNMUWpRsurGsgHdJJULZRPL2F9r0aEbe61RE0PZ2t7Msw9yZCMAkGByqGSM49BAIDQgCT5mb1dcBRLlxJa3RLi25KIjWMAErnZDIJ1Wc4dJrFkSh/TU5D9cIS0lbOoAUfEFvJB39k0aqHuIwNLM8Xe+BBGzAcMBoEFAAAgMCSZPVRYLcZ1nAEJLh3yNl3BAIBDTAJBgcqhkjOPQQCA0IAijX0yxUsm53EIG35ffgGDGfmd34ENfSGVNcK8EVllTsC8+WjmpBykKJsFDH++zgY14MuHNBUB2/ZTt3PpTIKSBw=";
 
         //generate NFTAttestation from the NFTAttestation bytes
@@ -269,8 +269,8 @@ describe("MagicLink reader", () => {
         try {
             res = await Issuer.validateTicket(params.ticket, params.pok, params.mail, senderKey);
         } catch(e){
-            console.log("Issuer.validateTicket failed");
-            console.log(e);
+            testsLogger(DEBUGLEVEL.LOW,"Issuer.validateTicket failed");
+            testsLogger(DEBUGLEVEL.LOW,e);
         }
         expect(res).toBe(true);
     });
