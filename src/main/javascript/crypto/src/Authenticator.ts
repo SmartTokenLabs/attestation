@@ -72,69 +72,73 @@ export class Authenticator {
     {
         let ticket: Ticket;
         let att: SignedIdentifierAttestation;
-        base64senderPublicKeys = KeyPair.parseKeyArrayStrings(base64senderPublicKeys);
-
         try {
-            ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
+            base64senderPublicKeys = KeyPair.parseKeyArrayStrings(base64senderPublicKeys);
+        } catch(e){
+            logger(DEBUGLEVEL.LOW, e);
+            throw new Error("Issuer key error");
+        }
 
-            console.log("----validate ticket____");
-            console.log(base64ticket);
-            console.log(base64senderPublicKeys);
+        if (!base64ticket) {
+            throw new Error("Ticket is empty");
+        }
 
-            if (!ticket.checkValidity()) {
-                logger(DEBUGLEVEL.LOW,"Could not validate ticket");
-                throw new Error("Validation failed");
-            }
-            if (!ticket.verify()) {
-                logger(DEBUGLEVEL.LOW,"Could not verify ticket");
-                throw new Error("Verification failed");
-            }
-            logger(DEBUGLEVEL.MEDIUM,'ticked valid (signature OK)');
+        ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
+
+        if (!ticket.checkValidity()) {
+            logger(DEBUGLEVEL.LOW,"Could not validate ticket");
+            throw new Error("Ticket Validation failed");
+        }
+
+        if (!ticket.verify()) {
+            logger(DEBUGLEVEL.LOW,"Could not verify ticket");
+            throw new Error("Ticket Verification failed");
+        }
+
+        logger(DEBUGLEVEL.MEDIUM,'ticked valid (signature OK)');
+        
+
+        if (!base64attestationPublicKey) {
+            throw new Error("Attesator key not defined");
+        }
+
+        let attestorKey;
+        try {
+            attestorKey = KeyPair.publicFromBase64orPEM(base64attestationPublicKey);
         } catch (e) {
-            logger(DEBUGLEVEL.MEDIUM,'getUseTicket: ticket validation failed',e);
-            throw new Error("getUseTicket: ticked validation failed: " + e.message);
+            throw new Error("Attesator key read error");
         }
 
         try {
-            // let attestorKey = KeyPair.fromPublicHex(uint8tohex(new Uint8Array(key.value.publicKey)));
-            let attestorKey = KeyPair.publicFromBase64orPEM(base64attestationPublicKey);
-
             att = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64attestation), attestorKey);
-
-            if (!att.checkValidity()) {
-                logger(DEBUGLEVEL.LOW,"Could not validate attestation");
-                throw new Error("Validation failed");
-            }
-            if (!att.verify()) {
-                logger(DEBUGLEVEL.LOW,"Could not verify attestation");
-                throw new Error("Verification failed");
-            }
-            logger(DEBUGLEVEL.HIGH,'attestation valid');
         } catch (e) {
-            logger(DEBUGLEVEL.LOW,'getUseTicket: attestation validation failed');
-            logger(DEBUGLEVEL.MEDIUM,e);
-            throw new Error("getUseTicket: attestation validation failed: " + e.message);
+            throw new Error("IDAttestation decode error");
         }
 
+
+        if (!att.checkValidity()) {
+            throw new Error("IDAttestation Validation failed");
+        }
+        if (!att.verify()) {
+            throw new Error("IDAttestation Verification failed");
+        }
+        logger(DEBUGLEVEL.HIGH,'attestation valid');
+        
 
         try {
             let redeem: AttestedObject = new AttestedObject();
             redeem.create(ticket, att,
                 BigInt(attestationSecret), BigInt(ticketSecret));
 
-            // redeem.setWebDomain(this.webDomain);
-            // let signed = await redeem.sign();
-
             let unSigned = redeem.getDerEncoding();
 
-            logger(DEBUGLEVEL.HIGH,unSigned);
+            logger(DEBUGLEVEL.HIGH, unSigned);
             return hexStringToBase64(unSigned);
             // return unSigned;
 
         } catch (e) {
-            logger(DEBUGLEVEL.LOW,'getUseTicket: redeem failed');
-            logger(DEBUGLEVEL.MEDIUM,e);
-            throw new Error("getUseTicket: redeem failed: " + e.message);
+            logger(DEBUGLEVEL.MEDIUM,'getUseTicket: redeem failed',e);
+            throw new Error("Attestation doesnt fit Ticket: " + e.message);
         }
 
 
@@ -303,8 +307,8 @@ export class Authenticator {
             let attUsage: UseAttestation = UseAttestation.fromData(att, crypto.getType(type), pok, sessionKey);
             let usageRequest: Eip712AttestationUsage = new Eip712AttestationUsage(userKey);
             let res = await usageRequest.addData(webDomain, receiverId, attUsage);
-            // console.log('usageRequest ready state = ' + res);
-            // console.log('usageRequest.getJsonEncoding() = ' + usageRequest.getJsonEncoding());
+            logger(DEBUGLEVEL.HIGH, 'usageRequest ready state = ' + res);
+            logger(DEBUGLEVEL.HIGH, 'usageRequest.getJsonEncoding() = ' + usageRequest.getJsonEncoding());
             return usageRequest.getJsonEncoding();
         } catch (e) {
             logger(DEBUGLEVEL.LOW,e);
@@ -366,7 +370,7 @@ export class Authenticator {
 
             Authenticator.checkUsageValidity(usageRequest);
             sessionPublicKey = usageRequest.getSessionPublicKey();
-            // console.log('sessionPublicKey from Eip712AttestationRequestWithUsage = '+ sessionPublicKey.getAddress());
+            logger(DEBUGLEVEL.HIGH, 'sessionPublicKey from Eip712AttestationRequestWithUsage = '+ sessionPublicKey.getAddress());
         }
 
         // Validate signature
@@ -381,8 +385,6 @@ export class Authenticator {
             let m = "Cant verify session with subtle. " + e;
             logger(DEBUGLEVEL.LOW,m);
             logger(DEBUGLEVEL.MEDIUM,e);
-            // console.error(sessionPublicKey);
-            // throw new Error(m);
         }
     }
 
@@ -412,7 +414,7 @@ export class Authenticator {
             let attRequest: AttestationRequestWithUsage =  AttestationRequestWithUsage.fromData(crypto.getType(type), pok, sessionKey);
             let request: Eip712AttestationRequestWithUsage = new Eip712AttestationRequestWithUsage(userKey);
             await request.fromData(ATTESTOR_DOMAIN, undefined, undefined, receiverId, attRequest);
-            // console.log('request.getJsonEncoding() = ' + request.getJsonEncoding());
+            logger(DEBUGLEVEL.HIGH, 'request.getJsonEncoding() = ' + request.getJsonEncoding());
             return request.getJsonEncoding();
         } catch (e) {
             let m = "requestAttestAndUsage error. " + e;
@@ -426,20 +428,20 @@ export class Authenticator {
 /*
     static async signMessageWithSessionKey(message: Uint8Array, sessionKey: Uint8Array = new Uint8Array(0)){
         let privKey, signature;
-        // console.log("message = " + uint8tohex(message));
+        // logger(DEBUGLEVEL.HIGH, "message = " + uint8tohex(message));
 
         try {
             if (sessionKey && sessionKey.length) {
                 // its nodejs and session primary key received in Uint8Array
-                console.log("sessionKey = " + uint8tohex(sessionKey));
-                console.log(sessionKey);
+                logger(DEBUGLEVEL.HIGH, "sessionKey = " + uint8tohex(sessionKey));
+                logger(DEBUGLEVEL.HIGH, sessionKey);
 
             } else {
                 // TODO read key from local storage
             }
             // signature = await crypto.subtle.sign(ALPHA_CONFIG.signAlgorithm, privKey, message);
         } catch (e){
-            console.log(e);
+            logger(DEBUGLEVEL.HIGH, e);
             // throw new Error(e);
         }
         // let signatureHex = uint8tohex(new Uint8Array(signature));
@@ -488,7 +490,7 @@ export class Authenticator {
         try {
             ticket = Ticket.fromBase64(ticketBase64, keys);
         } catch(e) {
-            console.log(e);
+            logger(DEBUGLEVEL.LOW, e);
             return {
                 valid: false,
                 massage: "Wrong Ticket"

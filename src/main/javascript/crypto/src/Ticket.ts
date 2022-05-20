@@ -43,7 +43,7 @@ export class Ticket extends AttestableObject implements Attestable {
         this.encoded = this.encodeSignedTicket(this.makeTicket());
 
         if (!this.verify()) {
-            throw new Error("Signature is invalid");
+            throw new Error("Ticket Signature is invalid");
         }
     }
 
@@ -74,7 +74,6 @@ export class Ticket extends AttestableObject implements Attestable {
             ticketId = Asn1Der.encode('INTEGER', asBN);
         } catch(e){
             ticketId = Asn1Der.encode('UTF8STRING', this.ticketId);
-            // console.log("ticketID is string: ", this.ticketId);
         }
 
         let ticket: string =
@@ -143,6 +142,10 @@ export class Ticket extends AttestableObject implements Attestable {
 
         let devconId:string = signedDevconTicket.ticket.devconId;
 
+        if (!keys || !keys[devconId]) {
+            throw new Error("Issuer key not defined.");
+        }
+
         this.key = keys[devconId];
 
         let idAsNumber = signedDevconTicket.ticket.ticketIdNumber;
@@ -163,6 +166,10 @@ export class Ticket extends AttestableObject implements Attestable {
 
     public getCommitment(): Uint8Array {
         return this.commitment;
+    }
+
+    public getKey(): KeyPair {
+        return this.key;
     }
 
 

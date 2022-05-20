@@ -51,7 +51,7 @@ export class CapabilityIssuer {
         jwtData[CapabilityIssuer.TasksClaimName] = flattenedTasks;
         // TODO set algorithm
         // jwt.sign({ foo: 'bar' }, privateKey, { algorithm: 'RS256' }, function(err, token) {
-        //     console.log(token);
+        //     logger(DEBUGLEVEL.HIGH, token);
         // });
         return jwt.sign(jwtData, this.privateKeyOrSecret, jwtOptions);
     }

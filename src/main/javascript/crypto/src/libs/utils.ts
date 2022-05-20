@@ -1,3 +1,4 @@
+import { DEBUGLEVEL } from "../config";
 import {CURVE_BN256, CURVE_SECP256k1} from "./Point";
 let sha3 = require("js-sha3");
 
@@ -340,7 +341,7 @@ export function ecSignatureToSRVhex(signature: SignatureSRV, ecKey: any): string
         let s = s_.toString(16).padStart(64, "0");
         return r + s + (v == 1 ? "1c" : "1b");
     } catch (e){
-        logger(1, e);
+        logger(DEBUGLEVEL.LOW, e);
         throw new Error("Signature format doesn't fit.");
     }
 }

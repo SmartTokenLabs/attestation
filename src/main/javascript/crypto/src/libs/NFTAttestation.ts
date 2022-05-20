@@ -51,7 +51,7 @@ export class NFTAttestation implements ASNEncodable, Validateable {
         try {
             return NFTAttestation.fromAsnObj(AsnParser.parse(asn1, NFTAttestationASN), identifierAttestationVerificationKey);
         } catch (e){
-            console.log(e);
+            logger(DEBUGLEVEL.LOW, e);
             throw new Error('Cant parse NFTAttestationASN');
         }
     }
