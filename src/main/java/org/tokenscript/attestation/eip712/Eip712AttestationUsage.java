@@ -156,6 +156,7 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   @Override
   public boolean verify() {
+    // Notice that the signature cannot be validated against anything since it is used to simply retrieve the address
     if (!validator.verify()) {
       logger.error("Could not verify underlying object");
       return false;

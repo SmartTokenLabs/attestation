@@ -14,10 +14,7 @@ import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.core.Validateable;
 import org.tokenscript.attestation.core.Verifiable;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
-import org.tokenscript.eip712.Eip712Encoder;
-import org.tokenscript.eip712.Eip712Signer;
-import org.tokenscript.eip712.Eip712Validator;
-import org.tokenscript.eip712.JsonEncodable;
+import org.tokenscript.eip712.*;
 
 public class Eip712AttestationRequest extends Eip712Validator implements JsonEncodable, Verifiable, Validateable {
   private static final Logger logger = LogManager.getLogger(Eip712AttestationRequest.class);
@@ -144,6 +141,7 @@ public class Eip712AttestationRequest extends Eip712Validator implements JsonEnc
 
   @Override
   public boolean verify() {
+    // Notice that the signature cannot be validated against anything since it is used to simply retrieve the address
     if (!attestationRequest.verify()) {
       logger.error("Could not verify proof");
       return false;
