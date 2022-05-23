@@ -1,11 +1,6 @@
 package org.tokenscript.attestation.eip712;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.tokenscript.attestation.AttestationRequest;
 import org.tokenscript.attestation.AttestationRequestWithUsage;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
@@ -33,6 +28,8 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAttestationRequestWithUsageEip712 {
   private static final Logger logger = LogManager.getLogger(TestAttestationRequestWithUsageEip712.class);
@@ -241,6 +238,37 @@ public class TestAttestationRequestWithUsageEip712 {
     String wrongJson = json.replace(',', '.');
     Exception e = assertThrows( IllegalArgumentException.class, () ->  new Eip712AttestationRequestWithUsage(DOMAIN, wrongJson));
     assertEquals("Could not decode object", e.getMessage());
+  }
+
+  @Test
+  public void wrongSignature() throws Exception {
+    String jsonInvalidSig = "{\"signatureInHex\":\"0x5492e356581bf3a249d55245f25f52f25088434660aad9c37b6e86a7224a86877e6f472786c0dbb6f24268b0ea4891288b42be18e571a04ec2599f48714b28641c\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationRequestWUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequestWUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIICTQIBATCB_ARBBB62SP-dgZtAemxY0nl4cjxOW0UKyYmDPOz2_YfDFgzeCa3ZVleOniCjeTfuoR9NTatdcoM4IruwzSUv-DniQbcEICBJ1TB0lMnjO3E4mRpuqh1hdjjYGc4RhOgHtA9PsD4iBEEEA2ka_nOn_7cfWROcSuXtb_BBX8bc7N8yi47FwS1_63oLadplUtvj7U0wrPVNmlzCZ98EqoEKXNZLGOmMpspqaARSMFg1RjdCRkU3NTJBQzFBNDVGNjc0OTdEOURDREQ5QkJEQTUwQTgzOTU1Sm1UC7EZ7FbQ1gD2qvRqimx8roUC_TlKlL_iMtn-uNsAAAGA4a6SYDCCAUcwgfgGByqGSM49AgEwgewCAQEwJQYHKoZIzj0BAjAaAgIBGwYJKoZIzj0BAgMDMAkCAQUCAQcCAQwwTAQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEESQQFAyE_eMpEiD8aO4Fi8YjlU80mXyPBVnoWh2kTsMKsJFhJKDYBzNo4DxyeMY2Q-V0H5UJv6H5FwOgYRpjkWWI2TjQRYXfdIlkCJAH______________________-muLtB1dyZd_3-URR4GHhY8YQIBBANKAAQFK7J9i33xUcv3NBo2Xh82NNDkiqCBaefEwx4sRgxdgUaXmNUHJ8zGwAtvOMuXXHqoJpsCyU_aPLbGNP7o0kTjE75DVoiAbHQ=\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identifier\\\\\\\" is the identifier hidden in attestation contained in\\\\\\\"payload\\\\\\\" and use this to authorize usage of local, temporary keys.\\\",\\\"timestamp\\\":\\\"Fri May 20 2022 13:35:56 GMT+0000\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Sat May 20 2023 13:35:56 GMT+0000\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.attestation.id\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.UNLIMITED, Timestamp.UNLIMITED, jsonInvalidSig);
+    assertTrue(request.verify());
+    // Should fail since the nonce is based on the real public key and not the wrong one recovered from the signature
+    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
+  }
+
+  @Test
+  public void checkKeyRecovery() {
+    // Request with modified signature but signed with "userSigningKey"
+    String jsonInvalidSig = "{\"signatureInHex\":\"0x5492e356581bf3a249d55245f25f52f25088434660aad9c37b6e86a7224a86877e6f472786c0dbb6f24268b0ea4891288b42be18e571a04ec2599f48714b28641c\",\"jsonSigned\":\"{\\\"types\\\":{\\\"AttestationRequestWUsage\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"expirationTime\\\",\\\"type\\\":\\\"string\\\"}],\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequestWUsage\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIICTQIBATCB_ARBBB62SP-dgZtAemxY0nl4cjxOW0UKyYmDPOz2_YfDFgzeCa3ZVleOniCjeTfuoR9NTatdcoM4IruwzSUv-DniQbcEICBJ1TB0lMnjO3E4mRpuqh1hdjjYGc4RhOgHtA9PsD4iBEEEA2ka_nOn_7cfWROcSuXtb_BBX8bc7N8yi47FwS1_63oLadplUtvj7U0wrPVNmlzCZ98EqoEKXNZLGOmMpspqaARSMFg1RjdCRkU3NTJBQzFBNDVGNjc0OTdEOURDREQ5QkJEQTUwQTgzOTU1Sm1UC7EZ7FbQ1gD2qvRqimx8roUC_TlKlL_iMtn-uNsAAAGA4a6SYDCCAUcwgfgGByqGSM49AgEwgewCAQEwJQYHKoZIzj0BAjAaAgIBGwYJKoZIzj0BAgMDMAkCAQUCAQcCAQwwTAQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEESQQFAyE_eMpEiD8aO4Fi8YjlU80mXyPBVnoWh2kTsMKsJFhJKDYBzNo4DxyeMY2Q-V0H5UJv6H5FwOgYRpjkWWI2TjQRYXfdIlkCJAH______________________-muLtB1dyZd_3-URR4GHhY8YQIBBANKAAQFK7J9i33xUcv3NBo2Xh82NNDkiqCBaefEwx4sRgxdgUaXmNUHJ8zGwAtvOMuXXHqoJpsCyU_aPLbGNP7o0kTjE75DVoiAbHQ=\\\",\\\"description\\\":\\\"Prove that the \\\\\\\"identifier\\\\\\\" is the identifier hidden in attestation contained in\\\\\\\"payload\\\\\\\" and use this to authorize usage of local, temporary keys.\\\",\\\"timestamp\\\":\\\"Fri May 20 2022 13:35:56 GMT+0000\\\",\\\"identifier\\\":\\\"email@test.com\\\",\\\"expirationTime\\\":\\\"Sat May 20 2023 13:35:56 GMT+0000\\\"},\\\"domain\\\":{\\\"name\\\":\\\"https://www.attestation.id\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.UNLIMITED, Timestamp.UNLIMITED, jsonInvalidSig);
+    AsymmetricKeyParameter candidateKey = request.retrieveUserPublicKey(request.getJsonEncoding(), Eip712AttestationRequestWithUsageEncoder.AttestationRequestWUsageData.class);
+    assertNotEquals(userAddress, SignatureUtility.addressFromKey(candidateKey));
+  }
+
+  @Test
+  public void validateWrongNonceKey() {
+    // Notice the wrong address
+    byte[] nonce = Nonce.makeNonce("0x1234567890123456789012345678901234567890", DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
+    AttestationRequestWithUsage attRequest = new AttestationRequestWithUsage(TYPE, pok, sessionKey);
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, Timestamp.UNLIMITED, Timestamp.UNLIMITED, MAIL, attRequest, userSigningKey);
+    assertTrue(request.verify());
+    assertFalse(request.checkValidity());
+    assertFalse(request.checkTokenValidity());
   }
 
 }

@@ -1,15 +1,12 @@
 package org.tokenscript.attestation.eip712;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.spy;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Objects;
+
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
@@ -27,8 +24,7 @@ import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
-import org.tokenscript.eip712.Eip712Signer;
-import org.tokenscript.eip712.Eip712Test;
+import org.tokenscript.eip712.*;
 
 public class TestAttestationRequestEip712 {
   private static final String DOMAIN = "http://www.hotelbogota.com";
@@ -302,9 +298,39 @@ public class TestAttestationRequestEip712 {
     assertTrue(request.checkValidity());
     // Decode with wrong encoder
     Eip712AttestationRequest decodedRequest = new Eip712AttestationRequest(DOMAIN, Timestamp.DEFAULT_TIME_LIMIT_MS,
+        // Notice the usage of LISCON_USAGE_VALUE instead of LEGACY_USAGE_VALUE
         request.getJsonEncoding(), new Eip712AttestationRequestEncoder(Eip712AttestationRequestEncoder.LISCON_USAGE_VALUE));
     assertTrue(decodedRequest.verify());
     assertFalse(decodedRequest.checkValidity());
+  }
+
+  @Test
+  public void wrongSignature() throws Exception {
+    String jsonInvalidSig = "{\"signatureInHex\":\"0x4aa618e4587c440340df460c5a6d0fca9e6456533ac260806d38a9ed84e9e5d50f4688b715fcc3bccbd14bd41aa60fbe084c2e8cb3f56d525d4ae1fa3b3b20611c\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAgIBATCB_ARBBBmSwTCP4VSOr07WYbuIZjR6oUIigLCB-o_ygrN2b2xxHKXEocXBQM3NLqQ5OkRuj0ogmOpKgwn7LhWYWkqNzvMEICaCnpQT7bEA57OooelM02iKnjo0wxde1NBUrC1MNttoBEEECsnXLNQdO2PgaHzQWGWg4KAQ4IvSkn1hPJotLPXMhPIuZeSry7aaOEQt64wyXUolp8an18193r5MKhfZ-E3AjQRSMFg3QTE4MUNCNzI1MDc3NkUxNjc4M0Y5RDNDOTE2NkRFMEY5NUFCMjgzr4crx6TxqXpXW2o9byWM8Ya4h7ATlfLav-aSz8hWQ8YAAAGA4XN1kA==\\\",\\\"description\\\":\\\"Creating email attestation\\\",\\\"timestamp\\\":\\\"Fri May 20 2022 12:31:22 GMT+0000\\\",\\\"identifier\\\":\\\"test@test.ts\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    Eip712AttestationRequest newRequest = new Eip712AttestationRequest(DOMAIN, Timestamp.UNLIMITED, jsonInvalidSig);
+    assertTrue(newRequest.verify());
+    // Should fail since the nonce is based on the real public key and not the wrong one recovered from the signature
+    assertFalse(newRequest.checkValidity());
+  }
+
+  @Test
+  public void checkKeyRecovery() {
+    // Request with modified signature but signed with "userSigningKey"
+    String jsonInvalidSig = "{\"signatureInHex\":\"0x4aa618e4587c440340df460c5a6d0fca9e6456533ac260806d38a9ed84e9e5d50f4688b715fcc3bccbd14bd41aa60fbe084c2e8cb3f56d525d4ae1fa3b3b20611c\",\"jsonSigned\":\"{\\\"types\\\":{\\\"EIP712Domain\\\":[{\\\"name\\\":\\\"name\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"version\\\",\\\"type\\\":\\\"string\\\"}],\\\"AttestationRequest\\\":[{\\\"name\\\":\\\"payload\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"description\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"timestamp\\\",\\\"type\\\":\\\"string\\\"},{\\\"name\\\":\\\"identifier\\\",\\\"type\\\":\\\"string\\\"}]},\\\"primaryType\\\":\\\"AttestationRequest\\\",\\\"message\\\":{\\\"payload\\\":\\\"MIIBAgIBATCB_ARBBBmSwTCP4VSOr07WYbuIZjR6oUIigLCB-o_ygrN2b2xxHKXEocXBQM3NLqQ5OkRuj0ogmOpKgwn7LhWYWkqNzvMEICaCnpQT7bEA57OooelM02iKnjo0wxde1NBUrC1MNttoBEEECsnXLNQdO2PgaHzQWGWg4KAQ4IvSkn1hPJotLPXMhPIuZeSry7aaOEQt64wyXUolp8an18193r5MKhfZ-E3AjQRSMFg3QTE4MUNCNzI1MDc3NkUxNjc4M0Y5RDNDOTE2NkRFMEY5NUFCMjgzr4crx6TxqXpXW2o9byWM8Ya4h7ATlfLav-aSz8hWQ8YAAAGA4XN1kA==\\\",\\\"description\\\":\\\"Creating email attestation\\\",\\\"timestamp\\\":\\\"Fri May 20 2022 12:31:22 GMT+0000\\\",\\\"identifier\\\":\\\"test@test.ts\\\"},\\\"domain\\\":{\\\"name\\\":\\\"http://www.hotelbogota.com\\\",\\\"version\\\":\\\"0.1\\\"}}\"}";
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, Timestamp.UNLIMITED, jsonInvalidSig);
+    AsymmetricKeyParameter candidateKey = request.retrieveUserPublicKey(request.getJsonEncoding(),  AttestationRequestInternalData.class);
+    assertNotEquals(userAddress, SignatureUtility.addressFromKey(candidateKey));
+  }
+
+  @Test
+  public void validateWrongNonceKey() {
+    // Notice the wrong address
+    byte[] nonce = Nonce.makeNonce("0x1234567890123456789012345678901234567890", DOMAIN, new Timestamp());
+    FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
+    AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
+    Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, Timestamp.UNLIMITED, MAIL, attRequest, userSigningKey);
+    assertTrue(request.verify());
+    assertFalse(request.checkValidity());
   }
 
 }

@@ -47,15 +47,18 @@ public class AttestationCrypto {
   public AttestationCrypto(SecureRandom rand) {
     Security.addProvider(new BouncyCastleProvider());
     this.rand = rand;
-    if (!verifyCurveOrder(curveOrder)) {
+    if (!verifyCurveOrder()) {
       throw new RuntimeException("Static values do not work with current implementation");
     }
   }
 
-  private boolean verifyCurveOrder(BigInteger curveOrder) {
+  private boolean verifyCurveOrder() {
+    // Sanity check static values
+    AttestationCrypto.validatePointToCurve(G, curve);
+    AttestationCrypto.validatePointToCurve(H, curve);
     // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
     // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
-    if (curveOrder.compareTo(BigInteger.ONE.shiftLeft(curveOrderBitLength-1)) < 0 || curveOrder.shiftRight(curveOrderBitLength).compareTo(BigInteger.ZERO) > 0) {
+    if (curve.getOrder().compareTo(BigInteger.ONE.shiftLeft(curveOrderBitLength-1)) < 0 || curve.getOrder().shiftRight(curveOrderBitLength).compareTo(BigInteger.ZERO) > 0) {
       logger.error("Curve order is not 254 bits which is required by the current implementation");
       return false;
     }
@@ -99,6 +102,8 @@ public class AttestationCrypto {
    * @return
    */
   public static byte[] makeCommitment(String identifier, AttestationType type, ECPoint hiding) {
+    // Check for malicious input
+    AttestationCrypto.validatePointToCurve(hiding, curve);
     BigInteger hashedIdentifier = mapToCurveMultiplier(type, identifier);
     // Construct Pedersen commitment
     ECPoint commitment = G.multiply(hashedIdentifier).add(hiding);
@@ -194,6 +199,10 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyFullProof(FullProofOfExponent pok)  {
+    if (!pok.validateParameters()) {
+      logger.error("The parameters in the ZK proof are not correct");
+      return false;
+    }
     BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, pok.getRiddle()), pok.getUnpredictableNumber());
     return verifyPok(pok, c);
   }
@@ -207,21 +216,25 @@ public class AttestationCrypto {
    * @return True if the proof is OK and false otherwise
    */
   public static boolean verifyEqualityProof(byte[] commitment1, byte[] commitment2, ProofOfExponent pok)  {
+    if (!pok.validateParameters()) {
+      logger.error("The parameters in the ZK proof are not correct");
+      return false;
+    }
     ECPoint comPoint1 = decodePoint(commitment1);
     ECPoint comPoint2 = decodePoint(commitment2);
     // Compute the value the riddle should have
     ECPoint riddle = comPoint1.subtract(comPoint2);
     BigInteger c = computeChallenge(pok.getPoint(), Arrays.asList(H, comPoint1, comPoint2), pok.getUnpredictableNumber());
-    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallenge(), pok.getUnpredictableNumber()), c);
+    return verifyPok(new FullProofOfExponent(riddle, pok.getPoint(), pok.getChallengeResponse(), pok.getUnpredictableNumber()), c);
   }
 
   private static boolean verifyPok(FullProofOfExponent pok, BigInteger c) {
     // Check that the c has been sampled correctly using rejection sampling
-    if (c.compareTo(curveOrder) >= 0) {
-      logger.error("Challenge is bigger than curve order");
+    if (c.compareTo(curveOrder) >= 0 || c.compareTo(BigInteger.ZERO) <= 0) {
+      logger.error("Challenge is not of the correct size");
       return false;
     }
-    ECPoint lhs = H.multiply(pok.getChallenge());
+    ECPoint lhs = H.multiply(pok.getChallengeResponse());
     ECPoint rhs = pok.getRiddle().multiply(c).add(pok.getPoint());
     return lhs.equals(rhs);
   }
@@ -250,7 +263,7 @@ public class AttestationCrypto {
   static BigInteger mapToInteger(byte[] input) {
     try {
       byte[] digest = hashWithKeccak(input);
-      // Construct an positive BigInteger from the bytes
+      // Construct a non-negative BigInteger from the bytes
       BigInteger resultOf256Bits =  new BigInteger(1, digest);
       return resultOf256Bits.shiftRight(256-curveOrderBitLength);
     } catch (Exception e) {
@@ -277,12 +290,32 @@ public class AttestationCrypto {
 
   public static ECPoint decodePoint(byte[] point) {
     ECPoint ecPoint = curve.decodePoint(point).normalize();
-    // Check that the point is actually on the curve to prevent invalid curve attacks, throws exception if not
-    curve.validatePoint(ecPoint.getXCoord().toBigInteger(), ecPoint.getYCoord().toBigInteger());
-    // Check there is no subgroup attack
+    // Check for malicious input
+    AttestationCrypto.validatePointToCurve(ecPoint, curve);
+    // Check there is no subgroup attack, since we specifically use a curve with cofactor 1
     if (!cofactor.equals(BigInteger.ONE)) {
-      throw new InternalError("We have only implemented checks for curves with cofactor 1");
+      ExceptionUtil.throwException(logger, new InternalError("We have only implemented checks for curves with cofactor 1"));
     }
     return ecPoint;
+  }
+
+  /**
+   * Performs standard security checks that the point is on the curve, has the correct order and is not the point at infinity.
+   * If the point is not considered safe, then a SecurityException is thrown.
+   */
+  public static void validatePointToCurve(ECPoint point, ECCurve curve) throws SecurityException {
+    try {
+      if (point.isInfinity()) {
+        throw new SecurityException("Point is at infinity");
+      }
+      ECPoint normalizedPoint = point.normalize();
+      // Ensure the point is on the curve
+      curve.validatePoint(normalizedPoint.getAffineXCoord().toBigInteger(), normalizedPoint.getAffineYCoord().toBigInteger());
+      if (!point.multiply(curve.getOrder()).isInfinity()) {
+        throw new SecurityException("Point does not have correct order");
+      }
+    } catch (Exception e) {
+      ExceptionUtil.throwException(logger, new SecurityException(e.getMessage()));
+    }
   }
 }

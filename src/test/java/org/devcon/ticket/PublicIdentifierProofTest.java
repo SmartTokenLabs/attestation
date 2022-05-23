@@ -74,7 +74,7 @@ public class PublicIdentifierProofTest {
     assertTrue(pok.verify());
 
     FullProofOfExponent internalPok = pok.getInternalPok();
-    FullProofOfExponent newPok = new FullProofOfExponent(internalPok.getRiddle(), internalPok.getPoint(), internalPok.getChallenge().add(BigInteger.ONE));
+    FullProofOfExponent newPok = new FullProofOfExponent(internalPok.getRiddle(), internalPok.getPoint(), internalPok.getChallengeResponse().add(BigInteger.ONE));
     assertThrows(IllegalArgumentException.class, () -> new PublicIdentifierProof(commitment, MAIL,
         AttestationType.EMAIL, newPok));
   }

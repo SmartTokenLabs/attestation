@@ -8,19 +8,19 @@ import {UsageProofOfExponent} from "./UsageProofOfExponent";
 export class FullProofOfExponent {
     private riddle: Point;
     private tPoint: Point;
-    private challenge: bigint;
+    private challengeResponse: bigint;
     private nonce: Uint8Array;
     public encoding: string;
 
     private constructor() {}
 
-    static fromData(riddle: Point, tPoint: Point, challenge: bigint, nonce: Uint8Array = new Uint8Array([])) {
+    static fromData(riddle: Point, tPoint: Point, challengeResponse: bigint, nonce: Uint8Array = new Uint8Array([])) {
         let me = new this();
         me.riddle = riddle;
         me.tPoint = tPoint;
-        me.challenge = challenge;
+        me.challengeResponse = challengeResponse;
         me.nonce = nonce;
-        me.encoding = me.makeEncoding(riddle, tPoint, challenge, nonce);
+        me.encoding = me.makeEncoding(riddle, tPoint, challengeResponse, nonce);
         return me;
     }
 
@@ -36,23 +36,23 @@ export class FullProofOfExponent {
         let riddle = Point.decodeFromUint8(riddleEnc, CURVE_BN256 );
 
         let challengeEnc: Uint8Array = new Uint8Array(proof.challengePoint);
-        let challenge = uint8ToBn(challengeEnc);
+        let challengeResponse = uint8ToBn(challengeEnc);
 
         let tPointEnc: Uint8Array = new Uint8Array(proof.responseValue);
         let tPoint = Point.decodeFromUint8(tPointEnc, CURVE_BN256 );
 
         let nonce = new Uint8Array(proof.nonce);
 
-        return this.fromData(riddle, tPoint, challenge, nonce);
+        return this.fromData(riddle, tPoint, challengeResponse, nonce);
     }
 
     static fromBase64(base64DerEncoded: string) {
         return FullProofOfExponent.fromBytes(base64ToUint8array(base64DerEncoded));
     }
 
-    makeEncoding(riddle: Point, tPoint: Point, challenge: bigint, nonce: Uint8Array = new Uint8Array([])):string{
+    makeEncoding(riddle: Point, tPoint: Point, challengeResponse: bigint, nonce: Uint8Array = new Uint8Array([])):string{
         let proof = Asn1Der.encode('OCTET_STRING', uint8tohex(riddle.getEncoded()))
-            + Asn1Der.encode('OCTET_STRING', challenge.toString(16))
+            + Asn1Der.encode('OCTET_STRING', challengeResponse.toString(16))
             + Asn1Der.encode('OCTET_STRING', uint8tohex(tPoint.getEncoded()))
             + Asn1Der.encode('OCTET_STRING', uint8tohex(nonce));
 
@@ -67,8 +67,8 @@ export class FullProofOfExponent {
         return this.tPoint;
     }
 
-    public getChallenge() {
-        return this.challenge;
+    public getChallengeResponse() {
+        return this.challengeResponse;
     }
 
     public getNonce(): Uint8Array {
@@ -76,7 +76,7 @@ export class FullProofOfExponent {
     }
 
     public getUsageProofOfExponent(): UsageProofOfExponent {
-        return UsageProofOfExponent.fromData(this.tPoint, this.challenge, this.nonce);
+        return UsageProofOfExponent.fromData(this.tPoint, this.challengeResponse, this.nonce);
     }
 
     public getDerEncoding(): string {
@@ -87,7 +87,7 @@ export class FullProofOfExponent {
 
         const proof = new Proof();
         proof.nonce = this.getNonce();
-        proof.challengePoint = bnToUint8(this.getChallenge());
+        proof.challengePoint = bnToUint8(this.getChallengeResponse());
         proof.riddle = this.getRiddle().getEncoded();
         proof.responseValue = this.getPoint().getEncoded();
 

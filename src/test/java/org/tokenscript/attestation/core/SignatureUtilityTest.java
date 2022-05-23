@@ -1,8 +1,8 @@
 package org.tokenscript.attestation.core;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_CURVE;
+import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_DOMAIN;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -11,16 +11,20 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.util.Arrays;
+
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.params.*;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
+import org.bouncycastle.jce.ECPointUtil;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.math.ec.ECPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +43,7 @@ public class SignatureUtilityTest {
     userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
 
+  // Note that secp256k1 is not accepted by default in java due to security reasons, hence only the large keys are validated here
   @Test
   public void testKeyConversion() throws Exception {
     byte[] message = "test".getBytes(StandardCharsets.UTF_8);
@@ -66,24 +71,34 @@ public class SignatureUtilityTest {
   }
 
   @Test
-  public void testSignDeterministic() throws Exception  {
+  public void signDeterministic() throws Exception  {
+    testSignDeterministic(userKeys);
+    testSignDeterministic(largeKeys);
+  }
+
+  public void testSignDeterministic(AsymmetricCipherKeyPair keys) throws Exception  {
     byte[] message = new byte[515];
     message[0] = 42;
     message[514] = 13;
 
-    byte[] signature = SignatureUtility.signDeterministicSHA256(message, largeKeys.getPrivate());
-    assertTrue(SignatureUtility.verifySHA256(message, signature, largeKeys.getPublic()));
+    byte[] signature = SignatureUtility.signDeterministicSHA256(message, keys.getPrivate());
+    assertTrue(SignatureUtility.verifySHA256(message, signature, keys.getPublic()));
   }
 
   @Test
-  public void testSignRandomized() throws Exception {
+  public void signRandomized() throws Exception {
+    testSignRandomized(largeKeys);
+    testSignRandomized(userKeys);
+  }
+
+  public void testSignRandomized(AsymmetricCipherKeyPair keys) throws Exception {
     for (int i = 0; i < 50; i++) {
       byte[] message = new byte[256];
       message[0] = 0x42;
       message[255] = (byte) i;
 
-      byte[] signature = SignatureUtility.signHashedRandomized(message, largeKeys.getPrivate());
-      assertTrue(SignatureUtility.verifyHashed(message, signature, largeKeys.getPublic()));
+      byte[] signature = SignatureUtility.signHashedRandomized(message, keys.getPrivate());
+      assertTrue(SignatureUtility.verifyHashed(message, signature, keys.getPublic()));
     }
   }
 
@@ -119,8 +134,8 @@ public class SignatureUtilityTest {
       BigInteger[] refSig = signDeterministic(message, userKeys.getPrivate());
       // We need to adjust the s part of the signature if it happens to be
       // less than N/2+1 since these are the only valid Ethereum signatures.
-      if (refSig[1].compareTo(SignatureUtility.ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
-        refSig[1] = SignatureUtility.ECDSA_DOMAIN.getN().subtract(refSig[1]);
+      if (refSig[1].compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
+        refSig[1] = ECDSA_DOMAIN.getN().subtract(refSig[1]);
       }
       assertEquals(refSig[0], ourSig[0]);
       assertEquals(refSig[1], ourSig[1]);
@@ -209,5 +224,99 @@ public class SignatureUtilityTest {
     ECDSASigner signer = new ECDSASigner(randomnessProvider);
     signer.init(true, key);
     return signer.generateSignature(digest);
+  }
+
+  @Test
+  public void failureOnInvalidKeys() {
+    ECPoint invalidPoint = ECDSA_DOMAIN.getCurve().createPoint(ECDSA_CURVE.getG().getAffineXCoord().toBigInteger(), ECDSA_CURVE.getG().getAffineYCoord().toBigInteger().add(BigInteger.ONE));
+    // Not on curve
+    assertThrows( IllegalArgumentException.class, ()-> new ECDomainParameters(ECDSA_CURVE.getCurve(), invalidPoint, ECDSA_CURVE.getN(), ECDSA_CURVE.getH()));
+    // Too big
+    assertThrows( IllegalArgumentException.class, ()->  new ECPrivateKeyParameters(ECDSA_CURVE.getN(), ECDSA_DOMAIN));
+  }
+
+  @Test
+  public void rZeroValue() {
+    byte[] msg = new byte[] {0x42};
+    byte[] rZero = new byte[65];
+    Exception e = assertThrows( IllegalArgumentException.class, () -> SignatureUtility.recoverEthPublicKeyFromSignature(msg, rZero));
+    assertEquals(e.getMessage(), "R value is not in the range [1, n-1]");
+  }
+
+  @Test
+  public void sZeroValue() {
+    byte[] msg = new byte[] {0x42};
+    byte[] sZero = new byte[65];
+    sZero[0] = 1;
+    Exception e = assertThrows( IllegalArgumentException.class, () -> SignatureUtility.recoverEthPublicKeyFromSignature(msg, sZero));
+    assertEquals(e.getMessage(), "S value is not in the range [1, n-1]");
+  }
+
+  @Test
+  public void differentK() {
+    byte[] msg1 = new byte[] {0x42};
+    byte[] msg2 = new byte[] {0x66};
+    byte[] sig1 = SignatureUtility.signPersonalMsgWithEthereum(msg1, userKeys.getPrivate());
+    byte[] sig2 = SignatureUtility.signPersonalMsgWithEthereum(msg2, userKeys.getPrivate());
+    byte[] r1 = new byte[32];
+    byte[] r2 = new byte[32];
+    System.arraycopy(sig1, 0, r1, 0, 32);
+    System.arraycopy(sig2, 0, r2, 0, 32);
+    assertFalse(Arrays.equals(r1, r2));
+  }
+
+  class TestECPublicKeyParameters extends ECPublicKeyParameters {
+    public ECPoint q;
+    public TestECPublicKeyParameters(ECPoint q, ECDomainParameters parameters) {
+      super(parameters.getG().multiply(BigInteger.TEN), parameters);
+      this.q = q;
+    }
+
+    @Override
+    public ECPoint getQ() {
+      return q;
+    }
+  }
+
+  @Test
+  public void invalidPk1() {
+    byte[] msg = new byte[] {0x42};
+    byte[] sig = new byte[] {0x42};
+    // point not on curve
+    ECPoint invalidPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.valueOf(42), BigInteger.valueOf(43));
+    ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(invalidPoint, ECDSA_DOMAIN);
+    Exception e = assertThrows(SecurityException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
+    assertEquals("Invalid point coordinates", e.getMessage());
+  }
+
+  @Test
+  public void invalidPk2() {
+    byte[] msg = new byte[] {0x42};
+    byte[] sig = new byte[] {0x42};
+    // Point contains 0 coordinate
+    ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(ECDSA_DOMAIN.getCurve().getInfinity(), ECDSA_DOMAIN);
+    Exception e = assertThrows(SecurityException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
+  }
+
+
+  @Test
+  public void pointOfInf1() {
+    ECPoint OPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ZERO);
+    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    assertEquals("Point not on curve", e.getMessage());
+  }
+
+  @Test
+  public void pointOfInf2() {
+    ECPoint OPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ONE);
+    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    assertEquals("Point not on curve", e.getMessage());
+  }
+
+  @Test
+  public void pointOfInf3() {
+    ECPoint OPoint = ECDSA_CURVE.getCurve().getInfinity();
+    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    assertEquals("Point at infinity", e.getMessage());
   }
 }

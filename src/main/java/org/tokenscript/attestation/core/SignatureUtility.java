@@ -187,6 +187,9 @@ public class SignatureUtility {
      * @return
      */
     public static String addressFromKey(AsymmetricKeyParameter key) {
+        ECPublicKeyParameters ecKey = (ECPublicKeyParameters) key;
+        // Validate that the key is correct
+        AttestationCrypto.validatePointToCurve(ecKey.getQ(), ECDSA_CURVE.getCurve());
         byte[] pubKey;
         try {
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -271,25 +274,26 @@ public class SignatureUtility {
 
         HMacDSAKCalculator randomnessProvider = new HMacDSAKCalculator(new KeccakDigest(256));
         randomnessProvider.init(key.getParameters().getN(), key.getD(), digest);
-
         BigInteger n = key.getParameters().getN();
         BigInteger r, k;
         ECPoint R;
+        BigInteger baseS;
         do {
-            k = randomnessProvider.nextK();
-            R = key.getParameters().getG().multiply(k).normalize();
-            r = R.getAffineXCoord().toBigInteger().mod(n);
-        } while (r.equals(BigInteger.ZERO));
-        BigInteger baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
+            do {
+                k = randomnessProvider.nextK();
+                R = key.getParameters().getG().multiply(k).normalize();
+                r = R.getAffineXCoord().toBigInteger().mod(n);
+            } while (r.equals(BigInteger.ZERO));
+            baseS = k.modInverse(n).multiply(z.add(r.multiply(key.getD()))).mod(n);
+        } while (baseS.equals(BigInteger.ZERO));
         BigInteger normalizedS = normalizeS(baseS, key.getParameters());
+        // Validate R as a sanity check
+        AttestationCrypto.validatePointToCurve(R, key.getParameters().getCurve());
         BigInteger v = R.getAffineYCoord().toBigInteger().mod(new BigInteger("2"));
-        // Normalize parity in case s needs normalization
-        if (!normalizedS.equals(baseS)) {
-            logger.info("Normalizing s value");
-            // Flip the bit value
-            v = BigInteger.ONE.subtract(v);
-        }
-        return new BigInteger[] {r, normalizedS, v};
+        // Normalize parity in case s needs normalization, based on constant time, up to the underlying implementation
+        BigInteger branch = !normalizedS.equals(baseS) ? BigInteger.ONE : BigInteger.ZERO;
+        BigInteger normalizedV = (BigInteger.ONE.subtract(v)).multiply(branch).add((BigInteger.ONE.subtract(branch)).multiply(v));
+        return new BigInteger[] {r, normalizedS, normalizedV};
     }
 
     static final String MESSAGE_PREFIX = "\u0019Ethereum Signed Message:\n";
@@ -360,6 +364,8 @@ public class SignatureUtility {
      * Verify an Ethereum signature directly on @unsigned.
      */
     public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
+        ECPoint Q = ((ECPublicKeyParameters) publicKey).getQ();
+        AttestationCrypto.validatePointToCurve(Q, ECDSA_CURVE.getCurve());
         return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
     }
 
@@ -433,10 +439,16 @@ public class SignatureUtility {
     public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
+        if (r.compareTo(BigInteger.ONE) < 0 || r.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("R value is not in the range [1, n-1]"));
+        }
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
         BigInteger s = new BigInteger(1, sBytes);
+        if (s.compareTo(BigInteger.ONE) < 0 || s.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+            ExceptionUtil.throwException(logger, new IllegalArgumentException("S value is not in the range [1, n-1]"));
+        }
         if (s.compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
-            throw ExceptionUtil.throwException(logger,
+            ExceptionUtil.throwException(logger,
                 new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
         byte recoveryValue = signature[64];
@@ -460,6 +472,7 @@ public class SignatureUtility {
         BigInteger u1 = z.multiply(rInverse).mod(ECDSA_DOMAIN.getN());
         BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSA_DOMAIN.getN());
         ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSA_DOMAIN.getG().multiply(u1)).normalize();
+        AttestationCrypto.validatePointToCurve(publicKeyPoint, ECDSA_CURVE.getCurve());
         return new ECPublicKeyParameters(publicKeyPoint, ECDSA_DOMAIN);
     }
 
@@ -481,9 +494,8 @@ public class SignatureUtility {
     private static BigInteger normalizeS(BigInteger s, ECDomainParameters params) {
         // Normalize number s to be the lowest of its two legal values
         BigInteger half_curve = params.getN().shiftRight(1);
-        if (s.compareTo(half_curve) > 0) {
-            return params.getN().subtract(s);
-        }
-        return s;
+        BigInteger branch = s.compareTo(half_curve) > 0 ? BigInteger.ONE : BigInteger.ZERO;
+        // Constant time branch, up to underlying library.
+        return (params.getN().subtract(s)).multiply(branch).add((BigInteger.ONE.subtract(branch)).multiply(s));
     }
 }

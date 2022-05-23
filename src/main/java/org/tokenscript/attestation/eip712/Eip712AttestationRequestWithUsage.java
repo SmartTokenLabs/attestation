@@ -170,6 +170,7 @@ public class Eip712AttestationRequestWithUsage extends Eip712Validator implement
 
   @Override
   public boolean verify() {
+    // Notice that the signature cannot be validated against anything since it is used to simply retrieve the address
     if (!attestationRequestWithUsage.verify()) {
       logger.error("Could not verify signature");
       return false;

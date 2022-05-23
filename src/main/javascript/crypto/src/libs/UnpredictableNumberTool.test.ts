@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import {suite, test} from '@testdeck/mocha';
 import {DEFAULT_VALIDITY_IN_MS, UnpredictableNumberTool} from "./UnpredictableNumberTool";
 import {UnpredictableNumberBundle} from "./UnpredictableNumberBundle";

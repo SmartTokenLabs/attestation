@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.bouncycastle.math.ec.ECCurve;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.ProofOfExponent;
@@ -45,31 +46,13 @@ public class CryptoTest {
     issuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
+  // NOTE it is crucial that failures of this test and the constructor validation of the curve does not get ignored!
+  // This is guarding against using insecure parameters and curves!!!!
   @Test
-  public void tooSmallCurveOrder() throws Exception {
-    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
+  public void curveOrder() throws Exception {
+    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder");
     verifyCurveOrder.setAccessible(true);
-    // Set 2^253-1
-    BigInteger smallCurveOrder = BigInteger.ONE.shiftLeft(253).subtract(BigInteger.ONE);
-    assertFalse((boolean) verifyCurveOrder.invoke(crypto, smallCurveOrder));
-  }
-
-  @Test
-  public void tooLargeCurveOrder() throws Exception {
-    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
-    verifyCurveOrder.setAccessible(true);
-    // Set the final curveOrder field to 2^254
-    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(254);
-    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
-  }
-
-  @Test
-  public void veryLargeCurveOrder() throws Exception {
-    Method verifyCurveOrder = AttestationCrypto.class.getDeclaredMethod("verifyCurveOrder", BigInteger.class);
-    verifyCurveOrder.setAccessible(true);
-    // Set the final curveOrder field to 2^256
-    BigInteger largeCurveOrder =  BigInteger.ONE.shiftLeft(256);
-    assertFalse((boolean) verifyCurveOrder.invoke(crypto, largeCurveOrder));
+    assertTrue((boolean) verifyCurveOrder.invoke(crypto));
   }
 
   @Test
@@ -163,27 +146,30 @@ public class CryptoTest {
   public void testAttestationRequestProof() {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyFullProof(pok));
+    assertTrue(pok.validateParameters());
     // Test with other randomness
     FullProofOfExponent pok2 = crypto.computeAttestationProof(SECRET1);
     assertTrue(AttestationCrypto.verifyFullProof(pok2));
+    assertTrue(pok2.validateParameters());
     assertNotEquals(pok.getPoint(), pok2.getPoint());
-    assertNotEquals(pok.getChallenge(), pok2.getChallenge());
+    assertNotEquals(pok.getChallengeResponse(), pok2.getChallengeResponse());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
 
     // Test with other secret
-    pok = crypto.computeAttestationProof(BigInteger.ONE);
+    pok = crypto.computeAttestationProof(BigInteger.valueOf(2));
     assertTrue(AttestationCrypto.verifyFullProof(pok));
+    assertTrue(pok.validateParameters());
 
     // Negative tests
     pok = crypto.computeAttestationProof(SECRET1);
 
-    pok2 = new FullProofOfExponent(pok.getRiddle().add(AttestationCrypto.H), pok.getPoint(), pok.getChallenge());
+    pok2 = new FullProofOfExponent(pok.getRiddle().add(AttestationCrypto.H), pok.getPoint(), pok.getChallengeResponse());
     assertFalse(AttestationCrypto.verifyFullProof(pok2));
 
-    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
+    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint().add(AttestationCrypto.H), pok.getChallengeResponse());
     assertFalse(AttestationCrypto.verifyFullProof(pok2));
 
-    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    pok2 = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallengeResponse().add(BigInteger.ONE));
     assertFalse(AttestationCrypto.verifyFullProof(pok2));
   }
 
@@ -213,7 +199,7 @@ public class CryptoTest {
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok));
     assertNotEquals(pok.getPoint(), pok2.getPoint());
-    assertNotEquals(pok.getChallenge(), pok2.getChallenge());
+    assertNotEquals(pok.getChallengeResponse(), pok2.getChallengeResponse());
 
     // Test with other commitment
     BigInteger otherSec = new BigInteger("45864684786789758065458745212314458");
@@ -243,10 +229,10 @@ public class CryptoTest {
     pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     assertTrue(AttestationCrypto.verifyEqualityProof(com1, com2, pok));
 
-    pok2 = new UsageProofOfExponent(pok.getPoint().add(AttestationCrypto.H), pok.getChallenge());
+    pok2 = new UsageProofOfExponent(pok.getPoint().add(AttestationCrypto.H), pok.getChallengeResponse());
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
 
-    pok2 = new UsageProofOfExponent(pok.getPoint(), pok.getChallenge().add(BigInteger.ONE));
+    pok2 = new UsageProofOfExponent(pok.getPoint(), pok.getChallengeResponse().add(BigInteger.ONE));
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, com2, pok2));
   }
 
@@ -346,7 +332,7 @@ public class CryptoTest {
     FullProofOfExponent pok2 = crypt2.computeAttestationProof(SECRET1);
     assertEquals(pok.getPoint(), pok2.getPoint());
     assertEquals(pok.getRiddle(), pok2.getRiddle());
-    assertEquals(pok.getChallenge(), pok2.getChallenge());
+    assertEquals(pok.getChallengeResponse(), pok2.getChallengeResponse());
   }
 
   @Test
@@ -378,6 +364,37 @@ public class CryptoTest {
     assertThrows(IllegalArgumentException.class, ()-> AttestationCrypto.decodePoint(invalidPoint));
   }
 
+  @Test
+  public void rejectPointAtInf() {
+    ECPoint point = AttestationCrypto.curve.getInfinity();
+    Exception e = assertThrows(SecurityException.class, ()-> AttestationCrypto.validatePointToCurve(point, AttestationCrypto.curve));
+    assertEquals("Point is at infinity", e.getMessage());
+  }
+  @Test
+  public void invalidField() {
+    ECPoint ecdsaPoint = SignatureUtility.ECDSA_CURVE.getG().multiply(BigInteger.valueOf(5));
+    // Validate against BN256 curve
+    Exception e = assertThrows(SecurityException.class, ()-> AttestationCrypto.validatePointToCurve(ecdsaPoint, AttestationCrypto.curve));
+    assertEquals("x value invalid in Fp field element", e.getMessage());
+  }
+
+  @Test
+  public void pointNotOnCuve() {
+    ECPoint point = AttestationCrypto.curve.createPoint(BigInteger.valueOf(42), BigInteger.valueOf(43));
+    Exception e = assertThrows(SecurityException.class, ()-> AttestationCrypto.validatePointToCurve(point, AttestationCrypto.curve));
+    assertEquals("Invalid point coordinates", e.getMessage());
+  }
+
+  @Test
+  public void invalidPointOrder() {
+    // Note that the order and cofactor are arbitrary and probably not correct.
+    ECCurve curve = new ECCurve.Fp(BigInteger.valueOf(17), BigInteger.ZERO, new BigInteger("3"), BigInteger.valueOf(11), BigInteger.ONE);
+    // Create the only point with order 2 on this curve
+    ECPoint point = curve.createPoint(BigInteger.valueOf(10), BigInteger.ZERO);
+    Exception e = assertThrows(SecurityException.class, ()-> AttestationCrypto.validatePointToCurve(point, curve));
+    assertEquals("Point does not have correct order", e.getMessage());
+  }
+
   /**
    * This test is here to show that we have nothing-up-our-sleeve in picking the generators
    */
@@ -391,7 +408,7 @@ public class CryptoTest {
     assertEquals(AttestationCrypto.G, g);
     // Check order
     assertTrue(g.multiply(AttestationCrypto.curveOrder).isInfinity());
-    assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getXCoord().getEncoded(), g.normalize().getXCoord().getEncoded());
+    assertArrayEquals(g.multiply(AttestationCrypto.curveOrder.subtract(BigInteger.ONE)).normalize().getAffineXCoord().getEncoded(), g.normalize().getAffineXCoord().getEncoded());
 
     BigInteger hVal = rejectionSample(BigInteger.ONE);
     ECPoint h = computePoint(hVal);

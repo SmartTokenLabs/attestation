@@ -77,7 +77,7 @@ public class UseAttestationTest {
   @Test
   public void badPok() {
     FullProofOfExponent pok = crypto.computeAttestationProof(SECRET1, UN);
-    FullProofOfExponent badPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallenge(), new byte[] {0x01} );
+    FullProofOfExponent badPok = new FullProofOfExponent(pok.getRiddle(), pok.getPoint(), pok.getChallengeResponse(), new byte[] {0x01} );
     assertFalse(AttestationCrypto.verifyFullProof(badPok));
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), issuerKeys.getPublic(), SECRET2, ID);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
