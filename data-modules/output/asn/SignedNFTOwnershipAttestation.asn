@@ -4,8 +4,7 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    Address,
-    TokenId
+    ERC721
         FROM NFTAttestation
     AlgorithmIdentifier,
     SubjectPublicKeyInfoValue
@@ -19,9 +18,7 @@ Validity ::= SEQUENCE {
 NFTOwnershipAttestation ::= SEQUENCE {
     context                       OCTET STRING OPTIONAL,
     subjectPublicKey              SubjectPublicKeyInfoValue,
-    contractAddress               Address,
-    chainId                       INTEGER,
-    tokenId                       TokenId OPTIONAL,
+    token                         ERC721,
     validity                      Validity
 }
 

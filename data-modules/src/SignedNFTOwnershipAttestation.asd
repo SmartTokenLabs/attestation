@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <asnx:module name="SignedNFTOwnershipAttestation" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
 
-    <import name="Address"
-         schemaLocation="NFTAttestation.asd"/>
-    <import name="TokenId"
+    <import name="ERC721"
          schemaLocation="NFTAttestation.asd"/>
     <import name="AlgorithmIdentifier"
          schemaLocation="AuthenticationFramework.asd"/>
@@ -26,11 +24,7 @@
                     <element name="context" type="asnx:OCTET-STRING"/>
                 </optional>
                 <element name="subjectPublicKey" type="SubjectPublicKeyInfoValue"/>
-                <element name="contractAddress" type="Address"/>
-                <element name="chainId" type="asnx:INTEGER"/>
-                <optional>
-                    <element name="tokenId" type="TokenId"/>
-                </optional>
+                <element name="erc721" type="ERC721"/>
                 <element name="validity" type="Validity"/>
             </sequence>
         </type>
