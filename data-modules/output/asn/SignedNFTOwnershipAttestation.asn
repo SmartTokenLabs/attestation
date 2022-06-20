@@ -1,0 +1,35 @@
+SignedNFTOwnershipAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    Address,
+    TokenId
+        FROM NFTAttestation
+    AlgorithmIdentifier,
+    SubjectPublicKeyInfoValue
+        FROM AuthenticationFramework;
+
+Validity ::= SEQUENCE {
+    notBefore                     INTEGER, -- NotBefore time since epoch in seconds
+    notAfter                      INTEGER  -- NotAfter time since epoch in seconds
+}
+
+NFTOwnershipAttestation ::= SEQUENCE {
+    context                       OCTET STRING OPTIONAL,
+    subjectPublicKey              SubjectPublicKeyInfoValue,
+    contractAddress               Address,
+    chainId                       INTEGER,
+    tokenId                       TokenId OPTIONAL,
+    validity                      Validity
+}
+
+-- Version 1 or 2, newer uses EIP712 --
+SignedNFTOwnershipAttestation ::= SEQUENCE {
+    nftOwnershipAttestation       NFTOwnershipAttestation,
+    signingAlgorithm              AlgorithmIdentifier,
+    signatureValue                BIT STRING
+}
+
+END
