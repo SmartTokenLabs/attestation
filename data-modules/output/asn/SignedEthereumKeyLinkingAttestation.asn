@@ -19,7 +19,6 @@ EthereumKeyLinkingAttestation ::= SEQUENCE {
     validity                        Validity
 }
 
--- Version 1 or 2, newer uses EIP712 --
 SignedEthereumKeyLinkingAttestation ::= SEQUENCE {
     ethereumKeyLinkingAttestation       EthereumKeyLinkingAttestation,
     signingAlgorithm                    AlgorithmIdentifier,

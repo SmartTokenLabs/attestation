@@ -25,7 +25,6 @@ NFTOwnershipAttestation ::= SEQUENCE {
     validity                      Validity
 }
 
--- Version 1 or 2, newer uses EIP712 --
 SignedNFTOwnershipAttestation ::= SEQUENCE {
     nftOwnershipAttestation       NFTOwnershipAttestation,
     signingAlgorithm              AlgorithmIdentifier,
