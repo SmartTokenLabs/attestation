@@ -4,6 +4,9 @@ import "@nomiclabs/hardhat-waffle";
 require('@nomiclabs/hardhat-ethers');
 require('@openzeppelin/hardhat-upgrades');
 
+import 'hardhat-deploy';
+import 'hardhat-deploy-ethers';
+
 require("dotenv").config();
 
 // Go to https://www.alchemyapi.io, sign up, create
@@ -55,7 +58,23 @@ export default {
           }
         }
       }
-    ]
+    ],
+    outputSelection: {
+      "*": {
+        "*": [
+          "abi",
+          "metadata", // <-- add this
+        ]
+      },
+    },
+  },
+  namedAccounts: {
+    deployer: {
+      default: 0,
+    },
+    dev: {
+      default: 1,
+    },
   },
   networks: {
     // hardhat: {
@@ -111,7 +130,9 @@ export default {
       url: `https://kovan.optimism.io/`,
       accounts: [`${PRIVATE_KEY}`]
     }
-  }
-
+  },
+  paths: {
+    deploy: "deploy",
+    deployments: "deployments"
+  },
 };
-
