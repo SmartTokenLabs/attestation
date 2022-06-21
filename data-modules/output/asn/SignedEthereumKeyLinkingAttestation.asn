@@ -13,8 +13,8 @@ IMPORTS
         FROM SignedNFTOwnershipAttestation;
 
 EthereumKeyLinkingAttestation ::= SEQUENCE {
-    context                         OCTET STRING OPTIONAL,
     subjectEthereumAddress          Address,
+    context                         OCTET STRING OPTIONAL,
     signedNFTOwnershipAttestation   SignedNFTOwnershipAttestation,
     validity                        Validity
 }
