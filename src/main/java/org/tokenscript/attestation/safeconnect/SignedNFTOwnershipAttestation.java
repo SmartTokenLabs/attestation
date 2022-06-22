@@ -9,13 +9,13 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.tokenscript.attestation.CheckableObject;
-import org.tokenscript.attestation.ERC721Token;
-import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.*;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
 
+import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.security.Signature;
 import java.security.spec.MGF1ParameterSpec;
@@ -32,7 +32,7 @@ public class SignedNFTOwnershipAttestation implements CheckableObject {
     private static final Logger logger = LogManager.getLogger(SignedNFTOwnershipAttestation.class);
     private final byte[] context;
     private final AsymmetricKeyParameter subjectPublicKey;
-    private final List<ERC721Token> tokens;
+    private final ERC721Token[] tokens;
     private final Date notBefore; // todo refactor to use timestamp class
     private final Date notAfter;
 
@@ -42,10 +42,10 @@ public class SignedNFTOwnershipAttestation implements CheckableObject {
     private final byte[] signedEncoding;
 
     public SignedNFTOwnershipAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, ERC721Token token, long validityInSeconds, AsymmetricCipherKeyPair signingKey) {
-        this(context, subjectPublicKey, Arrays.asList(token), validityInSeconds, signingKey);
+        this(context, subjectPublicKey, new ERC721Token[] {token}, validityInSeconds, signingKey);
     }
 
-    public SignedNFTOwnershipAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, List<ERC721Token> tokens, long validityInSeconds, AsymmetricCipherKeyPair signingKey) {
+    public SignedNFTOwnershipAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, ERC721Token[] tokens, long validityInSeconds, AsymmetricCipherKeyPair signingKey) {
         try {
             if (validityInSeconds < 0) {
                 throw new IllegalArgumentException("NotBefore or NotAfter time is negative");
@@ -65,8 +65,67 @@ public class SignedNFTOwnershipAttestation implements CheckableObject {
         }
     }
 
+    public SignedNFTOwnershipAttestation(byte[] encoding, AsymmetricKeyParameter verificationKey) throws IOException {
+        this.signedEncoding = encoding;
+        this.verificationKey = verificationKey;
+        ASN1InputStream input = null;
+        try {
+            input = new ASN1InputStream(encoding);
+            ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
+            ASN1Sequence ownershipAttEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+            this.unsignedEncoding = ownershipAttEnc.getEncoded();
+
+            int ownershipAttCtr = 0;
+            SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(ownershipAttEnc.getObjectAt(ownershipAttCtr++));
+            this.subjectPublicKey = PublicKeyFactory.createKey(subjectPublicKeyInfo);
+            byte[] decodedContext;
+            try {
+                decodedContext = ASN1OctetString.getInstance(ownershipAttEnc.getObjectAt(ownershipAttCtr)).getOctets();
+                ownershipAttCtr++;
+            } catch (Exception e) {
+                // Context is not included
+                decodedContext = null;
+            }
+            this.context = decodedContext;
+            DERSequence tokensEnc = DERSequence.convert(
+                    ASN1Sequence.getInstance(ownershipAttEnc.getObjectAt(ownershipAttCtr++)));
+            this.tokens = new ERC721Token[tokensEnc.size()];
+            for (int i = 0; i < tokensEnc.size(); i++) {
+                tokens[i] = new ERC721Token(tokensEnc.getObjectAt(i).toASN1Primitive().getEncoded());
+            }
+            ASN1Sequence validity = DERSequence.convert(
+                    ASN1Sequence.getInstance(ownershipAttEnc.getObjectAt(ownershipAttCtr++)));
+            ASN1Integer notBeforeEnc = ASN1Integer.getInstance(validity.getObjectAt(0));
+            // Multiply with 1000 since the data is stored in seconds and not milliseconds
+            this.notBefore = new Date( notBeforeEnc.longValueExact() * 1000);
+            ASN1Integer notAfterEnc = ASN1Integer.getInstance(validity.getObjectAt(1));
+            this.notAfter = new Date(notAfterEnc.longValueExact() * 1000);
+
+            AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
+            ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(2));
+            this.signature = signatureEnc.getBytes();
+
+            if (!algorithmEncoded.equals(getSigningAlgorithm(verificationKey))) {
+                throw ExceptionUtil.throwException(logger,
+                        new IllegalArgumentException("Algorithm specified is does not work with verification key supplied"));
+            }
+            constructorCheck();
+        } finally {
+            input.close();
+        }
+    }
+
+    private void constructorCheck() {
+        if (!verify()) {
+            throw ExceptionUtil.throwException(logger,
+                    new IllegalArgumentException("Signature is not valid"));
+        }
+    }
+
     private Date getCurrentTime() {
-        return new Date(Clock.systemUTC().millis());
+        long tempTime = Clock.systemUTC().millis();
+        // Round down to ensure consistent encoding and decoding
+        return new Date(tempTime - (tempTime % 1000));
     }
 
     private byte[] makeUnsignedEncoding() {
@@ -81,7 +140,7 @@ public class SignedNFTOwnershipAttestation implements CheckableObject {
             {
                 asn1Tokens.add(ASN1Sequence.getInstance(token.getDerEncoding()));
             }
-            new DERSequence(asn1Tokens);
+            res.add(new DERSequence(asn1Tokens));
             ASN1EncodableVector validity = new ASN1EncodableVector();
             validity.add(new ASN1Integer(getNotBefore().toInstant().getEpochSecond()));
             validity.add(new ASN1Integer(getNotAfter().toInstant().getEpochSecond()));
@@ -147,7 +206,7 @@ public class SignedNFTOwnershipAttestation implements CheckableObject {
         return subjectPublicKey;
     }
 
-    public List<ERC721Token> getTokens() {
+    public ERC721Token[] getTokens() {
         return tokens;
     }
 

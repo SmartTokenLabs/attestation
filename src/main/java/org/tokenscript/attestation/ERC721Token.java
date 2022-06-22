@@ -159,6 +159,7 @@ public class ERC721Token implements ASNEncodable, Validateable {
     {
         return encoding;
     }
+    // todo override equals and implement tests
 
     public byte[] getDerEncoding(boolean includeTokenId, boolean includeChainId)
     {
