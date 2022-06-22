@@ -1,5 +1,6 @@
 package org.tokenscript.attestation;
 
+import org.bouncycastle.asn1.*;
 import org.tokenscript.attestation.core.ASNEncodable;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.SignatureUtility;
@@ -9,13 +10,6 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
@@ -54,7 +48,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
       // Attestation type and an encoder to construct such an attestation
       this.att = new IdentifierAttestation(attestationEnc.getEncoded());
       this.blockchainFriendly = att.isBlockchainFriendly();
-      DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
+      ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(2));
       this.signature = signatureEnc.getBytes();
       this.attestationVerificationKey = verificationKey;
       if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {

@@ -13,10 +13,10 @@
     <namedType name="EthereumKeyLinkingAttestation">
         <type>
             <sequence>
+                <element name="subjectEthereumAddress" type="Address"/>
                 <optional>
                     <element name="context" type="asnx:OCTET-STRING"/>
                 </optional>
-                <element name="subjectEthereumAddress" type="Address"/>
                 <element name="signedNFTOwnershipAttestation" type="SignedNFTOwnershipAttestation"/>
                 <element name="validity" type="Validity"/>
             </sequence>

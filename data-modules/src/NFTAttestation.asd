@@ -36,10 +36,10 @@
     <namedType name="ERC721">
         <type>
             <sequence>
+                  <element name="address" type="Address"/>
                   <optional>
                      <element name="tokenId" type="TokenId"/>
                   </optional>
-                  <element name="address" type="Address"/>
                   <optional>
                      <element name="chainID" type="asnx:INTEGER"/>
                   </optional>

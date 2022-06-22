@@ -23,8 +23,8 @@ Digest ::= OCTET STRING (SIZE(32..MAX))
 
 -- See https://eips.ethereum.org/EIPS/eip-721 for details --
 ERC721 ::= SEQUENCE {
-    tokenId       TokenId OPTIONAL,
     address       Address,
+    tokenId       TokenId OPTIONAL,
     chainId       INTEGER OPTIONAL
 }
 

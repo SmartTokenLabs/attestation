@@ -4,7 +4,7 @@ DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    ERC721
+    Tokens
         FROM NFTAttestation
     AlgorithmIdentifier,
     SubjectPublicKeyInfoValue
@@ -16,9 +16,9 @@ Validity ::= SEQUENCE {
 }
 
 NFTOwnershipAttestation ::= SEQUENCE {
-    context                       OCTET STRING OPTIONAL,
     subjectPublicKey              SubjectPublicKeyInfoValue,
-    token                         ERC721,
+    context                       OCTET STRING OPTIONAL,
+    tokens                        Tokens,
     validity                      Validity
 }
 

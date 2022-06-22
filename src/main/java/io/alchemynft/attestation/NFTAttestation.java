@@ -30,7 +30,7 @@ public class NFTAttestation extends AttestedKeyObject {
         ASN1EncodableVector asn1 = new ASN1EncodableVector();
         for (ERC721Token nftToken : nftTokens)
         {
-            asn1.add(new DERSequence(nftToken.getTokenVector()));
+            asn1.add(ASN1Sequence.getInstance(nftToken.getDerEncoding()));
         }
         this.tokens = new DERSequence(asn1);
     }
