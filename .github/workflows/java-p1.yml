@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "ethereum/**"
+      - "src/main/javascript/crypto/**"
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - "ethereum/**"
+      - "src/main/javascript/crypto/**"
 
 jobs:
   pipeline:
