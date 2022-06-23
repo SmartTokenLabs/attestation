@@ -17,9 +17,9 @@ Validity ::= SEQUENCE {
 
 NFTOwnershipAttestation ::= SEQUENCE {
     subjectPublicKey              SubjectPublicKeyInfoValue,
-    context                       OCTET STRING OPTIONAL,
     tokens                        Tokens,
-    validity                      Validity
+    validity                      Validity,
+    context                       OCTET STRING OPTIONAL
 }
 
 SignedNFTOwnershipAttestation ::= SEQUENCE {

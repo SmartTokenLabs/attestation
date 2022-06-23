@@ -21,11 +21,11 @@
         <type>
             <sequence>
                 <element name="subjectPublicKey" type="SubjectPublicKeyInfoValue"/>
+                <element name="tokens" type="Tokens"/>
+                <element name="validity" type="Validity"/>
                 <optional>
                     <element name="context" type="asnx:OCTET-STRING"/>
                 </optional>
-                <element name="tokens" type="Tokens"/>
-                <element name="validity" type="Validity"/>
             </sequence>
         </type>
     </namedType>

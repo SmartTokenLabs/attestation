@@ -14,11 +14,11 @@
         <type>
             <sequence>
                 <element name="subjectEthereumAddress" type="Address"/>
+                <element name="signedNFTOwnershipAttestation" type="SignedNFTOwnershipAttestation"/>
+                <element name="validity" type="Validity"/>
                 <optional>
                     <element name="context" type="asnx:OCTET-STRING"/>
                 </optional>
-                <element name="signedNFTOwnershipAttestation" type="SignedNFTOwnershipAttestation"/>
-                <element name="validity" type="Validity"/>
             </sequence>
         </type>
     </namedType>
