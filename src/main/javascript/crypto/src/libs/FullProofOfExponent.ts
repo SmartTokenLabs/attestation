@@ -87,7 +87,13 @@ export class FullProofOfExponent {
 
         const proof = new Proof();
         proof.nonce = this.getNonce();
-        proof.challengePoint = bnToUint8(this.getChallengeResponse());
+        let point = bnToUint8(this.getChallengeResponse());
+        if (point.length < 32) {
+            let prevPoint = point;
+            point = new Uint8Array(32);
+            point.set(prevPoint, 32 - prevPoint.length);
+        }
+        proof.challengePoint = point;
         proof.riddle = this.getRiddle().getEncoded();
         proof.responseValue = this.getPoint().getEncoded();
 
