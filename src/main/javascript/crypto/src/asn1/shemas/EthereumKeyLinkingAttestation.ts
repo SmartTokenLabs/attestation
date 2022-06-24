@@ -1,20 +1,11 @@
-import {AsnProp, AsnPropTypes, AsnType, AsnTypeTypes} from "@peculiar/asn1-schema";
+import {AsnProp, AsnPropTypes} from "@peculiar/asn1-schema";
 import {EpochTimeValidity} from "./EpochTimeValidity";
 import {AlgorithmIdentifierASN} from "./AuthenticationFramework";
-import {SignedNFTOwnershipAttestation} from "./NFTOwnershipAttestation";
-import {SignedEthereumAddressAttestation} from "./EthereumAddressAttestation";
-
-@AsnType({ type: AsnTypeTypes.Choice })
-export class LinkedAttestation {
-	@AsnProp({ type: SignedNFTOwnershipAttestation, context: 0 })
-	public nftOwnership?: SignedNFTOwnershipAttestation;
-	@AsnProp({ type: SignedEthereumAddressAttestation, context: 1 })
-	public ethereumAddress?: SignedEthereumAddressAttestation;
-}
+import {SignedLinkedAttestation} from "./SignedLinkedAttestation";
 
 export class EthereumKeyLinkingAttestation {
 	@AsnProp({ type: AsnPropTypes.OctetString }) public subjectEthereumAddress: Uint8Array;
-	@AsnProp({ type: LinkedAttestation }) public linkedAttestation: LinkedAttestation;
+	@AsnProp({ type: SignedLinkedAttestation }) public linkedAttestation: SignedLinkedAttestation;
 	@AsnProp({ type: EpochTimeValidity }) public validity: EpochTimeValidity;
 	@AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public context?: string;
 }
