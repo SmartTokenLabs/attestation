@@ -16,9 +16,9 @@ import static org.tokenscript.attestation.safeconnect.AbstractSignedOwnershipAtt
 
 public class SignedEthereumKeyLinkingAttestationDecoder implements ObjectDecoder<SignedEthereumKeyLinkingAttestation> {
     private static final Logger logger = LogManager.getLogger(SignedEthereumKeyLinkingAttestationDecoder.class);
-    private final ObjectDecoder<SignedNFTOwnershipAttestation> internalDecoder;
+    private final ObjectDecoder<SignedOwnershipAttestationInterface> internalDecoder;
 
-    public SignedEthereumKeyLinkingAttestationDecoder(ObjectDecoder<SignedNFTOwnershipAttestation> decoder) {
+    public SignedEthereumKeyLinkingAttestationDecoder(ObjectDecoder<SignedOwnershipAttestationInterface> decoder) {
         this.internalDecoder = decoder;
     }
 

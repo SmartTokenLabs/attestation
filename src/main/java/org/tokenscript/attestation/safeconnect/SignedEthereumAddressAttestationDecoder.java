@@ -14,23 +14,23 @@ import java.io.IOException;
 
 import static org.tokenscript.attestation.safeconnect.AbstractSignedOwnershipAttestation.getSigningAlgorithm;
 
-public class SignedNFTOwnershipDecoder implements ObjectDecoder<SignedOwnershipAttestationInterface> {
+public class SignedEthereumAddressAttestationDecoder implements ObjectDecoder<SignedEthereumAddressAttestation> {
     private static final Logger logger = LogManager.getLogger(SignedNFTOwnershipDecoder.class);
     private final AsymmetricKeyParameter verificationKey;
-    private final ObjectDecoder<NFTOwnershipAttestation> internalDecoder;
+    private final ObjectDecoder<EthereumAddressAttestation> internalDecoder;
 
-    public SignedNFTOwnershipDecoder(ObjectDecoder<NFTOwnershipAttestation> decoder, AsymmetricKeyParameter verificationKey) {
+    public SignedEthereumAddressAttestationDecoder(ObjectDecoder<EthereumAddressAttestation> decoder, AsymmetricKeyParameter verificationKey) {
         this.verificationKey = verificationKey;
         this.internalDecoder = decoder;
     }
 
     @Override
-    public SignedNFTOwnershipAttestation decode(byte[] encoding) throws IOException {
+    public SignedEthereumAddressAttestation decode(byte[] encoding) throws IOException {
         ASN1InputStream input = new ASN1InputStream(encoding);
         try {
             ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
             ASN1Sequence ownershipAttEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
-            NFTOwnershipAttestation internalAtt = internalDecoder.decode(ownershipAttEnc.getEncoded());
+            EthereumAddressAttestation internalAtt = internalDecoder.decode(ownershipAttEnc.getEncoded());
 
             AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
             ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(2));
@@ -40,7 +40,7 @@ public class SignedNFTOwnershipDecoder implements ObjectDecoder<SignedOwnershipA
                 throw ExceptionUtil.throwException(logger,
                         new IllegalArgumentException("Algorithm specified is does not work with verification key supplied"));
             }
-            return new SignedNFTOwnershipAttestation(internalAtt.getContext(), internalAtt.getSubjectPublicKey(), internalAtt.getTokens(), internalAtt.getNotBefore(), internalAtt.getNotAfter(), signature, verificationKey);
+            return new SignedEthereumAddressAttestation(internalAtt.getContext(), internalAtt.getSubjectPublicKey(), internalAtt.getSubjectAddress(), internalAtt.getNotBefore(), internalAtt.getNotAfter(), signature, verificationKey);
         } finally {
             input.close();
         }

@@ -1,7 +1,5 @@
 package org.tokenscript.attestation;
 
-import java.io.IOException;
-import java.math.BigInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.*;
@@ -10,6 +8,9 @@ import org.tokenscript.attestation.core.ASNEncodable;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.Validateable;
 import org.web3j.utils.Numeric;
+
+import java.io.IOException;
+import java.math.BigInteger;
 
 public class ERC721Token implements ASNEncodable, Validateable {
     private static final Logger logger = LogManager.getLogger(ERC721Token.class);
@@ -75,36 +76,10 @@ public class ERC721Token implements ASNEncodable, Validateable {
         }
     }
 
-    /**
-     * Validates and normalizes address to lower case with `0x` prefix.
-     * @param address
-     * @return
-     */
-    private String normalizeAddress(String address) {
-        // Convert address to lowercase and add "0x" prefix if not there
-        return address.length() < 42 ? "0x" + address.toLowerCase() : address.toLowerCase();
-    }
-
-    public void validateAddress(String address) {
-        // 0x plus 20 bytes, each byte using 2 chars in hex
-        if (address.length() != 40+2) {
-            throw ExceptionUtil.throwException(logger,
-                    new IllegalArgumentException("Not a valid address. Incorrect length"));
-        }
-        try {
-            // Try to decode to ensure it is hex (after removing the "0x" prefix)
-            Hex.decode(address.substring(2, address.length()));
-        } catch (Exception e) {
-            throw ExceptionUtil.throwException(logger,
-                    new IllegalArgumentException("Not a valid address. Not hex encoded"));
-        }
-    }
-
     public ERC721Token(byte[] derEncoding) throws IOException {
-        ASN1InputStream input = null;
+        int counter = 0;
+        ASN1InputStream input = new ASN1InputStream(derEncoding);
         try {
-            int counter = 0;
-            input = new ASN1InputStream(derEncoding);
             ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
             ASN1OctetString address = DEROctetString.getInstance(asn1.getObjectAt(counter++));
             BigInteger tokenId;
@@ -140,6 +115,33 @@ public class ERC721Token implements ASNEncodable, Validateable {
             input.close();
         }
         constructorCheck();
+    }
+
+    // TODO move to util class
+    public static void validateAddress(String address) {
+        // 0x plus 20 bytes, each byte using 2 chars in hex
+        if (address.length() != 40 + 2) {
+            throw ExceptionUtil.throwException(logger,
+                    new IllegalArgumentException("Not a valid address. Incorrect length"));
+        }
+        try {
+            // Try to decode to ensure it is hex (after removing the "0x" prefix)
+            Hex.decode(address.substring(2));
+        } catch (Exception e) {
+            throw ExceptionUtil.throwException(logger,
+                    new IllegalArgumentException("Not a valid address. Not hex encoded"));
+        }
+    }
+
+    /**
+     * Validates and normalizes address to lower case with `0x` prefix.
+     *
+     * @param address
+     * @return
+     */
+    private String normalizeAddress(String address) {
+        // Convert address to lowercase and add "0x" prefix if not there
+        return address.length() < 42 ? "0x" + address.toLowerCase() : address.toLowerCase();
     }
 
     public String getAddress() {
