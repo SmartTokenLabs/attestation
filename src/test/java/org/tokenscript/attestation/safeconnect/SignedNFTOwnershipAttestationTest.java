@@ -47,8 +47,8 @@ public class SignedNFTOwnershipAttestationTest {
     @Test
     public void testDecoding() throws Exception {
         SignedNFTOwnershipAttestation att = new SignedNFTOwnershipAttestation(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerKeys);
-        SignedNFTOwnershipDecoder decoder = new SignedNFTOwnershipDecoder(new NFTOwnershipAttestationDecoder(), issuerKeys.getPublic());
-        SignedNFTOwnershipAttestation decodedAtt = decoder.decode(att.getDerEncoding());
+        SignedOwnershipAttestationDecoder decoder = new SignedOwnershipAttestationDecoder(new NFTOwnershipAttestationDecoder(), issuerKeys.getPublic());
+        SignedNFTOwnershipAttestation decodedAtt = (SignedNFTOwnershipAttestation) decoder.decode(att.getDerEncoding());
         assertTrue(decodedAtt.checkValidity());
         assertTrue(decodedAtt.verify());
         assertArrayEquals(context, decodedAtt.getContext());

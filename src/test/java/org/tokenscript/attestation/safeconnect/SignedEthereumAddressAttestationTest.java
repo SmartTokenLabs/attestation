@@ -43,8 +43,8 @@ public class SignedEthereumAddressAttestationTest {
     @Test
     public void testDecoding() throws Exception {
         SignedEthereumAddressAttestation att = new SignedEthereumAddressAttestation(context, subjectECKeys.getPublic(), address, defaultValidity, issuerKeys);
-        SignedEthereumAddressAttestationDecoder decoder = new SignedEthereumAddressAttestationDecoder(new EthereumAddressAttestationDecoder(), issuerKeys.getPublic());
-        SignedEthereumAddressAttestation decodedAtt = decoder.decode(att.getDerEncoding());
+        SignedOwnershipAttestationDecoder decoder = new SignedOwnershipAttestationDecoder(new EthereumAddressAttestationDecoder(), issuerKeys.getPublic());
+        SignedEthereumAddressAttestation decodedAtt = (SignedEthereumAddressAttestation) decoder.decode(att.getDerEncoding());
         assertTrue(decodedAtt.checkValidity());
         assertTrue(decodedAtt.verify());
         assertArrayEquals(context, decodedAtt.getContext());

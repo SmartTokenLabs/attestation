@@ -10,7 +10,7 @@ import org.tokenscript.attestation.ObjectDecoder;
 import java.io.IOException;
 import java.util.Date;
 
-public class EthereumAddressAttestationDecoder implements ObjectDecoder<EthereumAddressAttestation> {
+public class EthereumAddressAttestationDecoder implements ObjectDecoder<OwnershipAttestationInterface> {
     @Override
     public EthereumAddressAttestation decode(byte[] encoding) throws IOException {
         ASN1InputStream input = new ASN1InputStream(encoding);

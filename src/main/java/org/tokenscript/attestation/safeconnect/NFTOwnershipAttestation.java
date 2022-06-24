@@ -5,13 +5,12 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.tokenscript.attestation.CheckableObject;
 import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.core.ExceptionUtil;
 
 import java.util.Date;
 
-public class NFTOwnershipAttestation implements CheckableObject {
+public class NFTOwnershipAttestation implements OwnershipAttestationInterface {
     private static final Logger logger = LogManager.getLogger(NFTOwnershipAttestation.class);
     private final byte[] context;
     private final ERC721Token[] tokens;

@@ -10,7 +10,7 @@ import org.tokenscript.attestation.ObjectDecoder;
 import java.io.IOException;
 import java.util.Date;
 
-public class NFTOwnershipAttestationDecoder implements ObjectDecoder<NFTOwnershipAttestation> {
+public class NFTOwnershipAttestationDecoder implements ObjectDecoder<OwnershipAttestationInterface> {
     @Override
     public NFTOwnershipAttestation decode(byte[] encoding) throws IOException {
         ASN1InputStream input = null;

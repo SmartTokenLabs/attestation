@@ -52,7 +52,7 @@ public class SignedEthereumKeyLinkingAttestationTest {
     @Test
     public void testDecoding() throws Exception {
         SignedEthereumKeyLinkingAttestation att = new SignedEthereumKeyLinkingAttestation(context, address, defaultValidity, internalAtt, subjectECKeys);
-        ObjectDecoder<SignedOwnershipAttestationInterface> internalDecoder = new SignedNFTOwnershipDecoder(new NFTOwnershipAttestationDecoder(), issuerKeys.getPublic());
+        ObjectDecoder<SignedOwnershipAttestationInterface> internalDecoder = new SignedOwnershipAttestationDecoder(new NFTOwnershipAttestationDecoder(), issuerKeys.getPublic());
         SignedEthereumKeyLinkingAttestationDecoder decoder = new SignedEthereumKeyLinkingAttestationDecoder(internalDecoder);
         SignedEthereumKeyLinkingAttestation decodedAtt = decoder.decode(att.getDerEncoding());
         assertTrue(decodedAtt.checkValidity());
