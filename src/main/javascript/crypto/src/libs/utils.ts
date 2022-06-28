@@ -15,7 +15,7 @@ let testsDisplayDebugLevel: number;
 // window.DISPLAY_DEBUG_LEVEL used to set LOG level for browser
 if (process && process.env && process.env.DISPLAY_DEBUG_LEVEL) {
     displayDebugLevel = parseInt(process.env.DISPLAY_DEBUG_LEVEL);
-} else if (window && window.DISPLAY_DEBUG_LEVEL) {
+} else if (typeof window !== "undefined" && window.DISPLAY_DEBUG_LEVEL) {
     displayDebugLevel = parseInt(window.DISPLAY_DEBUG_LEVEL);
 } 
 
@@ -173,15 +173,12 @@ export function uint8toString(uint8: Uint8Array): string {
 export function uint8arrayToBase64( bytes: Uint8Array ): string {
     let binary = uint8toString(bytes);
 
-    // if (typeof Buffer !== 'undefined') {
     if (typeof window === 'undefined' || !window.btoa) {
-        let buff = new Buffer(binary);
+        let buff = new Buffer(bytes);
         return buff.toString('base64');
     } else {
         return window.btoa( binary );
     }
-
-    return btoa( binary );
 
 }
 
