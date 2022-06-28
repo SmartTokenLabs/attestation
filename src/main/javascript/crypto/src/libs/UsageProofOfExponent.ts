@@ -4,6 +4,7 @@ import {UsageProof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {base64ToUint8array, bnToUint8, uint8ToBn, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
+import { AttestationCrypto } from "./AttestationCrypto";
 
 export class UsageProofOfExponent implements ProofOfExponentInterface {
     private tPoint: Point;
@@ -66,4 +67,27 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
         return this.nonce;
     }
 
+    public validateParameters():boolean {
+        try {
+            
+            // Validate that point is valid on the given curve, have correct order and are not at infinity
+            if (!this.tPoint.validate()){
+                return false;
+            }
+
+            // Check the challenge response size
+            if (this.challengeResponse <= 0n || this.challengeResponse >= AttestationCrypto.curveOrder) {
+                return false;
+            }
+
+            // While not strictly needed also check the point is not the generator
+            if (this.tPoint.equals(AttestationCrypto.G) || this.tPoint.equals(AttestationCrypto.H)) {
+                return false;
+            }
+
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
 }

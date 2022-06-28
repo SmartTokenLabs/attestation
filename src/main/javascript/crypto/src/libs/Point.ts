@@ -1,15 +1,27 @@
 import {mod, invert, bnToBuf, uint8merge, BnPowMod, uint8ToBn, hexStringToUint8, logger} from "./utils";
 import {DEBUGLEVEL} from "../config";
 
+export interface Curve {
+    P: bigint,
+    n: bigint,
+    A: bigint,
+    B: bigint,
+    h?: bigint,
+    magicExp?: bigint,
+    GX?: bigint,
+    GY?: bigint
+}
+
 // curve SECP256k1
-export let CURVE_SECP256k1 = {
+export let CURVE_SECP256k1:Curve = {
     P: 2n ** 256n - 2n ** 32n - 977n,
     n: 2n ** 256n - 432420386565659656852420866394968145599n,
     magicExp: (2n ** 256n - 2n ** 32n - 977n + 1n) / 4n,
     A: 0n,
     B: 7n
 };
-export let CURVES: {[index:string]: {[index:string]:bigint}} = {
+
+export let CURVES: {[index:string]:Curve} = {
     // secp256r1: {
     //     P: BigInt('0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff'),
     //     A: BigInt('0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc'),
@@ -51,7 +63,7 @@ export let CURVES: {[index:string]: {[index:string]:bigint}} = {
 
 
 // Updated parameters #60
-export let CURVE_BN256 = {
+export let CURVE_BN256:Curve = {
     P: 21888242871839275222246405745257275088696311157297823662689037894645226208583n,
     n: 21888242871839275222246405745257275088548364400416034343698204186575808495617n,
     // magicExp: 115792089237314936872688561244471742058375878355761205198700409522629664518164n >> 2n,
@@ -64,7 +76,7 @@ export class Point {
 
     //static ZERO = new Point(0n, 0n); // Point at infinity aka identifier point aka zero
     // constructor(public x: bigint, public y: bigint, public useCurve: {[index: string]:bigint} = CURVE_SECP256k1 ) {}
-    constructor(public x: bigint, public y: bigint, public useCurve: {[index: string]:bigint} = CURVES.secp256r1 ) {}
+    constructor(public x: bigint, public y: bigint, public useCurve:Curve = CURVE_BN256 ) {}
 
     // Adds point to itself. http://hyperelliptic.org/EFD/g1p/auto-shortw.html
     double(): Point {
@@ -87,7 +99,7 @@ export class Point {
         if (X1 === 0n || Y1 === 0n) return b;
         if (X2 === 0n || Y2 === 0n) return a;
         if (X1 === X2 && Y1 === Y2) return this.double();
-        if (X1 === X2 && Y1 === -Y2) return this.newZero();
+        if (X1 === X2 && Y1 === -Y2) return this.newZero();      
         const lam = mod((Y2 - Y1) * invert(X2 - X1, this.useCurve.P), this.useCurve.P);
         const X3 = mod(lam * lam - X1 - X2, this.useCurve.P);
         const Y3 = mod(lam * (X1 - X3) - Y1, this.useCurve.P);
@@ -140,7 +152,7 @@ export class Point {
         return (p1.x === p2.x) && (p1.y === p2.y);
     }
 
-    static decodeFromHex(hex: string, useCurve: {[index: string]:bigint} = CURVE_SECP256k1){
+    static decodeFromHex(hex: string, useCurve: Curve = CURVE_BN256){
         if (hex.length != 130) {
             throw new Error('only decompressed points allowed. 65 bytes.');
         }
@@ -166,8 +178,8 @@ export class Point {
         // return p;
     }
 
-    static decodeFromUint8(uint: Uint8Array, useCurve: {[index: string]:bigint} = CURVE_SECP256k1){
-        if (uint.length != 65) {
+    static decodeFromUint8(uint: Uint8Array, useCurve: Curve = CURVE_BN256){
+    if (uint.length != 65) {
             throw new Error('only decompressed points allowed. 65 bytes.');
         }
         let p;
@@ -189,11 +201,16 @@ export class Point {
         return p;
     }
 
-    validate(): boolean{
-        let res = mod( mod(this.y * this.y, this.useCurve.P) - mod(
-                BnPowMod(this.x, 3n, this.useCurve.P)
-                + mod(this.x * this.useCurve.A, this.useCurve.P) + this.useCurve.B
-                , this.useCurve.P) , this.useCurve.P);
+    validate(curve:Curve|boolean = false):boolean {
+        if ( typeof(curve) === "boolean"){
+            curve = this.useCurve;
+        }
+
+        let res = mod( mod(this.y * this.y, curve.P) - mod(
+                BnPowMod(this.x, 3n, curve.P)
+                + mod(this.x * curve.A, curve.P) + curve.B
+                , curve.P) , curve.P);
+
         return res == 0n;
     }
 
