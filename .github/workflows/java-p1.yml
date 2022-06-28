@@ -44,3 +44,9 @@ jobs:
             build/libs/
             build/test-results/
             build/reports/
+            ls -alF --color
+
+  trigge-js-p1:
+    needs:
+      - pipeline
+    uses: ./.github/workflows/js-p1.yml

@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - "src/main/javascript/crypto/**"
+  workflow_call:
 
 jobs:
   pipeline:
@@ -32,7 +33,9 @@ jobs:
           npm run build
       - name: prepare test
         run: |
-          ./gradlew test
+          if [ ! -d "build/test-results/" ]; then
+            ./gradlew test
+          fi
       - name: test
         uses: ArtiomTr/jest-coverage-report-action@v2
         with:
