@@ -1,0 +1,19 @@
+name: "JS CI"
+
+on:
+  push:
+    branches:
+      - main
+      - stage
+    paths:
+      - "src/main/javascript/crypto/**"
+  pull_request:
+    branches:
+      - main
+      - stage
+    paths:
+      - "src/main/javascript/crypto/**"
+
+jobs:
+  js-p1:
+    uses: ./.github/workflows/js-p1.yml

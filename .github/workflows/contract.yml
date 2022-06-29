@@ -1,4 +1,4 @@
-name: "contract-p1"
+name: "Contract CI"
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
       - "ethereum/attestation-test/**"
 
 jobs:
-  pipeline:
+  contract-p1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

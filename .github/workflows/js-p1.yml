@@ -1,20 +1,9 @@
 name: "js-p1"
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - "src/main/javascript/crypto/**"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "src/main/javascript/crypto/**"
-  workflow_call:
+on: [workflow_call]
 
 jobs:
-  pipeline:
+  js-p1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
