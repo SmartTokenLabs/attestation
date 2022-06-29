@@ -198,7 +198,7 @@ export class Authenticator {
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
         let attest = new Eip712AttestationRequest(userKey);
-        await attest.addData(attestorDomain, 20*1000, receiverId, attRequest);
+        await attest.addData(attestorDomain, undefined, receiverId, attRequest);
         let attestJson = attest.getJsonEncoding();
 
         return attestJson;
@@ -286,6 +286,11 @@ export class Authenticator {
 
         const attestationUint8 = base64ToUint8array(attestationBase64);
         let att = SignedIdentifierAttestation.fromBytes(attestationUint8, attestorKey);
+        
+        if (!att.checkValidity()){
+            throw new Error("Attestation not valid");
+        }
+
         let attestationSecretDerUint8 = base64ToUint8array(attestationSecretBase64);
         // remove first 4 bytes because us der encoding
         let attestationSecret = uint8ToBn(attestationSecretDerUint8.slice(4));
