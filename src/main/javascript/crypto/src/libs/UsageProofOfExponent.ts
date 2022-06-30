@@ -71,8 +71,8 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
         try {
             
             // Validate that point is valid on the given curve, have correct order and are not at infinity
-            if (!this.tPoint.validate()){
-                return false;
+            if (!AttestationCrypto.validatePointToCurve(this.tPoint, AttestationCrypto.curve )) {
+                throw new Error("Point not in the curve");
             }
 
             // Check the challenge response size

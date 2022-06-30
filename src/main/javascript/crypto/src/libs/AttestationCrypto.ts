@@ -265,7 +265,9 @@ export class AttestationCrypto {
      */
     public computeEqualityProof(commitment1:string, commitment2: string, randomness1:bigint, randomness2:bigint, nonce: Uint8Array = new Uint8Array([])):UsageProofOfExponent {
         let comPoint1: Point = Point.decodeFromHex(commitment1);
+        AttestationCrypto.validatePointToCurve(comPoint1, CURVE_BN256);
         let comPoint2: Point = Point.decodeFromHex(commitment2);
+        AttestationCrypto.validatePointToCurve(comPoint2, CURVE_BN256);
         // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
         let riddle: Point = comPoint1.subtract(comPoint2);
         let exponent: bigint = mod(randomness1 - randomness2, CURVE_BN256.n);
@@ -330,9 +332,10 @@ export class AttestationCrypto {
             logger(2,"The parameters in the ZK proof are not correct");
             return false;
         }
-
         let comPoint1: Point = Point.decodeFromUint8(commitment1, CURVE_BN256);
+        AttestationCrypto.validatePointToCurve(comPoint1, CURVE_BN256);
         let comPoint2: Point = Point.decodeFromUint8(commitment2, CURVE_BN256);
+        AttestationCrypto.validatePointToCurve(comPoint2, CURVE_BN256);
         // Compute the value the riddle should have
         let riddle: Point = comPoint1.subtract(comPoint2);
         // let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
