@@ -385,12 +385,10 @@ export class AttestationCrypto {
           if (point.isInfinity()) {
             throw new Error("Point is at infinity");
           }
-
-        // TODO doesnt work somehow
-        //   if (!point.multiplyDA(curve.n).isInfinity()) {
-        //     console.log("Point does not have correct order");
-        //     throw new Error("Point does not have correct order");
-        //   }
+          if (!point.multiplyDA(CURVE_BN256.n).isInfinity()) {
+            console.log("Point does not have correct order");
+            throw new Error("Point does not have correct order");
+          }
 
         } catch ( e) {
         //   throw new Error("Point invalid");

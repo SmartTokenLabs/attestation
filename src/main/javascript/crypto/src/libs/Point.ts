@@ -76,7 +76,11 @@ export class Point {
 
     //static ZERO = new Point(0n, 0n); // Point at infinity aka identifier point aka zero
     // constructor(public x: bigint, public y: bigint, public useCurve: {[index: string]:bigint} = CURVE_SECP256k1 ) {}
-    constructor(public x: bigint, public y: bigint, public useCurve:Curve = CURVE_BN256 ) {}
+    constructor(public x: bigint, public y: bigint, public useCurve:Curve = CURVE_BN256 ) {
+        this.x =  mod(x, this.useCurve.P);
+        this.y =  mod(y, this.useCurve.P);
+        this.useCurve = useCurve;
+    }
 
     // Adds point to itself. http://hyperelliptic.org/EFD/g1p/auto-shortw.html
     double(): Point {
@@ -99,7 +103,8 @@ export class Point {
         if (X1 === 0n || Y1 === 0n) return b;
         if (X2 === 0n || Y2 === 0n) return a;
         if (X1 === X2 && Y1 === Y2) return this.double();
-        if (X1 === X2 && Y1 === -Y2) return this.newZero();      
+        if (X1 === X2 && Y1 === mod(-Y2, this.useCurve.P)) return this.newZero();
+
         const lam = mod((Y2 - Y1) * invert(X2 - X1, this.useCurve.P), this.useCurve.P);
         const X3 = mod(lam * lam - X1 - X2, this.useCurve.P);
         const Y3 = mod(lam * (X1 - X3) - Y1, this.useCurve.P);
@@ -119,7 +124,7 @@ export class Point {
     }
 
     isInfinity(): boolean{
-        return this.x == null || this.y == null;
+        return this.x == null || this.y == null || (this.x == 0n && this.y == 0n);
     }
 
     getEncoded(compressed = false): Uint8Array{
