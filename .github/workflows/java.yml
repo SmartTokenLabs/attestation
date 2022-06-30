@@ -65,9 +65,10 @@ jobs:
           distribution: "temurin"
           java-version: "11"
           cache: "gradle"
-      - uses: actions/delete-package-versions@v3
-        with:
-          package-name: org.tokenscript.attestation
+      - name: change version to stage-snapshot
+        run: |
+          sed -i "s/^version\s*=.*/version = 'stage-SNAPSHOT'/" build.gradle
+          cat build.gradle
       - id: publish
         name: Publish to Github Package
         run: |
