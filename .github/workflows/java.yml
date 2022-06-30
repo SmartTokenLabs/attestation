@@ -68,7 +68,7 @@ jobs:
       - uses: actions/delete-package-versions@v3
         with:
           package-name: org.tokenscript.attestation
-      - id: prerelease
+      - id: publish
         name: Publish to Github Package
         run: |
           ./gradlew --no-daemon publishAllPublicationsToGitHubPackagesRepository

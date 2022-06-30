@@ -17,3 +17,26 @@ on:
 jobs:
   js-p1:
     uses: ./.github/workflows/js-p1.yml
+
+  prerelease:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/stage'
+    runs-on: ubuntu-latest
+    needs:
+      - js-p1
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: "https://npm.pkg.github.com"
+      - name: publish
+        id: publish
+        run: |
+          cd src/main/javascript/crypto/
+          npm i
+          npm run build
+          npm publish
+          version="$(node -e 'console.log(require("./package.json").version)')"
+          echo "::set-output name=version::${version}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
