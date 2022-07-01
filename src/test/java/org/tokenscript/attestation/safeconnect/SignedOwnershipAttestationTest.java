@@ -10,13 +10,17 @@ import org.bouncycastle.crypto.params.Ed448KeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedConstruction;
 import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.core.SignatureUtility;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.when;
 
 public class SignedOwnershipAttestationTest {
     // todo make general test setup fixture and use groovy
@@ -64,19 +68,19 @@ public class SignedOwnershipAttestationTest {
 
     @Test
     public void nftOwnershipTest() {
-        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nftsWOTokenId, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nftsEmpty, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nftsWChainId, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(null, subjectECKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        sunshineNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerRSAKeys);
-        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerRSAKeys);
+        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nfts, issuerECKeys);
+        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nftsWOTokenId, issuerECKeys);
+        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nftsEmpty, issuerECKeys);
+        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nftsWChainId, issuerECKeys);
+        sunshineNFTOwnership(null, subjectECKeys.getPublic(), nfts, issuerECKeys);
+        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nfts, issuerECKeys);
+        sunshineNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, issuerECKeys);
+        sunshineNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, issuerRSAKeys);
+        sunshineNFTOwnership(context, subjectECKeys.getPublic(), nfts, issuerRSAKeys);
     }
 
-    public void sunshineNFTOwnership(byte[] context, AsymmetricKeyParameter subjectKey, ERC721Token[] tokens, long validity, AsymmetricCipherKeyPair signingKeys) {
-        SignedNFTOwnershipAttestation att = new SignedNFTOwnershipAttestation(context, subjectKey, tokens, validity, signingKeys);
+    public void sunshineNFTOwnership(byte[] context, AsymmetricKeyParameter subjectKey, ERC721Token[] tokens, AsymmetricCipherKeyPair signingKeys) {
+        SignedNFTOwnershipAttestation att = new SignedNFTOwnershipAttestation(context, subjectKey, tokens, signingKeys);
         assertTrue(att.checkValidity());
         assertTrue(att.verify());
         assertEquals(context, att.getContext());
@@ -87,16 +91,16 @@ public class SignedOwnershipAttestationTest {
 
     @Test
     public void addressOwnershipTest() {
-        sunshineAddressOwnership(context, subjectECKeys.getPublic(), address, defaultValidity, issuerECKeys);
-        sunshineAddressOwnership(null, subjectECKeys.getPublic(), address, defaultValidity, issuerECKeys);
-        sunshineAddressOwnership(context, subjectECKeys.getPublic(), address, defaultValidity, issuerECKeys);
-        sunshineAddressOwnership(context, subjectRSAKeys.getPublic(), address, defaultValidity, issuerECKeys);
-        sunshineAddressOwnership(context, subjectRSAKeys.getPublic(), address, defaultValidity, issuerRSAKeys);
-        sunshineAddressOwnership(context, subjectECKeys.getPublic(), address, defaultValidity, issuerRSAKeys);
+        sunshineAddressOwnership(context, subjectECKeys.getPublic(), address, issuerECKeys);
+        sunshineAddressOwnership(null, subjectECKeys.getPublic(), address, issuerECKeys);
+        sunshineAddressOwnership(context, subjectECKeys.getPublic(), address, issuerECKeys);
+        sunshineAddressOwnership(context, subjectRSAKeys.getPublic(), address, issuerECKeys);
+        sunshineAddressOwnership(context, subjectRSAKeys.getPublic(), address, issuerRSAKeys);
+        sunshineAddressOwnership(context, subjectECKeys.getPublic(), address, issuerRSAKeys);
     }
 
-    public void sunshineAddressOwnership(byte[] context, AsymmetricKeyParameter subjectKey, String address, long validity, AsymmetricCipherKeyPair signingKeys) {
-        SignedEthereumAddressAttestation att = new SignedEthereumAddressAttestation(context, subjectKey, address, validity, signingKeys);
+    public void sunshineAddressOwnership(byte[] context, AsymmetricKeyParameter subjectKey, String address, AsymmetricCipherKeyPair signingKeys) {
+        SignedEthereumAddressAttestation att = new SignedEthereumAddressAttestation(context, subjectKey, address, signingKeys);
         assertTrue(att.checkValidity());
         assertTrue(att.verify());
         assertEquals(context, att.getContext());
@@ -107,19 +111,19 @@ public class SignedOwnershipAttestationTest {
 
     @Test
     public void nftOwnershipDecodingTest() throws Exception {
-        decodingNFTOwnership(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(context, subjectECKeys.getPublic(), nftsWOTokenId, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(context, subjectECKeys.getPublic(), nftsEmpty, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(context, subjectECKeys.getPublic(), nftsWChainId, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(null, subjectECKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerECKeys);
-        decodingNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerRSAKeys);
-        decodingNFTOwnership(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerRSAKeys);
+        decodingNFTOwnership(context, subjectECKeys.getPublic(), nfts, issuerECKeys);
+        decodingNFTOwnership(context, subjectECKeys.getPublic(), nftsWOTokenId, issuerECKeys);
+        decodingNFTOwnership(context, subjectECKeys.getPublic(), nftsEmpty, issuerECKeys);
+        decodingNFTOwnership(context, subjectECKeys.getPublic(), nftsWChainId, issuerECKeys);
+        decodingNFTOwnership(null, subjectECKeys.getPublic(), nfts, issuerECKeys);
+        decodingNFTOwnership(context, subjectECKeys.getPublic(), nfts, issuerECKeys);
+        decodingNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, issuerECKeys);
+        decodingNFTOwnership(context, subjectRSAKeys.getPublic(), nfts, issuerRSAKeys);
+        decodingNFTOwnership(context, subjectECKeys.getPublic(), nfts, issuerRSAKeys);
     }
 
-    public void decodingNFTOwnership(byte[] context, AsymmetricKeyParameter subjectKey, ERC721Token[] tokens, long validity, AsymmetricCipherKeyPair signingKeys) throws Exception {
-        SignedNFTOwnershipAttestation att = new SignedNFTOwnershipAttestation(context, subjectKey, tokens, validity, signingKeys);
+    public void decodingNFTOwnership(byte[] context, AsymmetricKeyParameter subjectKey, ERC721Token[] tokens, AsymmetricCipherKeyPair signingKeys) throws Exception {
+        SignedNFTOwnershipAttestation att = new SignedNFTOwnershipAttestation(context, subjectKey, tokens, signingKeys);
         SignedOwnershipAttestationDecoder decoder = new SignedOwnershipAttestationDecoder(new NFTOwnershipAttestationDecoder(), signingKeys.getPublic());
         SignedNFTOwnershipAttestation decodedAtt = (SignedNFTOwnershipAttestation) decoder.decode(att.getDerEncoding());
         assertTrue(decodedAtt.checkValidity());
@@ -232,6 +236,33 @@ public class SignedOwnershipAttestationTest {
         assertThrows(IllegalArgumentException.class, () -> new SignedEthereumAddressAttestation(att.getContext(), wrongKey.getPublic(), att.getSubjectAddress(), att.getNotBefore(), att.getNotAfter(), att.getSignature(), att.getVerificationKey()));
         assertThrows(IllegalArgumentException.class, () -> new SignedEthereumAddressAttestation(att.getContext(), att.getSubjectPublicKey(), att.getSubjectAddress(), att.getNotBefore(), att.getNotAfter(), att.getSignature(), wrongKey.getPublic()));
         assertThrows(IllegalArgumentException.class, () -> new SignedEthereumAddressAttestation(att.getContext(), att.getSubjectPublicKey(), att.getSubjectAddress(), att.getNotBefore(), att.getNotAfter(), new byte[65], att.getVerificationKey()));
+    }
+
+    @Test
+    public void badAddress() {
+        SignedEthereumAddressAttestation att = new SignedEthereumAddressAttestation(context, subjectECKeys.getPublic(), address + "00", defaultValidity, issuerECKeys);
+        assertFalse(att.checkValidity());
+    }
+
+    @Test
+    public void badTokenMockito() {
+        try (MockedConstruction<NFTOwnershipAttestation> mocked = mockConstruction(NFTOwnershipAttestation.class)) {
+            NFTOwnershipAttestation mockedConstructorNft = new NFTOwnershipAttestation(null, null, null, null, null);
+            when(mockedConstructorNft.getTokens()).thenReturn(new ERC721Token[]{new ERC721Token("not an address")});
+            assertFalse(mockedConstructorNft.checkValidity());
+        }
+    }
+
+    @Test
+    public void badToken() {
+        NFTOwnershipAttestation att = new TestNFTOwnershipAttestation(new ERC721Token[]{new ERC721Token("not an address")});
+        assertFalse(att.checkValidity());
+    }
+
+    class TestNFTOwnershipAttestation extends NFTOwnershipAttestation {
+        public TestNFTOwnershipAttestation(ERC721Token[] tokens) {
+            super(context, tokens, new Date(), new Date(), subjectECKeys.getPublic());
+        }
     }
 
 }

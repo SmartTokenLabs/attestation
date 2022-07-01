@@ -14,8 +14,8 @@ import org.tokenscript.attestation.core.ExceptionUtil;
 
 import java.util.Date;
 
-public class EthereumAddressAttestation implements SignedOwnershipAttestationInterface {
-    private static final Logger logger = LogManager.getLogger(NFTOwnershipAttestation.class);
+public class EthereumAddressAttestation implements OwnershipAttestationInterface {
+    private static final Logger logger = LogManager.getLogger(EthereumAddressAttestation.class);
     private final byte[] context;
     private final String subjectAddress;
     private final Date notBefore;
@@ -44,11 +44,6 @@ public class EthereumAddressAttestation implements SignedOwnershipAttestationInt
 
     public Date getNotAfter() {
         return notAfter;
-    }
-
-    @Override
-    public AsymmetricKeyParameter getVerificationKey() {
-        return null;
     }
 
     public AsymmetricKeyParameter getSubjectPublicKey() {

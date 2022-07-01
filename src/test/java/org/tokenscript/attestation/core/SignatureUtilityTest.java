@@ -1,8 +1,20 @@
 package org.tokenscript.attestation.core;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_CURVE;
-import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_DOMAIN;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.digests.KeccakDigest;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.math.ec.ECPoint;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -13,20 +25,9 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.digests.KeccakDigest;
-import org.bouncycastle.crypto.params.*;
-import org.bouncycastle.crypto.signers.ECDSASigner;
-import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
-import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
-import org.bouncycastle.jce.ECPointUtil;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.math.ec.ECPoint;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_CURVE;
+import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_DOMAIN;
 
 public class SignatureUtilityTest {
   private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
@@ -309,14 +310,19 @@ public class SignatureUtilityTest {
   @Test
   public void pointOfInf2() {
     ECPoint OPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ONE);
-    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    Exception e = assertThrows(IllegalArgumentException.class, () -> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
     assertEquals("Point not on curve", e.getMessage());
   }
 
   @Test
   public void pointOfInf3() {
     ECPoint OPoint = ECDSA_CURVE.getCurve().getInfinity();
-    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    Exception e = assertThrows(IllegalArgumentException.class, () -> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
     assertEquals("Point at infinity", e.getMessage());
+  }
+
+  @Test
+  public void badSig() {
+    assertThrows(IllegalArgumentException.class, () -> SignatureUtility.verifyWithStandardScheme(new byte[]{0x01}, new byte[65], userKeys.getPublic()));
   }
 }

@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 
 import java.util.Date;
 
@@ -17,6 +18,10 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
     private final byte[] signature;
     private final byte[] signedEncoding;
 
+    public SignedEthereumAddressAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, String subjectAddress, AsymmetricCipherKeyPair signingKey) {
+        this(context, subjectPublicKey, subjectAddress, DEFAULT_VALIDITY, signingKey);
+    }
+
     public SignedEthereumAddressAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, String subjectAddress, long validityInSeconds, AsymmetricCipherKeyPair signingKey) {
         if (validityInSeconds < 0) {
             throw new IllegalArgumentException("NotBefore or NotAfter time is negative");
@@ -27,7 +32,7 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
             this.internalAtt = new EthereumAddressAttestation(context, subjectAddress, notBefore, notAfter, subjectPublicKey);
             this.verificationKey = signingKey.getPublic();
             this.unsignedEncoding = internalAtt.getDerEncoding();
-            this.signature = makeSignature(unsignedEncoding, signingKey);
+            this.signature = SignatureUtility.signWithStandardScheme(unsignedEncoding, signingKey);
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
@@ -107,5 +112,13 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
 
     public String getSubjectAddress() {
         return internalAtt.getSubjectAddress();
+    }
+
+    @Override
+    public boolean verify() {
+        if (!internalAtt.verify()) {
+            return false;
+        }
+        return SignatureUtility.verifyWithStandardScheme(getUnsignedEncoding(), getSignature(), getVerificationKey());
     }
 }

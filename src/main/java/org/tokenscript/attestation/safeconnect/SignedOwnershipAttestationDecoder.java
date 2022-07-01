@@ -12,7 +12,8 @@ import org.tokenscript.attestation.core.ExceptionUtil;
 
 import java.io.IOException;
 
-import static org.tokenscript.attestation.safeconnect.AbstractSignedOwnershipAttestation.getSigningAlgorithm;
+import static org.tokenscript.attestation.core.SignatureUtility.getSigningAlgorithm;
+
 
 public class SignedOwnershipAttestationDecoder implements ObjectDecoder<SignedOwnershipAttestationInterface> {
     private static final Logger logger = LogManager.getLogger(SignedOwnershipAttestationDecoder.class);

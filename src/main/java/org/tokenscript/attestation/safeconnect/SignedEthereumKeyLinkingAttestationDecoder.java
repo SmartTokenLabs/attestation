@@ -12,7 +12,8 @@ import org.tokenscript.attestation.core.ExceptionUtil;
 import java.io.IOException;
 import java.util.Date;
 
-import static org.tokenscript.attestation.safeconnect.AbstractSignedOwnershipAttestation.getSigningAlgorithm;
+import static org.tokenscript.attestation.core.SignatureUtility.getSigningAlgorithm;
+
 
 public class SignedEthereumKeyLinkingAttestationDecoder implements ObjectDecoder<SignedEthereumKeyLinkingAttestation> {
     private static final Logger logger = LogManager.getLogger(SignedEthereumKeyLinkingAttestationDecoder.class);
@@ -22,7 +23,7 @@ public class SignedEthereumKeyLinkingAttestationDecoder implements ObjectDecoder
         this.internalDecoder = decoder;
     }
 
-    private void checkAlgorithm(AlgorithmIdentifier algorithmEncoded, AsymmetricKeyParameter verificationKey) {
+    protected void checkAlgorithm(AlgorithmIdentifier algorithmEncoded, AsymmetricKeyParameter verificationKey) {
         if (!algorithmEncoded.equals(getSigningAlgorithm(verificationKey))) {
             throw ExceptionUtil.throwException(logger,
                     new IllegalArgumentException("Algorithm specified is does not work with verification key supplied"));

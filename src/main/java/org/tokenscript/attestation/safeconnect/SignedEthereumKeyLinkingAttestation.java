@@ -6,6 +6,7 @@ import org.bouncycastle.asn1.*;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 import org.web3j.utils.Numeric;
 
 import java.io.InvalidObjectException;
@@ -24,6 +25,10 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
     private final byte[] signature;
     private final byte[] signedEncoding;
 
+    public SignedEthereumKeyLinkingAttestation(byte[] context, String subjectAddress, SignedOwnershipAttestationInterface ownershipAttestation, AsymmetricCipherKeyPair signingKey) {
+        this(context, subjectAddress, DEFAULT_VALIDITY, ownershipAttestation, signingKey);
+    }
+
     public SignedEthereumKeyLinkingAttestation(byte[] context, String subjectAddress, long validityInSeconds, SignedOwnershipAttestationInterface ownershipAttestation, AsymmetricCipherKeyPair signingKey) {
         if (validityInSeconds < 0) {
             throw new IllegalArgumentException("NotBefore or NotAfter time is negative");
@@ -37,7 +42,7 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
             // The attestation has to be signed with the key attested to
             this.verificationKey = ownershipAttestation.getSubjectPublicKey();
             this.unsignedEncoding = makeUnsignedEncoding();
-            this.signature = makeSignature(unsignedEncoding, signingKey);
+            this.signature = SignatureUtility.signWithStandardScheme(unsignedEncoding, signingKey);
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
@@ -142,7 +147,7 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
 
     @Override
     public boolean verify() {
-        if (!super.verify()) {
+        if (!SignatureUtility.verifyWithStandardScheme(getUnsignedEncoding(), getSignature(), getVerificationKey())) {
             return false;
         }
         return ownershipAttestation.verify();

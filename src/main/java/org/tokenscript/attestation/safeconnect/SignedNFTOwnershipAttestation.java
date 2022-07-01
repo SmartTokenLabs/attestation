@@ -6,6 +6,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 
 import java.util.Date;
 
@@ -18,6 +19,10 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
     private final byte[] signature;
     private final byte[] signedEncoding;
 
+    public SignedNFTOwnershipAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, ERC721Token[] tokens, AsymmetricCipherKeyPair signingKey) {
+        this(context, subjectPublicKey, tokens, DEFAULT_VALIDITY, signingKey);
+    }
+
     public SignedNFTOwnershipAttestation(byte[] context, AsymmetricKeyParameter subjectPublicKey, ERC721Token[] tokens, long validityInSeconds, AsymmetricCipherKeyPair signingKey) {
         if (validityInSeconds < 0) {
             throw new IllegalArgumentException("NotBefore or NotAfter time is negative");
@@ -28,7 +33,7 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
             this.internalAtt = new NFTOwnershipAttestation(context, tokens, notBefore, notAfter, subjectPublicKey);
             this.verificationKey = signingKey.getPublic();
             this.unsignedEncoding = internalAtt.getDerEncoding();
-            this.signature = makeSignature(unsignedEncoding, signingKey);
+            this.signature = SignatureUtility.signWithStandardScheme(unsignedEncoding, signingKey);
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
@@ -108,5 +113,13 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
 
     public ERC721Token[] getTokens() {
         return internalAtt.getTokens();
+    }
+
+    @Override
+    public boolean verify() {
+        if (!internalAtt.verify()) {
+            return false;
+        }
+        return SignatureUtility.verifyWithStandardScheme(getUnsignedEncoding(), getSignature(), getVerificationKey());
     }
 }

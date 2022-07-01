@@ -41,14 +41,6 @@ public class ERC721Token implements ASNEncodable, Validateable {
         this.tokenId = tokenId;
         this.chainId = chainId;
         this.encoding = getDerEncoding(tokenId != null, chainId != null);
-        constructorCheck();
-    }
-
-    private void constructorCheck() {
-        if (!checkValidity()) {
-            throw ExceptionUtil.throwException(logger,
-                    new IllegalArgumentException("Could not validate object"));
-        }
     }
 
     private void validateChainId(Long chainId) {
@@ -114,7 +106,6 @@ public class ERC721Token implements ASNEncodable, Validateable {
         } finally {
             input.close();
         }
-        constructorCheck();
     }
 
     // TODO move to util class
