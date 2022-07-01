@@ -1,12 +1,11 @@
 package org.tokenscript.attestation;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ERC721Test {
   private static final String validAddress = "0x01020304050607080910111213141516171819ff";
@@ -61,12 +60,14 @@ public class ERC721Test {
 
   @Test
   public void onlyPositiveIds() {
-    assertThrows(IllegalArgumentException.class, ()-> new ERC721Token(validAddress, "-100"));
+    ERC721Token token = new ERC721Token(validAddress, "-100");
+    assertFalse(token.checkValidity());
   }
 
   @Test
   public void addressTooLong() {
-    assertThrows(IllegalArgumentException.class, ()-> new ERC721Token(validAddress+"1234", "-100"));
+    ERC721Token token = new ERC721Token(validAddress + "1234", "-100");
+    assertFalse(token.checkValidity());
   }
 
   @Test

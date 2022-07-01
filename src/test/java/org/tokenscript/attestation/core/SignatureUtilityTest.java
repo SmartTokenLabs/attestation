@@ -5,10 +5,9 @@ import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.KeccakDigest;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.bouncycastle.crypto.generators.Ed448KeyPairGenerator;
+import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.*;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -26,8 +25,7 @@ import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_CURVE;
-import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_DOMAIN;
+import static org.tokenscript.attestation.core.SignatureUtility.*;
 
 public class SignatureUtilityTest {
   private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
@@ -322,7 +320,35 @@ public class SignatureUtilityTest {
   }
 
   @Test
-  public void badSig() {
+  public void sunshineStandardEC() {
+    byte[] msg = new byte[]{0x01, 0x02};
+    byte[] sig = signWithStandardScheme(msg, userKeys);
+    assertTrue(verifyWithStandardScheme(msg, sig, userKeys.getPublic()));
+  }
+
+  @Test
+  public void sunshineStandardRSA() {
+    RSAKeyPairGenerator rsaGen = new RSAKeyPairGenerator();
+    RSAKeyGenerationParameters subjectParam = new RSAKeyGenerationParameters(new BigInteger("65537"), rand, 2048, 80);
+    rsaGen.init(subjectParam);
+    AsymmetricCipherKeyPair rsa = rsaGen.generateKeyPair();
+    byte[] msg = new byte[]{0x01, 0x02};
+
+    byte[] sig = signWithStandardScheme(msg, rsa);
+    assertTrue(verifyWithStandardScheme(msg, sig, rsa.getPublic()));
+  }
+
+  @Test
+  public void badStandardSig() {
     assertThrows(IllegalArgumentException.class, () -> SignatureUtility.verifyWithStandardScheme(new byte[]{0x01}, new byte[65], userKeys.getPublic()));
+  }
+
+  @Test
+  public void unknownKeyFormat() {
+    byte[] msg = new byte[]{0x01, 0x02};
+    Ed448KeyPairGenerator gen = new Ed448KeyPairGenerator();
+    gen.init(new Ed448KeyGenerationParameters(rand));
+    AsymmetricCipherKeyPair keys = gen.generateKeyPair();
+    assertThrows(IllegalArgumentException.class, () -> SignatureUtility.signWithStandardScheme(msg, keys));
   }
 }
