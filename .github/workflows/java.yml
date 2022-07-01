@@ -26,9 +26,9 @@ jobs:
           distribution: "temurin"
           java-version: "11"
           cache: "gradle"
-      - name: shadowJar & check
+      - name: build
         run: |
-          ./gradlew --no-daemon check shadowJar
+          ./gradlew --no-daemon build
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: success() || failure()
@@ -69,7 +69,8 @@ jobs:
           cache: "gradle"
       - name: change version to stage-snapshot
         run: |
-          sed -i "s/^version\s*=.*/version = 'stage-SNAPSHOT'/" build.gradle
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          sed -i "s/^version\s*=.*/version = 'stage-${SHORT_SHA}-SNAPSHOT'/" build.gradle
           cat build.gradle
       - uses: actions/delete-package-versions@v3
         with:

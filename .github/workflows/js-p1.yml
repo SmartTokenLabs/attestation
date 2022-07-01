@@ -20,10 +20,21 @@ jobs:
           cd src/main/javascript/crypto/
           npm i
           npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: js-build
+          path: |
+            src/main/javascript/crypto/dist/
+      - uses: actions/download-artifact@v3
+        # java-build may not exists. So allow this step failure
+        continue-on-error: true
+        with:
+          name: java-build
+          path: build/
       - name: prepare test
         run: |
           if [ ! -d "build/test-results/" ]; then
-            ./gradlew test
+            ./gradlew --no-daemon test
           fi
       - name: test
         uses: ArtiomTr/jest-coverage-report-action@v2
