@@ -54,7 +54,7 @@ export class Eip712Validator {
             let attestedObject = this.retrieveAttestedObject(eip712Message);
 
             // TODO implement
-            return this.validateDomain(eip712Domain)
+            return this.validateDomain(eip712Domain) && attestedObject.getAtt().checkValidity();
             // && this.validateAuthentication(auth);
             // accept &= verifySignature(authenticationData, attestedObject.getUserPublicKey());
             // accept &= validateAttestedObject(attestedObject);
