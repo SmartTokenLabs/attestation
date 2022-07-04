@@ -1,0 +1,31 @@
+name: "Contract CI"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ethereum/attestation-test/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "ethereum/attestation-test/**"
+
+jobs:
+  contract-p1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: build
+        run: |
+          cd ethereum/attestation-test
+          npm i
+          npx hardhat compile
+      - name: test
+        run: |
+          cd ethereum/attestation-test
+          npx hardhat test

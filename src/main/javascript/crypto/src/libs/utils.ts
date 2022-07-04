@@ -15,7 +15,7 @@ let testsDisplayDebugLevel: number;
 // window.DISPLAY_DEBUG_LEVEL used to set LOG level for browser
 if (process && process.env && process.env.DISPLAY_DEBUG_LEVEL) {
     displayDebugLevel = parseInt(process.env.DISPLAY_DEBUG_LEVEL);
-} else if (window && window.DISPLAY_DEBUG_LEVEL) {
+} else if (typeof window !== "undefined" && window.DISPLAY_DEBUG_LEVEL) {
     displayDebugLevel = parseInt(window.DISPLAY_DEBUG_LEVEL);
 } 
 

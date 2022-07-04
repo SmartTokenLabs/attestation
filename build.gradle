@@ -1,40 +1,32 @@
-buildscript {
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.+'
-        classpath 'org.owasp:dependency-check-gradle:6.+'
-    }
-}
-
 plugins {
     id 'java'
-    id "com.github.node-gradle.node" version "3.1.1"
+    id 'com.github.node-gradle.node' version '3.1.1'
     id 'java-library'
     id 'signing'
     id 'maven-publish'
-    id "org.sonarqube" version "3.0"
+    id 'org.sonarqube' version '3.0'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'org.owasp.dependencycheck' version '7.1.1'
 }
 
 node {
     download = true
-    version = "14.+"
+    version = '14.+'
 }
 
-apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'org.owasp.dependencycheck'
-
-project.tasks["sonarqube"].dependsOn "test"
+project.tasks['sonarqube'].dependsOn 'test'
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
 }
 
-if(JavaVersion.current() < JavaVersion.VERSION_11){
+if (JavaVersion.current() < JavaVersion.VERSION_11) {
     // Weiwu mentioned that this is needed to prevent a issue
-    throw new GradleException("This build must be run with java 11 or higher.")
+    throw new GradleException('This build must be run with java 11 or higher.')
 }
 java {
-  sourceCompatibility = JavaVersion.VERSION_11
-  targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 repositories {
@@ -72,28 +64,28 @@ sourceSets {
     main {
         java {
             srcDirs = ['src/main/java']
-//             exclude 'org/tokenscript/attestation/demo'
-//             exclude 'com/alphawallet/token/tools'
-//             exclude 'com/alphawallet/token/util'
+            //             exclude 'org/tokenscript/attestation/demo'
+            //             exclude 'com/alphawallet/token/tools'
+            //             exclude 'com/alphawallet/token/util'
             exclude 'dk' // Trulioo specific code
-//             exclude 'org/devcon'
+        //             exclude 'org/devcon'
         }
     }
     test {
         java {
             srcDirs = ['src/test/java']
-//             exclude 'org/tokenscript/attestation/demo'
-//             exclude 'com/alphawallet/token/tools'
-//             exclude 'com/alphawallet/token/util'
+            //             exclude 'org/tokenscript/attestation/demo'
+            //             exclude 'com/alphawallet/token/tools'
+            //             exclude 'com/alphawallet/token/util'
             exclude 'dk' // Trulioo specific code
-//             exclude 'org/devcon'
+        //             exclude 'org/devcon'
         }
     }
     intTest {
         java {
             compileClasspath += sourceSets.main.output
             runtimeClasspath += sourceSets.main.output
-	      }
+        }
     }
 }
 
@@ -117,7 +109,7 @@ shadowJar {
     manifest {
         attributes 'Main-Class': 'org.tokenscript.attestation.demo.Demo'
     }
-    exclude "**/Log4j2Plugins.dat"
+    exclude '**/Log4j2Plugins.dat'
 }
 
 task packageFat(type: Zip) {
@@ -141,13 +133,12 @@ task packageAttestation(type: Jar) {
     from compileJava
     from processResources
     exclude {
-        if(it.relativePath.pathString.startsWith('dk')
-//            || it.relativePath.pathString.startsWith('org/tokenscript/attestation/demo')
-//            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
-//            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
-//            || it.relativePath.pathString.startsWith('org/devcon'))
-         )
-           {
+        if (it.relativePath.pathString.startsWith('dk')
+        //            || it.relativePath.pathString.startsWith('org/tokenscript/attestation/demo')
+        //            || it.relativePath.pathString.startsWith('com/alphawallet/token/tools')
+        //            || it.relativePath.pathString.startsWith('com/alphawallet/token/util')
+        //            || it.relativePath.pathString.startsWith('org/devcon'))
+        ) {
             return true
         }
     }
@@ -163,9 +154,9 @@ task testJavaScript(type: NodeTask) {
     script = file('src/test/javascript/ParserSerializerTest.js')
 }
 
-group = "org.tokenscript"
-archivesBaseName = "attestation"
-version = "0.3.18"
+group = 'org.tokenscript'
+archivesBaseName = 'attestation'
+version = '0.3.18'
 
 /** See https://docs.gradle.org/current/userguide/publishing_maven.html for details
  * For actually updating the Maven repo update the version reference in README.md,
@@ -193,41 +184,41 @@ publishing {
                 url = 'https://github.com/TokenScript/attestation'
 
                 licenses {
-                  license {
-                    name = 'MIT'
-                    url = 'https://opensource.org/licenses/MIT'
-                  }
+                    license {
+                        name = 'MIT'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
                 }
 
                 developers {
-                  developer {
-                    id = 'jot2re'
-                    name = 'Tore Frederiksen'
-                    email = 'jot2re@gmail.com'
-                  }
-                  developer {
-                    id = 'colourful-land'
-                    name = 'Weiwu Zhang'
-                    email = 'weiwu.zhang@alphawallet.com'
-                  }
-                  developer {
-                    id = 'oleggrib'
-                    name = 'Oleg Grib'
-                  }
+                    developer {
+                        id = 'jot2re'
+                        name = 'Tore Frederiksen'
+                        email = 'jot2re@gmail.com'
+                    }
+                    developer {
+                        id = 'colourful-land'
+                        name = 'Weiwu Zhang'
+                        email = 'weiwu.zhang@alphawallet.com'
+                    }
+                    developer {
+                        id = 'oleggrib'
+                        name = 'Oleg Grib'
+                    }
                 }
 
                 scm {
-                  connection = 'scm:https://github.com/TokenScript/attestation.git'
-                  developerConnection = 'scm:git:https://github.com/TokenScript/attestation.git'
-                  url = 'https://github.com/TokenScript/attestation'
+                    connection = 'scm:https://github.com/TokenScript/attestation.git'
+                    developerConnection = 'scm:git:https://github.com/TokenScript/attestation.git'
+                    url = 'https://github.com/TokenScript/attestation'
                 }
             }
         }
     }
     repositories {
         maven {
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            def releasesRepoUrl = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             // Add gradle.properties file with the following elements and add the correct
             // environment variables for OSSRHUSERNAME and OSSRHPASSWORD, then follow the manual at
@@ -236,22 +227,37 @@ publishing {
             // signing.password=<gpg key password>
             // signing.secretKeyRingFile=<directory to gpg secret key file>
             credentials {
-              username = System.getenv("OSSRHUSERNAME")
-              password = System.getenv("OSSRHPASSWORD")
+                username = System.getenv('OSSRHUSERNAME')
+                password = System.getenv('OSSRHPASSWORD')
+            }
+        }
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/TokenScript/attestation')
+            credentials {
+                username = System.getenv('GITHUB_ACTOR')
+                password = System.getenv('GITHUB_TOKEN')
             }
         }
     }
 }
 
 signing {
+    // In github action environment pass gpg signature from env
+    if (System.getenv('CI') == 'true') {
+        def signingKey = findProperty('signingKey')
+        def signingPassword = findProperty('signingPassword') ?: ''
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
+
     sign publishing.publications.mavenJava
 }
 
 javadoc {
     options.encoding = 'UTF-8'
     // For the future, if we end up needing an earlier version of java than 11
-    if(JavaVersion.current() > JavaVersion.VERSION_11){
-      options.addBooleanOption('html5', true)
+    if (JavaVersion.current() > JavaVersion.VERSION_11) {
+        options.addBooleanOption('html5', true)
     }
 }
 

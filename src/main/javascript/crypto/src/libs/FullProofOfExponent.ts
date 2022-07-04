@@ -4,6 +4,7 @@ import {AsnParser} from "@peculiar/asn1-schema";
 import {base64ToUint8array, uint8ToBn, uint8tohex, bnToUint8} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
+import { AttestationCrypto } from "./AttestationCrypto";
 
 export class FullProofOfExponent {
     private riddle: Point;
@@ -87,10 +88,49 @@ export class FullProofOfExponent {
 
         const proof = new Proof();
         proof.nonce = this.getNonce();
-        proof.challengePoint = bnToUint8(this.getChallengeResponse());
+        let point = bnToUint8(this.getChallengeResponse());
+        if (point.length < 32) {
+            let prevPoint = point;
+            point = new Uint8Array(32);
+            point.set(prevPoint, 32 - prevPoint.length);
+        }
+        proof.challengePoint = point;
         proof.riddle = this.getRiddle().getEncoded();
         proof.responseValue = this.getPoint().getEncoded();
 
         return proof;
+    }
+
+    public validateParameters():boolean {
+        try {
+            // Validate that points are valid on the given curve, have correct order and are not at infinity
+
+            // if (!this.riddle.validate() || !this.tPoint.validate()){
+            if (
+                !AttestationCrypto.validatePointToCurve(this.riddle, AttestationCrypto.curve) 
+            || !AttestationCrypto.validatePointToCurve(this.tPoint, AttestationCrypto.curve )
+            ){
+                throw new Error("Point not in the curve");
+            }
+
+            // Check the challenge response size
+            if (this.challengeResponse <= 0n || this.challengeResponse >= AttestationCrypto.curveOrder) {
+                return false;
+            }
+
+            // While not strictly needed also check that points are not the generator
+            if (this.riddle.equals( AttestationCrypto.G ) || this.riddle.equals( AttestationCrypto.H ) ) {
+                return false;
+            }
+
+            if (this.tPoint.equals( AttestationCrypto.G ) || this.tPoint.equals( AttestationCrypto.H )) {
+                return false;
+            }
+
+            return true;
+
+        } catch ( e ) {
+          return false;
+        }
     }
 }
