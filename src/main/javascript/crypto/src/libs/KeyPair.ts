@@ -234,7 +234,7 @@ export class KeyPair {
     }
 
     static createKeys(): KeyPair {
-        return this.privateFromBigInt(BigInt('0x'+uint8tohex(crypto.getRandomValues(new Uint8Array(32))) ) % CURVE_SECP256k1.n);
+        return this.privateFromBigInt(BigInt('0x'+uint8tohex(crypto.getRandomValues(new Uint8Array(38))) ) % CURVE_SECP256k1.n);
     }
 
     getPublicKeyAsHexStr(): string {
