@@ -16,3 +16,13 @@ npm test
 ```shell
 npx hardhat test
 ```
+
+### Deploy
+```shell
+npm run <network-name>:deploy
+```
+
+### Sourcify
+```shell
+npm run <network-name>:sourcify
+```
