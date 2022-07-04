@@ -19,7 +19,6 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
-import org.tokenscript.attestation.SignedIdentifierAttestation;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -37,17 +36,22 @@ public class SignatureUtility {
     public static final AlgorithmIdentifier RSASSA_PSS_ALG = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.113549.1.1.10"));
     // OID for RSA with SHA256
     public static final AlgorithmIdentifier RSA_PKCS1 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.113549.1.1.11"));
-    // OID for ECDSA with SHA256
-    public static final AlgorithmIdentifier ECDSA_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
-    // OID for ECDSA public key
+    // OID for a generic ECDSA public key
     public static final ASN1ObjectIdentifier OID_ECDSA_PUBLICKEY = new ASN1ObjectIdentifier("1.2.840.10045.2.1");
+    // OID for a secp256k1 ECDSA key
+    public static final ASN1ObjectIdentifier OID_SECP256K1_PUBLICKEY = new ASN1ObjectIdentifier("1.3.132.0.10");
     // Make sure that BC is always added as provider
     static final int providerIndex = Security.addProvider(new BouncyCastleProvider());
-    public static final X9ECParameters ECDSA_CURVE = SECNamedCurves.getByName("secp256k1");
-    public static final ECDomainParameters ECDSA_DOMAIN = new ECDomainParameters(ECDSA_CURVE.getCurve(), ECDSA_CURVE
-            .getG(), ECDSA_CURVE.getN(), ECDSA_CURVE.getH());
-    public static final AlgorithmIdentifier SECP256K1_DESCRIPTION = new AlgorithmIdentifier(
-            OID_ECDSA_PUBLICKEY, ECDSA_CURVE);
+    public static final X9ECParameters SECP256K1 = SECNamedCurves.getByName("secp256k1");
+    public static final ECDomainParameters SECP256K1_DOMAIN = new ECDomainParameters(SECP256K1.getCurve(), SECP256K1
+            .getG(), SECP256K1.getN(), SECP256K1.getH());
+    // We use the OID for generic ECDSA public key with specific parameters for secp256k1 instead of the OID for secp256k1, since decoding functions in libs won't understand that OID
+    public static final AlgorithmIdentifier SECP256K1_IDENTIFIER = new AlgorithmIdentifier(
+            OID_ECDSA_PUBLICKEY, SECP256K1);
+    // AlgorithmIdentifier for ECDSA with recommend parameters
+    public static final AlgorithmIdentifier ECDSA_OID = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
+    // Algorithm identifier for signature using ECDSA with SHA256
+    public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
     // Special Ethereum personal message Prefix
     private static final String personalMessagePrefix = "\u0019Ethereum Signed Message:\n";
@@ -78,8 +82,8 @@ public class SignatureUtility {
     public static AsymmetricCipherKeyPair constructECKeysWithSmallestY(SecureRandom rand) {
         AsymmetricCipherKeyPair keys;
         BigInteger yCoord;
-        BigInteger fieldModulo = ECDSA_DOMAIN.getCurve().getField()
-            .getCharacteristic();
+        BigInteger fieldModulo = SECP256K1_DOMAIN.getCurve().getField()
+                .getCharacteristic();
         // If the y coordinate is in the upper half of the field, then sample again until it to the lower half
         do {
             keys = constructECKeys(rand);
@@ -93,7 +97,7 @@ public class SignatureUtility {
      * @param random
      */
     public static AsymmetricCipherKeyPair constructECKeys(SecureRandom random) {
-        return constructECKeys(ECDSA_DOMAIN, random);
+        return constructECKeys(SECP256K1_DOMAIN, random);
     }
 
     public static AsymmetricCipherKeyPair constructECKeys(X9ECParameters ECDSACurve, SecureRandom random) {
@@ -114,7 +118,7 @@ public class SignatureUtility {
      * @return
      */
     public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
-        return restoreDefaultKey(SECP256K1_DESCRIPTION, input);
+        return restoreDefaultKey(SECP256K1_IDENTIFIER, input);
     }
 
     /**
@@ -180,7 +184,7 @@ public class SignatureUtility {
     public static String addressFromKey(AsymmetricKeyParameter key) {
         ECPublicKeyParameters ecKey = (ECPublicKeyParameters) key;
         // Validate that the key is correct
-        AttestationCrypto.validatePointToCurve(ecKey.getQ(), ECDSA_CURVE.getCurve());
+        AttestationCrypto.validatePointToCurve(ecKey.getQ(), SECP256K1.getCurve());
         byte[] pubKey;
         try {
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -356,7 +360,7 @@ public class SignatureUtility {
      */
     public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
         ECPoint Q = ((ECPublicKeyParameters) publicKey).getQ();
-        AttestationCrypto.validatePointToCurve(Q, ECDSA_CURVE.getCurve());
+        AttestationCrypto.validatePointToCurve(Q, SECP256K1.getCurve());
         return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
     }
 
@@ -430,17 +434,17 @@ public class SignatureUtility {
     public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
-        if (r.compareTo(BigInteger.ONE) < 0 || r.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+        if (r.compareTo(BigInteger.ONE) < 0 || r.compareTo(SECP256K1_DOMAIN.getN()) >= 1) {
             ExceptionUtil.throwException(logger, new IllegalArgumentException("R value is not in the range [1, n-1]"));
         }
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
         BigInteger s = new BigInteger(1, sBytes);
-        if (s.compareTo(BigInteger.ONE) < 0 || s.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+        if (s.compareTo(BigInteger.ONE) < 0 || s.compareTo(SECP256K1_DOMAIN.getN()) >= 1) {
             ExceptionUtil.throwException(logger, new IllegalArgumentException("S value is not in the range [1, n-1]"));
         }
-        if (s.compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
+        if (s.compareTo(SECP256K1_DOMAIN.getN().shiftRight(1)) > 0) {
             ExceptionUtil.throwException(logger,
-                new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
+                    new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
         byte recoveryValue = signature[64];
         byte yParity;
@@ -458,13 +462,13 @@ public class SignatureUtility {
         byte[] digestBytes = AttestationCrypto.hashWithKeccak(unsignedMessage);
         BigInteger z = new BigInteger(1, digestBytes);
         // Compute y coordinate for the r value
-        ECPoint R = computeY(signature[0], yParity, ECDSA_DOMAIN);
-        BigInteger rInverse = signature[0].modInverse(ECDSA_DOMAIN.getN());
-        BigInteger u1 = z.multiply(rInverse).mod(ECDSA_DOMAIN.getN());
-        BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSA_DOMAIN.getN());
-        ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSA_DOMAIN.getG().multiply(u1)).normalize();
-        AttestationCrypto.validatePointToCurve(publicKeyPoint, ECDSA_CURVE.getCurve());
-        return new ECPublicKeyParameters(publicKeyPoint, ECDSA_DOMAIN);
+        ECPoint R = computeY(signature[0], yParity, SECP256K1_DOMAIN);
+        BigInteger rInverse = signature[0].modInverse(SECP256K1_DOMAIN.getN());
+        BigInteger u1 = z.multiply(rInverse).mod(SECP256K1_DOMAIN.getN());
+        BigInteger u2 = signature[1].multiply(rInverse).mod(SECP256K1_DOMAIN.getN());
+        ECPoint publicKeyPoint = R.multiply(u2).subtract(SECP256K1_DOMAIN.getG().multiply(u1)).normalize();
+        AttestationCrypto.validatePointToCurve(publicKeyPoint, SECP256K1.getCurve());
+        return new ECPublicKeyParameters(publicKeyPoint, SECP256K1_DOMAIN);
     }
 
     private static ECPoint computeY(BigInteger x, byte yParity, ECDomainParameters params) {
@@ -498,7 +502,7 @@ public class SignatureUtility {
      */
     public static byte[] signWithStandardScheme(byte[] unsignedEncoding, AsymmetricCipherKeyPair signingKey) {
         try {
-            if (getSigningAlgorithm(signingKey.getPrivate()).equals(SignedIdentifierAttestation.ECDSA_WITH_SHA256)) {
+            if (getSigningAlgorithm(signingKey.getPrivate()).equals(ECDSA_WITH_SHA256)) {
                 java.security.Signature ecdsaSig = java.security.Signature.getInstance("SHA256withECDSA", "BC");
                 ecdsaSig.initSign(
                         SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(signingKey.getPrivate()));
@@ -526,7 +530,7 @@ public class SignatureUtility {
      */
     public static boolean verifyWithStandardScheme(byte[] msg, byte[] signature, AsymmetricKeyParameter verificationKey) {
         try {
-            if (getSigningAlgorithm(verificationKey).equals(SignedIdentifierAttestation.ECDSA_WITH_SHA256)) {
+            if (getSigningAlgorithm(verificationKey).equals(ECDSA_WITH_SHA256)) {
                 Signature ecdsaSig = Signature.getInstance("SHA256withECDSA", "BC");
                 ecdsaSig.initVerify(
                         SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(verificationKey));
@@ -549,12 +553,17 @@ public class SignatureUtility {
     }
 
     /**
-     * Returns the algorithm to use from a public key to be used for *standard* signature schemes.
-     * Currently, this is ECDSA with SHA256 for ECDSA keys and RSA PKCS 1 1.5 for RSA.
+     * Returns the algorithm to use from a public key to be used for our signature schemes.
+     * Currently, this is ECDSA with SHA256 for non secp256k1 ECDSA keys and RSA PKCS 1 1.5 for RSA.
+     * For sep256k1 it is ECDSA with recommended parameters.
      */
     public static AlgorithmIdentifier getSigningAlgorithm(AsymmetricKeyParameter signingKey) {
         if (signingKey instanceof ECKeyParameters) {
-            return SignedIdentifierAttestation.ECDSA_WITH_SHA256;
+            if (((ECKeyParameters) signingKey).getParameters().getN().equals(SECP256K1.getN())) {
+                // We use secp256k1 so we assume Ethereum signing
+                return ECDSA_OID;
+            }
+            return ECDSA_WITH_SHA256;
         } else if (signingKey instanceof RSAKeyParameters) {
             return RSA_PKCS1;
         } else {

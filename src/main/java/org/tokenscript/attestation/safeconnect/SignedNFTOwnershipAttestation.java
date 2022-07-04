@@ -33,7 +33,7 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
             this.internalAtt = new NFTOwnershipAttestation(context, tokens, notBefore, notAfter, subjectPublicKey);
             this.verificationKey = signingKey.getPublic();
             this.unsignedEncoding = internalAtt.getDerEncoding();
-            this.signature = SignatureUtility.signWithStandardScheme(unsignedEncoding, signingKey);
+            this.signature = SignatureUtility.signWithEthereum(unsignedEncoding, signingKey.getPrivate());
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
@@ -120,6 +120,6 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
         if (!internalAtt.verify()) {
             return false;
         }
-        return SignatureUtility.verifyWithStandardScheme(getUnsignedEncoding(), getSignature(), getVerificationKey());
+        return SignatureUtility.verifyEthereumSignature(getUnsignedEncoding(), getSignature(), getVerificationKey());
     }
 }

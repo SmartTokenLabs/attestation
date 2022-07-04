@@ -32,7 +32,7 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
             this.internalAtt = new EthereumAddressAttestation(context, subjectAddress, notBefore, notAfter, subjectPublicKey);
             this.verificationKey = signingKey.getPublic();
             this.unsignedEncoding = internalAtt.getDerEncoding();
-            this.signature = SignatureUtility.signWithStandardScheme(unsignedEncoding, signingKey);
+            this.signature = SignatureUtility.signWithEthereum(unsignedEncoding, signingKey.getPrivate());
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
@@ -119,6 +119,6 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
         if (!internalAtt.verify()) {
             return false;
         }
-        return SignatureUtility.verifyWithStandardScheme(getUnsignedEncoding(), getSignature(), getVerificationKey());
+        return SignatureUtility.verifyEthereumSignature(getUnsignedEncoding(), getSignature(), getVerificationKey());
     }
 }

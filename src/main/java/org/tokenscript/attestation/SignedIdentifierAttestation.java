@@ -1,24 +1,19 @@
 package org.tokenscript.attestation;
 
-import org.bouncycastle.asn1.*;
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.core.Verifiable;
-import java.io.IOException;
-import java.io.InvalidObjectException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.tokenscript.attestation.core.*;
+
+import java.io.IOException;
+import java.io.InvalidObjectException;
 
 public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Validateable {
   private static final Logger logger = LogManager.getLogger(SignedIdentifierAttestation.class);
-
-  public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
   private final IdentifierAttestation att;
   private final byte[] signature;
