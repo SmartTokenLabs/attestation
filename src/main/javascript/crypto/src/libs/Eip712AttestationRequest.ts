@@ -66,7 +66,7 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
         this.jsonEncoding = json;
         let tokenData = JSON.parse(json);
         let signatureInHex = tokenData.signatureInHex;
-
+  
         let jsonSigned = JSON.parse(tokenData.jsonSigned);
         this.eip712DomainData = jsonSigned.domain;
         this.data = jsonSigned.message;
@@ -130,23 +130,20 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     public verify(): boolean {
 
         if (!this.attestationRequest.verify()) {
+            logger(DEBUGLEVEL.MEDIUM, "Could not verify proof");
             return false;
         }
 
-        // if (!this.verifySignature(this.jsonEncoding, this.data.address)) {
-        //     return false;
-        // }
+        return true;
 
-        return this.verifyDomainData();
-
-    }
-
-    public verifyDomainData(): boolean{
-        return (this.eip712DomainData.name.toLowerCase() === this.getDomain().toLowerCase())
-            && (this.eip712DomainData.version === SignatureUtility.Eip712Data['PROTOCOL_VERSION']);
     }
 
     public checkValidity(): boolean {
+
+        if (!this.validateDomain(this.eip712DomainData)){
+            logger(DEBUGLEVEL.MEDIUM, "Domain invalid");
+            return false;
+        }
 
         if (this.data.description !== this.usageValue) {
             logger(DEBUGLEVEL.MEDIUM,'Description is not correct. :' + this.data.description + ' !== ' + this.usageValue);
