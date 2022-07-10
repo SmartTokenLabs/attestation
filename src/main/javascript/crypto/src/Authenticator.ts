@@ -197,6 +197,7 @@ export class Authenticator {
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
         let attestationRequest = new Eip712AttestationRequest(userKey);
+        // undefined means that we will use default value in attestationRequest.addData() second parameter
         await attestationRequest.addData(attestorDomain, undefined, receiverId, attRequest);
 
         Authenticator.checkAttestRequestVerifiability(attestationRequest);
