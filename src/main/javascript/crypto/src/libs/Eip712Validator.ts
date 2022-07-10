@@ -46,30 +46,6 @@ export class Eip712Validator {
         return this.domain;
     }
 
-    // we dont use it in Java code
-    // validateRequest(jsonInput: string) {
-    //     try {
-    //         let authenticationData = JSON.parse(jsonInput);
-
-    //         let authenticationRootNode = JSON.parse(authenticationData.jsonSigned);
-
-    //         let eip712Domain = authenticationRootNode.domain;
-    //         let eip712Message = authenticationRootNode.message;
-
-    //         let attestedObject = this.retrieveAttestedObject(eip712Message);
-
-    //         // TODO implement
-    //         return this.validateDomain(eip712Domain)
-    //         // && this.validateAuthentication(auth);
-    //         // accept &= verifySignature(authenticationData, attestedObject.getUserPublicKey());
-    //         // accept &= validateAttestedObject(attestedObject);
-    //         // return accept;
-    //     } catch (e) {
-    //         logger(DEBUGLEVEL.LOW, 'Validate error!', e);
-    //         return false;
-    //     }
-    // }
-
     validateDomain(domainToCheck: Eip712DomainInterface): boolean {
         if ( !domainToCheck ) {
             logger(DEBUGLEVEL.LOW, "Input param domainToCheck required");
