@@ -46,6 +46,34 @@ export class Eip712Validator {
         return this.domain;
     }
 
+    setSalt(salt: string){
+        this.salt = salt;
+    }
+
+    getSalt(): string{
+        return this.salt;
+    }
+
+    //getPrimaryName
+
+    setPrimaryName(primaryName: string){
+        this.primaryName = primaryName;
+    }
+
+    getPrimaryName(): string{
+        return this.primaryName;
+    }
+
+
+    setChainId(chainId: number){
+        if (chainId < 1) throw new Error('ChainId should be a positive number');
+        this.chainId = chainId;
+    }
+
+    getChainId(): number{
+        return this.chainId;
+    }
+
     validateDomain(domainToCheck: Eip712DomainInterface): boolean {
         if ( !domainToCheck ) {
             logger(DEBUGLEVEL.LOW, "Input param domainToCheck required");
