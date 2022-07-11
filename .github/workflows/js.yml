@@ -52,7 +52,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  downstream-ci:
+  downstream-attestation_id-ci:
     needs:
       - prerelease
     runs-on: ubuntu-latest
@@ -64,4 +64,18 @@ jobs:
           repo: attestation.id
           github_token: ${{ secrets.PERSONAL_TOKEN }}
           workflow_file_name: frontend-p1.yml
+          client_payload: '{ "attestation_ver": "${{ needs.prerelease.outputs.version }}", "use_github_packages": "true" }'
+
+  downstream-token-negotiator-ci:
+    needs:
+      - prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Downstream CI
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        with:
+          owner: TokenScript
+          repo: token-negotiator
+          github_token: ${{ secrets.PERSONAL_TOKEN }}
+          workflow_file_name: tn-p1.yml
           client_payload: '{ "attestation_ver": "${{ needs.prerelease.outputs.version }}", "use_github_packages": "true" }'
