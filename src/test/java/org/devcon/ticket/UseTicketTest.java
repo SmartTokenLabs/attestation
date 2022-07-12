@@ -16,6 +16,7 @@ import org.tokenscript.attestation.core.*;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.DERUtility;
 import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.core.*;
 import org.tokenscript.attestation.demo.SmartContract;
 
 import java.io.IOException;
