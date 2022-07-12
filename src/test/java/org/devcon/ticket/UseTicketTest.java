@@ -5,6 +5,7 @@ import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,6 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.*;
 import org.tokenscript.attestation.core.*;
+import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.DERUtility;
+import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.demo.SmartContract;
 
 import java.io.IOException;
@@ -21,6 +25,7 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,16 +65,55 @@ public class UseTicketTest {
 
   @BeforeEach
   public void makeAttestedTicket() {
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    attestedTicket = new AttestedObject<Ticket>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+    attestedTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
     assertTrue(attestedTicket.verify());
     assertTrue(attestedTicket.checkValidity());
   }
 
+  // Write test material to be used in JS testing
   @Test
-  public void testSunshine() {
+  void writeTestMaterial() throws Exception {
+    FileImportExport.storeKey(ticketIssuerKeys.getPublic(), "ticket-issuer-key");
+    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    FileImportExport.storeMaterial(ticket, "ticket");
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    FileImportExport.storeKey(attestorKeys.getPublic(), "att-issuer-key");
+    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
+    FileImportExport.storeMaterial(signed, "signed-att");
+    AttestedObject<Ticket> attestedTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+    FileImportExport.storeMaterial(attestedTicket, "attested-ticket");
+
+    // Validate loading
+    AsymmetricKeyParameter ticketValidationKey = FileImportExport.loadKey("ticket-issuer-key");
+
+    DevconTicketDecoder ticketDecoder = new DevconTicketDecoder(ticketValidationKey);
+    Ticket decodedTicket = FileImportExport.loadMaterial(ticketDecoder, "ticket");
+    assertTrue(decodedTicket.verify());
+    assertTrue(decodedTicket.checkValidity());
+
+    AsymmetricKeyParameter attValidationKey = FileImportExport.loadKey("att-issuer-key");
+    Function<byte[], SignedIdentifierAttestation> attDec = (input) -> {
+      try {
+        return new SignedIdentifierAttestation(input, attValidationKey);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
+    SignedIdentifierAttestation decodedAtt = FileImportExport.loadMaterial(attDec, "signed-att");
+    assertTrue(decodedAtt.verify());
+    assertTrue(decodedAtt.checkValidity());
+
+    AttestedObjectDecoder<Ticket> attestedTicketDecoder = new AttestedObjectDecoder<>(ticketDecoder, attValidationKey);
+    AttestedObject<Ticket> decodedAttestedTicket = FileImportExport.loadMaterial(attestedTicketDecoder, "attested-ticket");
+    assertTrue(decodedAttestedTicket.verify());
+    assertTrue(decodedAttestedTicket.checkValidity());
+  }
+
+  @Test
+  void testSunshine() {
     // *** PRINT DER ENCODING OF OBJECTS ***
     try {
       assertTrue(attestedTicket.verify());
@@ -101,14 +145,14 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testWithUnpredictableNumberBundle() {
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+  void testWithUnpredictableNumberBundle() {
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     UnpredictableNumberTool unt = new UNMac(rand, new byte[]{0x01, 0x02}, "http://www.domain.com");
     UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
-    AttestedObject<Ticket> attestedTicket = new AttestedObject<Ticket>(ticket, signed,
-        ATTESTATION_SECRET, TICKET_SECRET, un.getNumber().getBytes(), crypto);
+    AttestedObject<Ticket> attestedTicket = new AttestedObject<>(ticket, signed,
+            ATTESTATION_SECRET, TICKET_SECRET, un.getNumber().getBytes(), crypto);
     assertTrue(attestedTicket.verify());
     assertTrue(attestedTicket.checkValidity());
     // Validate the UN is correct
@@ -117,9 +161,9 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testDecoding() throws InvalidObjectException {
-    AttestedObject newAttestedTicket = new AttestedObject(attestedTicket.getDerEncoding(), new DevconTicketDecoder(
-        ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
+  void testDecoding() throws InvalidObjectException {
+    AttestedObject<Ticket> newAttestedTicket = new AttestedObject<>(attestedTicket.getDerEncoding(), new DevconTicketDecoder(
+            ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
     assertTrue(newAttestedTicket.getAttestableObject().verify());
     assertTrue(newAttestedTicket.verify());
     assertTrue(newAttestedTicket.checkValidity());
@@ -127,21 +171,21 @@ public class UseTicketTest {
     assertTrue(AttestationCrypto.verifyEqualityProof(newAttestedTicket.getAtt().getUnsignedAttestation().getCommitment(), newAttestedTicket.getAttestableObject().getCommitment(), newAttestedTicket.getPok()));
 
     assertArrayEquals(attestedTicket.getAttestableObject().getDerEncoding(),
-        newAttestedTicket.getAttestableObject().getDerEncoding());
+            newAttestedTicket.getAttestableObject().getDerEncoding());
     assertArrayEquals(attestedTicket.getAtt().getDerEncoding(), newAttestedTicket.getAtt().getDerEncoding());
     assertArrayEquals(attestedTicket.getPok().getDerEncoding(), newAttestedTicket.getPok().getDerEncoding());
     assertEquals(SignatureUtility.addressFromKey(attestedTicket.getAttestedUserKey()),
-        SignatureUtility.addressFromKey(subjectKeys.getPublic()));
+            SignatureUtility.addressFromKey(subjectKeys.getPublic()));
     assertArrayEquals(attestedTicket.getDerEncoding(), newAttestedTicket.getDerEncoding());
 
-    AttestedObject newConstructor = new AttestedObject(attestedTicket.getAttestableObject(),
-        attestedTicket.getAtt(), attestedTicket.getPok());
+    AttestedObject<Ticket> newConstructor = new AttestedObject<>(attestedTicket.getAttestableObject(),
+            attestedTicket.getAtt(), attestedTicket.getPok());
 
     assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
   }
 
   @Test
-  public void testSmartContractDecode() throws Exception {
+  void testSmartContractDecode() throws Exception {
     //try building all components
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, 15); //valid for 15 seconds
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
@@ -158,7 +202,7 @@ public class UseTicketTest {
     assertTrue(tar.issuerAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(ticketIssuerKeys.getPublic())));
     assertTrue(tar.attestorAddress.equalsIgnoreCase(SignatureUtility.addressFromKey(attestorKeys.getPublic())));
     assertTrue(tar.attestationValid);
-    assertEquals(Numeric.toBigInt(tar.ticketId), TICKET_ID);
+    assertEquals(TICKET_ID, Numeric.toBigInt(tar.ticketId));
 
     System.out.println("Test passed");
     System.out.println("Creating an attestation which only just expired ...");
@@ -166,6 +210,7 @@ public class UseTicketTest {
     att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL, -19); //expires instantly
     signed = new SignedIdentifierAttestation(att, attestorKeys);
     ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    // TODO this lines causes sporadic failures with issues in the asn1 encoding.
     useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
     tar = contract.callVerifyTicketAttestation(useTicket.getDerEncoding());
@@ -225,14 +270,14 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testRebuildComponents() {
+  void testRebuildComponents() {
     //try building all components
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     AttestedObject<Ticket> useTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
 
-    AttestedObject<Ticket> newUseTicket = new AttestedObject<Ticket>(useTicket.getDerEncoding(), new DevconTicketDecoder(
+    AttestedObject<Ticket> newUseTicket = new AttestedObject<>(useTicket.getDerEncoding(), new DevconTicketDecoder(
             ticketIssuerKeys.getPublic()), attestorKeys.getPublic());
 
     assertTrue(newUseTicket.getAttestableObject().verify());
@@ -240,7 +285,7 @@ public class UseTicketTest {
     assertTrue(newUseTicket.verify());
     assertTrue(newUseTicket.checkValidity());
 
-    AttestedObject newConstructor = new AttestedObject(this.attestedTicket.getAttestableObject(),
+    AttestedObject<Ticket> newConstructor = new AttestedObject<>(this.attestedTicket.getAttestableObject(),
             this.attestedTicket.getAtt(), this.attestedTicket.getPok());
 
     assertArrayEquals(newConstructor.getDerEncoding(), this.attestedTicket.getDerEncoding());
@@ -251,7 +296,7 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testNegativeAttestation() throws Exception {
+  void testNegativeAttestation() throws Exception {
     Attestation att = attestedTicket.getAtt().getUnsignedAttestation();
     Field field = att.getClass().getSuperclass().getDeclaredField("version");
     field.setAccessible(true);
@@ -267,12 +312,12 @@ public class UseTicketTest {
 
   // Test that the key used to sign the Attested Ticket is the same as attested to
   @Test
-  public void testNegativeUnmatchingKeys() throws Exception {
+  void testNegativeUnmatchingKeys() throws Exception {
     Attestation att = attestedTicket.getAtt().getUnsignedAttestation();
     Field field = att.getClass().getSuperclass().getDeclaredField("subjectPublicKeyInfo");
     field.setAccessible(true);
     SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory
-        .createSubjectPublicKeyInfo(attestorKeys.getPublic());
+            .createSubjectPublicKeyInfo(attestorKeys.getPublic());
     assertFalse(Arrays.equals(spki.getEncoded(), att.getSubjectPublicKeyInfo().getEncoded()));
     // Change public key
     field.set(att, spki);
@@ -286,7 +331,7 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testNegativeDifferentKeys() throws Exception {
+  void testNegativeDifferentKeys() throws Exception {
     SignedIdentifierAttestation att = attestedTicket.getAtt();
     Field field = att.getClass().getDeclaredField("attestationVerificationKey");
     field.setAccessible(true);
@@ -298,10 +343,10 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testNegativeWrongProofIdentifier() throws Exception {
+  void testNegativeWrongProofIdentifier() throws Exception {
     // Wrong attestation secret
     ProofOfExponent newPok = crypto
-        .computeEqualityProof(attestedTicket.getAtt().getUnsignedAttestation().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), new BigInteger("42424242"), TICKET_SECRET);
+            .computeEqualityProof(attestedTicket.getAtt().getUnsignedAttestation().getCommitment(), attestedTicket.getAttestableObject().getCommitment(), new BigInteger("42424242"), TICKET_SECRET);
     Field field = attestedTicket.getClass().getDeclaredField("pok");
     field.setAccessible(true);
     // Change the proof
@@ -315,8 +360,8 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testNegativeWrongRiddle() throws Exception {
-    Ticket newTicket  = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
+  void testNegativeWrongRiddle() throws Exception {
+    Ticket newTicket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     assertTrue(newTicket.checkValidity());
     assertTrue(newTicket.verify());
     Field field = attestedTicket.getClass().getDeclaredField("attestableObject");
@@ -330,14 +375,14 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testNegativeConstruction() {
+  void testNegativeConstruction() {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     // Add an extra t in the mail
     Ticket ticket = new Ticket("testt@test.ts", CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     try {
-      AttestedObject current = new AttestedObject(ticket, signed, ATTESTATION_SECRET,
-          TICKET_SECRET, UN, crypto);
+      AttestedObject<Ticket> current = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET,
+              TICKET_SECRET, UN, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong email
@@ -345,33 +390,18 @@ public class UseTicketTest {
   }
 
   @Test
-  public void testNegativeConstruction2() {
+  void testNegativeConstruction2() {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
-    try {
-      // Wrong subject secret
-      AttestedObject current = new AttestedObject(ticket, signed,
-          TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET, UN, crypto);
-      fail();
-    } catch (RuntimeException e) {
-      // Expected not to be able to construct a proof for a wrong secret
-    }
-    try {
-      // Wrong attestation secret
-      AttestedObject current = new AttestedObject(ticket, signed, TICKET_SECRET,
-          ATTESTATION_SECRET.add(BigInteger.ONE), UN, crypto);
-      fail();
-    } catch (RuntimeException e) {
-      // Expected not to be able to construct a proof for a wrong secret
-    }
-    try {
-      // Correlated secrets
-      AttestedObject current = new AttestedObject(ticket, signed,
-          TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET.add(BigInteger.ONE), UN, crypto);
-      fail();
-    } catch (RuntimeException e) {
-      // Expected not to be able to construct a proof for a wrong secret
-    }
+    // Expected not to be able to construct a proof for a wrong secret
+    assertThrows(RuntimeException.class, () -> new AttestedObject<>(ticket, signed,
+            TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET, UN, crypto));
+    // Expected not to be able to construct a proof for a wrong secret
+    assertThrows(RuntimeException.class, () -> new AttestedObject<>(ticket, signed, TICKET_SECRET,
+            ATTESTATION_SECRET.add(BigInteger.ONE), UN, crypto));
+    // Expected not to be able to construct a proof for a wrong secret
+    assertThrows(RuntimeException.class, () -> new AttestedObject<>(ticket, signed,
+            TICKET_SECRET.add(BigInteger.ONE), ATTESTATION_SECRET.add(BigInteger.ONE), UN, crypto));
   }
 }
