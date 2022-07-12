@@ -1,12 +1,5 @@
-package org.devcon.ticket;
+package org.tokenscript.attestation.core;
 
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.URLUtility;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.time.Clock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.digests.SHA3Digest;
@@ -14,27 +7,29 @@ import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.tokenscript.eip712.Eip712Common;
 
-public class UnpredictableNumberTool {
-  private static final Logger logger = LogManager.getLogger(UnpredictableNumberTool.class);
-  public static final int BYTES_IN_SEED = AttestationCrypto.BYTES_IN_DIGEST;
-  public static final long DEFAULT_VALIDITY_IN_MS = 3600*1000;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Clock;
+
+public class UNMac implements UnpredictableNumberTool {
+  // TODO should actually be at least 128 bits to avoid brute-force attacks, although it seems all relevant attacks will have to be online attacks
   public static final int BYTES_IN_UN = 8; // 64 bits
-  private static final ByteBuffer longBuffer = ByteBuffer.allocate(Long.BYTES);
+  private static final Logger logger = LogManager.getLogger(UNMac.class);
 
   private final SecureRandom random;
   private final String domain;
   private final long validityInMs;
-  private final HMac hmac = new HMac(new SHA3Digest(256));
+  private final HMac hmac = new HMac(new SHA3Digest(BYTES_IN_SEED * 8));
 
-  public UnpredictableNumberTool(byte[] key, String domain) {
+  public UNMac(byte[] key, String domain) {
     this(new SecureRandom(), key, domain);
   }
 
-  public UnpredictableNumberTool(SecureRandom random, byte[] key, String domain) {
+  public UNMac(SecureRandom random, byte[] key, String domain) {
     this(random, key, domain, DEFAULT_VALIDITY_IN_MS);
   }
 
-  public UnpredictableNumberTool(SecureRandom random, byte[] key, String domain, long validityInMs) {
+  public UNMac(SecureRandom random, byte[] key, String domain, long validityInMs) {
     this.random = random;
     this.domain = domain.toLowerCase();
     this.validityInMs = validityInMs;
@@ -45,6 +40,7 @@ public class UnpredictableNumberTool {
     }
   }
 
+  @Override
   public String getDomain() {
     return domain;
   }
@@ -53,40 +49,51 @@ public class UnpredictableNumberTool {
    * Computes an URL friendly base 64 encoding of HMAC(expirationInMs || domain).
    * The encoding consists of BYTES_IN_UN bytes
    * ExpirationInMs is computed from current time plus DEFAULT_VALIDITY_IN_MS
+   * The context will be randomly sampled.
    */
+  @Override
   public UnpredictableNumberBundle getUnpredictableNumberBundle() {
-    long expiration = Clock.systemUTC().millis() + validityInMs;
-    byte[] randomness = random.generateSeed(BYTES_IN_SEED);
-    return new UnpredictableNumberBundle(getUnpredictableNumber(randomness, expiration), randomness, domain, expiration);
+    return getUnpredictableNumberBundle(null);
   }
 
-  private String getUnpredictableNumber(byte[] randomness, long expirationInMs) {
+  @Override
+  public UnpredictableNumberBundle getUnpredictableNumberBundle(byte[] context) {
+    long expiration = Clock.systemUTC().millis() + validityInMs;
+    byte[] randomness = random.generateSeed(BYTES_IN_SEED);
+    return new UnpredictableNumberBundle(getUnpredictableNumber(randomness, expiration, context), randomness, domain, expiration, context);
+  }
+
+  private String getUnpredictableNumber(byte[] randomness, long expirationInMs, byte[] context) {
     hmac.reset();
-    hmac.update(longToBytes(expirationInMs), 0, Long.BYTES);
+    hmac.update(UnpredictableNumberTool.longToBytes(expirationInMs), 0, Long.BYTES);
     hmac.update(randomness, 0, BYTES_IN_SEED);
+    if (context != null) {
+      hmac.update(UnpredictableNumberTool.hashContext(context), 0, BYTES_IN_SEED);
+    }
     hmac.update(domain.getBytes(StandardCharsets.UTF_8), 0, domain.getBytes(StandardCharsets.UTF_8).length);
-    byte[] digest = new byte[256 / 8];
+    byte[] digest = new byte[BYTES_IN_SEED];
     hmac.doFinal(digest, 0);
     byte[] result = new byte[BYTES_IN_UN];
     System.arraycopy(digest, 0, result, 0, BYTES_IN_UN);
     return URLUtility.encodeData(result);
   }
 
+  @Override
   public boolean validateUnpredictableNumber(String un, byte[] randomness, long expirationInMs) {
+    return validateUnpredictableNumber(un, randomness, expirationInMs, null);
+  }
+
+  @Override
+  public boolean validateUnpredictableNumber(String un, byte[] randomness, long expirationInMs, byte[] context) {
     if (Clock.systemUTC().millis() > expirationInMs) {
       logger.error("Unpredictable number has expired");
       return false;
     }
-    String expectedNumber = getUnpredictableNumber(randomness, expirationInMs);
+    String expectedNumber = getUnpredictableNumber(randomness, expirationInMs, context);
     if (!expectedNumber.equals(un)) {
       logger.error("The unpredictable number is computed incorrectly. Either wrong key or wrong domain");
       return false;
     }
     return true;
-  }
-
-  private static byte[] longToBytes(long x) {
-    longBuffer.putLong(0, x);
-    return longBuffer.array();
   }
 }

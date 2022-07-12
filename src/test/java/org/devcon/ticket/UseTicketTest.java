@@ -1,20 +1,6 @@
 package org.devcon.ticket;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import com.alphawallet.ethereum.TicketAttestationReturn;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.util.Arrays;
-
 import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -24,16 +10,19 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.tokenscript.attestation.Attestation;
-import org.tokenscript.attestation.AttestedObject;
-import org.tokenscript.attestation.HelperTest;
-import org.tokenscript.attestation.IdentifierAttestation;
-import org.tokenscript.attestation.ProofOfExponent;
-import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.DERUtility;
-import org.tokenscript.attestation.core.SignatureUtility;
+import org.tokenscript.attestation.*;
+import org.tokenscript.attestation.core.*;
 import org.tokenscript.attestation.demo.SmartContract;
+
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UseTicketTest {
   private static final String MAIL = "test@test.ts";
@@ -42,7 +31,7 @@ public class UseTicketTest {
   private static final String CONFERENCE_ID = "Åø"; // Ensure non-number non ASCII can be handled
   private static final BigInteger TICKET_SECRET = new BigInteger("48646");
   private static final BigInteger ATTESTATION_SECRET = new BigInteger("8408464");
-  private static final byte[] UN = new byte[] { 0x42 };
+  private static final byte[] UN = new byte[]{0x42};
 
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair attestorKeys;
@@ -83,11 +72,13 @@ public class UseTicketTest {
   public void testSunshine() {
     // *** PRINT DER ENCODING OF OBJECTS ***
     try {
+      assertTrue(attestedTicket.verify());
+      assertTrue(attestedTicket.checkValidity());
       PublicKey pk;
       System.out.println("Signed attestation:");
       DERUtility.writePEM(attestedTicket.getAtt().getDerEncoding(), "SIGNABLE", System.out);
       pk = new EC().generatePublic(
-          SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(attestorKeys.getPublic()));
+              SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(attestorKeys.getPublic()));
       System.out.println("Attestation verification key:");
       DERUtility.writePEM(pk.getEncoded(), "PUBLIC KEY", System.out);
 
@@ -114,7 +105,7 @@ public class UseTicketTest {
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL );
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
-    UnpredictableNumberTool unt = new UnpredictableNumberTool(rand, new byte[] { 0x01, 0x02}, "http://www.domain.com");
+    UnpredictableNumberTool unt = new UNMac(rand, new byte[]{0x01, 0x02}, "http://www.domain.com");
     UnpredictableNumberBundle un = unt.getUnpredictableNumberBundle();
     AttestedObject<Ticket> attestedTicket = new AttestedObject<Ticket>(ticket, signed,
         ATTESTATION_SECRET, TICKET_SECRET, un.getNumber().getBytes(), crypto);
