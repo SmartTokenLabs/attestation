@@ -1,27 +1,19 @@
 package org.tokenscript.attestation;
 
-import org.tokenscript.attestation.core.ASNEncodable;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.core.Verifiable;
-import java.io.IOException;
-import java.io.InvalidObjectException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 
-public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Validateable {
+import java.io.IOException;
+import java.io.InvalidObjectException;
+
+public class SignedIdentifierAttestation implements CheckableObject {
   private static final Logger logger = LogManager.getLogger(SignedIdentifierAttestation.class);
 
   public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
@@ -44,9 +36,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
   }
 
   public SignedIdentifierAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
-    ASN1InputStream input = null;
-    try {
-      input = new ASN1InputStream(derEncoding);
+    try (ASN1InputStream input = new ASN1InputStream(derEncoding)) {
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
       AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
@@ -54,17 +44,15 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
       // Attestation type and an encoder to construct such an attestation
       this.att = new IdentifierAttestation(attestationEnc.getEncoded());
       this.blockchainFriendly = att.isBlockchainFriendly();
-      DERBitString signatureEnc = DERBitString.getInstance(asn1.getObjectAt(2));
+      ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(2));
       this.signature = signatureEnc.getBytes();
       this.attestationVerificationKey = verificationKey;
       if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {
         throw ExceptionUtil.throwException(logger,
-            new IllegalArgumentException("Algorithm specified is not consistent"));
+                new IllegalArgumentException("Algorithm specified is not consistent"));
       }
       constructorCheck(verificationKey);
-      } finally {
-        input.close();
-      }
+    }
   }
 
   void constructorCheck(AsymmetricKeyParameter verificationKey) {
