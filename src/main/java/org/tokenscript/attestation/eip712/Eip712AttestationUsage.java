@@ -1,22 +1,19 @@
 package org.tokenscript.attestation.eip712;
 
-import org.tokenscript.attestation.AttestationAndUsageValidator;
-import org.tokenscript.attestation.FullProofOfExponent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.tokenscript.attestation.*;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import org.tokenscript.attestation.SignedIdentifierAttestation;
-import org.tokenscript.attestation.Timestamp;
-import org.tokenscript.attestation.UseAttestation;
 import org.tokenscript.attestation.core.ExceptionUtil;
 import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.core.Verifiable;
 import org.tokenscript.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
-import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
+
+import java.io.IOException;
 
 /**
  * Class for asserting and validating that a user who already has an Identifier Attestation wishes to
@@ -90,13 +87,13 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   String makeToken(String identifier, UseAttestation useAttestation,
       AsymmetricKeyParameter signingKey) throws IOException {
-    Eip712Signer issuer = new Eip712Signer<AttestationUsageData>(signingKey, encoder);
+    Eip712Signer<AttestationUsageData> issuer = new Eip712Signer<>(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(useAttestation.getDerEncoding());
     Timestamp now = new Timestamp();
     Timestamp expirationTime = new Timestamp(now.getTime() + maxTokenValidityInMs);
-    AttestationUsageData data = new AttestationUsageData(
-        encoder.getUsageValue(), identifier, encodedUseAttestation, now, expirationTime);
-    return issuer.buildSignedTokenFromJsonObject(data, domain);
+    AttestationUsageData attUsageData = new AttestationUsageData(
+            encoder.getUsageValue(), identifier, encodedUseAttestation, now, expirationTime);
+    return issuer.buildSignedTokenFromJsonObject(attUsageData, domain);
   }
 
   public String getIdentifier() {
@@ -130,10 +127,12 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
 
   @Override
   public boolean checkTokenValidity() {
-    long nonceMinTime = Timestamp.stringTimestampToLong(data.getExpirationTime()) - maxTokenValidityInMs;
-    long nonceMaxTime = Timestamp.stringTimestampToLong(data.getExpirationTime());
     if (!validator.checkTokenValidity()) {
       logger.error("Could not validate underlying object");
+      return false;
+    }
+    if (!validateDomain(jsonEncoding)) {
+      logger.error("Could not validate domain information");
       return false;
     }
     if (!data.getDescription().equals(encoder.getUsageValue())) {
@@ -146,8 +145,14 @@ public class Eip712AttestationUsage extends Eip712Validator implements JsonEncod
       logger.error("Timestamp not valid");
       return false;
     }
+    if (!validateDomain(jsonEncoding)) {
+      logger.error("Could not validate domain information");
+      return false;
+    }
+    long nonceMinTime = Timestamp.stringTimestampToLong(data.getExpirationTime()) - maxTokenValidityInMs;
+    long nonceMaxTime = Timestamp.stringTimestampToLong(data.getExpirationTime());
     if (!Nonce.validateNonce(getPok().getUnpredictableNumber(),
-        getAttestation().getUnsignedAttestation().getAddress(), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
+            getAttestation().getUnsignedAttestation().getAddress(), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
       logger.error("Nonce validation failed");
       return false;
     }
