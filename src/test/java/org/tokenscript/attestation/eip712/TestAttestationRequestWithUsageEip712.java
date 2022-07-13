@@ -1,7 +1,5 @@
 package org.tokenscript.attestation.eip712;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -33,7 +31,6 @@ import java.security.SecureRandom;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAttestationRequestWithUsageEip712 {
-  private static final Logger logger = LogManager.getLogger(TestAttestationRequestWithUsageEip712.class);
   private static final String DOMAIN = "https://www.attestation.id";
   private static final String MAIL = "email@test.com";
   private static final AttestationType TYPE = AttestationType.EMAIL;
@@ -283,6 +280,20 @@ public class TestAttestationRequestWithUsageEip712 {
     assertTrue(request.verify());
     assertFalse(request.checkValidity());
     assertFalse(request.checkTokenValidity());
+  }
+
+  @Test
+  void wrongDomain() {
+    Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, MAIL,
+            requestWithUsage, userSigningKey);
+    assertTrue(request.verify());
+    assertTrue(request.checkValidity());
+    assertTrue(request.checkTokenValidity());
+    // Request with wrong chain
+    Eip712AttestationRequestWithUsage wrongRequest = new Eip712AttestationRequestWithUsage("http://www.nope.com", request.getJsonEncoding());
+    assertTrue(wrongRequest.verify());
+    assertFalse(wrongRequest.checkTokenValidity());
+    assertFalse(wrongRequest.checkTokenValidity());
   }
 
 }
