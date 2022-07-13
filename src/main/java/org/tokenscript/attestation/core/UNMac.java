@@ -45,25 +45,22 @@ public class UNMac implements UnpredictableNumberTool {
     return domain;
   }
 
-  /**
-   * Computes an URL friendly base 64 encoding of HMAC(expirationInMs || domain).
-   * The encoding consists of BYTES_IN_UN bytes
-   * ExpirationInMs is computed from current time plus DEFAULT_VALIDITY_IN_MS
-   * The context will be randomly sampled.
-   */
   @Override
   public UnpredictableNumberBundle getUnpredictableNumberBundle() {
     return getUnpredictableNumberBundle(null);
   }
 
+
   @Override
   public UnpredictableNumberBundle getUnpredictableNumberBundle(byte[] context) {
     long expiration = Clock.systemUTC().millis() + validityInMs;
     byte[] randomness = random.generateSeed(BYTES_IN_SEED);
+    // Construct UN of BYTES_IN_UN bytes
     return new UnpredictableNumberBundle(getUnpredictableNumber(randomness, expiration, context), randomness, domain, expiration, context);
   }
 
   private String getUnpredictableNumber(byte[] randomness, long expirationInMs, byte[] context) {
+    // compute HMAC on the expiration, randomness and the hash digest of the context
     hmac.reset();
     hmac.update(UnpredictableNumberTool.longToBytes(expirationInMs), 0, Long.BYTES);
     hmac.update(randomness, 0, BYTES_IN_SEED);

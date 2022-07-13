@@ -71,9 +71,14 @@ public class UNSignature implements UnpredictableNumberTool {
     private String getUnpredictableNumber(byte[] randomness, long expirationInMs, byte[] context) {
         byte[] rawUN = getRawUN(randomness, expirationInMs, context);
         byte[] sig = SignatureUtility.signWithEthereum(rawUN, privateKey);
+        // Let the UN be the signature
         return URLUtility.encodeData(sig);
     }
 
+    /**
+     * Construct a byte array of the content to be used in constructing the UN.
+     * Context is allowed to be null, in which case, it is not included.
+     */
     private byte[] getRawUN(byte[] randomness, long expirationInMs, byte[] context) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
