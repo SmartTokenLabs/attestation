@@ -301,4 +301,18 @@ public class TestAttestationUsageEip712 {
     assertTrue(request.verify());
     assertFalse(request.checkTokenValidity());
   }
+
+  @Test
+  void wrongDomain() {
+    UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
+    assertTrue(usage.verify());
+    assertTrue(usage.checkValidity());
+    Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL, usage, userSigningKey);
+    assertTrue(request.verify());
+    assertTrue(request.checkTokenValidity());
+    // Request with wrong chain
+    Eip712AttestationUsage wrongRequest = new Eip712AttestationUsage("http://www.nope.com", attestorKeys.getPublic(), request.getJsonEncoding());
+    assertTrue(wrongRequest.verify());
+    assertFalse(wrongRequest.checkTokenValidity());
+  }
 }
