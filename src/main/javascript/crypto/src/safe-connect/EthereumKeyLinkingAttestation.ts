@@ -5,11 +5,15 @@ import {base64ToUint8array, hexStringToUint8, uint8arrayToBase64} from "../libs/
 import {EpochTimeValidity} from "../asn1/shemas/EpochTimeValidity";
 import {EthereumKeyLinkingAttestation as KeyLinkSchema} from "../asn1/shemas/EthereumKeyLinkingAttestation";
 import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
+import {KeyPair} from "../libs/KeyPair";
+import {EthereumAddressAttestation} from "./EthereumAddressAttestation";
+import {NFTOwnershipAttestation} from "./NFTOwnershipAttestation";
 
+const HOLDING_KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
 
-class EthereumKeyLinkingAttestation {
+export class EthereumKeyLinkingAttestation {
 
-	private readonly linkAttest: SignedEthereumKeyLinkingAttestation;
+	public linkAttest: SignedEthereumKeyLinkingAttestation;
 
 	protected constructor(linkedAttestation: string, linkedEthereumAddress: string) {
 
@@ -32,7 +36,7 @@ class EthereumKeyLinkingAttestation {
 
 		const linkSig = await window.crypto.subtle.sign(
 			{
-				name: "RSASSA-PKCS1-v1_5",
+				name: HOLDING_KEY_ALGORITHM,
 				saltLength: 128,
 			},
 			holdingPrivateKey,
@@ -60,7 +64,48 @@ class EthereumKeyLinkingAttestation {
 		return uint8arrayToBase64(this.getEncoded());
 	}
 
-	verify(){
+	async verify(attestorKeys: KeyPair){
 
+		const signedLinkedAttestation = this.linkAttest.ethereumKeyLinkingAttestation.linkedAttestation;
+
+		let linkedAttestation;
+
+		if (signedLinkedAttestation.attestation.ethereumAddress){
+			linkedAttestation = new EthereumAddressAttestation();
+			linkedAttestation.fromObject(signedLinkedAttestation);
+		} else {
+			linkedAttestation = new NFTOwnershipAttestation();
+			linkedAttestation.fromObject(signedLinkedAttestation);
+		}
+
+		linkedAttestation.verify(attestorKeys);
+
+		let linkedAttestationPubKey = linkedAttestation.getSubjectPublicKey();
+
+		const encodedLinkAttestation = AsnSerializer.serialize(this.linkAttest.ethereumKeyLinkingAttestation);
+
+		const nftSubjectPubKey = await window.crypto.subtle.importKey(
+			"spki",
+			new Uint8Array(linkedAttestationPubKey),
+			{
+				name: HOLDING_KEY_ALGORITHM,
+				hash: {name: "SHA-256"}
+			},
+			true,
+			["verify"]
+		);
+
+		const valid = await window.crypto.subtle.verify(
+			{
+				name: HOLDING_KEY_ALGORITHM,
+				saltLength: 128,
+			},
+			nftSubjectPubKey,
+			this.linkAttest.signatureValue,
+			encodedLinkAttestation
+		);
+
+		if (!valid)
+			throw new Error("Signature verification failed");
 	}
 }
