@@ -1,17 +1,25 @@
-import { AsnSerializer } from "@peculiar/asn1-schema";
+import {AsnParser, AsnSerializer} from "@peculiar/asn1-schema";
 import {LinkedAttestation, SignedLinkedAttestation} from "../asn1/shemas/SignedLinkedAttestation";
 import {KeyPair} from "../libs/KeyPair";
-import {hexStringToUint8} from "../libs/utils";
+import {base64ToUint8array, hexStringToUint8, uint8arrayToBase64} from "../libs/utils";
 import {ethers} from "ethers";
 
 export abstract class AbstractLinkedAttestation {
 
 	abstract TYPE: keyof LinkedAttestation;
 
-	private linkedAttestation: SignedLinkedAttestation
+	protected linkedAttestation: SignedLinkedAttestation
 
 	fromObject(attestation: SignedLinkedAttestation){
 		this.linkedAttestation = attestation;
+	}
+
+	fromBytes(asnBytes: Uint8Array){
+		this.linkedAttestation = AsnParser.fromASN(asnBytes, SignedLinkedAttestation);
+	}
+
+	fromBase64(base64Attestation: string){
+		this.fromBytes(base64ToUint8array(base64Attestation));
 	}
 
 	getAttestationData(){
@@ -20,6 +28,14 @@ export abstract class AbstractLinkedAttestation {
 
 	getSubjectPublicKey(){
 		return this.getAttestationData().subjectPublicKey;
+	}
+
+	getEncoded(){
+		return new Uint8Array(AsnSerializer.serialize(this.linkedAttestation))
+	}
+
+	getBase64(){
+		return uint8arrayToBase64(this.getEncoded());
 	}
 
 	verify(attestorKeys: KeyPair){

@@ -15,7 +15,7 @@ export class EthereumKeyLinkingAttestation {
 
 	public linkAttest: SignedEthereumKeyLinkingAttestation;
 
-	protected constructor(linkedAttestation: string, linkedEthereumAddress: string) {
+	create(linkedAttestation: string, linkedEthereumAddress: string, holdingPrivateKey?: CryptoKey) {
 
 		let addressAttestObj = AsnParser.parse(base64ToUint8array(linkedAttestation), SignedLinkedAttestation);
 
@@ -48,12 +48,12 @@ export class EthereumKeyLinkingAttestation {
 		this.linkAttest.signatureValue = new Uint8Array(linkSig);
 	}
 
-	static fromBytes(){
-
+	fromBytes(asnBytes: Uint8Array){
+		this.linkAttest = AsnParser.fromASN(asnBytes, SignedEthereumKeyLinkingAttestation);
 	}
 
-	static fromBase64(){
-
+	fromBase64(base64Attestation: string){
+		this.fromBytes(base64ToUint8array(base64Attestation));
 	}
 
 	getEncoded(){
@@ -64,7 +64,7 @@ export class EthereumKeyLinkingAttestation {
 		return uint8arrayToBase64(this.getEncoded());
 	}
 
-	async verify(attestorKeys: KeyPair){
+	getLinkedAttestationObject(){
 
 		const signedLinkedAttestation = this.linkAttest.ethereumKeyLinkingAttestation.linkedAttestation;
 
@@ -77,6 +77,13 @@ export class EthereumKeyLinkingAttestation {
 			linkedAttestation = new NFTOwnershipAttestation();
 			linkedAttestation.fromObject(signedLinkedAttestation);
 		}
+
+		return linkedAttestation;
+	}
+
+	async verify(attestorKeys: KeyPair){
+
+		let linkedAttestation = this.getLinkedAttestationObject();
 
 		linkedAttestation.verify(attestorKeys);
 
