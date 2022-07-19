@@ -13,9 +13,9 @@ const HOLDING_KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
 
 export class EthereumKeyLinkingAttestation {
 
-	public linkAttest: SignedEthereumKeyLinkingAttestation;
+	protected linkAttest: SignedEthereumKeyLinkingAttestation;
 
-	create(linkedAttestation: string, linkedEthereumAddress: string, holdingPrivateKey?: CryptoKey) {
+	create(linkedAttestation: string, linkedEthereumAddress: string) {
 
 		let addressAttestObj = AsnParser.parse(base64ToUint8array(linkedAttestation), SignedLinkedAttestation);
 
@@ -49,7 +49,7 @@ export class EthereumKeyLinkingAttestation {
 	}
 
 	fromBytes(asnBytes: Uint8Array){
-		this.linkAttest = AsnParser.fromASN(asnBytes, SignedEthereumKeyLinkingAttestation);
+		this.linkAttest = AsnParser.parse(asnBytes, SignedEthereumKeyLinkingAttestation);
 	}
 
 	fromBase64(base64Attestation: string){
@@ -62,6 +62,10 @@ export class EthereumKeyLinkingAttestation {
 
 	getBase64(){
 		return uint8arrayToBase64(this.getEncoded());
+	}
+
+	getAttestation(){
+		return this.linkAttest;
 	}
 
 	getLinkedAttestationObject(){

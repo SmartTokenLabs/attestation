@@ -15,7 +15,7 @@ export abstract class AbstractLinkedAttestation {
 	}
 
 	fromBytes(asnBytes: Uint8Array){
-		this.linkedAttestation = AsnParser.fromASN(asnBytes, SignedLinkedAttestation);
+		this.linkedAttestation = AsnParser.parse(asnBytes, SignedLinkedAttestation);
 	}
 
 	fromBase64(base64Attestation: string){
