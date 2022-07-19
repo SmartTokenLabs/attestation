@@ -1,19 +1,5 @@
 package org.tokenscript.attestation;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.SecureRandom;
-import java.time.Clock;
-import java.util.Arrays;
-import java.util.Date;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DEROctetString;
@@ -25,6 +11,17 @@ import org.bouncycastle.util.encoders.Base64;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.core.SignatureUtility;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.util.Arrays;
+import java.util.Date;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AttestationTest {
 
@@ -83,7 +80,7 @@ public class AttestationTest {
         att.setSubjectPublicKeyInfo(newSpki);
         att.setSmartcontracts(Arrays.asList(42L, 13L));
         att.setExtensions(new DERSequence());
-        att.setSigningAlgorithm(SignedIdentifierAttestation.ECDSA_WITH_SHA256);
+        att.setSigningAlgorithm(SignatureUtility.ECDSA_WITH_SHA256);
         assertTrue(att.checkValidity());
         //  The blockchain friendly encoding contains more info
         assertFalse(Arrays.equals(att.getPrehash(true), att.getPrehash(false)));

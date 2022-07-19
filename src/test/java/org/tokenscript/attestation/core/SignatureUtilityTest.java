@@ -1,8 +1,19 @@
 package org.tokenscript.attestation.core;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_CURVE;
-import static org.tokenscript.attestation.core.SignatureUtility.ECDSA_DOMAIN;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.Digest;
+import org.bouncycastle.crypto.digests.KeccakDigest;
+import org.bouncycastle.crypto.generators.Ed448KeyPairGenerator;
+import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
+import org.bouncycastle.crypto.params.*;
+import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.math.ec.ECPoint;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -13,20 +24,8 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.digests.KeccakDigest;
-import org.bouncycastle.crypto.params.*;
-import org.bouncycastle.crypto.signers.ECDSASigner;
-import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
-import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
-import org.bouncycastle.jce.ECPointUtil;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.math.ec.ECPoint;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.tokenscript.attestation.core.SignatureUtility.*;
 
 public class SignatureUtilityTest {
   private static final X9ECParameters SECP364R1 = SECNamedCurves.getByName("secp384r1");
@@ -130,12 +129,12 @@ public class SignatureUtilityTest {
       message[514] = (byte) i;
 
       BigInteger[] ourSig = SignatureUtility
-          .computeInternalSignature(AttestationCrypto.hashWithKeccak(message), (ECPrivateKeyParameters) userKeys.getPrivate());
+              .computeInternalSignature(AttestationCrypto.hashWithKeccak(message), (ECPrivateKeyParameters) userKeys.getPrivate());
       BigInteger[] refSig = signDeterministic(message, userKeys.getPrivate());
       // We need to adjust the s part of the signature if it happens to be
       // less than N/2+1 since these are the only valid Ethereum signatures.
-      if (refSig[1].compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
-        refSig[1] = ECDSA_DOMAIN.getN().subtract(refSig[1]);
+      if (refSig[1].compareTo(SECP256K1_DOMAIN.getN().shiftRight(1)) > 0) {
+        refSig[1] = SECP256K1_DOMAIN.getN().subtract(refSig[1]);
       }
       assertEquals(refSig[0], ourSig[0]);
       assertEquals(refSig[1], ourSig[1]);
@@ -228,11 +227,11 @@ public class SignatureUtilityTest {
 
   @Test
   public void failureOnInvalidKeys() {
-    ECPoint invalidPoint = ECDSA_DOMAIN.getCurve().createPoint(ECDSA_CURVE.getG().getAffineXCoord().toBigInteger(), ECDSA_CURVE.getG().getAffineYCoord().toBigInteger().add(BigInteger.ONE));
+    ECPoint invalidPoint = SECP256K1_DOMAIN.getCurve().createPoint(SECP256K1.getG().getAffineXCoord().toBigInteger(), SECP256K1.getG().getAffineYCoord().toBigInteger().add(BigInteger.ONE));
     // Not on curve
-    assertThrows( IllegalArgumentException.class, ()-> new ECDomainParameters(ECDSA_CURVE.getCurve(), invalidPoint, ECDSA_CURVE.getN(), ECDSA_CURVE.getH()));
+    assertThrows(IllegalArgumentException.class, () -> new ECDomainParameters(SECP256K1.getCurve(), invalidPoint, SECP256K1.getN(), SECP256K1.getH()));
     // Too big
-    assertThrows( IllegalArgumentException.class, ()->  new ECPrivateKeyParameters(ECDSA_CURVE.getN(), ECDSA_DOMAIN));
+    assertThrows(IllegalArgumentException.class, () -> new ECPrivateKeyParameters(SECP256K1.getN(), SECP256K1_DOMAIN));
   }
 
   @Test
@@ -280,11 +279,11 @@ public class SignatureUtilityTest {
 
   @Test
   public void invalidPk1() {
-    byte[] msg = new byte[] {0x42};
-    byte[] sig = new byte[] {0x42};
+    byte[] msg = new byte[]{0x42};
+    byte[] sig = new byte[]{0x42};
     // point not on curve
-    ECPoint invalidPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.valueOf(42), BigInteger.valueOf(43));
-    ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(invalidPoint, ECDSA_DOMAIN);
+    ECPoint invalidPoint = SECP256K1_DOMAIN.getCurve().createPoint(BigInteger.valueOf(42), BigInteger.valueOf(43));
+    ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(invalidPoint, SECP256K1_DOMAIN);
     Exception e = assertThrows(SecurityException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
     assertEquals("Invalid point coordinates", e.getMessage());
   }
@@ -294,29 +293,67 @@ public class SignatureUtilityTest {
     byte[] msg = new byte[] {0x42};
     byte[] sig = new byte[] {0x42};
     // Point contains 0 coordinate
-    ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(ECDSA_DOMAIN.getCurve().getInfinity(), ECDSA_DOMAIN);
+    ECPublicKeyParameters pkOPoint = new TestECPublicKeyParameters(SECP256K1_DOMAIN.getCurve().getInfinity(), SECP256K1_DOMAIN);
     Exception e = assertThrows(SecurityException.class, () -> SignatureUtility.verifyEthereumSignature(msg, sig, pkOPoint));
   }
 
 
   @Test
   public void pointOfInf1() {
-    ECPoint OPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ZERO);
-    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    ECPoint OPoint = SECP256K1_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ZERO);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> new ECPublicKeyParameters(OPoint, SECP256K1_DOMAIN));
     assertEquals("Point not on curve", e.getMessage());
   }
 
   @Test
   public void pointOfInf2() {
-    ECPoint OPoint = ECDSA_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ONE);
-    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    ECPoint OPoint = SECP256K1_DOMAIN.getCurve().createPoint(BigInteger.ZERO, BigInteger.ONE);
+    Exception e = assertThrows(IllegalArgumentException.class, () -> new ECPublicKeyParameters(OPoint, SECP256K1_DOMAIN));
     assertEquals("Point not on curve", e.getMessage());
   }
 
   @Test
   public void pointOfInf3() {
-    ECPoint OPoint = ECDSA_CURVE.getCurve().getInfinity();
-    Exception e =assertThrows(IllegalArgumentException.class, ()-> new ECPublicKeyParameters(OPoint, ECDSA_DOMAIN));
+    ECPoint OPoint = SECP256K1.getCurve().getInfinity();
+    Exception e = assertThrows(IllegalArgumentException.class, () -> new ECPublicKeyParameters(OPoint, SECP256K1_DOMAIN));
     assertEquals("Point at infinity", e.getMessage());
+  }
+
+  @Test
+  public void sunshineStandardEC() {
+    byte[] msg = new byte[]{0x01, 0x02};
+    byte[] sig = signWithStandardScheme(msg, largeKeys);
+    assertTrue(verifyWithStandardScheme(msg, sig, largeKeys.getPublic()));
+  }
+
+  @Test
+  public void sunshineStandardRSA() {
+    RSAKeyPairGenerator rsaGen = new RSAKeyPairGenerator();
+    RSAKeyGenerationParameters subjectParam = new RSAKeyGenerationParameters(new BigInteger("65537"), rand, 2048, 80);
+    rsaGen.init(subjectParam);
+    AsymmetricCipherKeyPair rsa = rsaGen.generateKeyPair();
+    byte[] msg = new byte[]{0x01, 0x02};
+
+    byte[] sig = signWithStandardScheme(msg, rsa);
+    assertTrue(verifyWithStandardScheme(msg, sig, rsa.getPublic()));
+  }
+
+  @Test
+  public void badStandardSig() {
+    assertThrows(IllegalArgumentException.class, () -> SignatureUtility.verifyWithStandardScheme(new byte[]{0x01}, new byte[65], largeKeys.getPublic()));
+  }
+
+  @Test
+  public void badStandardSig2() {
+    assertFalse(SignatureUtility.verifyWithStandardScheme(new byte[]{0x01}, new byte[65], userKeys.getPublic()));
+  }
+
+  @Test
+  public void unknownKeyFormat() {
+    byte[] msg = new byte[]{0x01, 0x02};
+    Ed448KeyPairGenerator gen = new Ed448KeyPairGenerator();
+    gen.init(new Ed448KeyGenerationParameters(rand));
+    AsymmetricCipherKeyPair keys = gen.generateKeyPair();
+    assertThrows(IllegalArgumentException.class, () -> SignatureUtility.signWithStandardScheme(msg, keys));
   }
 }

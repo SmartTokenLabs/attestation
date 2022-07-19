@@ -1,27 +1,8 @@
 package org.tokenscript.attestation.core;
 
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1BitString;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -29,13 +10,7 @@ import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.digests.KeccakDigest;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.params.ECKeyParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.params.*;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
@@ -45,16 +20,38 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.encoders.Hex;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.Signature;
+import java.security.*;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
+
 public class SignatureUtility {
     private static final Logger logger = LogManager.getLogger(SignatureUtility.class);
-
-    public static final String MAC_ALGO = "HmacSHA256";
-    public static final X9ECParameters ECDSA_CURVE = SECNamedCurves.getByName("secp256k1");
-    public static final ECDomainParameters ECDSA_DOMAIN = new ECDomainParameters(ECDSA_CURVE.getCurve(), ECDSA_CURVE
-        .getG(), ECDSA_CURVE.getN(), ECDSA_CURVE.getH());
-    public static final ASN1ObjectIdentifier OID_ECDSA_PUBLICKEY = new ASN1ObjectIdentifier("1.2.840.10045.2.1"); // OID for ECDSA public key
-    public static final AlgorithmIdentifier SECP256K1_DESCRIPTION = new AlgorithmIdentifier(
-        OID_ECDSA_PUBLICKEY, ECDSA_CURVE);
+    // OID for RSA PSS
+    // See https://stackoverflow.com/questions/53728536/how-to-sign-with-rsassa-pss-in-java-correctly
+    // for details on this and how to verify using openssl
+    public static final AlgorithmIdentifier RSASSA_PSS_ALG = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.113549.1.1.10"));
+    // OID for RSA with SHA256
+    public static final AlgorithmIdentifier RSA_PKCS1 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.113549.1.1.11"));
+    // OID for a generic ECDSA public key
+    public static final ASN1ObjectIdentifier OID_ECDSA_PUBLICKEY = new ASN1ObjectIdentifier("1.2.840.10045.2.1");
+    // OID for a secp256k1 ECDSA key
+    public static final ASN1ObjectIdentifier OID_SECP256K1_PUBLICKEY = new ASN1ObjectIdentifier("1.3.132.0.10");
+    // Make sure that BC is always added as provider
+    static final int providerIndex = Security.addProvider(new BouncyCastleProvider());
+    public static final X9ECParameters SECP256K1 = SECNamedCurves.getByName("secp256k1");
+    public static final ECDomainParameters SECP256K1_DOMAIN = new ECDomainParameters(SECP256K1.getCurve(), SECP256K1
+            .getG(), SECP256K1.getN(), SECP256K1.getH());
+    // We use the OID for generic ECDSA public key with specific parameters for secp256k1 instead of the OID for secp256k1, since decoding functions in libs won't understand that OID
+    public static final AlgorithmIdentifier SECP256K1_IDENTIFIER = new AlgorithmIdentifier(
+            OID_ECDSA_PUBLICKEY, SECP256K1);
+    // AlgorithmIdentifier for ECDSA with recommend parameters
+    public static final AlgorithmIdentifier ECDSA_OID = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
+    // Algorithm identifier for signature using ECDSA with SHA256
+    public static final AlgorithmIdentifier ECDSA_WITH_SHA256 = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.3.2"));
 
     // Special Ethereum personal message Prefix
     private static final String personalMessagePrefix = "\u0019Ethereum Signed Message:\n";
@@ -85,8 +82,8 @@ public class SignatureUtility {
     public static AsymmetricCipherKeyPair constructECKeysWithSmallestY(SecureRandom rand) {
         AsymmetricCipherKeyPair keys;
         BigInteger yCoord;
-        BigInteger fieldModulo = ECDSA_DOMAIN.getCurve().getField()
-            .getCharacteristic();
+        BigInteger fieldModulo = SECP256K1_DOMAIN.getCurve().getField()
+                .getCharacteristic();
         // If the y coordinate is in the upper half of the field, then sample again until it to the lower half
         do {
             keys = constructECKeys(rand);
@@ -100,7 +97,7 @@ public class SignatureUtility {
      * @param random
      */
     public static AsymmetricCipherKeyPair constructECKeys(SecureRandom random) {
-        return constructECKeys(ECDSA_DOMAIN, random);
+        return constructECKeys(SECP256K1_DOMAIN, random);
     }
 
     public static AsymmetricCipherKeyPair constructECKeys(X9ECParameters ECDSACurve, SecureRandom random) {
@@ -121,7 +118,7 @@ public class SignatureUtility {
      * @return
      */
     public static AsymmetricKeyParameter restoreDefaultKey(byte[] input) throws IOException {
-        return restoreDefaultKey(SECP256K1_DESCRIPTION, input);
+        return restoreDefaultKey(SECP256K1_IDENTIFIER, input);
     }
 
     /**
@@ -142,7 +139,6 @@ public class SignatureUtility {
 
     public static PrivateKey convertPrivateBouncyCastleKeyToJavaKey(AsymmetricKeyParameter bcKey) {
         try {
-            Security.addProvider(new BouncyCastleProvider());
             KeyFactory ecKeyFac = getFactory(bcKey);
             byte[] encodedBCKey = PrivateKeyInfoFactory.createPrivateKeyInfo(bcKey).getEncoded();
             PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(encodedBCKey);
@@ -154,7 +150,6 @@ public class SignatureUtility {
 
     public static PublicKey convertPublicBouncyCastleKeyToJavaKey(AsymmetricKeyParameter bcKey) {
         try {
-            Security.addProvider(new BouncyCastleProvider());
             KeyFactory ecKeyFac = getFactory(bcKey);
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(bcKey);
             X509EncodedKeySpec encodedKey = new X509EncodedKeySpec(spki.getEncoded());
@@ -189,7 +184,7 @@ public class SignatureUtility {
     public static String addressFromKey(AsymmetricKeyParameter key) {
         ECPublicKeyParameters ecKey = (ECPublicKeyParameters) key;
         // Validate that the key is correct
-        AttestationCrypto.validatePointToCurve(ecKey.getQ(), ECDSA_CURVE.getCurve());
+        AttestationCrypto.validatePointToCurve(ecKey.getQ(), SECP256K1.getCurve());
         byte[] pubKey;
         try {
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
@@ -365,7 +360,7 @@ public class SignatureUtility {
      */
     public static boolean verifyEthereumSignature(byte[] unsigned, byte[] signature, AsymmetricKeyParameter publicKey) {
         ECPoint Q = ((ECPublicKeyParameters) publicKey).getQ();
-        AttestationCrypto.validatePointToCurve(Q, ECDSA_CURVE.getCurve());
+        AttestationCrypto.validatePointToCurve(Q, SECP256K1.getCurve());
         return verifyEthereumSignature(unsigned, signature, addressFromKey(publicKey), 0);
     }
 
@@ -393,7 +388,7 @@ public class SignatureUtility {
 
     public static boolean verifyKeyAgainstAddress(AsymmetricKeyParameter publicKey, String address) {
         String recoveredAddress = addressFromKey(publicKey);
-        return recoveredAddress.toUpperCase().equals(address.toUpperCase());
+        return recoveredAddress.equalsIgnoreCase(address);
     }
 
     public static int getChainIdFromSignature(byte[] signature) {
@@ -439,17 +434,17 @@ public class SignatureUtility {
     public static ECPublicKeyParameters recoverEthPublicKeyFromSignature(byte[] message, byte[] signature) {
         byte[] rBytes = Arrays.copyOfRange(signature, 0, 32);
         BigInteger r = new BigInteger(1, rBytes);
-        if (r.compareTo(BigInteger.ONE) < 0 || r.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+        if (r.compareTo(BigInteger.ONE) < 0 || r.compareTo(SECP256K1_DOMAIN.getN()) >= 1) {
             ExceptionUtil.throwException(logger, new IllegalArgumentException("R value is not in the range [1, n-1]"));
         }
         byte[] sBytes = Arrays.copyOfRange(signature, 32, 64);
         BigInteger s = new BigInteger(1, sBytes);
-        if (s.compareTo(BigInteger.ONE) < 0 || s.compareTo(ECDSA_DOMAIN.getN()) >= 1) {
+        if (s.compareTo(BigInteger.ONE) < 0 || s.compareTo(SECP256K1_DOMAIN.getN()) >= 1) {
             ExceptionUtil.throwException(logger, new IllegalArgumentException("S value is not in the range [1, n-1]"));
         }
-        if (s.compareTo(ECDSA_DOMAIN.getN().shiftRight(1)) > 0) {
+        if (s.compareTo(SECP256K1_DOMAIN.getN().shiftRight(1)) > 0) {
             ExceptionUtil.throwException(logger,
-                new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
+                    new IllegalArgumentException("The s value is not normalized and thus is not allowed by Ethereum EIP2"));
         }
         byte recoveryValue = signature[64];
         byte yParity;
@@ -467,13 +462,13 @@ public class SignatureUtility {
         byte[] digestBytes = AttestationCrypto.hashWithKeccak(unsignedMessage);
         BigInteger z = new BigInteger(1, digestBytes);
         // Compute y coordinate for the r value
-        ECPoint R = computeY(signature[0], yParity, ECDSA_DOMAIN);
-        BigInteger rInverse = signature[0].modInverse(ECDSA_DOMAIN.getN());
-        BigInteger u1 = z.multiply(rInverse).mod(ECDSA_DOMAIN.getN());
-        BigInteger u2 = signature[1].multiply(rInverse).mod(ECDSA_DOMAIN.getN());
-        ECPoint publicKeyPoint = R.multiply(u2).subtract(ECDSA_DOMAIN.getG().multiply(u1)).normalize();
-        AttestationCrypto.validatePointToCurve(publicKeyPoint, ECDSA_CURVE.getCurve());
-        return new ECPublicKeyParameters(publicKeyPoint, ECDSA_DOMAIN);
+        ECPoint R = computeY(signature[0], yParity, SECP256K1_DOMAIN);
+        BigInteger rInverse = signature[0].modInverse(SECP256K1_DOMAIN.getN());
+        BigInteger u1 = z.multiply(rInverse).mod(SECP256K1_DOMAIN.getN());
+        BigInteger u2 = signature[1].multiply(rInverse).mod(SECP256K1_DOMAIN.getN());
+        ECPoint publicKeyPoint = R.multiply(u2).subtract(SECP256K1_DOMAIN.getG().multiply(u1)).normalize();
+        AttestationCrypto.validatePointToCurve(publicKeyPoint, SECP256K1.getCurve());
+        return new ECPublicKeyParameters(publicKeyPoint, SECP256K1_DOMAIN);
     }
 
     private static ECPoint computeY(BigInteger x, byte yParity, ECDomainParameters params) {
@@ -497,5 +492,83 @@ public class SignatureUtility {
         BigInteger branch = s.compareTo(half_curve) > 0 ? BigInteger.ONE : BigInteger.ZERO;
         // Constant time branch, up to underlying library.
         return (params.getN().subtract(s)).multiply(branch).add((BigInteger.ONE.subtract(branch)).multiply(s));
+    }
+
+    /**
+     * Constructs a digital signature using a *standard* scheme such as ECDSA with SHA256 or RSA.
+     * This method *does not* make signatures that can be directly understood by the Ethreum platform
+     *
+     * @return The raw signature
+     */
+    public static byte[] signWithStandardScheme(byte[] unsignedEncoding, AsymmetricCipherKeyPair signingKey) {
+        try {
+            if (getSigningAlgorithm(signingKey.getPrivate()).equals(ECDSA_WITH_SHA256)) {
+                java.security.Signature ecdsaSig = java.security.Signature.getInstance("SHA256withECDSA", "BC");
+                ecdsaSig.initSign(
+                        SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(signingKey.getPrivate()));
+                ecdsaSig.update(unsignedEncoding);
+                return ecdsaSig.sign();
+            }
+            if (getSigningAlgorithm(signingKey.getPrivate()).equals(RSA_PKCS1)) {
+                Security.addProvider(new BouncyCastleProvider());
+                java.security.Signature signatureSHA256Java = Signature.getInstance("SHA256WithRSA", "BC");
+                signatureSHA256Java.initSign(
+                        SignatureUtility.convertPrivateBouncyCastleKeyToJavaKey(signingKey.getPrivate()));
+                signatureSHA256Java.update(unsignedEncoding);
+                return signatureSHA256Java.sign();
+            }
+        } catch (Exception e) {
+            throw ExceptionUtil.throwException(logger,
+                    new IllegalArgumentException("Could not perform signing"));
+        }
+        throw ExceptionUtil.throwException(logger,
+                new IllegalArgumentException("Only ECDSA or RSA keys are supported"));
+    }
+
+    /**
+     * Verified a raw signature against a raw message signed with a *standard* signature scheme.
+     */
+    public static boolean verifyWithStandardScheme(byte[] msg, byte[] signature, AsymmetricKeyParameter verificationKey) {
+        try {
+            if (getSigningAlgorithm(verificationKey).equals(ECDSA_WITH_SHA256)) {
+                Signature ecdsaSig = Signature.getInstance("SHA256withECDSA", "BC");
+                ecdsaSig.initVerify(
+                        SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(verificationKey));
+                ecdsaSig.update(msg);
+                return ecdsaSig.verify(signature);
+            }
+            if (getSigningAlgorithm(verificationKey).equals(RSA_PKCS1)) {
+                Signature signatureSHA256Java = Signature.getInstance("SHA256WithRSA", "BC");
+                signatureSHA256Java.initVerify(
+                        SignatureUtility.convertPublicBouncyCastleKeyToJavaKey(verificationKey));
+                signatureSHA256Java.update(msg);
+                return signatureSHA256Java.verify(signature);
+            }
+        } catch (Exception e) {
+            throw ExceptionUtil.throwException(logger,
+                    new IllegalArgumentException("Could not perform verification"));
+        }
+        logger.error("Unknown key format");
+        return false;
+    }
+
+    /**
+     * Returns the algorithm to use from a public key to be used for our signature schemes.
+     * Currently, this is ECDSA with SHA256 for non secp256k1 ECDSA keys and RSA PKCS 1 1.5 for RSA.
+     * For sep256k1 it is ECDSA with recommended parameters.
+     */
+    public static AlgorithmIdentifier getSigningAlgorithm(AsymmetricKeyParameter signingKey) {
+        if (signingKey instanceof ECKeyParameters) {
+            if (((ECKeyParameters) signingKey).getParameters().getN().equals(SECP256K1.getN())) {
+                // We use secp256k1 so we assume Ethereum signing
+                return ECDSA_OID;
+            }
+            return ECDSA_WITH_SHA256;
+        } else if (signingKey instanceof RSAKeyParameters) {
+            return RSA_PKCS1;
+        } else {
+            throw ExceptionUtil.throwException(logger,
+                    new IllegalArgumentException("Only ECDSA or RSA keys are supported"));
+        }
     }
 }

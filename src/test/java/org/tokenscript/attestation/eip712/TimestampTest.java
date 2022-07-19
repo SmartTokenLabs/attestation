@@ -1,19 +1,16 @@
 package org.tokenscript.attestation.eip712;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.Timestamp;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TimestampTest {
 
   @Test
   public void invalidTimestamp() {
     // Does not contain timezone
-    assertThrows( RuntimeException.class, ()-> new Timestamp("1970.01.01 at 01:00:00"));
+    assertThrows(RuntimeException.class, () -> new Timestamp("1970.01.01 at 01:00:00"));
   }
 
   @Test
@@ -103,11 +100,12 @@ public class TimestampTest {
       super(time);
     }
 
-    public void setCurrentTime(long time)  {
+    public void setCurrentTime(long time) {
       currentTime = time;
     }
+
     @Override
-    protected long getCurrentTime() {
+    public long getCurrentTime() {
       return currentTime;
     }
   }
