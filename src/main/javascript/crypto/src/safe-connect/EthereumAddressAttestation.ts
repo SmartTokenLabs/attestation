@@ -11,7 +11,7 @@ export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 	TYPE: keyof LinkedAttestation = "ethereumAddress";
 
-	create(holdingPubKey: Uint8Array, attestedAddress: string, attestorKeys: KeyPair, validity: number){
+	create(holdingPubKey: Uint8Array, attestedAddress: string, attestorKeys: KeyPair, validity: number, validFrom?: number){
 
 		this.linkedAttestation = new SignedLinkedAttestation();
 		this.linkedAttestation.attestation = new LinkedAttestation()
@@ -19,7 +19,9 @@ export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 		this.linkedAttestation.attestation.ethereumAddress.subjectPublicKey = holdingPubKey;
 
-		const validFrom = Math.round((Date.now() / 1000));
+		if (!validFrom)
+			validFrom = Math.round((Date.now() / 1000));
+
 		const expiry = validFrom + validity;
 
 		this.linkedAttestation.attestation.ethereumAddress.validity = new EpochTimeValidity();

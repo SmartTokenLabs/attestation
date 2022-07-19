@@ -12,7 +12,7 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 	TYPE: keyof LinkedAttestation = "nftOwnership";
 
 	// TODO: Implement multi-token interface
-	create(holdingPubKey: Uint8Array, contractAddress: string, chainId: string, attestorKeys: KeyPair, validity: number){
+	create(holdingPubKey: Uint8Array, contractAddress: string, chainId: string, attestorKeys: KeyPair, validity: number, validFrom?: number){
 
 		this.linkedAttestation = new SignedLinkedAttestation();
 		this.linkedAttestation.attestation = new LinkedAttestation();
@@ -20,7 +20,9 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 
 		this.linkedAttestation.attestation.nftOwnership.subjectPublicKey = holdingPubKey;
 
-		const validFrom = Math.round((Date.now() / 1000));
+		if (!validFrom)
+			validFrom = Math.round((Date.now() / 1000));
+
 		const expiry = validFrom + validity;
 
 		this.linkedAttestation.attestation.nftOwnership.validity = new EpochTimeValidity();

@@ -52,5 +52,13 @@ export abstract class AbstractLinkedAttestation {
 		if (pubKey.substring(2) !== attestorKeys.getPublicKeyAsHexStr())
 			throw new Error("Attestor public key does not match, expected " + attestorKeys.getPublicKeyAsHexStr() + " got " + pubKey.substring(2));
 
+		let now = Math.round(Date.now() / 1000);
+		let data = this.getAttestationData();
+
+		if (data.validity.notBefore > now)
+			throw new Error("Linked attestation is not yet valid");
+
+		if (data.validity.notAfter < now)
+			throw new Error("Linked attestation has expired");
 	}
 }

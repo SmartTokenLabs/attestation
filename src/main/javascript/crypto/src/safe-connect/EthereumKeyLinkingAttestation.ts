@@ -15,7 +15,7 @@ export class EthereumKeyLinkingAttestation {
 
 	protected linkAttest: SignedEthereumKeyLinkingAttestation;
 
-	create(linkedAttestation: string, linkedEthereumAddress: string) {
+	create(linkedAttestation: string, linkedEthereumAddress: string, validity: number, validFrom?: number) {
 
 		let addressAttestObj = AsnParser.parse(base64ToUint8array(linkedAttestation), SignedLinkedAttestation);
 
@@ -24,9 +24,14 @@ export class EthereumKeyLinkingAttestation {
 		this.linkAttest.ethereumKeyLinkingAttestation.subjectEthereumAddress = hexStringToUint8(linkedEthereumAddress);
 		this.linkAttest.ethereumKeyLinkingAttestation.linkedAttestation = addressAttestObj;
 
+		if (!validFrom)
+			validFrom = Math.round((Date.now() / 1000));
+
+		const expiry = validFrom + validity;
+
 		this.linkAttest.ethereumKeyLinkingAttestation.validity = new EpochTimeValidity();
-		this.linkAttest.ethereumKeyLinkingAttestation.validity.notBefore = Math.round(Date.now() / 1000);
-		this.linkAttest.ethereumKeyLinkingAttestation.validity.notAfter = Math.round((Date.now() / 1000) + 3600);
+		this.linkAttest.ethereumKeyLinkingAttestation.validity.notBefore = validFrom;
+		this.linkAttest.ethereumKeyLinkingAttestation.validity.notAfter = expiry;
 
 	}
 
@@ -118,5 +123,14 @@ export class EthereumKeyLinkingAttestation {
 
 		if (!valid)
 			throw new Error("Signature verification failed");
+
+		let now = Math.round(Date.now() / 1000);
+		let data = this.linkAttest.ethereumKeyLinkingAttestation;
+
+		if (data.validity.notBefore > now)
+			throw new Error("Linked attestation is not yet valid");
+
+		if (data.validity.notAfter < now)
+			throw new Error("Linked attestation has expired");
 	}
 }
