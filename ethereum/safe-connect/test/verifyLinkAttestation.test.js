@@ -21,10 +21,16 @@ describe("Verify Link Attestation", function () {
 
         let sendingAddress = SENDING_ADDRESS;
 
+        console.log("create attestation");
+
         let attestationHex = await createAttestation(
             this.signers[0].address, // NFT owner wallet
             sendingAddress // linked address
-        );
+        ).catch((e) => {
+            console.log(e);
+        });
+
+        console.log(attestationHex);
 
         await expect(await this.verifyLinkAttestationTest.connect(sendingAddress).verifyAddressAttestation(attestationHex, attestorAddress)).to.not.throw;
 

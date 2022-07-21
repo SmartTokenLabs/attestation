@@ -1,18 +1,5 @@
 import {hexStringToUint8, uint8tohex} from "../libs/utils";
-
-let subtle: SubtleCrypto;
-
-if (typeof crypto === "object" && crypto.subtle){
-	subtle = crypto.subtle;
-} else {
-	let webcrypto = require('crypto').webcrypto;
-	if (webcrypto) {
-		subtle = webcrypto.subtle;
-	} else  {
-		console.log("Webcrypto not accessible");
-		throw new Error("webcrypto.subtle missing");
-	}
-}
+import subtle from "./SubtleCryptoShim";
 
 export interface StoredKey {
 	id: string;

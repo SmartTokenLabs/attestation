@@ -8,6 +8,7 @@ import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
 import {KeyPair} from "../libs/KeyPair";
 import {EthereumAddressAttestation} from "./EthereumAddressAttestation";
 import {NFTOwnershipAttestation} from "./NFTOwnershipAttestation";
+import subtle from "./SubtleCryptoShim";
 
 const HOLDING_KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
 
@@ -39,7 +40,7 @@ export class EthereumKeyLinkingAttestation {
 
 		const linkAttestInfo = AsnSerializer.serialize(this.linkAttest.ethereumKeyLinkingAttestation);
 
-		const linkSig = await window.crypto.subtle.sign(
+		const linkSig = await subtle.sign(
 			{
 				name: HOLDING_KEY_ALGORITHM,
 				saltLength: 128,
@@ -100,7 +101,7 @@ export class EthereumKeyLinkingAttestation {
 
 		const encodedLinkAttestation = AsnSerializer.serialize(this.linkAttest.ethereumKeyLinkingAttestation);
 
-		const nftSubjectPubKey = await window.crypto.subtle.importKey(
+		const nftSubjectPubKey = await subtle.importKey(
 			"spki",
 			new Uint8Array(linkedAttestationPubKey),
 			{
@@ -111,7 +112,7 @@ export class EthereumKeyLinkingAttestation {
 			["verify"]
 		);
 
-		const valid = await window.crypto.subtle.verify(
+		const valid = await subtle.verify(
 			{
 				name: HOLDING_KEY_ALGORITHM,
 				saltLength: 128,
