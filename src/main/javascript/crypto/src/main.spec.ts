@@ -31,6 +31,9 @@ import {Issuer} from "./libs/Issuer";
 import { AttestedObject } from './libs/AttestedObject';
 import { AttestableObject } from './libs/AttestableObject';
 import { UseToken } from './asn1/shemas/UseToken';
+import subtle from "./safe-connect/SubtleCryptoShim";
+import {EthereumAddressAttestation} from "./safe-connect/EthereumAddressAttestation";
+import {EthereumKeyLinkingAttestation} from "./safe-connect/EthereumKeyLinkingAttestation";
 const url = require('url');
 
 let EC = require("elliptic");
@@ -674,6 +677,93 @@ describe("read attested object", () => {
         expect(attest.checkValidity(subj)).toBe(true);
 
     })
-})
+});
+
+describe("Safe Connect", () => {
+
+    const KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
+    const ATTESTOR_PRIV_KEY = "7411181bdb51a24edd197bacda369830b1c89bbf872a4c2babbdd2e94f25d3b5";
+    const NFT_ADDRESS = "";
+    const LINKED_ADDRESS = "";
+
+    const attestorKeys = KeyPair.fromPrivateUint8(hexStringToUint8(ATTESTOR_PRIV_KEY), 'secp256k1');
+
+    async function createAttestation(nftWallet: string, linkedWallet: string, validity:number = 3600, validFrom?: number){
+
+        const attestHoldingKey = await subtle.generateKey(
+            {
+                name: KEY_ALGORITHM,
+                modulusLength: 1024,
+                publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                hash: {name: "SHA-256"}
+            },
+            false,
+            ["sign", "verify"]
+        );
+
+        const holdingPubKey = new Uint8Array(await subtle.exportKey("spki", attestHoldingKey.publicKey));
+
+        const attestation = new EthereumAddressAttestation();
+
+        attestation.create(holdingPubKey, nftWallet, attestorKeys, validity, validFrom);
+        const base64Attest = attestation.getBase64();
+
+        const linkAttest = new EthereumKeyLinkingAttestation();
+
+        linkAttest.create(base64Attest, linkedWallet, validity, validFrom);
+        await linkAttest.sign(attestHoldingKey.privateKey);
+
+        return linkAttest;
+    }
+
+    let base64Attest: string;
+
+    test("Create attestation", async () => {
+
+        let attestation = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS);
+        base64Attest = attestation.getBase64();
+
+        expect(attestation).not.toBe(EthereumKeyLinkingAttestation);
+    });
+
+    test("Parse & verify attestation", async () => {
+
+        const linkAttest = new EthereumKeyLinkingAttestation();
+
+        linkAttest.fromBase64(base64Attest);
+
+        await expect(async() => { await linkAttest.verify(attestorKeys) }).not.toThrowError();
+    });
+
+    test("Expired attestation should not validate", async () => {
+
+        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, Math.round(Date.now() / 1000) - 7200);
+
+        let err;
+
+        try {
+            await linkAttest.verify(attestorKeys);
+        } catch (e){
+            err = e;
+        }
+
+        expect(err.message).toBe("Linked attestation has expired");
+    });
+
+    test("Not yet valid attestation should not validate", async () => {
+
+        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, Math.round(Date.now() / 1000) + 3600);
+
+        let err;
+
+        try {
+            await linkAttest.verify(attestorKeys);
+        } catch (e){
+            err = e;
+        }
+
+        expect(err.message).toBe("Linked attestation is not yet valid");
+    });
+});
 
 
