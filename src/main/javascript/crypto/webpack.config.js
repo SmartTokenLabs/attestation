@@ -2,6 +2,7 @@ const path = require('path');
 
 module.exports = {
     entry: './src/bundle.ts',
+    mode: "development",
     module: {
         rules: [
             {
@@ -12,6 +13,13 @@ module.exports = {
                 ]
             }
             ]
+    },
+    devServer: {
+        static: {
+            directory: path.join(__dirname, '/'),
+        },
+        compress: true,
+        port: 3015,
     },
     resolve: {
         extensions: [ '.tsx', '.ts', '.js' ],

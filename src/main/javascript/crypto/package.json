@@ -11,6 +11,7 @@
     "pack": "webpack",
     "clean": "rm -R dist",
     "watch": "webpack --watch --progress",
+    "serve": "webpack serve",
     "testjest": "jest",
     "prepublishOnly": "npm run clean && npm run build"
   },

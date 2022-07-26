@@ -31,6 +31,15 @@ import {Issuer} from "./libs/Issuer";
 import { AttestedObject } from './libs/AttestedObject';
 import { AttestableObject } from './libs/AttestableObject';
 import { UseToken } from './asn1/shemas/UseToken';
+import subtle from "./safe-connect/SubtleCryptoShim";
+import {EthereumAddressAttestation} from "./safe-connect/EthereumAddressAttestation";
+import {EthereumKeyLinkingAttestation} from "./safe-connect/EthereumKeyLinkingAttestation";
+import {SchemaGenerator} from "./util/SchemaGenerator";
+import {DevconTicket, SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
+import * as util from "util";
+import * as asn1_schema_1 from "@peculiar/asn1-schema";
+import {AsnParser, AsnPropTypes, AsnSerializer} from "@peculiar/asn1-schema";
+import {utils} from "ethers";
 const url = require('url');
 
 let EC = require("elliptic");
@@ -675,5 +684,39 @@ describe("read attested object", () => {
 
     })
 })
+
+describe("Schema Generator", function(){
+
+    test("Serialize & parse ASN based on a dynamic schema", async function(){
+
+        let schemaGenerator = new SchemaGenerator();
+
+        let GeneratedSchema = schemaGenerator.getSchemaObject();
+
+        console.log(util.inspect(GeneratedSchema));
+
+        let currentSchema = new GeneratedSchema();
+
+        currentSchema.ticket.devconId = "6";
+        currentSchema.ticket.ticketIdNumber = 10;
+        currentSchema.ticket.ticketClass = 1;
+
+        currentSchema.ticket.linkedTicket.devconId = "6";
+        currentSchema.ticket.linkedTicket.ticketIdNumber = 10;
+        currentSchema.ticket.linkedTicket.ticketClass = 1;
+
+        currentSchema.signatureValue = new Uint8Array(hexStringToUint8("0xb135ded73c021184158fa6ea91eff0a97753f27163f3b35a57d3fac57146bf0a45795224fefb95edde7dd55a1554829b5be20f3e39b1fb27a52bd63972d1e89c1c"));
+
+        console.log(currentSchema);
+
+        let encoded = AsnSerializer.serialize(currentSchema);
+
+        console.log(uint8tohex(new Uint8Array(encoded)));
+
+        let decoded = AsnParser.parse(encoded, GeneratedSchema);
+
+        console.log(decoded);
+    });
+});
 
 
