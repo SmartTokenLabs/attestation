@@ -1,6 +1,6 @@
 import * as asn1_schema_1 from "@peculiar/asn1-schema";
 import {AsnParser, AsnPropTypes, AsnSerializer} from "@peculiar/asn1-schema";
-import {hexStringToUint8, uint8tohex} from "../libs/utils";
+import {base64ToUint8array, hexStringToUint8, uint8arrayToBase64, uint8tohex} from "../libs/utils";
 import {AsnItemType, AsnRepeatType, IAsn1PropOptions} from "@peculiar/asn1-schema/build/types/decorators";
 import {IAsnConverter} from "@peculiar/asn1-schema/build/types/types";
 
@@ -20,11 +20,13 @@ interface SchemaItemInterface {
 	repeated?: AsnRepeatType;
 }
 
+export declare type EncodingType = "hex" | "base64";
+
 export class SchemaGenerator {
 
 	jsonSchema: any;
 
-	schemaObject: any;
+	generatedSchema: any;
 
 	private static __decorate = function (decorators: any, target: any, key: any, desc: any) {
 		var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -34,61 +36,10 @@ export class SchemaGenerator {
 		return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
 
-	constructor(jsonSchema: SchemaDefinitionInterface = {
-		ticket: {
-			name: "Ticket",
-			items: {
-				devconId: {
-					type: "Utf8String",
-					optional: false
-				},
-				ticketIdNumber: {
-					type: "Integer",
-					optional: true
-				},
-				ticketIdString: {
-					type: "Utf8String",
-					optional: true
-				},
-				ticketClass: {
-					type: "Integer",
-					optional: false
-				},
-				linkedTicket: {
-					name: "Linked Ticket",
-					items: {
-						devconId: {
-							type: "Utf8String",
-							optional: false
-						},
-						ticketIdNumber: {
-							type: "Integer",
-							optional: true
-						},
-						ticketIdString: {
-							type: "Utf8String",
-							optional: true
-						},
-						ticketClass: {
-							type: "Integer",
-							optional: false
-						}
-					}
-				}
-			}
-		},
-		commitment: {
-			type: AsnPropTypes.OctetString,
-			optional: true
-		},
-		signatureValue: {
-			type: AsnPropTypes.BitString,
-			optional: false
-		}
-	}) {
+	constructor(jsonSchema: SchemaDefinitionInterface) {
 		this.jsonSchema = jsonSchema;
 
-		this.schemaObject = this.generateSchema();
+		this.generatedSchema = this.generateSchema();
 	}
 
 	private generateSchema(): any {
@@ -100,8 +51,7 @@ export class SchemaGenerator {
 			if (this.jsonSchema[i].items){
 
 				let childSchemaGenerator: any = new SchemaGenerator(this.jsonSchema[i].items);
-				let childSchema = childSchemaGenerator.getSchemaObject();
-
+				let childSchema = childSchemaGenerator.getSchemaType();
 				Schema.prototype[i] = new childSchema();
 
 				SchemaGenerator.__decorate([
@@ -145,45 +95,39 @@ export class SchemaGenerator {
 		return decoratorOptions;
 	}
 
-	getSchemaObject(){
-		return this.schemaObject;
+	getSchemaType(){
+		return this.generatedSchema;
 	}
 
+	getSchemaObject(){
+		return new this.generatedSchema();
+	}
 
-}
+	serialize(object: Object): Uint8Array {
+		return new Uint8Array(AsnSerializer.serialize(object));
+	}
 
-export class Meh {
+	serializeAndFormat(object: Object, encoding: EncodingType = "hex"){
 
-	meh() {
+		let uint = this.serialize(object);
 
-		let schemaGenerator = new SchemaGenerator();
+		if (encoding === "hex"){
+			return uint8tohex(uint);
+		} else {
+			return uint8arrayToBase64(uint);
+		}
+	}
 
-		let GeneratedSchema = schemaGenerator.getSchemaObject();
+	parse(data: Uint8Array|string, encoding: EncodingType = "hex"): any {
 
-		console.log("The full schema object");
-		console.log(GeneratedSchema);
+		if (!(data instanceof Uint8Array)){
+			if (encoding === "hex"){
+				data = hexStringToUint8(data);
+			} else {
+				data = base64ToUint8array(data);
+			}
+		}
 
-		let currentSchema = new GeneratedSchema();
-
-		currentSchema.ticket.devconId = "6";
-		currentSchema.ticket.ticketIdNumber = 10;
-		currentSchema.ticket.ticketClass = 1;
-
-		currentSchema.ticket.linkedTicket.devconId = "6";
-		currentSchema.ticket.linkedTicket.ticketIdNumber = 10;
-		currentSchema.ticket.linkedTicket.ticketClass = 1;
-
-		currentSchema.signatureValue = new Uint8Array(hexStringToUint8("0xb135ded73c021184158fa6ea91eff0a97753f27163f3b35a57d3fac57146bf0a45795224fefb95edde7dd55a1554829b5be20f3e39b1fb27a52bd63972d1e89c1c"));
-
-		console.log("Populated schema object");
-		console.log(currentSchema);
-
-		let encoded = AsnSerializer.serialize(currentSchema);
-
-		console.log(uint8tohex(new Uint8Array(encoded)));
-
-		let decoded = AsnParser.parse(encoded, GeneratedSchema);
-
-		console.log(decoded);
+		return AsnParser.parse(data, this.generatedSchema);
 	}
 }
