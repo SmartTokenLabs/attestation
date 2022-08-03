@@ -10,7 +10,7 @@ import org.tokenscript.attestation.core.SignatureUtility;
 import java.util.Date;
 
 public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAttestation implements SignedOwnershipAttestationInterface {
-    public static final long DEFAULT_VALIDITY = 60 * 60 * 24; // 1 day
+    public static final long DEFAULT_VALIDITY = 60L * 60L * 24L; // 1 day
     private static final Logger logger = LogManager.getLogger(SignedEthereumAddressAttestation.class);
     private final EthereumAddressAttestation internalAtt;
     private final AsymmetricKeyParameter verificationKey;
@@ -112,6 +112,12 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
 
     public String getSubjectAddress() {
         return internalAtt.getSubjectAddress();
+    }
+
+    @Override
+    public int getTag() {
+        // The tag of address attestation
+        return internalAtt.getTag();
     }
 
     @Override

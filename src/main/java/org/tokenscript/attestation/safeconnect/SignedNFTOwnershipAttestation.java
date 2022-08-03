@@ -12,7 +12,7 @@ import java.util.Date;
 
 public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttestation implements SignedOwnershipAttestationInterface {
     private static final Logger logger = LogManager.getLogger(SignedNFTOwnershipAttestation.class);
-    public static final long DEFAULT_VALIDITY = 60 * 60 * 24; // 1 day
+    public static final long DEFAULT_VALIDITY = 60L * 60L * 24L; // 1 day
     private final NFTOwnershipAttestation internalAtt;
     private final AsymmetricKeyParameter verificationKey;
     private final byte[] unsignedEncoding;
@@ -104,6 +104,11 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
     @Override
     public Date getNotAfter() {
         return internalAtt.getNotAfter();
+    }
+
+    @Override
+    public int getTag() {
+        return internalAtt.getTag();
     }
 
     @Override

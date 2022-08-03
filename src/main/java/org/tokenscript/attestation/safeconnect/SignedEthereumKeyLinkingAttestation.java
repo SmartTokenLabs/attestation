@@ -13,7 +13,7 @@ import java.io.InvalidObjectException;
 import java.util.Date;
 
 public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnershipAttestation {
-    public static final long DEFAULT_VALIDITY = 60 * 60; // 1 hour
+    public static final long DEFAULT_VALIDITY = 60L * 60L; // 1 hour
     private static final Logger logger = LogManager.getLogger(SignedEthereumKeyLinkingAttestation.class);
     private final String subjectAddress;
     private final byte[] context;
@@ -81,7 +81,8 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
         try {
             ASN1EncodableVector res = new ASN1EncodableVector();
             res.add(new DEROctetString(Numeric.hexStringToByteArray(getSubjectAddress())));
-            res.add(ASN1Primitive.fromByteArray(getOwnershipAttestation().getDerEncoding()));
+            ASN1Primitive encodedOwnershipAtt = ASN1Primitive.fromByteArray(getOwnershipAttestation().getDerEncoding());
+            res.add(new DERTaggedObject(true, getOwnershipAttestation().getTag(), encodedOwnershipAtt));
             ASN1EncodableVector validity = new ASN1EncodableVector();
             validity.add(new ASN1Integer(getNotBefore().toInstant().getEpochSecond()));
             validity.add(new ASN1Integer(getNotAfter().toInstant().getEpochSecond()));

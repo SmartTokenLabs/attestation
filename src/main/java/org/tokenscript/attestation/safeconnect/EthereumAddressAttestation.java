@@ -16,6 +16,7 @@ import java.util.Date;
 
 public class EthereumAddressAttestation implements OwnershipAttestationInterface {
     private static final Logger logger = LogManager.getLogger(EthereumAddressAttestation.class);
+    public static final int TAG = 1;
     private final byte[] context;
     private final String subjectAddress;
     private final Date notBefore;
@@ -48,6 +49,12 @@ public class EthereumAddressAttestation implements OwnershipAttestationInterface
 
     public AsymmetricKeyParameter getSubjectPublicKey() {
         return subjectPublicKey;
+    }
+
+    @Override
+    public int getTag() {
+        // The tag of address attestation
+        return TAG;
     }
 
     @Override

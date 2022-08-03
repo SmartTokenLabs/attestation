@@ -12,6 +12,7 @@ import java.util.Date;
 
 public class NFTOwnershipAttestation implements OwnershipAttestationInterface {
     private static final Logger logger = LogManager.getLogger(NFTOwnershipAttestation.class);
+    public static final int TAG = 0;
     private final byte[] context;
     private final ERC721Token[] tokens;
     private final Date notBefore;
@@ -68,6 +69,12 @@ public class NFTOwnershipAttestation implements OwnershipAttestationInterface {
         } catch (Exception e) {
             throw ExceptionUtil.makeRuntimeException(logger, "Could not encode asn1", e);
         }
+    }
+
+    @Override
+    public int getTag() {
+        // The tag of address attestation
+        return TAG;
     }
 
     @Override

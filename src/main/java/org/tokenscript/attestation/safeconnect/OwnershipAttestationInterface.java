@@ -13,4 +13,9 @@ public interface OwnershipAttestationInterface extends CheckableObject {
     Date getNotBefore();
 
     Date getNotAfter();
+
+    /**
+     * Returns the tag number for the underlying attestation element
+     */
+    int getTag();
 }
