@@ -26,7 +26,7 @@ public class SignedEthereumKeyLinkingAttestationTest {
     private static final X9ECParameters SUBTLE_CRYPTO_CURVE = SECNamedCurves.getByName("secp256r1"); // NIST P-256
     private static final byte[] context = new byte[]{0x00};
     private static final String address = "0x0102030405060708091011121314151617181920";
-    private static final long defaultValidity = 60; //seconds
+    private static final long defaultValidity = 60 * 60; //seconds
     private static final ERC721Token[] nfts = new ERC721Token[]{
             new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25"),
             new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26")

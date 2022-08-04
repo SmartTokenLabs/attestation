@@ -766,4 +766,32 @@ describe("Safe Connect", () => {
     });
 });
 
+describe("test safe-connect mvp", () => {
+    const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
+    let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
+
+    const keyLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp.txt', 'utf8');
+    
+    let keyLinkingAtt = new EthereumKeyLinkingAttestation();
+
+    test('validate key linking attestation', async () => {
+        keyLinkingAtt.fromBytes(base64ToUint8array(keyLinkingAttEcEcBase64));
+        await expect(await keyLinkingAtt.verify(issuerPubKey)).not.toThrow;
+    });
+})
+
+// TODO implement once context is supports, i.e. this issue is completed https://smarttokenlabs.atlassian.net/browse/TKN-276
+// describe("test safe-connect with context", () => {
+//     const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
+//     let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
+
+//     const keyLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-nft-subject-rsa-issuer-ec.txt', 'utf8');
+    
+//     let keyLinkingAtt = new EthereumKeyLinkingAttestation();
+
+//     test('validate key linking attestation', async () => {
+//         keyLinkingAtt.fromBytes(base64ToUint8array(keyLinkingAttEcEcBase64));
+//         await expect(await keyLinkingAtt.verify(issuerPubKey)).not.toThrow;
+//     });
+// })
 
