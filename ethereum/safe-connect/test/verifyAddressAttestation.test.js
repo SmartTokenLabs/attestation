@@ -6,6 +6,10 @@ const { createAttestation } = require('../scripts/utils');
 
 describe("Verify Address Attestation", function () {
     before(async function () {
+
+        await hre.network.provider.send("hardhat_reset");
+        await ethers.provider.send('evm_setNextBlockTimestamp', [Math.round(Date.now() / 1000)]);
+
         let libFactory = await ethers.getContractFactory("LinkAttestUtils");
         let libObj = await libFactory.deploy();
 
@@ -38,9 +42,6 @@ describe("Verify Address Attestation", function () {
         });
 
         console.log(attestationHex);
-
-        await ethers.provider.send('evm_setNextBlockTimestamp', [Math.round(Date.now() / 1000) + 60]);
-        await ethers.provider.send('evm_mine');
 
         await expect(await this.VerifyAddressAttestationTest.connect(sendingAddress).verify(attestationHex, attestorAddress)).to.not.throw;
 

@@ -9,7 +9,13 @@ const {NFTOwnershipAttestation} = require("@tokenscript/attestation/dist/safe-co
 
 const HOLDING_KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
 
-async function createAttestation(nftWalletOrNfts, linkedWallet) {
+async function createAttestation(nftWalletOrNfts, linkedWallet, validity, validFrom) {
+
+    if (!validity)
+        validity = 3600;
+
+    if (!validFrom)
+        validFrom = Math.round(Date.now() / 1000) - 1800;
 
     let attestorKeys = KeyPair.fromPrivateUint8(hexStringToUint8(ATTESTOR_PRIV_KEY), 'secp256k1');
 
@@ -31,20 +37,20 @@ async function createAttestation(nftWalletOrNfts, linkedWallet) {
     if (typeof nftWalletOrNfts === "string"){
 
         const attestation = new EthereumAddressAttestation();
-        attestation.create(holdingPubKey, nftWalletOrNfts, attestorKeys, 3600);
+        attestation.create(holdingPubKey, nftWalletOrNfts, attestorKeys, validity, validFrom);
         base64Attest = attestation.getBase64();
 
     } else {
 
         const attestation = new NFTOwnershipAttestation();
-        attestation.create(holdingPubKey, nftWalletOrNfts.contract, nftWalletOrNfts.chain, attestorKeys, 3600);
+        attestation.create(holdingPubKey, nftWalletOrNfts.contract, nftWalletOrNfts.chain, attestorKeys, validity, validFrom);
         base64Attest = attestation.getBase64();
     }
 
 
     const linkAttest = new EthereumKeyLinkingAttestation();
 
-    linkAttest.create(base64Attest, linkedWallet, 3600);
+    linkAttest.create(base64Attest, linkedWallet, validity, validFrom);
     await linkAttest.sign(attestHoldingKey.privateKey);
 
     const hexEncoded = uint8tohex(linkAttest.getEncoded());
