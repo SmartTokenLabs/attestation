@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.ObjectDecoder;
@@ -27,10 +28,11 @@ public class SignedOwnershipAttestationDecoder implements ObjectDecoder<SignedOw
 
     @Override
     public SignedOwnershipAttestationInterface decode(byte[] encoding) throws IOException {
-        ASN1InputStream input = new ASN1InputStream(encoding);
-        try {
+        try (ASN1InputStream input = new ASN1InputStream(encoding)) {
             ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
-            ASN1Sequence ownershipAttEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
+
+            ASN1TaggedObject taggedObject = ASN1TaggedObject.getInstance(asn1.getObjectAt(0));
+            ASN1Sequence ownershipAttEnc = ASN1Sequence.getInstance(taggedObject.getBaseObject());
             OwnershipAttestationInterface internalAtt = internalDecoder.decode(ownershipAttEnc.getEncoded());
 
             AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
@@ -49,8 +51,6 @@ public class SignedOwnershipAttestationDecoder implements ObjectDecoder<SignedOw
             }
             throw ExceptionUtil.throwException(logger,
                     new IllegalArgumentException("Unknown internal attestation format"));
-        } finally {
-            input.close();
         }
     }
 }

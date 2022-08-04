@@ -2,6 +2,8 @@ package org.tokenscript.attestation.safeconnect;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.core.ExceptionUtil;
@@ -32,8 +34,11 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
             this.internalAtt = new EthereumAddressAttestation(context, subjectAddress, notBefore, notAfter, subjectPublicKey);
             this.verificationKey = signingKey.getPublic();
             this.unsignedEncoding = internalAtt.getDerEncoding();
+            // Signature is done on the internal attestation without tag
             this.signature = SignatureUtility.signWithEthereum(unsignedEncoding, signingKey.getPrivate());
-            this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
+            DERTaggedObject taggedRes = new DERTaggedObject(true, getTag(), ASN1Primitive.fromByteArray(unsignedEncoding));
+            // The tag is stored in the encoding
+            this.signedEncoding = makeSignedEncoding(taggedRes.getEncoded(), signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
                     new IllegalArgumentException("Could not parse arguments"));
@@ -47,7 +52,9 @@ public class SignedEthereumAddressAttestation extends AbstractSignedOwnershipAtt
             this.verificationKey = verificationKey;
             this.unsignedEncoding = internalAtt.getDerEncoding();
             this.signature = signature;
-            this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
+            DERTaggedObject taggedRes = new DERTaggedObject(true, getTag(), ASN1Primitive.fromByteArray(unsignedEncoding));
+            // The tag is stored in the encoding
+            this.signedEncoding = makeSignedEncoding(taggedRes.getEncoded(), signature, verificationKey);
         } catch (Exception e) {
             throw ExceptionUtil.throwException(logger,
                     new IllegalArgumentException("Could not parse arguments"));

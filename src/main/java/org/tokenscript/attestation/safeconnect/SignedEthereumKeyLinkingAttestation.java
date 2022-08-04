@@ -81,8 +81,7 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
         try {
             ASN1EncodableVector res = new ASN1EncodableVector();
             res.add(new DEROctetString(Numeric.hexStringToByteArray(getSubjectAddress())));
-            ASN1Primitive encodedOwnershipAtt = ASN1Primitive.fromByteArray(getOwnershipAttestation().getDerEncoding());
-            res.add(new DERTaggedObject(true, getOwnershipAttestation().getTag(), encodedOwnershipAtt));
+            res.add(ASN1Primitive.fromByteArray(getOwnershipAttestation().getDerEncoding()));
             ASN1EncodableVector validity = new ASN1EncodableVector();
             validity.add(new ASN1Integer(getNotBefore().toInstant().getEpochSecond()));
             validity.add(new ASN1Integer(getNotAfter().toInstant().getEpochSecond()));
