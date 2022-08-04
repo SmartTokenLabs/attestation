@@ -4,15 +4,22 @@ const { ethers } = require('hardhat');
 const { ATTESTOR_ADDRESS, SENDING_ADDRESS } = require("../scripts/constants");
 const { createAttestation } = require('../scripts/utils');
 
-describe("Verify Link Attestation", function () {
+describe("Verify Address Attestation", function () {
     before(async function () {
-        this.VerifyLinkAttestationTest = await ethers.getContractFactory('VerifyLinkAttestationTest');
+        let libFactory = await ethers.getContractFactory("LinkAttestUtils");
+        let libObj = await libFactory.deploy();
+
+        this.VerifyAddressAttestationTest = await ethers.getContractFactory('VerifyAddressAttestationTest', {
+            libraries: {
+                LinkAttestUtils: libObj.address,
+            },
+        });
         this.signers = await ethers.getSigners();
     });
 
     beforeEach(async function () {
-        this.verifyLinkAttestationTest = await (
-          await this.VerifyLinkAttestationTest.deploy()
+        this.VerifyAddressAttestationTest = await (
+          await this.VerifyAddressAttestationTest.deploy()
         ).deployed();
     });
 
@@ -32,9 +39,12 @@ describe("Verify Link Attestation", function () {
 
         console.log(attestationHex);
 
-        await expect(await this.verifyLinkAttestationTest.connect(sendingAddress).verifyAddressAttestation(attestationHex, attestorAddress)).to.not.throw;
+        await ethers.provider.send('evm_setNextBlockTimestamp', [Math.round(Date.now() / 1000) + 60]);
+        await ethers.provider.send('evm_mine');
 
-        const tx = await this.verifyLinkAttestationTest.verifyAddressAttestationTest(attestationHex, attestorAddress);
+        await expect(await this.VerifyAddressAttestationTest.connect(sendingAddress).verify(attestationHex, attestorAddress)).to.not.throw;
+
+        const tx = await this.VerifyAddressAttestationTest.verifyTest(attestationHex, attestorAddress);
         const txResult = await (tx.wait());
 
         console.log('txResult ==>', txResult.gasUsed);

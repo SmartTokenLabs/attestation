@@ -20,7 +20,14 @@ describe("Mint test", function () {
 
         console.log("Bayc tokens minted");
 
-        this.STLTNMint = await ethers.getContractFactory('STLTNMint');
+        let libFactory = await ethers.getContractFactory("LinkAttestUtils");
+        let libObj = await libFactory.deploy();
+
+        this.STLTNMint = await ethers.getContractFactory('STLTNMint', {
+            libraries: {
+                LinkAttestUtils: libObj.address,
+            },
+        });
         this.stlTnMint = await (
             await this.STLTNMint.deploy(this.stlBayc.address)
         ).deployed();

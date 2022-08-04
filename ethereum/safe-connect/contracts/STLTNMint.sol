@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./libraries/VerifyLinkAttestation.sol";
+import "./libraries/VerifyAddressAttestation.sol";
 
 contract STLTNMint is ERC20, ERC20Burnable, Ownable {
 
@@ -38,7 +38,7 @@ contract STLTNMint is ERC20, ERC20Burnable, Ownable {
         address to,
         uint256 amount
     ) public {
-        address attestedAddress = VerifyLinkAttestation.verifyAddressAttestation(attestation, attestorAddr);
+        address attestedAddress = VerifyAddressAttestation.verify(attestation, attestorAddr);
 
         mint(attestedAddress, to, amount);
     }
