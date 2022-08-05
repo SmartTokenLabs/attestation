@@ -72,7 +72,7 @@ describe("Verify NFT Attestation", function () {
         console.log("create attestation");
 
         let attestationHex = await createAttestation(
-            { contract: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chain: "4"}, // NFT owner wallet
+            [{ contract: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chainId: 4}], // NFT owner wallet
             sendingAddress // linked address
         ).catch((e) => {
             console.log(e);

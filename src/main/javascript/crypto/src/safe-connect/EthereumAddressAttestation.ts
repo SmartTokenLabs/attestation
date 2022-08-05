@@ -4,14 +4,12 @@ import {KeyPair} from "../libs/KeyPair";
 import {EthereumAddressAttestation as EthAddressSchema} from "../asn1/shemas/EthereumAddressAttestation";
 import {EpochTimeValidity} from "../asn1/shemas/EpochTimeValidity";
 import {hexStringToUint8} from "../libs/utils";
-import {AsnSerializer} from "@peculiar/asn1-schema";
-import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
 
 export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 	TYPE: keyof LinkedAttestation = "ethereumAddress";
 
-	create(holdingPubKey: Uint8Array, attestedAddress: string, attestorKeys: KeyPair, validity: number, validFrom?: number){
+	create(holdingPubKey: Uint8Array, attestedAddress: string, attestorKeys: KeyPair, validity: number, context?: string, validFrom?: number){
 
 		this.linkedAttestation = new SignedLinkedAttestation();
 		this.linkedAttestation.attestation = new LinkedAttestation()
@@ -30,11 +28,9 @@ export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 		this.linkedAttestation.attestation.ethereumAddress.ethereumAddress = hexStringToUint8(attestedAddress);
 
-		const encodedAttest = AsnSerializer.serialize(this.linkedAttestation.attestation.ethereumAddress);
+		if (!context)
+			this.linkedAttestation.attestation.ethereumAddress.context = context;
 
-		this.linkedAttestation.signingAlgorithm = new AlgorithmIdentifierASN();
-		this.linkedAttestation.signingAlgorithm.algorithm = "1.2.840.10045.4.2"; // Our own internal identifier for ECDSA with keccak256
-		this.linkedAttestation.signatureValue = hexStringToUint8(attestorKeys.signRawBytesWithEthereum(Array.from(new Uint8Array(encodedAttest))));
-
+		this.sign(attestorKeys);
 	}
 }

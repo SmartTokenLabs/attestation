@@ -153,6 +153,7 @@ library VerifyNFTAttestation {
             (, curBytes, fieldIndex, ) = LinkAttestUtils.decodeElement(token, 0); // Address
             AttestedToken memory tok = AttestedToken(LinkAttestUtils.bytesToAddress(curBytes), 0, 0);
 
+            // TODO: Handle optional fields with implicitly tagged types
             (, curBytes, fieldIndex, ) = LinkAttestUtils.decodeElement(token, fieldIndex); // Token ID
             tok.tokenId = LinkAttestUtils.bytesToUint(curBytes);
 

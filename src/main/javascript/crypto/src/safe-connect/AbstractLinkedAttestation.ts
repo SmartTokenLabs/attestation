@@ -3,6 +3,7 @@ import {LinkedAttestation, SignedLinkedAttestation} from "../asn1/shemas/SignedL
 import {KeyPair} from "../libs/KeyPair";
 import {base64ToUint8array, hexStringToUint8, uint8arrayToBase64} from "../libs/utils";
 import {ethers} from "ethers";
+import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
 
 export abstract class AbstractLinkedAttestation {
 
@@ -36,6 +37,15 @@ export abstract class AbstractLinkedAttestation {
 
 	getBase64(){
 		return uint8arrayToBase64(this.getEncoded());
+	}
+
+	sign(attestorKeys: KeyPair){
+
+		const encodedAttest = AsnSerializer.serialize(this.linkedAttestation.attestation[this.TYPE]);
+
+		this.linkedAttestation.signingAlgorithm = new AlgorithmIdentifierASN();
+		this.linkedAttestation.signingAlgorithm.algorithm = "1.2.840.10045.4.2"; // Our own internal identifier for ECDSA with keccak256
+		this.linkedAttestation.signatureValue = hexStringToUint8(attestorKeys.signRawBytesWithEthereum(Array.from(new Uint8Array(encodedAttest))));
 	}
 
 	verify(attestorKeys: KeyPair){

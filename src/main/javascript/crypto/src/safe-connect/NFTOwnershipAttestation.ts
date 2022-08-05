@@ -4,15 +4,19 @@ import {ERC721, NFTOwnershipAttestation as NFTOwnershipSchema} from "../asn1/she
 import {KeyPair} from "../libs/KeyPair";
 import {EpochTimeValidity} from "../asn1/shemas/EpochTimeValidity";
 import {hexStringToUint8} from "../libs/utils";
-import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
-import {AsnSerializer} from "@peculiar/asn1-schema";
+
+export interface IToken {
+	address: string,
+	tokenId?: bigint,
+	chainId?: number,
+}
 
 export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 
 	TYPE: keyof LinkedAttestation = "nftOwnership";
 
 	// TODO: Implement multi-token interface
-	create(holdingPubKey: Uint8Array, contractAddress: string, chainId: string, attestorKeys: KeyPair, validity: number, validFrom?: number){
+	create(holdingPubKey: Uint8Array, tokens: IToken[], attestorKeys: KeyPair, validity: number, context?: string, validFrom?: number){
 
 		this.linkedAttestation = new SignedLinkedAttestation();
 		this.linkedAttestation.attestation = new LinkedAttestation();
@@ -29,18 +33,18 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 		this.linkedAttestation.attestation.nftOwnership.validity.notBefore = validFrom;
 		this.linkedAttestation.attestation.nftOwnership.validity.notAfter = expiry;
 
-		let token = new ERC721()
-		token.address = hexStringToUint8(contractAddress);
-		token.chainId = parseInt(chainId);
-		token.tokenId = new Uint8Array([parseInt("1")])
+		for (let token of tokens){
+			let attToken = new ERC721()
+			attToken.address = hexStringToUint8(token.address);
+			attToken.chainId = token.chainId;
+			attToken.tokenId = new Uint8Array([parseInt("1")])
 
-		this.linkedAttestation.attestation.nftOwnership.tokens.push(token);
+			this.linkedAttestation.attestation.nftOwnership.tokens.push(attToken);
+		}
 
-		const attestedInfo = AsnSerializer.serialize(this.linkedAttestation.attestation.nftOwnership);
+		if (!context)
+			this.linkedAttestation.attestation.nftOwnership.context = context;
 
-		this.linkedAttestation.signingAlgorithm = new AlgorithmIdentifierASN();
-		this.linkedAttestation.signingAlgorithm.algorithm = "1.2.840.10045.4.2"; // Our own internal identifier for ECDSA with keccak256
-		this.linkedAttestation.signatureValue = hexStringToUint8(attestorKeys.signRawBytesWithEthereum(Array.from(new Uint8Array(attestedInfo))));
-
+		this.sign(attestorKeys);
 	}
 }

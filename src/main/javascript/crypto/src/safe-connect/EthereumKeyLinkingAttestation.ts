@@ -16,7 +16,7 @@ export class EthereumKeyLinkingAttestation {
 
 	protected linkAttest: SignedEthereumKeyLinkingAttestation;
 
-	create(linkedAttestation: string, linkedEthereumAddress: string, validity: number, validFrom?: number) {
+	create(linkedAttestation: string, linkedEthereumAddress: string, validity: number, context?: string, validFrom?: number) {
 
 		let addressAttestObj = AsnParser.parse(base64ToUint8array(linkedAttestation), SignedLinkedAttestation);
 
@@ -33,6 +33,9 @@ export class EthereumKeyLinkingAttestation {
 		this.linkAttest.ethereumKeyLinkingAttestation.validity = new EpochTimeValidity();
 		this.linkAttest.ethereumKeyLinkingAttestation.validity.notBefore = validFrom;
 		this.linkAttest.ethereumKeyLinkingAttestation.validity.notAfter = expiry;
+
+		if (!context)
+			this.linkAttest.ethereumKeyLinkingAttestation.context = context;
 
 	}
 
@@ -74,9 +77,18 @@ export class EthereumKeyLinkingAttestation {
 		return this.linkAttest;
 	}
 
+	getSignedLinkedAttestation(){
+		return this.linkAttest.ethereumKeyLinkingAttestation.linkedAttestation;
+	}
+
+	getLinkedAttestationData(){
+		const signedLinkedAttestation = this.getSignedLinkedAttestation();
+		return signedLinkedAttestation.attestation.ethereumAddress ?? signedLinkedAttestation.attestation.nftOwnership;
+	}
+
 	getLinkedAttestationObject(){
 
-		const signedLinkedAttestation = this.linkAttest.ethereumKeyLinkingAttestation.linkedAttestation;
+		const signedLinkedAttestation = this.getSignedLinkedAttestation();
 
 		let linkedAttestation;
 
