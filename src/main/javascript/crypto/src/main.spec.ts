@@ -48,6 +48,7 @@ let useAttestRes: string,
     userPubKey: KeyPair,
     attestorPubKey: KeyPair,
     attestorKey: KeyPair,
+    safeconnectKey: KeyPair,
 
     senderKey: KeyPair,
     senderPubKey: KeyPair,
@@ -102,6 +103,9 @@ describe("Read keys and files", () => {
 
     const session2PrivPEM = readFileSync(PREFIX_PATH + 'session-priv2.pem', 'utf8');
     session2Key = KeyPair.privateFromPEM(session2PrivPEM);
+
+    const safeconnectIssuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
+    safeconnectKey = KeyPair.publicFromBase64orPEM(safeconnectIssuerPubKeyPem);
 
     useAttestationJson = readFileSync(PREFIX_PATH + 'use-attestation.json', 'utf8');
 
@@ -781,17 +785,31 @@ describe("Safe Connect", () => {
     });
 });
 
-describe("test safe-connect mvp", () => {
+describe("test safe-connect mvp address attestation", () => {
     const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
     let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
 
-    const keyLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp.txt', 'utf8');
+    const keyLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address.txt', 'utf8');
     
     let keyLinkingAtt = new EthereumKeyLinkingAttestation();
 
     test('validate key linking attestation', async () => {
         keyLinkingAtt.fromBytes(base64ToUint8array(keyLinkingAttEcEcBase64));
-        await expect(await keyLinkingAtt.verify(issuerPubKey)).not.toThrow;
+        await expect(await keyLinkingAtt.verify(safeconnectKey)).not.toThrow;
+    });
+})
+
+describe("test safe-connect mvp nft attestation", () => {
+    const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
+    let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
+
+    const nftLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-nft.txt', 'utf8');
+    
+    let keyLinkingAtt = new EthereumKeyLinkingAttestation();
+
+    test('validate key linking attestation', async () => {
+        keyLinkingAtt.fromBytes(base64ToUint8array(nftLinkingAttEcEcBase64));
+        await expect(await keyLinkingAtt.verify(safeconnectKey)).not.toThrow;
     });
 })
 

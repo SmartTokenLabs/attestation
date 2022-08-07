@@ -76,7 +76,11 @@ public class SignedEthereumKeyLinkingAttestationTest {
         ImportExportHelper.produceTestMaterial(
                 new SignedEthereumKeyLinkingAttestation(null, address,
                         new SignedEthereumAddressAttestation(null, subjectRSAKeys.getPublic(), address, defaultValidity, issuerKeys),
-                        subjectRSAKeys), "mvp");
+                        subjectRSAKeys), "mvp-address");
+        ImportExportHelper.produceTestMaterial(
+                new SignedEthereumKeyLinkingAttestation(null, address,
+                        new SignedNFTOwnershipAttestation(null, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerKeys),
+                        subjectRSAKeys), "mvp-nft");
 //        System.out.println(Hex.toHexString(signedAtt.getDerEncoding()));
 
         ImportExportHelper.storeKey(issuerKeys.getPublic(), "ec");
@@ -90,7 +94,12 @@ public class SignedEthereumKeyLinkingAttestationTest {
 //        AsymmetricKeyParameter rsaKey = ImportExportHelper.loadKey("rsa");
 
         internalDecoder = new SignedOwnershipAttestationDecoder(new EthereumAddressAttestationDecoder(), ecKey);
-        att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp");
+        att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp-address");
+        assertTrue(att.verify());
+        assertTrue(att.checkValidity());
+
+        internalDecoder = new SignedOwnershipAttestationDecoder(new NFTOwnershipAttestationDecoder(), ecKey);
+        att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp-nft");
         assertTrue(att.verify());
         assertTrue(att.checkValidity());
 
