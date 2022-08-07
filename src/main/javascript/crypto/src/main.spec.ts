@@ -689,7 +689,7 @@ describe("Safe Connect", () => {
     const KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
     const ATTESTOR_PRIV_KEY = "7411181bdb51a24edd197bacda369830b1c89bbf872a4c2babbdd2e94f25d3b5";
     const NFT_ADDRESS = "";
-    const LINKED_ADDRESS = "";
+    const LINKED_ADDRESS = "0x2F21dC12dd43bd15b86643332041ab97010357D7";
 
     const attestorKeys = KeyPair.fromPrivateUint8(hexStringToUint8(ATTESTOR_PRIV_KEY), 'secp256k1');
 
@@ -783,38 +783,25 @@ describe("Safe Connect", () => {
 
         await expect(await linkAttest.verify(attestorKeys)).not.toThrow;
     });
-});
-
-describe("test safe-connect mvp address attestation", () => {
-    const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
-    let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
-
-    const keyLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address.txt', 'utf8');
     
-    let keyLinkingAtt = new EthereumKeyLinkingAttestation();
-
-    test('validate key linking attestation', async () => {
+    test("safe-connect mvp address attestation", async () => {
+        const keyLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address.txt', 'utf8');
+        
+        let keyLinkingAtt = new EthereumKeyLinkingAttestation();
         keyLinkingAtt.fromBytes(base64ToUint8array(keyLinkingAttEcEcBase64));
         await expect(await keyLinkingAtt.verify(safeconnectKey)).not.toThrow;
     });
-})
 
-describe("test safe-connect mvp nft attestation", () => {
-    const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
-    let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
-
-    const nftLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-nft.txt', 'utf8');
-    
-    let keyLinkingAtt = new EthereumKeyLinkingAttestation();
-
-    test('validate key linking attestation', async () => {
+    test("test safe-connect mvp nft attestation", async () => {
+        const nftLinkingAttEcEcBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-nft.txt', 'utf8');
+        
+        let keyLinkingAtt = new EthereumKeyLinkingAttestation();
         keyLinkingAtt.fromBytes(base64ToUint8array(nftLinkingAttEcEcBase64));
         await expect(await keyLinkingAtt.verify(safeconnectKey)).not.toThrow;
     });
-})
 
-// TODO implement once context is supports, i.e. this issue is completed https://smarttokenlabs.atlassian.net/browse/TKN-276
-// describe("test safe-connect with context", () => {
+    // TODO implement once context is supports, i.e. this issue is completed https://smarttokenlabs.atlassian.net/browse/TKN-276
+// test("safe-connect with context", async () => {
 //     const issuerPubKeyPem = readFileSync(PREFIX_PATH + 'key-ec.txt', 'utf8');
 //     let issuerPubKey = KeyPair.publicFromBase64orPEM(issuerPubKeyPem);
 
@@ -828,3 +815,17 @@ describe("test safe-connect mvp nft attestation", () => {
 //     });
 // })
 
+    test("Write test data for safeconnect java", async () => {
+        const fs = require('fs');
+        // TODO it seems subject address does not get set in the underlying 
+        let attestation = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS);
+         console.log(attestation.getAttestation().ethereumKeyLinkingAttestation.subjectEthereumAddress);
+        fs.writeFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address-js.txt', attestation.getBase64());
+        fs.writeFileSync(PREFIX_PATH + 'key-ec-js.txt', attestorKeys.getAsnDerPublic());
+        // Test file reading
+        const readAttestationBase64 = readFileSync(PREFIX_PATH + 'js-signedEthereumKeyLinkingAttestation-mvp-address.txt', 'utf8');
+        let readAttestation = new EthereumKeyLinkingAttestation();
+        readAttestation.fromBytes(base64ToUint8array(readAttestationBase64));
+        await expect(await readAttestation.verify(attestorKeys)).not.toThrow;
+    });
+});

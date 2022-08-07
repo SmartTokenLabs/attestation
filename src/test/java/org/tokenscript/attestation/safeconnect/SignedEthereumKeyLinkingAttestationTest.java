@@ -124,6 +124,18 @@ public class SignedEthereumKeyLinkingAttestationTest {
 //        assertTrue(att.checkValidity());
     }
 
+    //TODO seems that the address does not get properly encoded in the JS
+    @Test
+    void javascriptIntegration() throws Exception {
+        ObjectDecoder<SignedOwnershipAttestationInterface> internalDecoder;
+        SignedEthereumKeyLinkingAttestation att;
+        AsymmetricKeyParameter verificationKey = ImportExportHelper.loadJSAsnKey("ec-js");
+        internalDecoder = new SignedOwnershipAttestationDecoder(new EthereumAddressAttestationDecoder(), verificationKey);
+        att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp-address-js");
+        assertTrue(att.verify());
+        assertTrue(att.checkValidity());
+    }
+
     @Test
     void sunshine() throws Exception {
         validateSunshine(context, address, nftOwnershipAtt, subjectECKeys);
@@ -253,7 +265,6 @@ public class SignedEthereumKeyLinkingAttestationTest {
         TestOwnerShipAttestation att = new TestOwnerShipAttestation(1000, 1001, 2000);
         assertFalse(att.checkValidity());
     }
-
 
     static class TestOwnerShipAttestation extends AbstractSignedOwnershipAttestation {
         private final Date currentTime;

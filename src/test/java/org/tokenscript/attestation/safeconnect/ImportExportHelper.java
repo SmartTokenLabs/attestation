@@ -5,6 +5,7 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 import org.tokenscript.attestation.ObjectDecoder;
 import org.tokenscript.attestation.core.DERUtility;
 
@@ -13,6 +14,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 // Produces up-to-date test material for the JS version
 public class ImportExportHelper {
@@ -45,6 +47,12 @@ public class ImportExportHelper {
                 (DERUtility.restoreBytes(
                         Files.readAllLines(
                                 Paths.get(rootPath + "key-" + description + ".txt"))));
+    }
+
+    public static AsymmetricKeyParameter loadJSAsnKey(String description) throws Exception {
+        List<String> lines = Files.readAllLines(Paths.get(rootPath + "key-" + description + ".txt"));
+        byte[] decoded = Hex.decode(String.join("", lines));
+        return PublicKeyFactory.createKey(decoded);
     }
 
 }
