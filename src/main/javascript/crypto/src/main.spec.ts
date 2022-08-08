@@ -688,7 +688,7 @@ describe("Safe Connect", () => {
 
     const KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
     const ATTESTOR_PRIV_KEY = "7411181bdb51a24edd197bacda369830b1c89bbf872a4c2babbdd2e94f25d3b5";
-    const NFT_ADDRESS = "";
+    const NFT_ADDRESS = "0xe761eb6e829de49deab008120733c1e35acf77db";
     const LINKED_ADDRESS = "0x2F21dC12dd43bd15b86643332041ab97010357D7";
 
     const attestorKeys = KeyPair.fromPrivateUint8(hexStringToUint8(ATTESTOR_PRIV_KEY), 'secp256k1');
@@ -823,7 +823,7 @@ describe("Safe Connect", () => {
         fs.writeFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address-js.txt', attestation.getBase64());
         fs.writeFileSync(PREFIX_PATH + 'key-ec-js.txt', attestorKeys.getAsnDerPublic());
         // Test file reading
-        const readAttestationBase64 = readFileSync(PREFIX_PATH + 'js-signedEthereumKeyLinkingAttestation-mvp-address.txt', 'utf8');
+        const readAttestationBase64 = readFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address-js.txt', 'utf8');
         let readAttestation = new EthereumKeyLinkingAttestation();
         readAttestation.fromBytes(base64ToUint8array(readAttestationBase64));
         await expect(await readAttestation.verify(attestorKeys)).not.toThrow;
