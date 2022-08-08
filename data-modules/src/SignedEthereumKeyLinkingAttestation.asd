@@ -2,19 +2,38 @@
 <asnx:module name="SignedEthereumKeyLinkingAttestation" xmlns:asnx="urn:ietf:params:xml:ns:asnx">
 
     <import name="Address"
-         schemaLocation="NFTAttestation.asd"/>
+            schemaLocation="NFTAttestation.asd"/>
     <import name="AlgorithmIdentifier"
-         schemaLocation="AuthenticationFramework.asd"/>
+            schemaLocation="AuthenticationFramework.asd"/>
+    <import name="SignedEthereumAddressLinkingAttestation"
+            schemaLocation="SignedEthereumAddressLinkingAttestation.asd"/>
     <import name="SignedNFTOwnershipAttestation"
-         schemaLocation="SignedNFTOwnershipAttestation.asd"/>
+            schemaLocation="SignedNFTOwnershipAttestation.asd"/>
     <import name="Validity"
-         schemaLocation="SignedNFTOwnershipAttestation.asd"/>
+            schemaLocation="SignedNFTOwnershipAttestation.asd"/>
+
+    <namedType name="SignedLinkedAttestation">
+        <type>
+            <choice>
+                <element name="signedNFTOwnershipAttestation">
+                    <type>
+                        <tagged number="0" tagging="explicit" type="SignedNFTOwnershipAttestation"/>
+                    </type>
+                </element>
+                <element name="signedEthereumAddressLinkingAttestation">
+                    <type>
+                        <tagged number="1" tagging="explicit" type="SignedEthereumAddressLinkingAttestation"/>
+                    </type>
+                </element>
+            </choice>
+        </type>
+    </namedType>
 
     <namedType name="EthereumKeyLinkingAttestation">
         <type>
             <sequence>
                 <element name="subjectEthereumAddress" type="Address"/>
-                <element name="signedNFTOwnershipAttestation" type="SignedNFTOwnershipAttestation"/>
+                <element name="signedLinkedAttestation" type="SignedLinkedAttestation"/>
                 <element name="validity" type="Validity"/>
                 <optional>
                     <element name="context" type="asnx:OCTET-STRING"/>

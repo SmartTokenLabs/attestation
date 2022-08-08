@@ -1,10 +1,10 @@
-SignedNFTOwnershipAttestation
+SignedEthereumAddressLinkingAttestation
 
 DEFINITIONS ::=
 BEGIN
 
 IMPORTS
-    Tokens
+    Address
         FROM NFTAttestation
     AlgorithmIdentifier,
     SubjectPublicKeyInfoValue
@@ -15,15 +15,15 @@ Validity ::= SEQUENCE {
     notAfter                      INTEGER  -- NotAfter time since epoch in seconds
 }
 
-NFTOwnershipAttestation ::= SEQUENCE {
+EthereumAddressLinkingAttestation ::= SEQUENCE {
     subtlePublicKey               SubjectPublicKeyInfoValue,
-    tokens                        Tokens,
+    subjectAddress                Address,
     validity                      Validity,
     context                       OCTET STRING OPTIONAL
 }
 
-SignedNFTOwnershipAttestation ::= SEQUENCE {
-    nftOwnershipAttestation       NFTOwnershipAttestation,
+SignedEthereumAddressLinkingAttestation ::= SEQUENCE {
+    ethereumAddressAttestation    EthereumAddressLinkingAttestation,
     signingAlgorithm              AlgorithmIdentifier,
     signatureValue                BIT STRING
 }

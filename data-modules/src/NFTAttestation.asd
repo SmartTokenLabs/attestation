@@ -40,9 +40,7 @@
                   <optional>
                      <element name="tokenId" type="TokenId"/>
                   </optional>
-                  <optional>
-                     <element name="chainID" type="asnx:INTEGER"/>
-                  </optional>
+                  <element name="chainID" type="asnx:INTEGER"/>
             </sequence>
         </type>
     </namedType>
