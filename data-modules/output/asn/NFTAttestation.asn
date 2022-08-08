@@ -25,7 +25,7 @@ Digest ::= OCTET STRING (SIZE(32..MAX))
 ERC721 ::= SEQUENCE {
     address       Address,
     tokenId       TokenId OPTIONAL,
-    chainId       INTEGER OPTIONAL
+    chainId       INTEGER
 }
 
 -- The 256 bit non-negative integer uniquely representing the ERC721 token in question in binary --
