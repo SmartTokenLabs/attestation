@@ -8,7 +8,7 @@ import java.util.Date;
 public interface OwnershipAttestationInterface extends CheckableObject {
     byte[] getContext();
 
-    AsymmetricKeyParameter getSubjectPublicKey();
+    AsymmetricKeyParameter getSubtlePublicKey();
 
     Date getNotBefore();
 

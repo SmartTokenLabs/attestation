@@ -18,14 +18,14 @@ public class NFTOwnershipAttestation implements OwnershipAttestationInterface {
     private final Date notBefore;
     private final Date notAfter;
 
-    private final AsymmetricKeyParameter subjectPublicKey;
+    private final AsymmetricKeyParameter subtlePublicKey;
 
-    public NFTOwnershipAttestation(byte[] context, ERC721Token[] tokens, Date notBefore, Date notAfter, AsymmetricKeyParameter subjectPublicKey) {
+    public NFTOwnershipAttestation(byte[] context, ERC721Token[] tokens, Date notBefore, Date notAfter, AsymmetricKeyParameter subtlePublicKey) {
         this.context = context;
         this.tokens = tokens;
         this.notBefore = notBefore;
         this.notAfter = notAfter;
-        this.subjectPublicKey = subjectPublicKey;
+        this.subtlePublicKey = subtlePublicKey;
     }
 
     public byte[] getContext() {
@@ -44,15 +44,15 @@ public class NFTOwnershipAttestation implements OwnershipAttestationInterface {
         return notAfter;
     }
 
-    public AsymmetricKeyParameter getSubjectPublicKey() {
-        return subjectPublicKey;
+    public AsymmetricKeyParameter getSubtlePublicKey() {
+        return subtlePublicKey;
     }
 
     @Override
     public byte[] getDerEncoding() {
         try {
             ASN1EncodableVector res = new ASN1EncodableVector();
-            res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(getSubjectPublicKey()));
+            res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(getSubtlePublicKey()));
             ASN1EncodableVector asn1Tokens = new ASN1EncodableVector();
             for (ERC721Token token : getTokens()) {
                 asn1Tokens.add(ASN1Sequence.getInstance(token.getDerEncoding()));

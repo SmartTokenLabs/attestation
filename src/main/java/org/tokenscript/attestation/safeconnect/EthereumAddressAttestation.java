@@ -21,14 +21,14 @@ public class EthereumAddressAttestation implements OwnershipAttestationInterface
     private final String subjectAddress;
     private final Date notBefore;
     private final Date notAfter;
-    private final AsymmetricKeyParameter subjectPublicKey;
+    private final AsymmetricKeyParameter subtlePublicKey;
 
-    public EthereumAddressAttestation(byte[] context, String subjectAddress, Date notBefore, Date notAfter, AsymmetricKeyParameter subjectPublicKey) {
+    public EthereumAddressAttestation(byte[] context, String subjectAddress, Date notBefore, Date notAfter, AsymmetricKeyParameter subtlePublicKey) {
         this.context = context;
         this.subjectAddress = subjectAddress;
         this.notBefore = notBefore;
         this.notAfter = notAfter;
-        this.subjectPublicKey = subjectPublicKey;
+        this.subtlePublicKey = subtlePublicKey;
     }
 
     public byte[] getContext() {
@@ -47,8 +47,8 @@ public class EthereumAddressAttestation implements OwnershipAttestationInterface
         return notAfter;
     }
 
-    public AsymmetricKeyParameter getSubjectPublicKey() {
-        return subjectPublicKey;
+    public AsymmetricKeyParameter getSubtlePublicKey() {
+        return subtlePublicKey;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class EthereumAddressAttestation implements OwnershipAttestationInterface
     public byte[] getDerEncoding() {
         try {
             ASN1EncodableVector res = new ASN1EncodableVector();
-            res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(getSubjectPublicKey()));
+            res.add(SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(getSubtlePublicKey()));
             // Start at index 2 to remove "0x"
             res.add(new DEROctetString(Hex.decode(subjectAddress.substring(2))));
             ASN1EncodableVector validity = new ASN1EncodableVector();

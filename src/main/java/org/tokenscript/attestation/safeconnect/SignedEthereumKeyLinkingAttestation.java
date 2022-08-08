@@ -40,7 +40,7 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
             this.subjectAddress = subjectAddress;
             this.ownershipAttestation = ownershipAttestation;
             // The attestation has to be signed with the key attested to
-            this.verificationKey = ownershipAttestation.getSubjectPublicKey();
+            this.verificationKey = ownershipAttestation.getSubtlePublicKey();
             this.unsignedEncoding = makeUnsignedEncoding();
             this.signature = SignatureUtility.signWithStandardScheme(unsignedEncoding, signingKey);
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, signature, verificationKey);
@@ -59,7 +59,7 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
             this.subjectAddress = subjectAddress;
             this.ownershipAttestation = ownershipAttestation;
             // The attestation has to be signed with the key attested to
-            this.verificationKey = ownershipAttestation.getSubjectPublicKey();
+            this.verificationKey = ownershipAttestation.getSubtlePublicKey();
             this.unsignedEncoding = makeUnsignedEncoding();
             this.signature = signature;
             this.signedEncoding = makeSignedEncoding(unsignedEncoding, this.signature, verificationKey);
@@ -119,7 +119,7 @@ public class SignedEthereumKeyLinkingAttestation extends AbstractSignedOwnership
 
     @Override
     public AsymmetricKeyParameter getVerificationKey() {
-        return getOwnershipAttestation().getSubjectPublicKey();
+        return getOwnershipAttestation().getSubtlePublicKey();
     }
 
     @Override

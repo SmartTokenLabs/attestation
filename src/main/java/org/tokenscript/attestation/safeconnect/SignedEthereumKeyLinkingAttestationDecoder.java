@@ -61,7 +61,7 @@ public class SignedEthereumKeyLinkingAttestationDecoder implements ObjectDecoder
             }
             byte[] context = decodedContext;
 
-            checkAlgorithm(AlgorithmIdentifier.getInstance(asn1.getObjectAt(ctr++)), internalAtt.getSubjectPublicKey());
+            checkAlgorithm(AlgorithmIdentifier.getInstance(asn1.getObjectAt(ctr++)), internalAtt.getSubtlePublicKey());
             ASN1BitString signatureEnc = ASN1BitString.getInstance(asn1.getObjectAt(ctr++));
             byte[] signature = signatureEnc.getBytes();
 

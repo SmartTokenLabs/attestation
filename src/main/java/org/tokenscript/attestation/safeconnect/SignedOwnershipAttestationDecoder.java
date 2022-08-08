@@ -44,10 +44,10 @@ public class SignedOwnershipAttestationDecoder implements ObjectDecoder<SignedOw
                         new IllegalArgumentException("Algorithm specified is does not work with verification key supplied"));
             }
             if (internalDecoder instanceof NFTOwnershipAttestationDecoder) {
-                return new SignedNFTOwnershipAttestation(internalAtt.getContext(), internalAtt.getSubjectPublicKey(), ((NFTOwnershipAttestation) internalAtt).getTokens(), internalAtt.getNotBefore(), internalAtt.getNotAfter(), signature, verificationKey);
+                return new SignedNFTOwnershipAttestation(internalAtt.getContext(), internalAtt.getSubtlePublicKey(), ((NFTOwnershipAttestation) internalAtt).getTokens(), internalAtt.getNotBefore(), internalAtt.getNotAfter(), signature, verificationKey);
             }
             if (internalDecoder instanceof EthereumAddressAttestationDecoder) {
-                return new SignedEthereumAddressAttestation(internalAtt.getContext(), internalAtt.getSubjectPublicKey(), ((EthereumAddressAttestation) internalAtt).getSubjectAddress(), internalAtt.getNotBefore(), internalAtt.getNotAfter(), signature, verificationKey);
+                return new SignedEthereumAddressAttestation(internalAtt.getContext(), internalAtt.getSubtlePublicKey(), ((EthereumAddressAttestation) internalAtt).getSubjectAddress(), internalAtt.getNotBefore(), internalAtt.getNotAfter(), signature, verificationKey);
             }
             throw ExceptionUtil.throwException(logger,
                     new IllegalArgumentException("Unknown internal attestation format"));

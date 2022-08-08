@@ -99,8 +99,8 @@ public class SignedNFTOwnershipAttestation extends AbstractSignedOwnershipAttest
     }
 
     @Override
-    public AsymmetricKeyParameter getSubjectPublicKey() {
-        return internalAtt.getSubjectPublicKey();
+    public AsymmetricKeyParameter getSubtlePublicKey() {
+        return internalAtt.getSubtlePublicKey();
     }
 
     @Override
