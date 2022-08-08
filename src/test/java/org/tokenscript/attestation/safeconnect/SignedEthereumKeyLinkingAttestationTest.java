@@ -10,6 +10,7 @@ import org.bouncycastle.crypto.params.Ed448KeyGenerationParameters;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.ObjectDecoder;
@@ -124,6 +125,8 @@ public class SignedEthereumKeyLinkingAttestationTest {
 //        assertTrue(att.checkValidity());
     }
 
+    // TODO this test currently does not work with CI/CD since it is depended on the JS teests which does not seem to be run currently
+    @Disabled
     @Test
     void javascriptIntegration() throws Exception {
         ObjectDecoder<SignedOwnershipAttestationInterface> internalDecoder;
@@ -133,7 +136,7 @@ public class SignedEthereumKeyLinkingAttestationTest {
         att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp-address-js");
         assertTrue(att.verify());
         // Because of the interdependency between the JS tests and this, we don't validate time stamps here
-//        assertTrue(att.checkValidity());
+        assertTrue(att.checkValidity());
     }
 
     @Test
