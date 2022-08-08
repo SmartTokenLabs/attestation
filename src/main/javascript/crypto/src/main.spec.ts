@@ -817,7 +817,6 @@ describe("Safe Connect", () => {
 
     test("Write test data for safeconnect java", async () => {
         const fs = require('fs');
-        // TODO it seems subject address does not get set in the underlying 
         let attestation = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS);
          console.log(attestation.getAttestation().ethereumKeyLinkingAttestation.linkedAttestation.attestation.ethereumAddress);
         fs.writeFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address-js.txt', attestation.getBase64());
