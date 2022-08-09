@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,7 +17,7 @@ class ERC721Test {
   void sunshine() {
     ERC721Token token = new ERC721Token(validAddress, validTokenId, 42L);
     assertEquals(validAddress, token.getAddress());
-    assertEquals(validTokenId, token.getTokenId());
+    assertEquals(List.of(validTokenId), token.getTokenIds());
     assertEquals(42, token.getChainId());
   }
 
@@ -25,9 +27,18 @@ class ERC721Test {
 
     ERC721Token decodedToken = new ERC721Token(token.getDerEncoding());
     assertEquals(validAddress, decodedToken.getAddress());
-    assertNull(decodedToken.getTokenId());
+    assertNull(decodedToken.getTokenIds());
     assertEquals(42, decodedToken.getChainId());
     assertArrayEquals(token.getDerEncoding(), decodedToken.getDerEncoding());
+  }
+
+  @Test
+  void sunshineArrayOfTokenIds() {
+    List<BigInteger> tokenIds = Arrays.asList(BigInteger.valueOf(1234), new BigInteger("1234564647891843851486465404"));
+    ERC721Token token = new ERC721Token(validAddress, tokenIds, 42L);
+    assertEquals(validAddress, token.getAddress());
+    assertEquals(tokenIds, token.getTokenIds());
+    assertEquals(42, token.getChainId());
   }
 
   @Test
@@ -35,9 +46,17 @@ class ERC721Test {
     ERC721Token token = new ERC721Token(validAddress);
     ERC721Token decodedToken = new ERC721Token(token.getDerEncoding());
     assertEquals(validAddress, decodedToken.getAddress());
-    assertNull(decodedToken.getTokenId());
+    assertNull(decodedToken.getTokenIds());
     assertEquals(ERC721Token.DEFAULT_CHAIN_ID, decodedToken.getChainId());
     assertArrayEquals(token.getDerEncoding(), decodedToken.getDerEncoding());
+  }
+
+  @Test
+  void sunshineThirdConstructor() {
+    ERC721Token token = new ERC721Token(validAddress, validTokenId);
+    assertEquals(validAddress, token.getAddress());
+    assertEquals(List.of(validTokenId), token.getTokenIds());
+    assertEquals(ERC721Token.DEFAULT_CHAIN_ID, token.getChainId());
   }
 
   @Test
@@ -46,7 +65,19 @@ class ERC721Test {
     byte[] tokenEncoding = token.getDerEncoding();
     ERC721Token secondToken = new ERC721Token(token.getDerEncoding());
     byte[] secondTokenEncoding = secondToken.getDerEncoding();
-    assertEquals(token.getTokenId(), secondToken.getTokenId());
+    assertEquals(token.getTokenIds(), secondToken.getTokenIds());
+    assertEquals(token.getAddress(), secondToken.getAddress());
+    assertArrayEquals(tokenEncoding, secondTokenEncoding);
+  }
+
+  @Test
+  void consistencyEncodingArraysOfIds() throws IOException {
+    List<BigInteger> tokenIds = Arrays.asList(BigInteger.valueOf(1234), new BigInteger("1234564647891843851486465404"));
+    ERC721Token token = new ERC721Token(validAddress, tokenIds, 42L);
+    byte[] tokenEncoding = token.getDerEncoding();
+    ERC721Token secondToken = new ERC721Token(token.getDerEncoding());
+    byte[] secondTokenEncoding = secondToken.getDerEncoding();
+    assertEquals(token.getTokenIds(), secondToken.getTokenIds());
     assertEquals(token.getAddress(), secondToken.getAddress());
     assertArrayEquals(tokenEncoding, secondTokenEncoding);
   }
@@ -73,5 +104,17 @@ class ERC721Test {
   @Test
   void failOnWrongId() {
     assertThrows(IllegalArgumentException.class, () -> new ERC721Token(validAddress, "notANumber"));
+  }
+
+  @Test
+  void wrongChainId() {
+    ERC721Token badChain = new ERC721Token(validAddress, validTokenId, -1L);
+    assertFalse(badChain.checkValidity());
+  }
+
+  @Test
+  void tooBigId() {
+    ERC721Token badChain = new ERC721Token(validAddress, BigInteger.valueOf(2).pow(256).add(BigInteger.ONE));
+    assertFalse(badChain.checkValidity());
   }
 }

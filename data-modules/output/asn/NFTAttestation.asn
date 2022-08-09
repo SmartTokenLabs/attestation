@@ -24,8 +24,14 @@ Digest ::= OCTET STRING (SIZE(32..MAX))
 -- See https://eips.ethereum.org/EIPS/eip-721 for details --
 ERC721 ::= SEQUENCE {
     address       Address,
-    tokenId       TokenId OPTIONAL,
+    tokenIds      TokenIds OPTIONAL,
     chainId       INTEGER
+}
+
+-- Choice of a singleton TokenId or array of TokenIds, due to backward compatibility --
+TokenIds ::= CHOICE {
+    multipleTokenIds    SEQUENCE OF TokenId,
+    singleTokenId       TokenId
 }
 
 -- The 256 bit non-negative integer uniquely representing the ERC721 token in question in binary --

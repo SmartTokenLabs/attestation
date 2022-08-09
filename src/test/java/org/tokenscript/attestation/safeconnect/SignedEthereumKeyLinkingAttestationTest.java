@@ -19,6 +19,7 @@ import org.tokenscript.attestation.core.SignatureUtility;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -125,7 +126,9 @@ public class SignedEthereumKeyLinkingAttestationTest {
 //        assertTrue(att.checkValidity());
     }
 
-    // TODO this test currently does not work with CI/CD since it is depended on the JS teests which does not seem to be run currently
+    /**
+     * TODO this test currently does not work with CI/CD since it is depended on the JS teests which does not seem to be run currently
+     */
     @Disabled
     @Test
     void javascriptIntegration() throws Exception {
@@ -142,11 +145,22 @@ public class SignedEthereumKeyLinkingAttestationTest {
     @Test
     void sunshine() throws Exception {
         validateSunshine(context, address, nftOwnershipAtt, subjectECKeys);
+        validateSunshine(context, address, nftOwnershipAtt, subjectECKeys);
         validateSunshine(context, address, addressAttestation, subjectECKeys);
         validateSunshine(null, address, nftOwnershipAtt, subjectECKeys);
         validateSunshine(context, address,
                 new SignedNFTOwnershipAttestation(null, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerKeys),
                 subjectRSAKeys);
+    }
+
+    @Test
+    void sunshineMultipleTokenIds() throws Exception {
+        ERC721Token[] nfts = new ERC721Token[]{
+                new ERC721Token("0xb567f5A165545Fa2639bBdA79991F105EADF8522", Arrays.asList(BigInteger.valueOf(1000), BigInteger.valueOf(518564165125254L)), ERC721Token.DEFAULT_CHAIN_ID),
+                new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26")
+        };
+        SignedNFTOwnershipAttestation multipleTokens = new SignedNFTOwnershipAttestation(context, subjectECKeys.getPublic(), nfts, defaultValidity, issuerKeys);
+        validateSunshine(context, address, multipleTokens, subjectECKeys);
     }
 
     private void validateSunshine(byte[] context, String address, SignedOwnershipAttestationInterface internalAtt, AsymmetricCipherKeyPair signingKeys) throws Exception {

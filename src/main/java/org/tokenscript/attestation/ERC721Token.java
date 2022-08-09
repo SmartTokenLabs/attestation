@@ -11,6 +11,8 @@ import org.web3j.utils.Numeric;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ERC721Token implements ASNEncodable, Validateable {
     private static final Logger logger = LogManager.getLogger(ERC721Token.class);
@@ -18,29 +20,33 @@ public class ERC721Token implements ASNEncodable, Validateable {
     private final byte[] encoding;
     private final String address;
     private final Long chainId;
-    private final BigInteger tokenId;
+    private final List<BigInteger> tokenIds;
 
     public ERC721Token(String address) {
-        this(address, null, DEFAULT_CHAIN_ID);
+        this(address, (List<BigInteger>) null, DEFAULT_CHAIN_ID);
     }
 
     public ERC721Token(String address, Long chainId) {
-        this(address, null, chainId);
+        this(address, (List<BigInteger>) null, chainId);
     }
+
     public ERC721Token(String address, String tokenId) {
         this(address, new BigInteger(tokenId), DEFAULT_CHAIN_ID);
     }
 
-    public ERC721Token(String address, BigInteger tokenId)
-    {
+    public ERC721Token(String address, BigInteger tokenId) {
         this(address, tokenId, DEFAULT_CHAIN_ID);
     }
 
     public ERC721Token(String address, BigInteger tokenId, Long chainId) {
+        this(address, tokenId == null ? null : List.of(tokenId), chainId);
+    }
+
+    public ERC721Token(String address, List<BigInteger> tokenIds, Long chainId) {
         this.address = normalizeAddress(address);
-        this.tokenId = tokenId;
+        this.tokenIds = tokenIds;
         this.chainId = chainId;
-        this.encoding = getDerEncoding(tokenId != null);
+        this.encoding = getDerEncoding(tokenIds != null);
     }
 
     private void validateChainId(Long chainId) {
@@ -54,33 +60,52 @@ public class ERC721Token implements ASNEncodable, Validateable {
         try (ASN1InputStream input = new ASN1InputStream(derEncoding)) {
             ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
             ASN1OctetString decodedAddress = ASN1OctetString.getInstance(asn1.getObjectAt(counter++));
-            BigInteger decodedTokenId;
+            ASN1Primitive firstIdObject = asn1.getObjectAt(counter).toASN1Primitive();
+            List<BigInteger> decodedTokenIds;
             boolean includeTokenId;
-            try {
-                ASN1OctetString tokenIdObject = ASN1OctetString.getInstance(asn1.getObjectAt(counter));
-                decodedTokenId = new BigInteger(1, tokenIdObject.getOctets());
-                validateTokenId(decodedTokenId);
+            if (firstIdObject instanceof ASN1OctetString || firstIdObject instanceof ASN1Sequence) {
                 includeTokenId = true;
+                // We have tokenIds included
+                if (firstIdObject instanceof ASN1OctetString) {
+                    // Only one tokenId included
+                    decodedTokenIds = List.of(
+                            new BigInteger(1,
+                                    ((ASN1OctetString) firstIdObject).getOctets()));
+                } else {
+                    int amount = ((ASN1Sequence) firstIdObject).size();
+                    decodedTokenIds = new ArrayList<>(amount);
+                    for (int i = 0; i < amount; i++) {
+                        ASN1OctetString currentTokenId = ASN1OctetString.getInstance(
+                                ((ASN1Sequence) firstIdObject).getObjectAt(i));
+                        decodedTokenIds.add(
+                                new BigInteger(1,
+                                        currentTokenId.getOctets()));
+                    }
+                }
                 counter++;
-            } catch (Exception e) {
+            } else {
                 // TokenID is not included
-                decodedTokenId = null;
+                decodedTokenIds = null;
                 includeTokenId = false;
             }
             this.chainId = ASN1Integer.getInstance(asn1.getObjectAt(counter++)).longValueExact();
             // Remove the # added by BouncyCastle
             String rawAddress = decodedAddress.toString().substring(1);
             this.address = normalizeAddress(rawAddress);
-            this.tokenId = decodedTokenId;
+            this.tokenIds = decodedTokenIds;
             this.encoding = getDerEncoding(includeTokenId);
         }
     }
 
-    private void validateTokenId(BigInteger tokenId) {
-        // The tokenID is allowed to be null
-        if (tokenId == null) {
+    private void validateTokenIds(List<BigInteger> tokenIds) {
+        // The tokenIDs is allowed to be null
+        if (tokenIds == null) {
             return;
         }
+        getTokenIds().forEach(this::validateTokenId);
+    }
+
+    private void validateTokenId(BigInteger tokenId) {
         // Only allow non-negative IDs
         if (tokenId.compareTo(BigInteger.ZERO) < 0) {
             throw ExceptionUtil.throwException(logger, new IllegalArgumentException("Token IDs cannot be negative"));
@@ -122,8 +147,8 @@ public class ERC721Token implements ASNEncodable, Validateable {
         return address;
     }
 
-    public BigInteger getTokenId() {
-        return tokenId;
+    public List<BigInteger> getTokenIds() {
+        return tokenIds;
     }
 
     public Long getChainId() {
@@ -145,7 +170,16 @@ public class ERC721Token implements ASNEncodable, Validateable {
             ASN1EncodableVector data = new ASN1EncodableVector();
             data.add(new DEROctetString(Numeric.hexStringToByteArray(address)));
             if (includeTokenId) {
-                data.add(new DEROctetString(tokenId.toByteArray()));
+                if (tokenIds.size() == 1) {
+                    // Encode as a singleton, if only a single element is present
+                    data.add(new DEROctetString(tokenIds.get(0).toByteArray()));
+                } else {
+                    ASN1EncodableVector tokenIdVector = new ASN1EncodableVector();
+                    for (BigInteger currentTokenId : tokenIds) {
+                        tokenIdVector.add(new DEROctetString(currentTokenId.toByteArray()));
+                    }
+                    data.add(new DERSequence(tokenIdVector));
+                }
             }
             data.add(new ASN1Integer(chainId));
             return new DERSequence(data).getEncoded();
@@ -159,7 +193,7 @@ public class ERC721Token implements ASNEncodable, Validateable {
     public boolean checkValidity() {
         try {
             validateChainId(getChainId());
-            validateTokenId(getTokenId());
+            validateTokenIds(getTokenIds());
             validateAddress(getAddress());
         } catch (IllegalArgumentException e) {
             logger.error("Object is not valid");
