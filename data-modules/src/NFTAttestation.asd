@@ -37,21 +37,17 @@
         <type>
             <sequence>
                 <element name="address" type="Address"/>
-                <optional>
-                    <element name="tokenIds" type="TokenIds"/>
-                </optional>
                 <element name="chainID" type="asnx:INTEGER"/>
+                <optional>
+                    <element name="tokenIds">
+                        <type>
+                            <sequenceOf>
+                                <element name="multipleTokenIds" type="TokenId"/>
+                            </sequenceOf>
+                        </type>
+                    </element>
+                </optional>
             </sequence>
-        </type>
-    </namedType>
-    <namedType name="TokenIds">
-        <type>
-            <choice>
-                <sequenceOf>
-                    <element name="multipleTokenIds" type="TokenId"/>
-                </sequenceOf>
-                <element name="singleTokenId" type="TokenId"/>
-            </choice>
         </type>
     </namedType>
     <!-- The 256 bit non-negative integer uniquely representing the ERC721 token in question in binary -->
