@@ -31,7 +31,7 @@ public class SignedEthereumKeyLinkingAttestationTest {
     private static final long defaultValidity = 60 * 60; //seconds
     private static final ERC721Token[] nfts = new ERC721Token[]{
             new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "25"),
-            new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", "26")
+            new ERC721Token("0xa567f5A165545Fa2639bBdA79991F105EADF8522", Arrays.asList(BigInteger.valueOf(26), BigInteger.valueOf(42)), ERC721Token.DEFAULT_CHAIN_ID)
     };
     private static AsymmetricCipherKeyPair subjectECKeys;
     private static AsymmetricCipherKeyPair subjectRSAKeys;
