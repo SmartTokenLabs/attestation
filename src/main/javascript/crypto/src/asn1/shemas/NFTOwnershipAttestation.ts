@@ -3,8 +3,8 @@ import {EpochTimeValidity} from "./EpochTimeValidity";
 
 export class ERC721 {
 	@AsnProp({ type: AsnPropTypes.OctetString }) public address: Uint8Array;
-	@AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public tokenId: Uint8Array;
-	@AsnProp({ type: AsnPropTypes.Integer, optional: true }) public chainId: number;
+	@AsnProp({ type: AsnPropTypes.Integer }) public chainId: number;
+	@AsnProp({ type: AsnPropTypes.OctetString, optional: true, repeated: "sequence" }) public tokenIds?: Uint8Array[];
 }
 
 export class NFTOwnershipAttestation {

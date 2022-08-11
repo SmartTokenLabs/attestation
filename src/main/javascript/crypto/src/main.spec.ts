@@ -693,7 +693,7 @@ describe("Safe Connect", () => {
 
     const attestorKeys = KeyPair.fromPrivateUint8(hexStringToUint8(ATTESTOR_PRIV_KEY), 'secp256k1');
 
-    async function createAttestation(nftWalletOrTokens: string | [{address: string, chainId: number}], linkedWallet: string, validity:number = 3600, context?: string, validFrom?: number){
+    async function createAttestation(nftWalletOrTokens: string | [{address: string, chainId: number, tokenIds?: bigint[]}], linkedWallet: string, validity:number = 3600, context?: string, validFrom?: number){
 
         const attestHoldingKey = await subtle.generateKey(
             {
@@ -779,7 +779,7 @@ describe("Safe Connect", () => {
 
     test("NFT attestation should be valid", async () => {
 
-        let linkAttest = await createAttestation([{address: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chainId: 4}], LINKED_ADDRESS, 3600);
+        let linkAttest = await createAttestation([{address: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chainId: 4, tokenIds: [1n, 2n]}], LINKED_ADDRESS, 3600);
 
         await expect(await linkAttest.verify(attestorKeys)).not.toThrow;
     });

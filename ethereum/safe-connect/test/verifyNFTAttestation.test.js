@@ -35,19 +35,19 @@ describe("Verify NFT Attestation", function () {
         this.signers = await ethers.getSigners();
     });
 
-    let tokenAsn = "301c04143d8a0fb32b0f586fdc10447c22f477979dc526ec040101020104";
+    let tokenAsn = "302104143D8A0FB32B0F586FDC10447C22F477979DC526EC0201043006040101040102";
 
     it("Token length decode", async function () {
 
-        let num = await this.VerifyNFTAttestationTest.numberOfTokens("0x" + tokenAsn);
+        let num = await this.VerifyNFTAttestationTest.numberOfElements("0x" + tokenAsn);
 
         await expect(num).to.equal(1);
 
-        num = await this.VerifyNFTAttestationTest.numberOfTokens("0x" + tokenAsn + tokenAsn);
+        num = await this.VerifyNFTAttestationTest.numberOfElements("0x" + tokenAsn + tokenAsn);
 
         await expect(num).to.equal(2);
 
-        num = await this.VerifyNFTAttestationTest.numberOfTokens("0x" + tokenAsn + tokenAsn + tokenAsn);
+        num = await this.VerifyNFTAttestationTest.numberOfElements("0x" + tokenAsn + tokenAsn + tokenAsn);
 
         await expect(num).to.equal(3);
     });
@@ -56,10 +56,13 @@ describe("Verify NFT Attestation", function () {
 
         let tokens = await this.VerifyNFTAttestationTest.decodeTokens("0x" + tokenAsn + tokenAsn + tokenAsn);
 
+        console.log(tokens);
+
         for (let token of tokens){
             await expect(token.addr).to.equal("0x3d8a0fB32b0F586FdC10447c22F477979dc526ec");
-            await expect(token.tokenId).to.equal(1);
             await expect(token.chainId).to.equal(4);
+            await expect(token.tokenIds[0]).to.equal(1);
+            await expect(token.tokenIds[1]).to.equal(2);
         }
 
     });
@@ -72,7 +75,7 @@ describe("Verify NFT Attestation", function () {
         console.log("create attestation");
 
         let attestationHex = await createAttestation(
-            [{ contract: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chainId: 4}], // NFT owner wallet
+            [{ contract: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chainId: 4, tokenIds: [1, 2]}], // NFT owner wallet
             sendingAddress // linked address
         ).catch((e) => {
             console.log(e);

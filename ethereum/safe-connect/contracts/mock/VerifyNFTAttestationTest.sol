@@ -13,8 +13,8 @@ contract VerifyNFTAttestationTest {
         return VerifyNFTAttestation.verifyTest(attestation, attestorAddr);
     }
 
-    function numberOfTokens(bytes memory nftBytes) public view returns (uint) {
-        return VerifyNFTAttestation.numberOfTokens(nftBytes);
+    function numberOfElements(bytes memory nftBytes) public view returns (uint) {
+        return VerifyNFTAttestation.numberOfElements(nftBytes);
     }
 
     function decodeTokens(bytes memory nftBytes) public view returns (AttestedToken[] memory) {

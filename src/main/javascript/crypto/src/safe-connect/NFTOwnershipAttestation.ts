@@ -3,12 +3,12 @@ import {LinkedAttestation, SignedLinkedAttestation} from "../asn1/shemas/SignedL
 import {ERC721, NFTOwnershipAttestation as NFTOwnershipSchema} from "../asn1/shemas/NFTOwnershipAttestation";
 import {KeyPair} from "../libs/KeyPair";
 import {EpochTimeValidity} from "../asn1/shemas/EpochTimeValidity";
-import {hexStringToUint8} from "../libs/utils";
+import {bnToUint8, hexStringToUint8} from "../libs/utils";
 
 export interface IToken {
 	address: string,
-	tokenId?: bigint,
-	chainId?: number,
+	chainId: number,
+	tokenIds?: bigint[],
 }
 
 export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
@@ -37,7 +37,14 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 			let attToken = new ERC721()
 			attToken.address = hexStringToUint8(token.address);
 			attToken.chainId = token.chainId;
-			attToken.tokenId = new Uint8Array([parseInt("1")])
+
+			if (token.tokenIds) {
+				attToken.tokenIds = [];
+
+				for (let bn of token.tokenIds) {
+					attToken.tokenIds.push(bnToUint8(bn));
+				}
+			}
 
 			this.linkedAttestation.attestation.nftOwnership.tokens.push(attToken);
 		}

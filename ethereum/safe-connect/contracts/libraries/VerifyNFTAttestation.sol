@@ -141,7 +141,7 @@ library VerifyNFTAttestation {
         bytes memory curBytes;
         uint index = 0;
 
-        uint numTokens = numberOfTokens(tokensBytes);
+        uint numTokens = numberOfElements(tokensBytes);
 
         tokens = new AttestedToken[](numTokens);
 
@@ -151,14 +151,15 @@ library VerifyNFTAttestation {
             (length, token, tokenIndex, ) = LinkAttestUtils.decodeElement(tokensBytes, tokenIndex);
 
             (, curBytes, fieldIndex, ) = LinkAttestUtils.decodeElement(token, 0); // Address
-            AttestedToken memory tok = AttestedToken(LinkAttestUtils.bytesToAddress(curBytes), 0, 0);
-
-            // TODO: Handle optional fields with implicitly tagged types
-            (, curBytes, fieldIndex, ) = LinkAttestUtils.decodeElement(token, fieldIndex); // Token ID
-            tok.tokenId = LinkAttestUtils.bytesToUint(curBytes);
+            AttestedToken memory tok = AttestedToken(LinkAttestUtils.bytesToAddress(curBytes), 0, new uint[](0));
 
             (, curBytes, fieldIndex, ) = LinkAttestUtils.decodeElement(token, fieldIndex); // Chain ID
             tok.chainId = LinkAttestUtils.bytesToUint(curBytes);
+
+            if (fieldIndex < length){
+                (, curBytes, fieldIndex, ) = LinkAttestUtils.decodeElement(token, fieldIndex); // Token IDs
+                tok.tokenIds = decodeTokenIds(curBytes);
+            }
 
             tokens[index] = tok;
 
@@ -166,7 +167,26 @@ library VerifyNFTAttestation {
         }
     }
 
-    function numberOfTokens(bytes memory tokensBytes) public view returns (uint num){
+    function decodeTokenIds(bytes memory tokenIdBytes) public view returns (uint[] memory tokenIds){
+
+        uint idIndex = 0;
+        uint curIndex = 0;
+        bytes memory curBytes;
+        uint numIds = numberOfElements(tokenIdBytes);
+
+        tokenIds = new uint[](numIds);
+
+        while (curIndex < tokenIdBytes.length){
+
+            (, curBytes, curIndex, ) = LinkAttestUtils.decodeElement(tokenIdBytes, curIndex); // Token ID
+            tokenIds[idIndex] = LinkAttestUtils.bytesToUint(curBytes);
+
+            idIndex++;
+        }
+
+    }
+
+    function numberOfElements(bytes memory tokensBytes) public view returns (uint num){
 
         uint256 index = 0;
         uint256 length;
@@ -183,6 +203,6 @@ library VerifyNFTAttestation {
 
 struct AttestedToken {
     address addr;
-    uint tokenId;
     uint chainId;
+    uint[] tokenIds;
 }
