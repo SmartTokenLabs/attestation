@@ -28,7 +28,7 @@ export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 		this.linkedAttestation.attestation.ethereumAddress.ethereumAddress = hexStringToUint8(attestedAddress);
 
-		if (!context)
+		if (context)
 			this.linkedAttestation.attestation.ethereumAddress.context = context;
 
 		this.sign(attestorKeys);

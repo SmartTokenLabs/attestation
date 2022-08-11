@@ -49,7 +49,7 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 			this.linkedAttestation.attestation.nftOwnership.tokens.push(attToken);
 		}
 
-		if (!context)
+		if (context)
 			this.linkedAttestation.attestation.nftOwnership.context = context;
 
 		this.sign(attestorKeys);
