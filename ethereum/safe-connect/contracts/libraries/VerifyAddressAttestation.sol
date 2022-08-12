@@ -117,8 +117,7 @@ library VerifyAddressAttestation {
         LinkAttestUtils.validateExpiry(curBytes);
 
         // TODO: Check for context field
-        //(length, curBytes, decodeIndex, ) = decodeElement(attestation, decodeIndex); // context
-
+        //(, , decodeIndex, ) = LinkAttestUtils.decodeElement(attestation, decodeIndex); // context
 
         (, decodeIndex, ) = LinkAttestUtils.decodeLength(attestation, decodeIndex); // Algorithm info
         (, , decodeIndex, ) = LinkAttestUtils.decodeElement(attestation, decodeIndex);

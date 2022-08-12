@@ -16,7 +16,7 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 	TYPE: keyof LinkedAttestation = "nftOwnership";
 
 	// TODO: Implement multi-token interface
-	create(holdingPubKey: Uint8Array, tokens: IToken[], attestorKeys: KeyPair, validity: number, context?: string, validFrom?: number){
+	create(holdingPubKey: Uint8Array, tokens: IToken[], attestorKeys: KeyPair, validity: number, context?: Uint8Array, validFrom?: number){
 
 		this.linkedAttestation = new SignedLinkedAttestation();
 		this.linkedAttestation.attestation = new LinkedAttestation();

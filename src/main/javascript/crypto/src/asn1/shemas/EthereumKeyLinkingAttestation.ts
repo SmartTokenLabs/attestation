@@ -7,7 +7,7 @@ export class EthereumKeyLinkingAttestation {
 	@AsnProp({ type: AsnPropTypes.OctetString }) public subjectEthereumAddress: Uint8Array;
 	@AsnProp({ type: SignedLinkedAttestation }) public linkedAttestation: SignedLinkedAttestation;
 	@AsnProp({ type: EpochTimeValidity }) public validity: EpochTimeValidity;
-	@AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public context?: string;
+	@AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public context?: Uint8Array;
 }
 
 export class SignedEthereumKeyLinkingAttestation {

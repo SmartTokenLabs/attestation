@@ -3,6 +3,7 @@ const { ethers } = require('hardhat');
 
 const { ATTESTOR_ADDRESS, SENDING_ADDRESS } = require("../scripts/constants");
 const { createAttestation } = require('../scripts/utils');
+const {stringToArray} = require("@tokenscript/attestation/dist/libs/utils");
 
 describe("Verify NFT Attestation", function () {
 
@@ -76,7 +77,9 @@ describe("Verify NFT Attestation", function () {
 
         let attestationHex = await createAttestation(
             [{ contract: "0x3d8a0fB32b0F586FdC10447c22F477979dc526ec", chainId: 4, tokenIds: [1, 2]}], // NFT owner wallet
-            sendingAddress // linked address
+            sendingAddress, // linked address
+            3600,
+            //new Uint8Array(stringToArray("test-context")) // TODO: Fix context handling
         ).catch((e) => {
             console.log(e);
         });

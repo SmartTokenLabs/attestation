@@ -11,5 +11,5 @@ export class NFTOwnershipAttestation {
 	@AsnProp({ type: AsnPropTypes.Any }) public subjectPublicKey: Uint8Array;
 	@AsnProp({ type: ERC721, repeated: "sequence" }) public tokens: ERC721[] = [];
 	@AsnProp({ type: EpochTimeValidity }) public validity: EpochTimeValidity;
-	@AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public context?: string;
+	@AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public context?: Uint8Array;
 }

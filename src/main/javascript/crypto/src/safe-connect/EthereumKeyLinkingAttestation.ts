@@ -16,7 +16,7 @@ export class EthereumKeyLinkingAttestation {
 
 	protected linkAttest: SignedEthereumKeyLinkingAttestation;
 
-	create(linkedAttestation: string, linkedEthereumAddress: string, validity: number, context?: string, validFrom?: number) {
+	create(linkedAttestation: string, linkedEthereumAddress: string, validity: number, context?: Uint8Array, validFrom?: number) {
 
 		let addressAttestObj = AsnParser.parse(base64ToUint8array(linkedAttestation), SignedLinkedAttestation);
 

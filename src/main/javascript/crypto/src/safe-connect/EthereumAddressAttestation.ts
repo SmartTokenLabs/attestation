@@ -9,7 +9,7 @@ export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 	TYPE: keyof LinkedAttestation = "ethereumAddress";
 
-	create(holdingPubKey: Uint8Array, attestedAddress: string, attestorKeys: KeyPair, validity: number, context?: string, validFrom?: number){
+	create(holdingPubKey: Uint8Array, attestedAddress: string, attestorKeys: KeyPair, validity: number, context?: Uint8Array, validFrom?: number){
 
 		this.linkedAttestation = new SignedLinkedAttestation();
 		this.linkedAttestation.attestation = new LinkedAttestation()
