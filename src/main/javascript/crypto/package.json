@@ -12,7 +12,8 @@
     "clean": "rm -R dist",
     "watch": "webpack --watch --progress",
     "testjest": "jest",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build",
+    "postinstall": "patch-package"
   },
   "repository": {
     "type": "git",
@@ -50,11 +51,12 @@
     "crypto": false
   },
   "dependencies": {
-    "@peculiar/asn1-schema": "^2.1.6",
+    "@peculiar/asn1-schema": "^2.1.9",
     "elliptic": "^6.5.3",
     "ethers": "^5.0.31",
     "js-sha3": "^0.8.0",
     "jsonwebtoken": "^8.5.1",
+    "patch-package": "^6.4.7",
     "secure-random": "^1.1.2",
     "string.prototype.matchall": "^4.0.4",
     "url": "^0.11.0"

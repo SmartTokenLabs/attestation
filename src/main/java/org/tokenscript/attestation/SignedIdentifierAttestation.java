@@ -11,8 +11,13 @@ import org.tokenscript.attestation.core.*;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
+import org.tokenscript.attestation.core.ExceptionUtil;
+import org.tokenscript.attestation.core.SignatureUtility;
 
-public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Validateable {
+import java.io.IOException;
+import java.io.InvalidObjectException;
+
+public class SignedIdentifierAttestation implements CheckableObject {
   private static final Logger logger = LogManager.getLogger(SignedIdentifierAttestation.class);
 
   private final IdentifierAttestation att;
@@ -33,9 +38,7 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
   }
 
   public SignedIdentifierAttestation(byte[] derEncoding, AsymmetricKeyParameter verificationKey) throws IOException {
-    ASN1InputStream input = null;
-    try {
-      input = new ASN1InputStream(derEncoding);
+    try (ASN1InputStream input = new ASN1InputStream(derEncoding)) {
       ASN1Sequence asn1 = ASN1Sequence.getInstance(input.readObject());
       ASN1Sequence attestationEnc = ASN1Sequence.getInstance(asn1.getObjectAt(0));
       AlgorithmIdentifier algorithmEncoded = AlgorithmIdentifier.getInstance(asn1.getObjectAt(1));
@@ -48,12 +51,10 @@ public class SignedIdentifierAttestation implements ASNEncodable, Verifiable, Va
       this.attestationVerificationKey = verificationKey;
       if (!algorithmEncoded.equals(att.getSigningAlgorithm())) {
         throw ExceptionUtil.throwException(logger,
-            new IllegalArgumentException("Algorithm specified is not consistent"));
+                new IllegalArgumentException("Algorithm specified is not consistent"));
       }
       constructorCheck(verificationKey);
-      } finally {
-        input.close();
-      }
+    }
   }
 
   void constructorCheck(AsymmetricKeyParameter verificationKey) {

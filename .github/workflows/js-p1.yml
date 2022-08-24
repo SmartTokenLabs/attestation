@@ -1,0 +1,47 @@
+name: "js-p1"
+
+on: [workflow_call]
+
+jobs:
+  js-p1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "11"
+          cache: "gradle"
+      - name: build
+        run: |
+          cd src/main/javascript/crypto/
+          npm i
+          npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: js-build
+          path: |
+            src/main/javascript/crypto/dist/
+      - uses: actions/download-artifact@v3
+        # java-build may not exists. So allow this step failure
+        continue-on-error: true
+        with:
+          name: java-build
+          path: build/
+      - name: prepare test
+        run: |
+          if [ ! -d "build/test-results/" ]; then
+            ./gradlew --no-daemon test
+          fi
+      - name: test
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        with:
+          working-directory: src/main/javascript/crypto/
+          test-script: npm run testjest
+      - name: audit
+        run: |
+          cd src/main/javascript/crypto/
+          npm audit

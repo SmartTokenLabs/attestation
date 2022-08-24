@@ -1,0 +1,81 @@
+name: "JS CI"
+
+on:
+  push:
+    branches:
+      - main
+      - stage
+    paths:
+      - "src/main/javascript/crypto/**"
+  pull_request:
+    branches:
+      - main
+      - stage
+    paths:
+      - "src/main/javascript/crypto/**"
+
+jobs:
+  js-p1:
+    uses: ./.github/workflows/js-p1.yml
+
+  prerelease:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/stage'
+    runs-on: ubuntu-latest
+    needs:
+      - js-p1
+    outputs:
+      version: ${{ steps.publish.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          registry-url: "https://npm.pkg.github.com"
+      - uses: actions/delete-package-versions@v3
+        with:
+          package-name: "attestation"
+      - uses: actions/download-artifact@v3
+        with:
+          name: js-build
+          path: src/main/javascript/crypto/dist/
+      - name: publish
+        id: publish
+        run: |
+          cd src/main/javascript/crypto/
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          sed -ri "s/\"version\"\s*:\s*\"(.*)\"/\"version\": \"\1-${SHORT_SHA}\"/" package.json
+          cat package.json
+          npm i
+          npm publish
+          version="$(node -e 'console.log(require("./package.json").version)')"
+          echo "::set-output name=version::${version}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  downstream-attestation_id-ci:
+    needs:
+      - prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Downstream CI
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        with:
+          owner: AlphaWallet
+          repo: attestation.id
+          github_token: ${{ secrets.PERSONAL_TOKEN }}
+          workflow_file_name: frontend-p1.yml
+          client_payload: '{ "attestation_ver": "${{ needs.prerelease.outputs.version }}", "use_github_packages": "true" }'
+
+  downstream-token-negotiator-ci:
+    needs:
+      - prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Downstream CI
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        with:
+          owner: TokenScript
+          repo: token-negotiator
+          github_token: ${{ secrets.PERSONAL_TOKEN }}
+          workflow_file_name: tn-p1.yml
+          client_payload: '{ "attestation_ver": "${{ needs.prerelease.outputs.version }}", "use_github_packages": "true" }'

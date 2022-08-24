@@ -1,0 +1,26 @@
+diff --git a/node_modules/@peculiar/asn1-schema/build/cjs/converters.js b/node_modules/@peculiar/asn1-schema/build/cjs/converters.js
+index 8e6f1ae..53ac31d 100644
+--- a/node_modules/@peculiar/asn1-schema/build/cjs/converters.js
++++ b/node_modules/@peculiar/asn1-schema/build/cjs/converters.js
+@@ -17,7 +17,7 @@ exports.AsnAnyConverter = {
+     },
+ };
+ exports.AsnIntegerConverter = {
+-    fromASN: (value) => value.valueBlock.valueHex.byteLength > 4
++    fromASN: (value) => value.valueBlock.valueHex.byteLength >= 4
+         ? value.valueBlock.toString()
+         : value.valueBlock.valueDec,
+     toASN: (value) => new asn1.Integer({ value: value }),
+diff --git a/node_modules/@peculiar/asn1-schema/build/es2015/converters.js b/node_modules/@peculiar/asn1-schema/build/es2015/converters.js
+index ac78302..7d15bbc 100644
+--- a/node_modules/@peculiar/asn1-schema/build/es2015/converters.js
++++ b/node_modules/@peculiar/asn1-schema/build/es2015/converters.js
+@@ -14,7 +14,7 @@ export const AsnAnyConverter = {
+     },
+ };
+ export const AsnIntegerConverter = {
+-    fromASN: (value) => value.valueBlock.valueHex.byteLength > 4
++    fromASN: (value) => value.valueBlock.valueHex.byteLength >= 4
+         ? value.valueBlock.toString()
+         : value.valueBlock.valueDec,
+     toASN: (value) => new asn1.Integer({ value: value }),

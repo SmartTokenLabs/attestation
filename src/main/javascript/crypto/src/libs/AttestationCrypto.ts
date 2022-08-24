@@ -1,5 +1,5 @@
 import {ATTESTATION_TYPE} from "./interfaces";
-import {Point, CURVE_BN256} from "./Point";
+import {Point, CURVE_BN256, Curve} from "./Point";
 import {
     mod,
     uint8merge,
@@ -23,25 +23,35 @@ export const Pedestren_H = new Point(1084489601369687159589315149065063625066700
 export class AttestationCrypto {
     rand: bigint;
     static OID_SIGNATURE_ALG: string = "1.2.840.10045.2.1";
-    private curveOrderBitLength: bigint = 254n;
     static BYTES_IN_DIGEST: number = 256 / 8;
+    static fieldSize: bigint = CURVE_BN256.P;
+    static curveOrder: bigint = CURVE_BN256.n;
+    private curveOrderBitLength: bigint = 254n;
+    static cofactor: bigint = 1n;
+    static curve:Curve = CURVE_BN256;
+    static G = Pedestren_G;
+    static H = Pedestren_H;
     constructor() {
         this.rand = this.makeSecret();
         // if (mod(CURVE_BN256.P,4n) != 3n) {
         //     throw new Error("The crypto will not work with this choice of curve");
         // }
-        if (!this.verifyCurveOrder(CURVE_BN256.n)) {
+        if (!this.verifyCurveOrder()) {
             throw new Error("Static values do not work with current implementation");
         }
 
     }
 
-    private verifyCurveOrder(curveOrder: bigint): boolean{
+    private verifyCurveOrder(): boolean{
+        // Sanity check static values
+        AttestationCrypto.validatePointToCurve(AttestationCrypto.G, AttestationCrypto.curve);
+        AttestationCrypto.validatePointToCurve(AttestationCrypto.H, AttestationCrypto.curve);
+
         // Verify that the curve order is less than 2^256 bits, which is required by mapToCurveMultiplier
         // Specifically checking if it is larger than 2^curveOrderBitLength and that no bits at position curveOrderBitLength+1 or larger are set
-        let curveOrderBitLength: bigint = BigInt(curveOrder.toString(2).length);
-        if (curveOrder < (1n << (curveOrderBitLength-1n)) || (curveOrder >> curveOrderBitLength) > 0n) {
-            logger(DEBUGLEVEL.LOW, "Curve order is not 253 bits which is required by the current implementation");
+        let curveOrderBitLength: bigint = BigInt(AttestationCrypto.curveOrder.toString(2).length);
+        if (AttestationCrypto.curveOrder < (1n << (curveOrderBitLength-1n)) || (AttestationCrypto.curveOrder >> curveOrderBitLength) > 0n) {
+            logger(DEBUGLEVEL.LOW, "Curve order is not 254 bits which is required by the current implementation");
             return false;
         }
         return true;
@@ -90,6 +100,10 @@ export class AttestationCrypto {
      * @return
      */
     makeCommitmentFromHiding(identifier: string, type: number, hiding: Point): Uint8Array {
+
+        if (!AttestationCrypto.validatePointToCurve(hiding, AttestationCrypto.curve) ) {
+            throw new Error("Point invalid");
+        };
         // let hashedIdentifier:bigint = this.mapToIntegerIntString(type, identifier);
         let hashedIdentifier:bigint = this.mapToCurveMultiplier(type, identifier);
         // Construct Pedersen commitment
@@ -110,6 +124,7 @@ export class AttestationCrypto {
     }
 
     mapToInteger(arr: Uint8Array ):bigint {
+        // Construct a non-negative BigInteger from the bytes
         return BigInt('0x' + sha3.keccak256(arr))>>(256n - this.curveOrderBitLength);
     }
 
@@ -249,8 +264,10 @@ export class AttestationCrypto {
      * @return
      */
     public computeEqualityProof(commitment1:string, commitment2: string, randomness1:bigint, randomness2:bigint, nonce: Uint8Array = new Uint8Array([])):UsageProofOfExponent {
-        let comPoint1: Point = Point.decodeFromHex(commitment1, CURVE_BN256);
-        let comPoint2: Point = Point.decodeFromHex(commitment2, CURVE_BN256);
+        let comPoint1: Point = Point.decodeFromHex(commitment1);
+        AttestationCrypto.validatePointToCurve(comPoint1, CURVE_BN256);
+        let comPoint2: Point = Point.decodeFromHex(commitment2);
+        AttestationCrypto.validatePointToCurve(comPoint2, CURVE_BN256);
         // Compute H*(randomness1-randomness2=commitment1-commitment2=G*msg+H*randomness1-G*msg+H*randomness2
         let riddle: Point = comPoint1.subtract(comPoint2);
         let exponent: bigint = mod(randomness1 - randomness2, CURVE_BN256.n);
@@ -289,6 +306,12 @@ export class AttestationCrypto {
      * @return True if the proof is OK and false otherwise
      */
     public verifyFullProof(pok: FullProofOfExponent): boolean  {
+
+        if (!pok.validateParameters()) {
+            logger(2,"The parameters in the ZK proof are not correct");
+            return false;
+        }
+
         // let c:bigint = this.mapToInteger(this.makeArray([Pedestren_H, pok.getRiddle(), pok.getPoint()]));
         let c:bigint = this.computeChallenge(pok.getPoint(),[Pedestren_H, pok.getRiddle()], pok.getNonce());
 
@@ -304,8 +327,15 @@ export class AttestationCrypto {
      * @return True if the proof is OK and false otherwise
      */
     public verifyEqualityProof(commitment1: Uint8Array, commitment2: Uint8Array, pok: ProofOfExponentInterface): boolean  {
+
+        if (!pok.validateParameters()) {
+            logger(2,"The parameters in the ZK proof are not correct");
+            return false;
+        }
         let comPoint1: Point = Point.decodeFromUint8(commitment1, CURVE_BN256);
+        AttestationCrypto.validatePointToCurve(comPoint1, CURVE_BN256);
         let comPoint2: Point = Point.decodeFromUint8(commitment2, CURVE_BN256);
+        AttestationCrypto.validatePointToCurve(comPoint2, CURVE_BN256);
         // Compute the value the riddle should have
         let riddle: Point = comPoint1.subtract(comPoint2);
         // let c: bigint = this.mapToInteger(this.makeArray([Pedestren_H, comPoint1, comPoint2, pok.getPoint()]));
@@ -315,7 +345,8 @@ export class AttestationCrypto {
 
     private verifyPok(pok: FullProofOfExponent, c: bigint): boolean {
         // Check that the c has been sampled correctly using rejection sampling
-        if (c >= CURVE_BN256.n) {
+        if (c >= CURVE_BN256.n || c <= 0n) {
+            logger(2, "Challenge is not of the correct size");
             return false;
         }
         let lhs: Point = Pedestren_H.multiplyDA(pok.getChallengeResponse());
@@ -352,4 +383,20 @@ export class AttestationCrypto {
         return sha3.keccak256(data);
     }
 
+    public static validatePointToCurve( point:Point, curve:Curve) {
+        try {
+          if (point.isInfinity()) {
+            throw new Error("Point is at infinity");
+          }
+          if (!point.multiplyDA(CURVE_BN256.n).isInfinity()) {
+            console.log("Point does not have correct order");
+            throw new Error("Point does not have correct order");
+          }
+
+        } catch ( e) {
+        //   throw new Error("Point invalid");
+            return false;
+        }
+        return true;
+    }
 }
