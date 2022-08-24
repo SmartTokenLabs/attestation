@@ -1,0 +1,99 @@
+<html>
+ <head>
+     <script>
+		 process = {env: {NODE_DEBUG: "false"}};
+     </script>
+     <script type="text/javascript" src="dist/authenticator.bundle.js"></script>
+ </head>
+ <body>
+    <script>
+        function test(){
+			let generatedSchema = new SchemaGenerator({
+				ticket: {
+					name: "Ticket",
+					items: {
+						devconId: {
+							type: "Utf8String",
+							optional: false
+						},
+						ticketIdNumber: {
+							type: "Integer",
+							optional: true
+						},
+						ticketIdString: {
+							type: "Utf8String",
+							optional: true
+						},
+						ticketClass: {
+							type: "Integer",
+							optional: false
+						},
+						linkedTicket: {
+							name: "Linked Ticket",
+							items: {
+								devconId: {
+									type: "Utf8String",
+									optional: false
+								},
+								ticketIdNumber: {
+									type: "Integer",
+									optional: true
+								},
+								ticketIdString: {
+									type: "Utf8String",
+									optional: true
+								},
+								ticketClass: {
+									type: "Integer",
+									optional: false
+								}
+							}
+						}
+					}
+				},
+				commitment: {
+					type: "OctetString",
+					optional: true
+				},
+				signatureValue: {
+					type: "BitString",
+					optional: false
+				}
+			});
+
+			let asnObject = generatedSchema.getSchemaObject();
+
+			asnObject.ticket.devconId = "6";
+			asnObject.ticket.ticketIdNumber = 10;
+			asnObject.ticket.ticketClass = 1;
+
+			asnObject.ticket.linkedTicket.devconId = "6";
+			asnObject.ticket.linkedTicket.ticketIdNumber = 10;
+			asnObject.ticket.linkedTicket.ticketClass = 1;
+
+			asnObject.signatureValue = new Uint8Array([
+				177,  53, 222, 215,  60,   2,  17, 132,  21, 143, 166,
+				234, 145, 239, 240, 169, 119,  83, 242, 113,  99, 243,
+				179,  90,  87, 211, 250, 197, 113,  70, 191,  10,  69,
+				121,  82,  36, 254, 251, 149, 237, 222, 125, 213,  90,
+				21,  84, 130, 155,  91, 226,  15,  62,  57, 177, 251,
+				39, 165,  43, 214,  57, 114, 209, 232, 156,  28
+			]);
+
+			console.log("Populated schema object: ");
+			console.log(asnObject);
+
+			let encoded = generatedSchema.serializeAndFormat(asnObject);
+
+			console.log("Encoded: ");
+			console.log(encoded);
+
+			let decoded = generatedSchema.parse(encoded);
+
+			console.log("Decoded: ");
+			console.log(decoded);
+        }
+    </script>
+    <button onclick="test();">Run Test</button>
+ </body>
+</html>

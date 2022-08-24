@@ -31,6 +31,8 @@ import {Issuer} from "./libs/Issuer";
 import { AttestedObject } from './libs/AttestedObject';
 import { AttestableObject } from './libs/AttestableObject';
 import { UseToken } from './asn1/shemas/UseToken';
+import {SchemaGenerator} from "./util/SchemaGenerator";
+import {DevconTicket, SignedDevconTicket} from "./asn1/shemas/SignedDevconTicket";
 const url = require('url');
 
 let EC = require("elliptic");
@@ -675,5 +677,100 @@ describe("read attested object", () => {
 
     })
 })
+
+describe("Schema Generator", function(){
+
+    test("Serialize & parse ASN based on a dynamic schema", async function(){
+
+        let generatedSchema = new SchemaGenerator({
+            ticket: {
+                name: "Ticket",
+                items: {
+                    devconId: {
+                        type: "Utf8String",
+                        optional: false
+                    },
+                    ticketIdNumber: {
+                        type: "Integer",
+                        optional: true
+                    },
+                    ticketIdString: {
+                        type: "Utf8String",
+                        optional: true
+                    },
+                    ticketClass: {
+                        type: "Integer",
+                        optional: false
+                    },
+                    linkedTicket: {
+                        name: "Linked Ticket",
+                        items: {
+                            devconId: {
+                                type: "Utf8String",
+                                optional: false
+                            },
+                            ticketIdNumber: {
+                                type: "Integer",
+                                optional: true
+                            },
+                            ticketIdString: {
+                                type: "Utf8String",
+                                optional: true
+                            },
+                            ticketClass: {
+                                type: "Integer",
+                                optional: false
+                            }
+                        }
+                    }
+                }
+            },
+            commitment: {
+                type: "OctetString",
+                optional: true
+            },
+            signatureValue: {
+                type: "BitString",
+                optional: false
+            }
+        });
+
+        let asnObject = generatedSchema.getSchemaObject();
+
+        asnObject.ticket.devconId = "6";
+        asnObject.ticket.ticketIdNumber = 5;
+        asnObject.ticket.ticketClass = 1;
+
+        asnObject.ticket.linkedTicket.devconId = "6";
+        asnObject.ticket.linkedTicket.ticketIdNumber = 10;
+        asnObject.ticket.linkedTicket.ticketClass = 2;
+
+        asnObject.signatureValue = new Uint8Array(hexStringToUint8("0xb135ded73c021184158fa6ea91eff0a97753f27163f3b35a57d3fac57146bf0a45795224fefb95edde7dd55a1554829b5be20f3e39b1fb27a52bd63972d1e89c1c"));
+
+        console.log(asnObject);
+
+        let encoded = generatedSchema.serializeAndFormat(asnObject);
+
+        console.log("Encoded: ");
+        console.log(encoded);
+
+        let decoded = generatedSchema.parse(encoded);
+
+        console.log("Decoded: ");
+        console.log(decoded);
+
+        // Can't do a single match here because nested properties are set in the prototype
+        expect(asnObject.ticket.devconId).toBe("6");
+        expect(asnObject.ticket.ticketIdNumber).toBe(5);
+        expect(asnObject.ticket.ticketClass).toBe(1);
+
+        expect(asnObject.ticket.linkedTicket.devconId).toBe("6");
+        expect(asnObject.ticket.linkedTicket.ticketIdNumber).toBe(10);
+        expect(asnObject.ticket.linkedTicket.ticketClass).toBe(2);
+
+        decoded.signatureValue = new Uint8Array(decoded.signatureValue);
+        expect(asnObject.signatureValue).toEqual(decoded.signatureValue);
+    });
+});
 
 
