@@ -1,5 +1,6 @@
 package org.tokenscript.attestation.safeconnect;
 
+import java.nio.charset.StandardCharsets;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -83,7 +84,11 @@ public class SignedEthereumKeyLinkingAttestationTest {
                 new SignedEthereumKeyLinkingAttestation(null, address,
                         new SignedNFTOwnershipAttestation(null, subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerKeys),
                         subjectRSAKeys), "mvp-nft");
-//        System.out.println(Hex.toHexString(signedAtt.getDerEncoding()));
+        ImportExportHelper.produceTestMaterial(
+            new SignedEthereumKeyLinkingAttestation(null, address,
+                new SignedNFTOwnershipAttestation("some context".getBytes(StandardCharsets.UTF_8),
+                    subjectRSAKeys.getPublic(), nfts, defaultValidity, issuerKeys),
+                subjectRSAKeys), "mvp-w-context");
 
         ImportExportHelper.storeKey(issuerKeys.getPublic(), "ec");
 //        ImportExportHelper.storeKey(issuerRSAKeys.getPublic(), "rsa");
@@ -102,6 +107,11 @@ public class SignedEthereumKeyLinkingAttestationTest {
 
         internalDecoder = new SignedOwnershipAttestationDecoder(new NFTOwnershipAttestationDecoder(), ecKey);
         att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp-nft");
+        assertTrue(att.verify());
+        assertTrue(att.checkValidity());
+
+        internalDecoder = new SignedOwnershipAttestationDecoder(new NFTOwnershipAttestationDecoder(), ecKey);
+        att = ImportExportHelper.loadTestMaterial(internalDecoder, "mvp-w-context");
         assertTrue(att.verify());
         assertTrue(att.checkValidity());
 
@@ -127,7 +137,7 @@ public class SignedEthereumKeyLinkingAttestationTest {
     }
 
     /**
-     * TODO this test currently does not work with CI/CD since it is depended on the JS teests which does not seem to be run currently
+     * TODO this test currently does not work with CI/CD since it is depended on the JS tests which does not seem to be run currently
      */
     @Disabled
     @Test
