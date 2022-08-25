@@ -17,6 +17,7 @@ import org.tokenscript.attestation.core.DERUtility;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.demo.SmartContract;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.lang.reflect.Field;
@@ -53,8 +54,8 @@ public class UseTicketTest {
 
     crypto = new AttestationCrypto(rand);
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
-    attestorKeys = SignatureUtility.constructECKeys(rand);
-    ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
+    attestorKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    ticketIssuerKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     fakeSupplimentalKey = SignatureUtility.constructECKeys(rand);
 
     System.out.println("subject: " + SignatureUtility.addressFromKey(subjectKeys.getPublic()));
@@ -76,7 +77,8 @@ public class UseTicketTest {
   @Test
   void writeTestMaterial() throws Exception {
     FileImportExport.storeKey(ticketIssuerKeys.getPublic(), "ticket-issuer-key");
-    Ticket ticket = new Ticket(MAIL, CONFERENCE_ID, TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    // TODO it is a known issue that using non-ascii chars cause a failure in the JS decoding, hence we use a conference ID with ascii chars
+    Ticket ticket = new Ticket(MAIL, "hejJ", TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
     FileImportExport.storeMaterial(ticket, "ticket");
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
     FileImportExport.storeKey(attestorKeys.getPublic(), "att-issuer-key");
