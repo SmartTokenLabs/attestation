@@ -1,26 +1,25 @@
 package org.tokenscript.attestation.core;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import org.bouncycastle.crypto.digests.SHA3Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
-
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 public interface UnpredictableNumberTool {
     long DEFAULT_VALIDITY_IN_MS = 3600L * 1000L;
     // The amount of bytes to use in the randomness and also the size of the hash digest
     int BYTES_IN_SEED = AttestationCrypto.BYTES_IN_DIGEST;
+    String STATIC_KEY_STRING = "UnpredictableNumberTool";
 
     /**
      * Helper method to hash context information. This is needed to always ensure that context information has the same length.
      */
     static byte[] hashContext(byte[] unhashedContext) {
         HMac staticKeyMAC = new HMac(new SHA3Digest(BYTES_IN_SEED * 8));
-        // To emulate a random oracle we use HMAC, but with a static key unique for the given usage, i.e, the name of this class and its package
         byte[] hashedContext = new byte[staticKeyMAC.getMacSize()];
-        // To emulate a random oracle we use HMAC, but with a static key unique for the given usage, i.e, the name of this class and its package
-        staticKeyMAC.init(new KeyParameter(UnpredictableNumberTool.class.getName().getBytes(StandardCharsets.UTF_8)));
+        // To emulate a random oracle we use HMAC, but with a static key unique for the given usage
+        staticKeyMAC.init(new KeyParameter(STATIC_KEY_STRING.getBytes(StandardCharsets.UTF_8)));
         staticKeyMAC.update(unhashedContext, 0, unhashedContext.length);
         staticKeyMAC.doFinal(hashedContext, 0);
         return hashedContext;

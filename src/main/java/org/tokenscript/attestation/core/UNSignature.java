@@ -1,16 +1,15 @@
 package org.tokenscript.attestation.core;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.tokenscript.eip712.Eip712Common;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Clock;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.tokenscript.eip712.Eip712Common;
 
 public class UNSignature implements UnpredictableNumberTool {
     private static final Logger logger = LogManager.getLogger(UNSignature.class);
@@ -42,7 +41,7 @@ public class UNSignature implements UnpredictableNumberTool {
 
     public UNSignature(SecureRandom random, AsymmetricCipherKeyPair keys, String domain, long validityInMs) {
         this.random = random;
-        this.domain = domain.toLowerCase();
+        this.domain = domain;
         this.validityInMs = validityInMs;
         this.publicKey = keys.getPublic();
         this.privateKey = keys.getPrivate();
