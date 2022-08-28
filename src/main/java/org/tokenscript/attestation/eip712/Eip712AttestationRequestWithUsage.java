@@ -1,26 +1,22 @@
 package org.tokenscript.attestation.eip712;
 
-import static org.tokenscript.attestation.Timestamp.DEFAULT_TIME_LIMIT_MS;
-import static org.tokenscript.attestation.Timestamp.DEFAULT_TOKEN_TIME_LIMIT;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.AttestationRequestWithUsage;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.Timestamp;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.URLUtility;
-import org.tokenscript.attestation.core.Validateable;
-import org.tokenscript.attestation.core.Verifiable;
+import org.tokenscript.attestation.core.*;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestWithUsageEncoder.AttestationRequestWUsageData;
-import org.tokenscript.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
-import java.io.IOException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Validator;
 import org.tokenscript.eip712.JsonEncodable;
+
+import java.io.IOException;
+
+import static org.tokenscript.attestation.Timestamp.DEFAULT_TIME_LIMIT_MS;
+import static org.tokenscript.attestation.Timestamp.DEFAULT_TOKEN_TIME_LIMIT;
 
 public class Eip712AttestationRequestWithUsage extends Eip712Validator implements JsonEncodable,
     Verifiable, Validateable, TokenValidateable {
@@ -87,13 +83,13 @@ public class Eip712AttestationRequestWithUsage extends Eip712Validator implement
 
   String makeToken(String identifier, AttestationRequestWithUsage attestationRequestWithUsage,
       AsymmetricKeyParameter signingKey) throws IOException {
-    Eip712Signer issuer = new Eip712Signer<AttestationUsageData>(signingKey, encoder);
+    Eip712Signer<AttestationRequestWUsageData> issuer = new Eip712Signer<>(signingKey, encoder);
     String encodedUseAttestation = URLUtility.encodeData(attestationRequestWithUsage.getDerEncoding());
     Timestamp now = new Timestamp();
     Timestamp expirationTime = new Timestamp(now.getTime() + maxTokenValidityInMs);
-    AttestationRequestWUsageData data = new AttestationRequestWUsageData(
-        encoder.getUsageValue(), identifier, encodedUseAttestation, now, expirationTime);
-    return issuer.buildSignedTokenFromJsonObject(data, domain);
+    AttestationRequestWUsageData attReqData = new AttestationRequestWUsageData(
+            encoder.getUsageValue(), identifier, encodedUseAttestation, now, expirationTime);
+    return issuer.buildSignedTokenFromJsonObject(attReqData, domain);
   }
 
   public String getIdentifier() {
@@ -154,15 +150,19 @@ public class Eip712AttestationRequestWithUsage extends Eip712Validator implement
   }
 
   private boolean testNonceAndDescription(long timeLimit) {
+    if (!data.getDescription().equals(encoder.getUsageValue())) {
+      logger.error("Description field is incorrect");
+      return false;
+    }
+    if (!validateDomain(jsonEncoding)) {
+      logger.error("Could not validate domain information");
+      return false;
+    }
     long nonceMinTime = Timestamp.stringTimestampToLong(data.getTimestamp()) - timeLimit;
     long nonceMaxTime = Timestamp.stringTimestampToLong(data.getTimestamp()) + timeLimit;
     if (!Nonce.validateNonce(attestationRequestWithUsage.getPok().getUnpredictableNumber(),
-        SignatureUtility.addressFromKey(userPublicKey), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
+            SignatureUtility.addressFromKey(userPublicKey), domain, new Timestamp(nonceMinTime), new Timestamp(nonceMaxTime))) {
       logger.error("Nonce validation failed");
-      return false;
-    }
-    if (!data.getDescription().equals(encoder.getUsageValue())) {
-      logger.error("Description field is incorrect");
       return false;
     }
     return true;

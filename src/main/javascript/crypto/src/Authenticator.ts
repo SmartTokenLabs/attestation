@@ -124,7 +124,6 @@ export class Authenticator {
         }
         logger(DEBUGLEVEL.HIGH,'attestation valid');
         
-
         try {
             let redeem: AttestedObject = new AttestedObject();
             redeem.create(ticket, att,
@@ -197,9 +196,14 @@ export class Authenticator {
 
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
-        let attest = new Eip712AttestationRequest(userKey);
-        await attest.addData(attestorDomain, 20*1000, receiverId, attRequest);
-        let attestJson = attest.getJsonEncoding();
+        let attestationRequest = new Eip712AttestationRequest(userKey);
+        // undefined means that we will use default value in attestationRequest.addData() second parameter
+        await attestationRequest.addData(attestorDomain, undefined, receiverId, attRequest);
+
+        Authenticator.checkAttestRequestVerifiability(attestationRequest);
+        Authenticator.checkAttestRequestValidity(attestationRequest);
+
+        let attestJson = attestationRequest.getJsonEncoding();
 
         return attestJson;
 
