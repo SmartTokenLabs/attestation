@@ -11,6 +11,7 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -156,6 +157,9 @@ public class UNTest {
     assertTrue(unSig.validateUnpredictableNumber(un, randomness, expiration));
   }
 
+  // Only needs to be run to generate integration test material and requires that attestor-priv
+  // .pem has been generated first
+  @Disabled
   @Test
   void makeExportableUn() throws Exception {
     AsymmetricCipherKeyPair keys = FileImportExport.loadPrivKey("attestor-priv.pem");
