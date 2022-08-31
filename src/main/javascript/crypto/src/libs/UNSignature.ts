@@ -1,4 +1,4 @@
-import {base64ToUint8array, bnToUint8, isDomainValid, logger, stringToArray, uint8arrayToBase64, uint8toString} from "./utils";
+import {base64ToUint8array, bnToUint8, hexStringToBase64Url, isDomainValid, logger, stringToArray, uint8tohex, uint8toString} from "./utils";
 import {UnpredictableNumberBundle} from "./UnpredictableNumberBundle";
 import {DEBUGLEVEL} from "../config";
 import { BYTES_IN_SEED, hashContext, IUnpredictableNumberTool } from './IUnpredictableNumberTool';
@@ -25,7 +25,7 @@ export class UNSignature implements IUnpredictableNumberTool {
     }
 
     get unpredictableNumberBundle(): UnpredictableNumberBundle {
-        return this.getUnpredictableNumberBundle(undefined);
+        return this.getUnpredictableNumberBundle();
     }
 
     getUnpredictableNumberBundle(context?: Uint8Array): UnpredictableNumberBundle {
@@ -39,7 +39,7 @@ export class UNSignature implements IUnpredictableNumberTool {
         let rawUN = this.getRawUN(randomness, expirationInMs, context);
         let signature = this.key.signRawBytesWithEthereum(rawUN);
         // Let the UN be the signature
-        return signature;
+        return hexStringToBase64Url(signature);
     }
 
     private getRawUN(randomness: Uint8Array, expirationInMs: bigint, context?: Uint8Array): number[] {
@@ -52,7 +52,7 @@ export class UNSignature implements IUnpredictableNumberTool {
         let pointer = 0;
         // Ensure that the expiration time is encoded using 8 bytes
         rawUnBuf.set(bnToUint8(expirationInMs), pointer+(8-(bnToUint8(expirationInMs).length)));
-        pointer += bnToUint8(expirationInMs).length;
+        pointer += 8;
         rawUnBuf.set(randomness, pointer);
         pointer += BYTES_IN_SEED;
         if (context !== undefined) {
@@ -63,13 +63,13 @@ export class UNSignature implements IUnpredictableNumberTool {
         rawUnBuf.set(encodedDomain, pointer);
         return stringToArray(uint8toString(rawUnBuf));
     }
-
-    validateUnpredictableNumber(un: string, randomness:Uint8Array, expirationInMs: bigint, context?:Uint8Array): boolean {
+    
+    validateUnpredictableNumber(un: string, randomness: Uint8Array, expirationInMs: bigint, context?: Uint8Array): boolean {
       if (BigInt(Date.now()) > expirationInMs) {
           logger(DEBUGLEVEL.LOW, 'Unpredictable number has expired');
           return false;
       }
-      if (!this.key.verifyBytesWithEthereum(this.getRawUN(randomness, expirationInMs, context), uint8toString(base64ToUint8array(un)))) {
+      if (!this.key.verifyBytesWithEthereum(this.getRawUN(randomness, expirationInMs, context), uint8tohex(base64ToUint8array(un)))) {
         logger(DEBUGLEVEL.LOW, 'The unpredictable number is computed incorrectly. Either wrong key or wrong domain');
         return false;
       }

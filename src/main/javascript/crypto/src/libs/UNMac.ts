@@ -1,10 +1,9 @@
 import {Hmac} from 'crypto';
-import {base64ToUint8array, bnToUint8, isDomainValid, logger, uint8arrayToBase64} from "./utils";
+import {bnToUint8, base64ToUint8array, isDomainValid, logger, uint8arrayToBase64, base64toBase64Url} from "./utils";
 import {UnpredictableNumberBundle} from "./UnpredictableNumberBundle";
 import {DEBUGLEVEL} from "../config";
 import { BYTES_IN_SEED, BYTES_IN_UN, hashContext, IUnpredictableNumberTool } from './IUnpredictableNumberTool';
 import { TextEncoder } from 'util';
-let sha3 = require("js-sha3");
 
 export class UNMac implements IUnpredictableNumberTool {
 
@@ -26,7 +25,7 @@ export class UNMac implements IUnpredictableNumberTool {
     }
 
     get unpredictableNumberBundle(): UnpredictableNumberBundle {
-        return this.getUnpredictableNumberBundle(undefined);
+        return this.getUnpredictableNumberBundle();
     }
 
     getUnpredictableNumberBundle(context?: Uint8Array): UnpredictableNumberBundle {
@@ -49,14 +48,8 @@ export class UNMac implements IUnpredictableNumberTool {
         let encodedDomain = new TextEncoder().encode(this._domain);
         hmac.update(encodedDomain);
         const digest: Buffer = hmac.digest();
-
-        // let buffer = new Uint8Array(8+BYTES_IN_SEED+encodedDomain.length);
-        // buffer.set(bnToUint8(expirationInMs), 8-bnToUint8(expirationInMs).length);
-        // buffer.set(randomness, 8);
-        // buffer.set(encodedDomain, 8+BYTES_IN_SEED);
-        // const digest = sha3.keccak256(buffer)
         const result = digest.slice(0, unSize);
-        return uint8arrayToBase64(result);
+        return base64toBase64Url(uint8arrayToBase64(result));
    }
 
     validateUnpredictableNumber(un: string, randomness:Uint8Array, expirationInMs: bigint, context?:Uint8Array): boolean {
