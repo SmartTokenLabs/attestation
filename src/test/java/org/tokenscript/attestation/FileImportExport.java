@@ -1,14 +1,5 @@
 package org.tokenscript.attestation;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.bouncycastle.util.encoders.Base64;
-import org.tokenscript.attestation.core.DERUtility;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,9 +7,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.util.encoders.Base64;
+import org.tokenscript.attestation.core.DERUtility;
 
 public class FileImportExport {
-    private static final Logger logger = LogManager.getLogger(FileImportExport.class);
     private static final String rootPath = "build/test-results/";
 
     /**
@@ -115,10 +112,23 @@ public class FileImportExport {
      * @param filename The file name
      * @throws Exception If something goes wrong.
      */
-    public static AsymmetricKeyParameter loadKey(String filename) throws Exception {
+    public static AsymmetricKeyParameter loadPubKey(String filename) throws Exception {
         return PublicKeyFactory.createKey
-                (DERUtility.restoreBytes(
-                        Files.readAllLines(
-                                Paths.get(rootPath + filename + ".txt"))));
+            (DERUtility.restoreBytes(
+                Files.readAllLines(
+                    Paths.get(rootPath + filename))));
+    }
+
+    /**
+     * Loads a private ECDSA key stored as a PEM encoded PKCS file.
+     *
+     * @param filename The file name
+     * @throws Exception If something goes wrong.
+     */
+    public static AsymmetricCipherKeyPair loadPrivKey(String filename) throws Exception {
+        return DERUtility.restoreBase64Keys(
+            Files.readAllLines(
+                Paths.get(rootPath + filename)
+            ));
     }
 }

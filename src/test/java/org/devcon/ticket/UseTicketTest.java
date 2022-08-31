@@ -1,7 +1,22 @@
 package org.devcon.ticket;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.alphawallet.ethereum.TicketAttestationReturn;
 import com.alphawallet.token.tools.Numeric;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.function.Function;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -11,25 +26,21 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.tokenscript.attestation.*;
-import org.tokenscript.attestation.core.*;
+import org.tokenscript.attestation.Attestation;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.AttestedObjectDecoder;
+import org.tokenscript.attestation.FileImportExport;
+import org.tokenscript.attestation.HelperTest;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.ProofOfExponent;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.DERUtility;
 import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.*;
+import org.tokenscript.attestation.core.UNMac;
+import org.tokenscript.attestation.core.UnpredictableNumberBundle;
+import org.tokenscript.attestation.core.UnpredictableNumberTool;
 import org.tokenscript.attestation.demo.SmartContract;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InvalidObjectException;
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.function.Function;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class UseTicketTest {
   private static final String MAIL = "test@test.ts";
@@ -80,24 +91,28 @@ public class UseTicketTest {
   void writeTestMaterial() throws Exception {
     FileImportExport.storeKey(ticketIssuerKeys.getPublic(), "ticket-issuer-key");
     // TODO it is a known issue that using non-ascii chars cause a failure in the JS decoding, hence we use a conference ID with ascii chars
-    Ticket ticket = new Ticket(MAIL, "hejJ", TICKET_ID, TICKET_CLASS, ticketIssuerKeys, TICKET_SECRET);
+    Ticket ticket = new Ticket(MAIL, "hejJ", TICKET_ID, TICKET_CLASS, ticketIssuerKeys,
+        TICKET_SECRET);
     FileImportExport.storeMaterial(ticket, "ticket");
-    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), ATTESTATION_SECRET, MAIL);
+    IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(),
+        ATTESTATION_SECRET, MAIL);
     FileImportExport.storeKey(attestorKeys.getPublic(), "att-issuer-key");
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     FileImportExport.storeMaterial(signed, "signed-att");
-    AttestedObject<Ticket> attestedTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
+    AttestedObject<Ticket> attestedTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET,
+        TICKET_SECRET, UN, crypto);
     FileImportExport.storeMaterial(attestedTicket, "attested-ticket");
 
     // Validate loading
-    AsymmetricKeyParameter ticketValidationKey = FileImportExport.loadKey("ticket-issuer-key");
+    AsymmetricKeyParameter ticketValidationKey = FileImportExport.loadPubKey(
+        "ticket-issuer-key.txt");
 
     DevconTicketDecoder ticketDecoder = new DevconTicketDecoder(ticketValidationKey);
     Ticket decodedTicket = FileImportExport.loadMaterial(ticketDecoder, "ticket");
     assertTrue(decodedTicket.verify());
     assertTrue(decodedTicket.checkValidity());
 
-    AsymmetricKeyParameter attValidationKey = FileImportExport.loadKey("att-issuer-key");
+    AsymmetricKeyParameter attValidationKey = FileImportExport.loadPubKey("att-issuer-key.txt");
     Function<byte[], SignedIdentifierAttestation> attDec = (input) -> {
       try {
         return new SignedIdentifierAttestation(input, attValidationKey);
@@ -384,8 +399,7 @@ public class UseTicketTest {
     // Add an extra t in the mail
     Ticket ticket = new Ticket("testt@test.ts", CONFERENCE_ID, TICKET_ID, TICKET_CLASS, subjectKeys, TICKET_SECRET);
     try {
-      AttestedObject<Ticket> current = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET,
-              TICKET_SECRET, UN, crypto);
+      new AttestedObject<>(ticket, signed, ATTESTATION_SECRET, TICKET_SECRET, UN, crypto);
       fail();
     } catch (RuntimeException e) {
       // Expected not to be able to construct a proof for a wrong email
