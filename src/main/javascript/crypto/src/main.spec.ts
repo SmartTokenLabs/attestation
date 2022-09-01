@@ -656,7 +656,7 @@ describe("read attested object", () => {
     const attestorPubPEM = readFileSync(PREFIX_PATH + 'att-issuer-key.pem', 'utf8');
     let attestorPubKey = KeyPair.publicFromBase64orPEM(attestorPubPEM);
 
-    let attestation = readFileSync(PREFIX_PATH + 'attested-ticket.pem', 'utf8');
+    let attestation = readFileSync(PREFIX_PATH + 'attested-ticket.txt', 'utf8');
 
     test('validate attestation', async () => {
 
