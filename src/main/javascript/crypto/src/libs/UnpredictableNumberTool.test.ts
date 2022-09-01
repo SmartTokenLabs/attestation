@@ -18,9 +18,9 @@ class UnpredictableNumberToolTest {
   static readonly DOMAIN: string = 'http://www.hotel-bogota.com';
   static readonly macKey: Uint8Array = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
   static readonly PREFIX_PATH = '../../../../build/test-results/';
-  static readonly attestorPubPEM = readFileSync(UnpredictableNumberToolTest.PREFIX_PATH + 'attestor-pub.pem', 'utf8');
-  static readonly attestorPrivPEM = readFileSync(UnpredictableNumberToolTest.PREFIX_PATH + 'attestor-priv.pem', 'utf8');
-  static readonly userPrivPEM = readFileSync(UnpredictableNumberToolTest.PREFIX_PATH + 'user-priv.pem', 'utf8');
+  static readonly unPubPEM = readFileSync(UnpredictableNumberToolTest.PREFIX_PATH + 'un-pub.pem', 'utf8');
+  static readonly unPrivPEM = readFileSync(UnpredictableNumberToolTest.PREFIX_PATH + 'un-priv.pem', 'utf8');
+  static readonly otherPrivPEM = readFileSync(UnpredictableNumberToolTest.PREFIX_PATH + 'other-priv.pem', 'utf8');
 
   @test 'should be valid unpredictable number - mac'() {
     const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("mac");
@@ -36,7 +36,7 @@ class UnpredictableNumberToolTest {
     expect(unt.validateUnpredictableNumber(un.number, un.randomness, un.expiration)).true;
     // Validate in other instance with only public key
     const newUnt = new UNSignature(
-      KeyPair.publicFromBase64orPEM(UnpredictableNumberToolTest.attestorPubPEM),
+      KeyPair.publicFromBase64orPEM(UnpredictableNumberToolTest.unPubPEM),
       UnpredictableNumberToolTest.DOMAIN,
       DEFAULT_VALIDITY_IN_MS);
     expect(newUnt.validateUnpredictableNumber(un.number, un.randomness, un.expiration)).true;
@@ -50,7 +50,7 @@ class UnpredictableNumberToolTest {
 
   @test 'should throw error given invalid domain - sig'() {
     expect(
-        () => new UNSignature(KeyPair.privateFromPEM(UnpredictableNumberToolTest.attestorPrivPEM), 'NotADomain', BigInt(0))
+        () => new UNSignature(KeyPair.privateFromPEM(UnpredictableNumberToolTest.unPrivPEM), 'NotADomain', BigInt(0))
     ).throw('Domain is not a valid domain');
   }
 
@@ -83,7 +83,7 @@ class UnpredictableNumberToolTest {
     const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("sig");
     const un = unt.unpredictableNumberBundle;
     const differentDomainUnt: IUnpredictableNumberTool = new UNSignature(
-        KeyPair.privateFromPEM(UnpredictableNumberToolTest.attestorPrivPEM),
+        KeyPair.privateFromPEM(UnpredictableNumberToolTest.unPrivPEM),
         'http://www.other-domain.com',
         DEFAULT_VALIDITY_IN_MS
     );
@@ -105,9 +105,9 @@ class UnpredictableNumberToolTest {
     const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("sig");
     const un = unt.unpredictableNumberBundle;
     const differentDomainUnt: IUnpredictableNumberTool = new UNSignature(
-      KeyPair.privateFromPEM(UnpredictableNumberToolTest.userPrivPEM),
-        UnpredictableNumberToolTest.DOMAIN,
-        DEFAULT_VALIDITY_IN_MS
+      KeyPair.privateFromPEM(UnpredictableNumberToolTest.otherPrivPEM),
+      UnpredictableNumberToolTest.DOMAIN,
+      DEFAULT_VALIDITY_IN_MS
     );
     expect(differentDomainUnt.validateUnpredictableNumber(un.number, un.randomness, un.expiration)).false;
   }
@@ -118,10 +118,28 @@ class UnpredictableNumberToolTest {
     expect(unt.validateUnpredictableNumber("ABJ34us29mc=", randomness, BigInt(1977060911693))).true;
   }
 
+  @test 'validate Java UN - mac'() {
+    const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("mac");
+    let randomness = new Uint8Array([28, -66, -9, -85, 78, -90, -64, -121, -111, 14, 93, -46, 65, -27, 64, 43, 75, -104, -121, -64, -67, -16, 4, -96, 66, -93, 99, 69, -89, -97, 39, -67]);
+    expect(unt.validateUnpredictableNumber("llzLl_elSTv_64uII9FZGg==", randomness, BigInt(33198034831702))).true;
+  }
+
   @test 'validate Java UN - sig'() {
     const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("sig");
-    let randomness = new Uint8Array([2, 20, 104, 2, -86, -111, 43, -91, -81, -111, 23, 86, -62, -36, 114, -71, 96, -54, 37, 83, 58, 65, 75, 20, -78, 71, -71, 92, 117, 71, -3, 10]);
-    expect(unt.validateUnpredictableNumber("aAj2NNsh6hUOL80pkmAXtzqg_AIOe9xv6BDki8_YVxZjxgZzY2dou911KqziR39PsN8OatY6pld6RxRC5lkHuxw=", randomness, BigInt(33197957883719))).true;
+    let randomness = new Uint8Array([28, -66, -9, -85, 78, -90, -64, -121, -111, 14, 93, -46, 65, -27, 64, 43, 75, -104, -121, -64, -67, -16, 4, -96, 66, -93, 99, 69, -89, -97, 39, -67]);
+    expect(unt.validateUnpredictableNumber("_GolZUnrFVhEzPbsXWPmgerc7FEblODjo4QW7lyLXo8kx4rhFFB5mpb5BFJL2m7BA8l1XIxLP6VuSswdqMgcsRw=", randomness, BigInt(33198026592589))).true;
+  }
+
+  @test 'validate Java UN context - mac'() {
+    const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("mac");
+    let randomness = new Uint8Array([28, -66, -9, -85, 78, -90, -64, -121, -111, 14, 93, -46, 65, -27, 64, 43, 75, -104, -121, -64, -67, -16, 4, -96, 66, -93, 99, 69, -89, -97, 39, -67]);
+    expect(unt.validateUnpredictableNumber("mMfnOhRXj5iNz6_L-n3cOw==", randomness, BigInt(33198026955780), new Uint8Array([42]))).true;
+  }
+
+  @test 'validate Java UN context - sig'() {
+    const unt: IUnpredictableNumberTool = UnpredictableNumberToolTest.createUnt("sig");
+    let randomness = new Uint8Array([28, -66, -9, -85, 78, -90, -64, -121, -111, 14, 93, -46, 65, -27, 64, 43, 75, -104, -121, -64, -67, -16, 4, -96, 66, -93, 99, 69, -89, -97, 39, -67]);
+    expect(unt.validateUnpredictableNumber("hOiZ0Zxmvk1nP9JMNOM1zs7MoCFyeSvABc7Yh0bC6w8S3NcvgSuZS5SAWiqSYYe0vf5TF9OujCKgaCMDWJTryRw=", randomness, BigInt(33198027828689), new Uint8Array([42]))).true;
   }
 
   private static createUnt(type:string): IUnpredictableNumberTool {
@@ -133,7 +151,7 @@ class UnpredictableNumberToolTest {
       );
     } else if (type === "sig") {
       return new UNSignature(
-        KeyPair.privateFromPEM(UnpredictableNumberToolTest.attestorPrivPEM),
+        KeyPair.privateFromPEM(UnpredictableNumberToolTest.unPrivPEM),
         UnpredictableNumberToolTest.DOMAIN,
         DEFAULT_VALIDITY_IN_MS
       );

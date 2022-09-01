@@ -56,7 +56,7 @@ export class UNSignature implements IUnpredictableNumberTool {
         rawUnBuf.set(randomness, pointer);
         pointer += BYTES_IN_SEED;
         if (context !== undefined) {
-            rawUnBuf.set(stringToArray(hashContext(context)), pointer);
+            rawUnBuf.set(hashContext(context), pointer);
             pointer += BYTES_IN_SEED;
         }
         let encodedDomain = textEncoder.encode(this._domain);
