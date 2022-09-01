@@ -93,26 +93,26 @@ public class UseTicketTest {
     // TODO it is a known issue that using non-ascii chars cause a failure in the JS decoding, hence we use a conference ID with ascii chars
     Ticket ticket = new Ticket(MAIL, "hejJ", TICKET_ID, TICKET_CLASS, ticketIssuerKeys,
         TICKET_SECRET);
-    FileImportExport.storeMaterial(ticket, "ticket");
+    FileImportExport.storeMaterial(ticket, "ticket.txt");
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(),
         ATTESTATION_SECRET, MAIL);
     FileImportExport.storePubKey(attestorKeys.getPublic(), "att-issuer-key.pem");
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
-    FileImportExport.storeMaterial(signed, "signed-att");
+    FileImportExport.storeMaterial(signed, "signed-att.txt");
     AttestedObject<Ticket> attestedTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET,
         TICKET_SECRET, UN, crypto);
-    FileImportExport.storeMaterial(attestedTicket, "attested-ticket");
+    FileImportExport.storeMaterial(attestedTicket, "attested-ticket.txt");
 
     // Validate loading
     AsymmetricKeyParameter ticketValidationKey = FileImportExport.loadPubKey(
-        "ticket-issuer-key.txt");
+        "ticket-issuer-key.pem");
 
     DevconTicketDecoder ticketDecoder = new DevconTicketDecoder(ticketValidationKey);
-    Ticket decodedTicket = FileImportExport.loadMaterial(ticketDecoder, "ticket");
+    Ticket decodedTicket = FileImportExport.loadMaterial(ticketDecoder, "ticket.txt");
     assertTrue(decodedTicket.verify());
     assertTrue(decodedTicket.checkValidity());
 
-    AsymmetricKeyParameter attValidationKey = FileImportExport.loadPubKey("att-issuer-key.txt");
+    AsymmetricKeyParameter attValidationKey = FileImportExport.loadPubKey("att-issuer-key.pem");
     Function<byte[], SignedIdentifierAttestation> attDec = (input) -> {
       try {
         return new SignedIdentifierAttestation(input, attValidationKey);
@@ -120,12 +120,15 @@ public class UseTicketTest {
         throw new RuntimeException(e);
       }
     };
-    SignedIdentifierAttestation decodedAtt = FileImportExport.loadMaterial(attDec, "signed-att");
+    SignedIdentifierAttestation decodedAtt = FileImportExport.loadMaterial(attDec, "signed-att"
+        + ".txt");
     assertTrue(decodedAtt.verify());
     assertTrue(decodedAtt.checkValidity());
 
-    AttestedObjectDecoder<Ticket> attestedTicketDecoder = new AttestedObjectDecoder<>(ticketDecoder, attValidationKey);
-    AttestedObject<Ticket> decodedAttestedTicket = FileImportExport.loadMaterial(attestedTicketDecoder, "attested-ticket");
+    AttestedObjectDecoder<Ticket> attestedTicketDecoder = new AttestedObjectDecoder<>(ticketDecoder,
+        attValidationKey);
+    AttestedObject<Ticket> decodedAttestedTicket =
+        FileImportExport.loadMaterial(attestedTicketDecoder, "attested-ticket.txt");
     assertTrue(decodedAttestedTicket.verify());
     assertTrue(decodedAttestedTicket.checkValidity());
   }

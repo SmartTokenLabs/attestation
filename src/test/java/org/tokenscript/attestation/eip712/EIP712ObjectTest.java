@@ -94,15 +94,15 @@ public class EIP712ObjectTest {
 
     AttestedObject<Ticket> attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
-    FileImportExport.storeToken(token, "eip712-object");
+    FileImportExport.storeToken(token, "eip712-object.txt");
 
     // Validate loading
     AsymmetricKeyParameter eip712TicketKey = FileImportExport.loadPubKey(
-        "eip712-att-ticket-key.txt");
+        "eip712-att-ticket-key.pem");
     AsymmetricKeyParameter eip712ValidationKey = FileImportExport.loadPubKey("eip712-att-issuer-key"
-        + ".txt");
+        + ".pem");
 
-    String decodedToken = FileImportExport.loadToken("eip712-object");
+    String decodedToken = FileImportExport.loadToken("eip712-object.txt");
     ObjectDecoder<Ticket> ticketDecoder = new DevconTicketDecoder(eip712TicketKey);
     ObjectDecoder<AttestedObject<Ticket>> attestedObjectDecoder = new AttestedObjectDecoder<>(
         ticketDecoder,

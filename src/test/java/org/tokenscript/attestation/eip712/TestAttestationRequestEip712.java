@@ -1,5 +1,16 @@
 package org.tokenscript.attestation.eip712;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.spy;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.Objects;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECKeyParameters;
@@ -20,13 +31,6 @@ import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestEncoder.AttestationRequestInternalData;
 import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Test;
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.Objects;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.spy;
 
 public class TestAttestationRequestEip712 {
   private static final String DOMAIN = "http://www.hotelbogota.com";
@@ -61,10 +65,10 @@ public class TestAttestationRequestEip712 {
     FullProofOfExponent pok = crypto.computeAttestationProof(ATTESTATION_SECRET, nonce);
     AttestationRequest attRequest = new AttestationRequest(TYPE, pok);
     Eip712AttestationRequest request = new Eip712AttestationRequest(DOMAIN, MAIL, attRequest, userSigningKey);
-    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req");
+    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req.txt");
 
     // Validate loading
-    String decodedToken = FileImportExport.loadToken("eip712-att-req");
+    String decodedToken = FileImportExport.loadToken("eip712-att-req.txt");
     Eip712AttestationRequest req = new Eip712AttestationRequest(DOMAIN, decodedToken);
     assertTrue(req.checkValidity());
     assertTrue(req.verify());

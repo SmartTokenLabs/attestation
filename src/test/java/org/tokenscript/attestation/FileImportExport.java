@@ -28,7 +28,7 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static void storeToken(String token, String filename) throws Exception {
-        OutputStream out = Files.newOutputStream(Paths.get(rootPath + filename + ".txt"));
+        OutputStream out = Files.newOutputStream(Paths.get(rootPath + filename));
         out.write(token.getBytes(StandardCharsets.UTF_8));
         out.close();
     }
@@ -52,10 +52,10 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static String loadToken(String filename) throws Exception {
-        InputStream in = Files.newInputStream(Paths.get(rootPath + filename + ".txt"));
-        byte[] tokenEnc = in.readAllBytes();
-        in.close();
-        return new String(tokenEnc, StandardCharsets.UTF_8);
+      InputStream in = Files.newInputStream(Paths.get(rootPath + filename));
+      byte[] tokenEnc = in.readAllBytes();
+      in.close();
+      return new String(tokenEnc, StandardCharsets.UTF_8);
     }
 
     /**
@@ -68,11 +68,11 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static <T> T loadMaterial(Function<byte[], T> decoder, String filename) throws Exception {
-        InputStream in = Files.newInputStream(Paths.get(rootPath + filename + ".txt"));
-        byte[] atteEnc = in.readAllBytes();
-        T obj = decoder.apply(Base64.decode(atteEnc));
-        in.close();
-        return obj;
+      InputStream in = Files.newInputStream(Paths.get(rootPath + filename));
+      byte[] atteEnc = in.readAllBytes();
+      T obj = decoder.apply(Base64.decode(atteEnc));
+      in.close();
+      return obj;
     }
 
     /**

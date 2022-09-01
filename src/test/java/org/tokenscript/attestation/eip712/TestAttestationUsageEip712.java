@@ -60,6 +60,7 @@ public class TestAttestationUsageEip712 {
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     // added sender keys to align keys with DEMO. keys order changed.
+    AsymmetricCipherKeyPair senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     AsymmetricCipherKeyPair userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     userSigningKey = userKeys.getPrivate();
@@ -84,12 +85,12 @@ public class TestAttestationUsageEip712 {
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL,
         usage, userSigningKey);
-    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req-usage");
+    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req-usage.txt");
 
     // Validate loading
     AsymmetricKeyParameter eip712TicketKey = FileImportExport.loadPubKey("eip712-att-req-usage-key"
-        + ".txt");
-    String decodedToken = FileImportExport.loadToken("eip712-att-req-usage");
+        + ".pem");
+    String decodedToken = FileImportExport.loadToken("eip712-att-req-usage.txt");
     Eip712AttestationUsage req = new Eip712AttestationUsage(DOMAIN, eip712TicketKey, decodedToken);
     assertTrue(req.checkTokenValidity());
     assertTrue(req.verify());
