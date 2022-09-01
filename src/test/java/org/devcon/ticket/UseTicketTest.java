@@ -89,14 +89,14 @@ public class UseTicketTest {
   // Write test material to be used in JS testing
   @Test
   void writeTestMaterial() throws Exception {
-    FileImportExport.storeKey(ticketIssuerKeys.getPublic(), "ticket-issuer-key");
+    FileImportExport.storePubKey(ticketIssuerKeys.getPublic(), "ticket-issuer-key.pem");
     // TODO it is a known issue that using non-ascii chars cause a failure in the JS decoding, hence we use a conference ID with ascii chars
     Ticket ticket = new Ticket(MAIL, "hejJ", TICKET_ID, TICKET_CLASS, ticketIssuerKeys,
         TICKET_SECRET);
     FileImportExport.storeMaterial(ticket, "ticket");
     IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(),
         ATTESTATION_SECRET, MAIL);
-    FileImportExport.storeKey(attestorKeys.getPublic(), "att-issuer-key");
+    FileImportExport.storePubKey(attestorKeys.getPublic(), "att-issuer-key.pem");
     SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, attestorKeys);
     FileImportExport.storeMaterial(signed, "signed-att");
     AttestedObject<Ticket> attestedTicket = new AttestedObject<>(ticket, signed, ATTESTATION_SECRET,

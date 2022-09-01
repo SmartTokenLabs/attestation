@@ -89,8 +89,8 @@ public class EIP712ObjectTest {
 
   @Test
   void writeTestMaterial() throws Exception {
-    FileImportExport.storeKey(ticketKeys.getPublic(), "eip712-att-ticket-key");
-    FileImportExport.storeKey(attestorKeys.getPublic(), "eip712-att-issuer-key");
+    FileImportExport.storePubKey(ticketKeys.getPublic(), "eip712-att-ticket-key.pem");
+    FileImportExport.storePubKey(attestorKeys.getPublic(), "eip712-att-issuer-key.pem");
 
     AttestedObject<Ticket> attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
@@ -198,10 +198,12 @@ public class EIP712ObjectTest {
   void tooOld() {
     AttestedObject<Ticket> attestedTicket = makeAttestedTicket();
     long testTimestamp = 10000;
-    Eip712ObjectSigner<AttestedObject<Ticket>> testIssuer = new TestEip712ObjectSigner<>(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
+    Eip712ObjectSigner<AttestedObject<Ticket>> testIssuer = new TestEip712ObjectSigner<>(
+        userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     ObjectDecoder<Ticket> decoder = new DevconTicketDecoder(ticketKeys.getPublic());
-    Eip712ObjectValidator newValidator = new Eip712ObjectValidator(decoder, encoder, validatorDomain);
+    Eip712ObjectValidator newValidator = new Eip712ObjectValidator(decoder, encoder,
+        validatorDomain);
     assertFalse(newValidator.validateRequest(token));
   }
 

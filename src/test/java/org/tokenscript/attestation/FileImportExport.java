@@ -7,9 +7,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.util.encoders.Base64;
@@ -83,47 +85,61 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static <T extends CheckableObject> T loadMaterial(ObjectDecoder<T> decoder, String filename) throws Exception {
-        Function<byte[], T> func = (input) -> {
-            try {
-                return decoder.decode(input);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-        return loadMaterial(func, filename);
+      Function<byte[], T> func = (input) -> {
+        try {
+          return decoder.decode(input);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
+      return loadMaterial(func, filename);
     }
 
-    /**
-     * Stores a public key as a PEM encoded PKCS compatible SPKI.
-     *
-     * @param validationKey The key to store
-     * @param filename      The file name
-     * @throws Exception If something goes wrong.
-     */
-    public static void storeKey(AsymmetricKeyParameter validationKey, String filename) throws Exception {
-        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(validationKey);
-        byte[] pub = spki.getEncoded();
-        DERUtility.writePEM(pub, "PUBLIC KEY", Paths.get(rootPath + filename + ".txt"));
-    }
+  /**
+   * Stores a public key as a PEM encoded PKCS compatible SPKI.
+   *
+   * @param validationKey The key to store
+   * @param filename      The file name
+   * @throws Exception If something goes wrong.
+   */
+  public static void storePubKey(AsymmetricKeyParameter validationKey, String filename)
+      throws Exception {
+    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
+        validationKey);
+    byte[] pub = spki.getEncoded();
+    DERUtility.writePEM(pub, "PUBLIC KEY", Paths.get(rootPath + filename));
+  }
 
-    /**
-     * Loads a public key stored as a PEM encoded PKCS compatible SPKI.
-     *
-     * @param filename The file name
-     * @throws Exception If something goes wrong.
-     */
-    public static AsymmetricKeyParameter loadPubKey(String filename) throws Exception {
-        return PublicKeyFactory.createKey
-            (DERUtility.restoreBytes(
-                Files.readAllLines(
-                    Paths.get(rootPath + filename))));
-    }
+  /**
+   * Stores a private key as a PEM encoded PKCS.
+   *
+   * @param key      The key to store
+   * @param filename The file name
+   * @throws Exception If something goes wrong.
+   */
+  public static void storePrivKey(AsymmetricKeyParameter key, String filename) throws Exception {
+    PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(key);
+    DERUtility.writePEM(privInfo.getEncoded(), "PRIVATE KEY", Paths.get(rootPath + filename));
+  }
 
-    /**
-     * Loads a private ECDSA key stored as a PEM encoded PKCS file.
-     *
-     * @param filename The file name
-     * @throws Exception If something goes wrong.
+  /**
+   * Loads a public key stored as a PEM encoded PKCS compatible SPKI.
+   *
+   * @param filename The file name
+   * @throws Exception If something goes wrong.
+   */
+  public static AsymmetricKeyParameter loadPubKey(String filename) throws Exception {
+    return PublicKeyFactory.createKey
+        (DERUtility.restoreBytes(
+            Files.readAllLines(
+                Paths.get(rootPath + filename))));
+  }
+
+  /**
+   * Loads a private ECDSA key stored as a PEM encoded PKCS file.
+   *
+   * @param filename The file name
+   * @throws Exception If something goes wrong.
      */
     public static AsymmetricCipherKeyPair loadPrivKey(String filename) throws Exception {
         return DERUtility.restoreBase64Keys(

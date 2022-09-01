@@ -53,7 +53,8 @@ public class UNMac implements UnpredictableNumberTool {
   @Override
   public UnpredictableNumberBundle getUnpredictableNumberBundle(byte[] context) {
     long expiration = Clock.systemUTC().millis() + validityInMs;
-    byte[] randomness = random.generateSeed(BYTES_IN_SEED);
+    byte[] randomness = new byte[BYTES_IN_SEED];
+    random.nextBytes(randomness);
     // Construct UN of BYTES_IN_UN bytes
     return new UnpredictableNumberBundle(
         getUnpredictableNumber(randomness, expiration, context, BYTES_IN_UN)

@@ -1,6 +1,17 @@
 package org.tokenscript.attestation.core;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Clock;
+import java.util.stream.Stream;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.devcon.ticket.Ticket;
 import org.devcon.ticket.UseTicketBundle;
@@ -18,14 +29,6 @@ import org.tokenscript.attestation.HelperTest;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.time.Clock;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 public class UseTicketBundleTest {
   private static final String DOMAIN = "http://www.hotel-bogota.com";
   private static final String MAIL = "test@test.ts";
@@ -39,7 +42,7 @@ public class UseTicketBundleTest {
   private static AsymmetricCipherKeyPair subjectKeys;
   private static AsymmetricCipherKeyPair attestorKeys;
   private static AsymmetricCipherKeyPair ticketIssuerKeys;
-  private static byte[] macKey;
+  private static final byte[] macKey = new byte[16];
   private static AsymmetricCipherKeyPair keys;
   private static SignedIdentifierAttestation signed;
   private static Ticket ticket;
@@ -60,7 +63,7 @@ public class UseTicketBundleTest {
     subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeys(rand);
     ticketIssuerKeys = SignatureUtility.constructECKeys(rand);
-    macKey = rand.generateSeed(16);
+    rand.nextBytes(macKey);
     keys = SignatureUtility.constructECKeysWithSmallestY(rand);
 
     IdentifierAttestation att = HelperTest

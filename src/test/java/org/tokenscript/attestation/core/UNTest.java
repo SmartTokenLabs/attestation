@@ -11,7 +11,6 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -33,8 +32,15 @@ public class UNTest {
   public static void setupKeys() throws Exception {
     rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
     rand.setSeed("seed".getBytes());
-
     keys = SignatureUtility.constructECKeysWithSmallestY(rand);
+
+    // Generate keys
+    AsymmetricCipherKeyPair keys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    FileImportExport.storePrivKey(keys.getPrivate(), "un-priv.pem");
+    FileImportExport.storePubKey(keys.getPublic(), "un-pub.pem");
+    AsymmetricCipherKeyPair otherKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
+    FileImportExport.storePrivKey(otherKeys.getPrivate(), "other-priv.pem");
+    FileImportExport.storePubKey(otherKeys.getPublic(), "other-pub.pem");
   }
 
   @BeforeEach
@@ -131,42 +137,73 @@ public class UNTest {
     assertTrue(unMac.validateUnpredictableNumber(UN, randomness, expiration));
   }
 
-  //  @Disabled
+  @Test
+  void makeExportableSigUn() throws Exception {
+    AsymmetricCipherKeyPair keys = FileImportExport.loadPrivKey("un-priv.pem");
+    UnpredictableNumberTool unt = new UNSignature(rand, keys, DOMAIN,
+        1000L * 365L * 24L * 3600L * 1000L);
+    UnpredictableNumberBundle unb = unt.getUnpredictableNumberBundle(new byte[]{42});
+    assertTrue(unt.validateUnpredictableNumber(unb.getNumber(), unb.getRandomness(),
+        unb.getExpiration(), new byte[]{42}));
+  }
+
+  @Test
+  void makeExportableMacUn() {
+    UnpredictableNumberTool unt = new UNMac(rand, macKey, DOMAIN,
+        1000L * 365L * 24L * 3600L * 1000L);
+    UnpredictableNumberBundle unb = unt.getUnpredictableNumberBundle(new byte[]{42});
+    assertTrue(unt.validateUnpredictableNumber(unb.getNumber(), unb.getRandomness(),
+        unb.getExpiration(), new byte[]{42}));
+  }
+
   @Test
   void validateJSMacGeneration() {
-    String un = "IoIcXB9LCm1S1VN0E80zhg==";
-    byte[] randomness = new byte[]{132 - 256, 251 - 256, 245 - 256, 132 - 256, 96, 182 - 256, 49,
-        190 - 256, 186 - 256, 156 - 256, 11, 43, 160 - 256,
-        73, 77, 130 - 256, 119, 117, 76, 60, 17, 28, 8, 177 - 256, 117, 76, 202 - 256, 26,
-        150 - 256, 95, 131 - 256, 126};
-    long expiration = 1977137270306L;
+    String un = "x-o_7_ppapx--UpwQAFtYA==";
+    byte[] randomness = new byte[]{100, 98, 187 - 256, 18, 244 - 256, 230 - 256, 175 - 256, 62, 26,
+        210 - 256, 38, 251 - 256, 7, 222 - 256
+        , 50, 33, 191 - 256, 155 - 256, 215 - 256, 163 - 256, 142 - 256, 70, 37, 88, 236 - 256,
+        148 - 256, 84, 159 - 256, 188 - 256, 45, 208 - 256, 227 - 256};
+    long expiration = 33198027294505L;
     UNMac unMac = new UNMac(macKey, DOMAIN);
     assertTrue(unMac.validateUnpredictableNumber(un, randomness, expiration));
   }
 
   @Test
   void validateJSSigGeneration() throws Exception {
-    String un = "7NA_5MF9HFwVq6hxQxVOU1kOCeSBknpMbogra_1cmEoMae8c8dZkeB45QO9s1UwvQEcLb_o6cyuqA3nJfGl3zBs=";
-    byte[] randomness = new byte[]{217 - 256, 141 - 256, 90, 184 - 256, 132 - 256, 214 - 256, 78,
-        65, 104, 151 - 256, 25, 111, 175 - 256,
-        152 - 256, 92, 43, 154 - 256, 124, 189 - 256, 244 - 256, 246 - 256, 53, 68, 164 - 256,
-        242 - 256, 84, 171 - 256, 240 - 256, 1, 107, 158 - 256, 153 - 256};
-    long expiration = 1977144050099L;
-    AsymmetricKeyParameter validationKey = FileImportExport.loadPubKey("attestor-pub.pem");
+    String un = "yYLsRm9nfOvgbka-4l1jPT6hZUqlWMXMPTT2oNNwdVofKfSO3KHlaTbAA3f3nFYD3RzjJnKn2HAHOTIYbg89ZRs=";
+    byte[] randomness = new byte[]{134 - 256, 31, 150 - 256, 186 - 256, 8, 186 - 256, 160 - 256,
+        249 - 256, 168 - 256, 85, 213 - 256, 242 - 256, 60,
+        23, 39, 224 - 256, 62, 66, 72, 103, 247 - 256, 109, 189 - 256, 148 - 256, 197 - 256,
+        222 - 256, 92, 246 - 256, 21, 248 - 256,
+        107, 206 - 256};
+    long expiration = 33198032422216L;
+    AsymmetricKeyParameter validationKey = FileImportExport.loadPubKey("un-pub.pem");
     UNSignature unSig = new UNSignature(validationKey, DOMAIN);
     assertTrue(unSig.validateUnpredictableNumber(un, randomness, expiration));
   }
 
-  // Only needs to be run to generate integration test material and requires that attestor-priv
-  // .pem has been generated first
-  @Disabled
   @Test
-  void makeExportableUn() throws Exception {
-    AsymmetricCipherKeyPair keys = FileImportExport.loadPrivKey("attestor-priv.pem");
-    UnpredictableNumberTool unt = new UNSignature(rand, keys, DOMAIN,
-        1000L * 365L * 24L * 3600L * 1000L);
-    UnpredictableNumberBundle unb = unt.getUnpredictableNumberBundle();
-    assertTrue(unt.validateUnpredictableNumber(unb.getNumber(), unb.getRandomness(),
-        unb.getExpiration()));
+  void validateJSMacGenerationWContext() {
+    String un = "J1QI1QZE68m4U8-90o3OVA==";
+    byte[] randomness = new byte[]{217 - 256, 148 - 256, 187 - 256, 152 - 256, 56, 217 - 256,
+        226 - 256, 105, 216 - 256, 65, 233 - 256, 37, 30,
+        167 - 256, 136 - 256, 215 - 256, 97, 46, 46, 156 - 256, 193 - 256, 180 - 256, 89, 219 - 256,
+        173 - 256, 217 - 256, 70, 184 - 256, 195 - 256, 38, 180 - 256, 251 - 256};
+    long expiration = 33198031941306L;
+    UNMac unMac = new UNMac(macKey, DOMAIN);
+    assertTrue(unMac.validateUnpredictableNumber(un, randomness, expiration));
+  }
+
+  @Test
+  void validateJSSigGenerationWContext() throws Exception {
+    String un = "5jv9yXAV04-NYukTVEB3IDSdRTH5vqw_LUWRmm5PYyojqA3o72z2xNdGlfO1wfs1SSIMx7IxhqmE9ALECp37Lxs=";
+    byte[] randomness = new byte[]{187 - 256, 91, 75, 58, 122, 20, 38, 223 - 256, 231 - 256,
+        200 - 256, 8, 101, 210 - 256, 97,
+        108, 119, 82, 8, 156 - 256, 168 - 256, 205 - 256, 64, 181 - 256, 245 - 256, 134 - 256,
+        198 - 256, 174 - 256, 161 - 256, 203 - 256, 50, 141 - 256, 57};
+    long expiration = 33198032192922L;
+    AsymmetricKeyParameter validationKey = FileImportExport.loadPubKey("un-pub.pem");
+    UNSignature unSig = new UNSignature(validationKey, DOMAIN);
+    assertTrue(unSig.validateUnpredictableNumber(un, randomness, expiration));
   }
 }

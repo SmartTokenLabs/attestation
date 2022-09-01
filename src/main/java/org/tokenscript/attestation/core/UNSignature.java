@@ -63,8 +63,11 @@ public class UNSignature implements UnpredictableNumberTool {
     @Override
     public UnpredictableNumberBundle getUnpredictableNumberBundle(byte[] context) {
         long expiration = Clock.systemUTC().millis() + validityInMs;
-        byte[] randomness = random.generateSeed(BYTES_IN_SEED);
-        return new UnpredictableNumberBundle(getUnpredictableNumber(randomness, expiration, context), randomness, domain, expiration, context);
+        byte[] randomness = new byte[BYTES_IN_SEED];
+        random.nextBytes(randomness);
+        return new UnpredictableNumberBundle(
+            getUnpredictableNumber(randomness, expiration, context), randomness, domain, expiration,
+            context);
     }
 
     private String getUnpredictableNumber(byte[] randomness, long expirationInMs, byte[] context) {

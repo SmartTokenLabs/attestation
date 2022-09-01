@@ -60,7 +60,6 @@ public class TestAttestationUsageEip712 {
     rand.setSeed("seed".getBytes());
     crypto = new AttestationCrypto(rand);
     // added sender keys to align keys with DEMO. keys order changed.
-    AsymmetricCipherKeyPair senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     AsymmetricCipherKeyPair userKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     attestorKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     userSigningKey = userKeys.getPrivate();
@@ -81,7 +80,7 @@ public class TestAttestationUsageEip712 {
 
   @Test
   void writeTestMaterial() throws Exception {
-    FileImportExport.storeKey(attestorKeys.getPublic(), "eip712-att-req-usage-key");
+    FileImportExport.storePubKey(attestorKeys.getPublic(), "eip712-att-req-usage-key.pem");
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL,
         usage, userSigningKey);
