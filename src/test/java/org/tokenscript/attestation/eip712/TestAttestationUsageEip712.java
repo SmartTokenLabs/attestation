@@ -1,5 +1,14 @@
 package org.tokenscript.attestation.eip712;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -12,19 +21,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.tokenscript.attestation.*;
+import org.tokenscript.attestation.FileImportExport;
+import org.tokenscript.attestation.FullProofOfExponent;
+import org.tokenscript.attestation.HelperTest;
+import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.Timestamp;
+import org.tokenscript.attestation.UseAttestation;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.eip712.Eip712AttestationUsageEncoder.AttestationUsageData;
 import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Test;
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAttestationUsageEip712 {
   private static final String DOMAIN = "https://www.hotelbogota.com";
@@ -71,15 +81,16 @@ public class TestAttestationUsageEip712 {
 
   @Test
   void writeTestMaterial() throws Exception {
-    FileImportExport.storeKey(attestorKeys.getPublic(), "eip712-att-req-usage-key");
+    FileImportExport.storePubKey(attestorKeys.getPublic(), "eip712-att-req-usage-key.pem");
     UseAttestation usage = new UseAttestation(signedAttestation, TYPE, pok, sessionKey);
     Eip712AttestationUsage request = new Eip712AttestationUsage(DOMAIN, MAIL,
-            usage, userSigningKey);
-    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req-usage");
+        usage, userSigningKey);
+    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req-usage.txt");
 
     // Validate loading
-    AsymmetricKeyParameter eip712TicketKey = FileImportExport.loadKey("eip712-att-req-usage-key");
-    String decodedToken = FileImportExport.loadToken("eip712-att-req-usage");
+    AsymmetricKeyParameter eip712TicketKey = FileImportExport.loadPubKey("eip712-att-req-usage-key"
+        + ".pem");
+    String decodedToken = FileImportExport.loadToken("eip712-att-req-usage.txt");
     Eip712AttestationUsage req = new Eip712AttestationUsage(DOMAIN, eip712TicketKey, decodedToken);
     assertTrue(req.checkTokenValidity());
     assertTrue(req.verify());

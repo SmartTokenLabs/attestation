@@ -1,5 +1,15 @@
 package org.tokenscript.attestation.eip712;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Clock;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.devcon.ticket.DevconTicketDecoder;
@@ -11,20 +21,20 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.tokenscript.attestation.*;
+import org.tokenscript.attestation.AttestedObject;
+import org.tokenscript.attestation.AttestedObjectDecoder;
+import org.tokenscript.attestation.FileImportExport;
+import org.tokenscript.attestation.HelperTest;
+import org.tokenscript.attestation.IdentifierAttestation;
+import org.tokenscript.attestation.ObjectDecoder;
+import org.tokenscript.attestation.SignedIdentifierAttestation;
+import org.tokenscript.attestation.Timestamp;
 import org.tokenscript.attestation.core.ASNEncodable;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.eip712.Eip712Test;
 import org.tokenscript.eip712.FullEip712InternalData;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.time.Clock;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class EIP712ObjectTest {
   private static final String validatorDomain = "http://www.hotelbogota.com";
@@ -79,23 +89,27 @@ public class EIP712ObjectTest {
 
   @Test
   void writeTestMaterial() throws Exception {
-    FileImportExport.storeKey(ticketKeys.getPublic(), "eip712-att-ticket-key");
-    FileImportExport.storeKey(attestorKeys.getPublic(), "eip712-att-issuer-key");
+    FileImportExport.storePubKey(ticketKeys.getPublic(), "eip712-att-ticket-key.pem");
+    FileImportExport.storePubKey(attestorKeys.getPublic(), "eip712-att-issuer-key.pem");
 
     AttestedObject<Ticket> attestedTicket = makeAttestedTicket();
     String token = issuer.buildSignedToken(attestedTicket, validatorDomain);
-    FileImportExport.storeToken(token, "eip712-object");
+    FileImportExport.storeToken(token, "eip712-object.txt");
 
     // Validate loading
-    AsymmetricKeyParameter eip712TicketKey = FileImportExport.loadKey("eip712-att-ticket-key");
-    AsymmetricKeyParameter eip712ValidationKey = FileImportExport.loadKey("eip712-att-issuer-key");
+    AsymmetricKeyParameter eip712TicketKey = FileImportExport.loadPubKey(
+        "eip712-att-ticket-key.pem");
+    AsymmetricKeyParameter eip712ValidationKey = FileImportExport.loadPubKey("eip712-att-issuer-key"
+        + ".pem");
 
-    String decodedToken = FileImportExport.loadToken("eip712-object");
+    String decodedToken = FileImportExport.loadToken("eip712-object.txt");
     ObjectDecoder<Ticket> ticketDecoder = new DevconTicketDecoder(eip712TicketKey);
-    ObjectDecoder<AttestedObject<Ticket>> attestedObjectDecoder = new AttestedObjectDecoder<>(ticketDecoder,
-            eip712ValidationKey);
+    ObjectDecoder<AttestedObject<Ticket>> attestedObjectDecoder = new AttestedObjectDecoder<>(
+        ticketDecoder,
+        eip712ValidationKey);
     AuthenticatorEncoder encoder = new AuthenticatorEncoder(0, rand);
-    Eip712ObjectValidator<AttestedObject<Ticket>> validator = new Eip712ObjectValidator<>(attestedObjectDecoder, encoder, validatorDomain);
+    Eip712ObjectValidator<AttestedObject<Ticket>> validator = new Eip712ObjectValidator<>(
+        attestedObjectDecoder, encoder, validatorDomain);
     validator.validateRequest(decodedToken);
   }
 
@@ -184,10 +198,12 @@ public class EIP712ObjectTest {
   void tooOld() {
     AttestedObject<Ticket> attestedTicket = makeAttestedTicket();
     long testTimestamp = 10000;
-    Eip712ObjectSigner<AttestedObject<Ticket>> testIssuer = new TestEip712ObjectSigner<>(userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
+    Eip712ObjectSigner<AttestedObject<Ticket>> testIssuer = new TestEip712ObjectSigner<>(
+        userKeys.getPrivate(), new TestAuthenticatorEncoder(), testTimestamp);
     String token = testIssuer.buildSignedToken(attestedTicket, validatorDomain);
     ObjectDecoder<Ticket> decoder = new DevconTicketDecoder(ticketKeys.getPublic());
-    Eip712ObjectValidator newValidator = new Eip712ObjectValidator(decoder, encoder, validatorDomain);
+    Eip712ObjectValidator newValidator = new Eip712ObjectValidator(decoder, encoder,
+        validatorDomain);
     assertFalse(newValidator.validateRequest(token));
   }
 

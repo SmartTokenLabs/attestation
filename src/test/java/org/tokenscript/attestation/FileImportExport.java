@@ -1,14 +1,5 @@
 package org.tokenscript.attestation;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
-import org.bouncycastle.util.encoders.Base64;
-import org.tokenscript.attestation.core.DERUtility;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,9 +7,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.bouncycastle.util.encoders.Base64;
+import org.tokenscript.attestation.core.DERUtility;
 
 public class FileImportExport {
-    private static final Logger logger = LogManager.getLogger(FileImportExport.class);
     private static final String rootPath = "build/test-results/";
 
     /**
@@ -29,7 +28,7 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static void storeToken(String token, String filename) throws Exception {
-        OutputStream out = Files.newOutputStream(Paths.get(rootPath + filename + ".txt"));
+        OutputStream out = Files.newOutputStream(Paths.get(rootPath + filename));
         out.write(token.getBytes(StandardCharsets.UTF_8));
         out.close();
     }
@@ -53,10 +52,10 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static String loadToken(String filename) throws Exception {
-        InputStream in = Files.newInputStream(Paths.get(rootPath + filename + ".txt"));
-        byte[] tokenEnc = in.readAllBytes();
-        in.close();
-        return new String(tokenEnc, StandardCharsets.UTF_8);
+      InputStream in = Files.newInputStream(Paths.get(rootPath + filename));
+      byte[] tokenEnc = in.readAllBytes();
+      in.close();
+      return new String(tokenEnc, StandardCharsets.UTF_8);
     }
 
     /**
@@ -69,11 +68,11 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static <T> T loadMaterial(Function<byte[], T> decoder, String filename) throws Exception {
-        InputStream in = Files.newInputStream(Paths.get(rootPath + filename + ".txt"));
-        byte[] atteEnc = in.readAllBytes();
-        T obj = decoder.apply(Base64.decode(atteEnc));
-        in.close();
-        return obj;
+      InputStream in = Files.newInputStream(Paths.get(rootPath + filename));
+      byte[] atteEnc = in.readAllBytes();
+      T obj = decoder.apply(Base64.decode(atteEnc));
+      in.close();
+      return obj;
     }
 
     /**
@@ -86,39 +85,66 @@ public class FileImportExport {
      * @throws Exception If something goes wrong.
      */
     public static <T extends CheckableObject> T loadMaterial(ObjectDecoder<T> decoder, String filename) throws Exception {
-        Function<byte[], T> func = (input) -> {
-            try {
-                return decoder.decode(input);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-        return loadMaterial(func, filename);
+      Function<byte[], T> func = (input) -> {
+        try {
+          return decoder.decode(input);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
+      return loadMaterial(func, filename);
     }
 
-    /**
-     * Stores a public key as a PEM encoded PKCS compatible SPKI.
-     *
-     * @param validationKey The key to store
-     * @param filename      The file name
-     * @throws Exception If something goes wrong.
-     */
-    public static void storeKey(AsymmetricKeyParameter validationKey, String filename) throws Exception {
-        SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(validationKey);
-        byte[] pub = spki.getEncoded();
-        DERUtility.writePEM(pub, "PUBLIC KEY", Paths.get(rootPath + filename + ".txt"));
-    }
+  /**
+   * Stores a public key as a PEM encoded PKCS compatible SPKI.
+   *
+   * @param validationKey The key to store
+   * @param filename      The file name
+   * @throws Exception If something goes wrong.
+   */
+  public static void storePubKey(AsymmetricKeyParameter validationKey, String filename)
+      throws Exception {
+    SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(
+        validationKey);
+    byte[] pub = spki.getEncoded();
+    DERUtility.writePEM(pub, "PUBLIC KEY", Paths.get(rootPath + filename));
+  }
 
-    /**
-     * Loads a public key stored as a PEM encoded PKCS compatible SPKI.
-     *
-     * @param filename The file name
-     * @throws Exception If something goes wrong.
+  /**
+   * Stores a private key as a PEM encoded PKCS.
+   *
+   * @param key      The key to store
+   * @param filename The file name
+   * @throws Exception If something goes wrong.
+   */
+  public static void storePrivKey(AsymmetricKeyParameter key, String filename) throws Exception {
+    PrivateKeyInfo privInfo = PrivateKeyInfoFactory.createPrivateKeyInfo(key);
+    DERUtility.writePEM(privInfo.getEncoded(), "PRIVATE KEY", Paths.get(rootPath + filename));
+  }
+
+  /**
+   * Loads a public key stored as a PEM encoded PKCS compatible SPKI.
+   *
+   * @param filename The file name
+   * @throws Exception If something goes wrong.
+   */
+  public static AsymmetricKeyParameter loadPubKey(String filename) throws Exception {
+    return PublicKeyFactory.createKey
+        (DERUtility.restoreBytes(
+            Files.readAllLines(
+                Paths.get(rootPath + filename))));
+  }
+
+  /**
+   * Loads a private ECDSA key stored as a PEM encoded PKCS file.
+   *
+   * @param filename The file name
+   * @throws Exception If something goes wrong.
      */
-    public static AsymmetricKeyParameter loadKey(String filename) throws Exception {
-        return PublicKeyFactory.createKey
-                (DERUtility.restoreBytes(
-                        Files.readAllLines(
-                                Paths.get(rootPath + filename + ".txt"))));
+    public static AsymmetricCipherKeyPair loadPrivKey(String filename) throws Exception {
+        return DERUtility.restoreBase64Keys(
+            Files.readAllLines(
+                Paths.get(rootPath + filename)
+            ));
     }
 }

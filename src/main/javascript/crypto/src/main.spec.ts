@@ -639,7 +639,7 @@ describe("executeCombinedEipFlow", () => {
 
 describe("read public key", () => {
     // Standard PKCS stored key
-    const pubKeyPem1 = readFileSync(PREFIX_PATH + 'ticket-issuer-key.txt', 'utf8');
+    const pubKeyPem1 = readFileSync(PREFIX_PATH + 'ticket-issuer-key.pem', 'utf8');
     let addr1 = "0x94085A072E5481D64D6E2165268801B87A362B64";
     // Pure base64 dump
     const keyFile2 = 'MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEOt9mWLpQVOxiOvswFK4GGI0oOZ2GqS2Q6ec0AWIeuVoCuTD+atppPvjMgNLg9qQzJxsDW3zLxnOPFWO/Decnag==';
@@ -656,14 +656,14 @@ describe("read public key", () => {
 })
 
 describe("read attested object", () => {
-    const ticketPubPEM = readFileSync(PREFIX_PATH + 'ticket-issuer-key.txt', 'utf8');
+    const ticketPubPEM = readFileSync(PREFIX_PATH + 'ticket-issuer-key.pem', 'utf8');
     let ticketPubKey = KeyPair.publicFromBase64orPEM(ticketPubPEM);
    
     const issuerPublicKeys = { 
         "hejJ" : ticketPubKey
     }
 
-    const attestorPubPEM = readFileSync(PREFIX_PATH + 'att-issuer-key.txt', 'utf8');
+    const attestorPubPEM = readFileSync(PREFIX_PATH + 'att-issuer-key.pem', 'utf8');
     let attestorPubKey = KeyPair.publicFromBase64orPEM(attestorPubPEM);
 
     let attestation = readFileSync(PREFIX_PATH + 'attested-ticket.txt', 'utf8');

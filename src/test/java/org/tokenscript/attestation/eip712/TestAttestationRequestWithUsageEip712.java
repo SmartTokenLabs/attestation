@@ -1,7 +1,15 @@
 package org.tokenscript.attestation.eip712;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -25,12 +33,6 @@ import org.tokenscript.attestation.core.URLUtility;
 import org.tokenscript.attestation.eip712.Eip712AttestationRequestWithUsageEncoder.AttestationRequestWUsageData;
 import org.tokenscript.eip712.Eip712Signer;
 import org.tokenscript.eip712.Eip712Test;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TestAttestationRequestWithUsageEip712 {
   private static final String DOMAIN = "https://www.attestation.id";
@@ -72,12 +74,13 @@ public class TestAttestationRequestWithUsageEip712 {
   @Test
   void writeTestMaterial() throws Exception {
     Eip712AttestationRequestWithUsage request = new Eip712AttestationRequestWithUsage(DOMAIN, MAIL,
-            requestWithUsage, userSigningKey);
-    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req-usage");
+        requestWithUsage, userSigningKey);
+    FileImportExport.storeToken(request.getJsonEncoding(), "eip712-att-req-usage.txt");
 
     // Validate loading
-    String decodedToken = FileImportExport.loadToken("eip712-att-req-usage");
-    Eip712AttestationRequestWithUsage req = new Eip712AttestationRequestWithUsage(DOMAIN, decodedToken);
+    String decodedToken = FileImportExport.loadToken("eip712-att-req-usage.txt");
+    Eip712AttestationRequestWithUsage req = new Eip712AttestationRequestWithUsage(DOMAIN,
+        decodedToken);
     assertTrue(req.checkValidity());
     assertTrue(req.checkTokenValidity());
     assertTrue(req.verify());
