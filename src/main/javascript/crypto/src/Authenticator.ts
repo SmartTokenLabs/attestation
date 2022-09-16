@@ -158,6 +158,8 @@ export class Authenticator {
                 throw new Error("Ticket validity check failed!");
             }
 
+			return decodedAttestedObject;
+
         } catch (e) {
             let message = "Ticket proof validation failed! " + e.message;
             logger(DEBUGLEVEL.MEDIUM, message);
