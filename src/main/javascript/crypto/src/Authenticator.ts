@@ -144,7 +144,7 @@ export class Authenticator {
     }
 
     // TODO: Pass in Ticket schema object
-    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey:string){
+    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey: string|null){
 
         let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
         let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
