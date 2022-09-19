@@ -819,7 +819,7 @@ describe("Safe Connect", () => {
     test("Write test data for safeconnect java", async () => {
         const fs = require('fs');
         let attestation = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS);
-         console.log(attestation.getAttestation().ethereumKeyLinkingAttestation.linkedAttestation.attestation.ethereumAddress);
+         //console.log(attestation.getAttestation().ethereumKeyLinkingAttestation.linkedAttestation.attestation.ethereumAddress);
         fs.writeFileSync(PREFIX_PATH + 'signedEthereumKeyLinkingAttestation-mvp-address-js.txt', attestation.getBase64());
         fs.writeFileSync(PREFIX_PATH + 'key-ec-js.txt', attestorKeys.getAsnDerPublic());
         // Test file reading
