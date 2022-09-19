@@ -1,15 +1,16 @@
 package org.tokenscript.attestation;
 
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.tokenscript.attestation.core.ExceptionUtil;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class Timestamp {
   private static final Logger logger = LogManager.getLogger(Timestamp.class);
@@ -55,6 +56,9 @@ public class Timestamp {
     this.validity = validity;
   }
 
+  /**
+   * Returns time in milliseconds
+   */
   public long getTime() {
     return time;
   }
@@ -107,7 +111,7 @@ public class Timestamp {
     }
   }
 
-  protected long getCurrentTime() {
+  public long getCurrentTime() {
     return Clock.systemUTC().millis();
   }
 }

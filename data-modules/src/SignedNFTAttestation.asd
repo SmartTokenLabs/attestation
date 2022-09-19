@@ -18,10 +18,10 @@
                      Version 2 indicates that a compressed signature is used.
                  -->
                 <optional>
-                  </element name="signingVersion" type="asnx:INTEGER">
+                  <element name="signingVersion" type="asnx:INTEGER"/>
                 </optional>
-                </element name="signingAlgorithm" type="AlgorithmIdentifier">
-                </element name="signatureValue" type="asnx:BIT-STRING">
+                <element name="signingAlgorithm" type="AlgorithmIdentifier"/>
+                <element name="signatureValue" type="asnx:BIT-STRING"/>
             </sequence>
         </type>
     </namedType>

@@ -556,12 +556,18 @@ export class KeyPair {
     }
 
     static parseKeyArrayStrings(keys: {[key: string]: KeyPair|string}): keysArray {
+
+		const keyPairs: {[key: string]: KeyPair} = {};
+
         for (let i in keys){
-            if (typeof keys[i] === "string")
-                keys[i] = KeyPair.publicFromBase64orPEM(<string>keys[i]);
+            if (typeof keys[i] === "string") {
+				keyPairs[i] = KeyPair.publicFromBase64orPEM(<string>keys[i]);
+			} else {
+				keyPairs[i] = keys[i] as KeyPair;
+			}
         }
 
-        return <keysArray>keys;
+        return <keysArray>keyPairs;
     }
 
 }

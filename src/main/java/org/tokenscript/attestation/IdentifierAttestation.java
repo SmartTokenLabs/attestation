@@ -1,12 +1,16 @@
 package org.tokenscript.attestation;
 
-import static org.tokenscript.attestation.core.AttestationCrypto.BYTES_IN_DIGEST;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.tokenscript.attestation.core.*;
 
-import org.tokenscript.attestation.core.AttestationCrypto;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.URLUtility;
-import org.tokenscript.attestation.core.Validateable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.math.BigInteger;
@@ -19,23 +23,8 @@ import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.util.Date;
 import java.util.Locale;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1Boolean;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DERUTF8String;
-import org.bouncycastle.asn1.x500.RDN;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+
+import static org.tokenscript.attestation.core.AttestationCrypto.BYTES_IN_DIGEST;
 
 public class IdentifierAttestation extends Attestation implements Validateable {
   public enum AttestationType {
@@ -86,9 +75,6 @@ public class IdentifierAttestation extends Attestation implements Validateable {
 
   // SEE RFC 2079
   public static final ASN1ObjectIdentifier LABELED_URI = new ASN1ObjectIdentifier("1.3.6.1.4.1.250.1.57");
-  // ECDSA with recommended (for use with keccak signing since there is no explicit standard OID for this)
-  public static final AlgorithmIdentifier DEFAULT_SIGNING_ALGORITHM = new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.840.10045.4.2"));
-
 
   private final String identifier;
   private final String type;
@@ -103,7 +89,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
-    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
+    super.setSigningAlgorithm(SignatureUtility.ECDSA_OID);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -126,7 +112,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(HIDDEN_IDENTIFIER_VERSION);
     super.setSubject("CN=");
-    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
+    super.setSigningAlgorithm(SignatureUtility.ECDSA_OID);
     try {
       SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(key);
       super.setSubjectPublicKeyInfo(spki);
@@ -150,7 +136,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
     super();
     super.setVersion(NFT_VERSION);
     super.setSubject(makeLabeledURI(label, URL));
-    super.setSigningAlgorithm(DEFAULT_SIGNING_ALGORITHM);
+    super.setSigningAlgorithm(SignatureUtility.ECDSA_OID);
     super.setIssuer("CN=attestation.id");
     super.setSerialNumber(1);
     try {
@@ -220,7 +206,7 @@ public class IdentifierAttestation extends Attestation implements Validateable {
       logger.error("The version number is " + getVersion() + ", it must be either " + HIDDEN_IDENTIFIER_VERSION + " or " + NFT_VERSION);
       return false;
     }
-    if (!getSigningAlgorithm().equals(DEFAULT_SIGNING_ALGORITHM)) {
+    if (!getSigningAlgorithm().equals(SignatureUtility.ECDSA_OID)) {
       logger.error("The subject is supposed to only be an Ethereum address as the Common Name");
       return false;
     }
