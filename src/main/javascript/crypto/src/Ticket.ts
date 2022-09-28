@@ -127,6 +127,10 @@ export class Ticket extends AttestableObject implements Attestable {
         return this.ticketClass;
     }
 
+	public getDevconId(){
+		return this.devconId;
+	}
+
     public getSignature(): string {
         return this.signature;
     }
