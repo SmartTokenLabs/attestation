@@ -67,7 +67,7 @@ export class Authenticator {
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKeys: {[key: string]: KeyPair|string}
+        base64senderPublicKeys: {[key: string]: KeyPair|KeyPair[]|string}
     )
     {
         let ticket: Ticket;
@@ -484,7 +484,7 @@ export class Authenticator {
         let keys: keysArray = {};
         
         try {
-            keys[confernceId] = KeyPair.publicFromBase64orPEM(publicKeyPEM);
+            keys[confernceId] = KeyPair.parseKeyArrayStrings({[confernceId]: publicKeyPEM})[confernceId];
         } catch(e){
             return {
                 valid: false,
