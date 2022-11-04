@@ -65,7 +65,7 @@ public class SmartContract {
   }
 
   private TicketAttestationReturn runVerifyTicketAttestationSC(Function function) {
-    Web3j web3j = getRinkebyWeb3j();
+    Web3j web3j = getWeb3j();
     String result = callSmartContractFunction(web3j, function, TICKET_VERIFICATION_CONTRACT);
     List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
     TicketAttestationReturn retVal = new TicketAttestationReturn();
@@ -89,7 +89,7 @@ public class SmartContract {
 
   public AttestationReturn callVerifyNFTAttestation(byte[] att, String sender)
   {
-    Web3j web3j = getRinkebyWeb3j();
+    Web3j web3j = getWeb3j();
     Function function = verifyNFTAttestation(att, sender);
     String result = callSmartContractFunction(web3j, function, ATTESTATION_VERIFICATION_CONTRACT);
     List<Type> responseValues = FunctionReturnDecoder.decode(result, function.getOutputParameters());
@@ -143,7 +143,7 @@ public class SmartContract {
 
   private List<Address> callAddrFunction(Function function)
   {
-    Web3j web3j = getRinkebyWeb3j();
+    Web3j web3j = getWeb3j();
     List<Address> addrList = new ArrayList<>();
 
     try
@@ -280,14 +280,9 @@ public class SmartContract {
   private Web3j getWeb3j()
   {
     //Infura
-    HttpService nodeService = new HttpService("https://kovan.infura.io/v3/b567f041158a4676898698c2d4c5f478", buildClient(), false);
-    return Web3j.build(nodeService);
-  }
-
-  private Web3j getRinkebyWeb3j()
-  {
-    //Infura
-    HttpService nodeService = new HttpService("https://rinkeby.infura.io/v3/b567f041158a4676898698c2d4c5f478", buildClient(), false);
+    //TODO update network
+    HttpService nodeService = new HttpService(
+        "https://goerli.infura.io/v3/b567f041158a4676898698c2d4c5f478", buildClient(), false);
     return Web3j.build(nodeService);
   }
 }
