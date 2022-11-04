@@ -1,17 +1,16 @@
 package com.alphawallet.ethereum;
 
 import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
-import org.web3j.abi.datatypes.DynamicStruct;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.Uint256;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class ERC721Token extends DynamicStruct
+public class ERC721Token extends DynamicArray
 {
     public Address address;
     public Uint256 tokenId;
