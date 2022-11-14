@@ -1,5 +1,6 @@
 package org.tokenscript.attestation.demo;
 
+import org.junit.jupiter.api.Disabled;
 import org.tokenscript.attestation.core.AttestationCrypto;
 import java.security.SecureRandom;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,6 +29,8 @@ public class TestDemo {
     Demo.main(args);
   }
 
+  // TODO disabled due to obsolescence of test chain, should be enabled as part of https://github.com/TokenScript/attestation/pull/302
+  @Disabled
   @Test
   public void executeChequeFlow() {
     String[] args;

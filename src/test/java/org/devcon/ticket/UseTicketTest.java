@@ -25,6 +25,7 @@ import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi.EC;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.Attestation;
 import org.tokenscript.attestation.AttestedObject;
@@ -205,6 +206,8 @@ public class UseTicketTest {
     assertArrayEquals(newConstructor.getDerEncoding(), attestedTicket.getDerEncoding());
   }
 
+  // TODO disabled due to obsolescence of test chain, should be enabled as part of https://github.com/TokenScript/attestation/pull/302
+  @Disabled
   @Test
   void testSmartContractDecode() throws Exception {
     //try building all components
