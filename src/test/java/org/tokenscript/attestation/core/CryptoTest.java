@@ -1,30 +1,26 @@
 package org.tokenscript.attestation.core;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.bouncycastle.asn1.DERBitString;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.FullProofOfExponent;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.ProofOfExponent;
 import org.tokenscript.attestation.UsageProofOfExponent;
+
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import org.bouncycastle.asn1.DERBitString;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.util.encoders.Hex;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CryptoTest {
   private AsymmetricCipherKeyPair subjectKeys;
@@ -42,7 +38,7 @@ public class CryptoTest {
     rand.setSeed("seed".getBytes());
 
     crypto = new AttestationCrypto(rand);
-    subjectKeys = SignatureUtility.constructECKeys(SignatureUtility.ECDSA_CURVE, rand);
+    subjectKeys = SignatureUtility.constructECKeys(SignatureUtility.SECP256K1, rand);
     issuerKeys = SignatureUtility.constructECKeys(rand);
   }
 
@@ -88,7 +84,7 @@ public class CryptoTest {
       ECPublicKeyParameters pk = (ECPublicKeyParameters) keys.getPublic();
       BigInteger yCoord = pk.getQ().getAffineYCoord().toBigInteger();
       System.out.println(yCoord);
-      BigInteger fieldModulo = SignatureUtility.ECDSA_DOMAIN.getCurve().getField().getCharacteristic();
+      BigInteger fieldModulo = SignatureUtility.SECP256K1_DOMAIN.getCurve().getField().getCharacteristic();
       assertTrue(yCoord.compareTo(fieldModulo.shiftRight(1)) <= 0);
     }
   }
@@ -215,13 +211,13 @@ public class CryptoTest {
     pok = crypto.computeEqualityProof(com1, com2, SECRET1, SECRET2);
     otherCom = AttestationCrypto.makeCommitment(ID, TYPE, otherSec);
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, otherCom, pok));
-    otherCom = crypto.makeCommitment(ID, TYPE, SECRET2.add(BigInteger.ONE));
+    otherCom = AttestationCrypto.makeCommitment(ID, TYPE, SECRET2.add(BigInteger.ONE));
     pok = crypto.computeEqualityProof(com1, otherCom, SECRET1, SECRET2);
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, otherCom, pok));
-    otherCom = crypto.makeCommitment("test@test.tsss", TYPE, SECRET2);
+    otherCom = AttestationCrypto.makeCommitment("test@test.tsss", TYPE, SECRET2);
     pok = crypto.computeEqualityProof(com1, otherCom, SECRET1, SECRET2);
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, otherCom, pok));
-    otherCom = crypto.makeCommitment(ID, AttestationType.PHONE, SECRET2);
+    otherCom = AttestationCrypto.makeCommitment(ID, AttestationType.PHONE, SECRET2);
     pok = crypto.computeEqualityProof(com1, otherCom, SECRET1, SECRET2);
     assertFalse(AttestationCrypto.verifyEqualityProof(com1, otherCom, pok));
 
@@ -372,7 +368,7 @@ public class CryptoTest {
   }
   @Test
   public void invalidField() {
-    ECPoint ecdsaPoint = SignatureUtility.ECDSA_CURVE.getG().multiply(BigInteger.valueOf(5));
+    ECPoint ecdsaPoint = SignatureUtility.SECP256K1.getG().multiply(BigInteger.valueOf(5));
     // Validate against BN256 curve
     Exception e = assertThrows(SecurityException.class, ()-> AttestationCrypto.validatePointToCurve(ecdsaPoint, AttestationCrypto.curve));
     assertEquals("x value invalid in Fp field element", e.getMessage());

@@ -1,22 +1,20 @@
 package org.tokenscript.attestation;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Date;
-import org.bouncycastle.asn1.ASN1Boolean;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.util.SubjectPublicKeyInfoFactory;
+import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
+import org.tokenscript.attestation.core.SignatureUtility;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Date;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /* created to help other test-cases - James
@@ -72,7 +70,7 @@ public class HelperTest {
     Attestation att = new Attestation();
     att.setVersion(2); // =v3 since counting starts from 0
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(SignedIdentifierAttestation.ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
+    att.setSigningAlgorithm(SignatureUtility.ECDSA_WITH_SHA256); // ECDSA with SHA256 which is needed for a proper x509
     att.setIssuer("CN=ALX");
     Date now = new Date();
     att.setNotValidBefore(now);
@@ -93,7 +91,7 @@ public class HelperTest {
   public static IdentifierAttestation makeMaximalAtt(AsymmetricKeyParameter key) throws IOException {
     IdentifierAttestation att = new IdentifierAttestation("205521676", "https://www.deviantart.com/some_user", key);
     att.setSerialNumber(42);
-    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
+    att.setSigningAlgorithm(SignatureUtility.ECDSA_OID);
     att.setIssuer("CN=ALX");
     att.setSmartcontracts(Arrays.asList(42L, 1337L));
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
@@ -109,7 +107,7 @@ public class HelperTest {
     att.setVersion(IdentifierAttestation.HIDDEN_IDENTIFIER_VERSION); // Our initial version
     att.setSerialNumber(42);
     att.setSubject("CN="); // Blank subject info
-    att.setSigningAlgorithm(IdentifierAttestation.DEFAULT_SIGNING_ALGORITHM);
+    att.setSigningAlgorithm(SignatureUtility.ECDSA_OID);
     ASN1EncodableVector dataObject = new ASN1EncodableVector();
     dataObject.add(new DEROctetString("hello world".getBytes()));
     att.setDataObject(new DERSequence(dataObject));

@@ -76,10 +76,10 @@ describe("NFTMinter.Enumerable.deploy", function () {
 
 
         const AttestationMintable = await ethers.getContractFactory("AttestationMintableEnumerable");
-        nftContract = await AttestationMintable.deploy(verifyAttestation.address, attestorKeyAddress, issuerKeyAddress);
+        nftContract = await AttestationMintable.deploy(attestorKeyAddress, issuerKeyAddress);
         await nftContract.deployed();
 
-        lisconNFT = await AttestationMintable.deploy(lisconVerification.address, lisconAttestor, lisconIssuer);
+        lisconNFT = await AttestationMintable.deploy(lisconAttestor, lisconIssuer);
         await lisconNFT.deployed();
 
         console.log("Verify Addr: " + verifyAttestation.address);
@@ -243,15 +243,15 @@ describe("NFTMinter.Enumerable.deploy", function () {
             //validation should fail
             await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('ERC721: token already minted');
 
-            //change validation contract to random address
-            await nftContract.updateVericationAddress(randomAddress);
+            //change validation contract to random address JB: no longer done
+            //await nftContract.updateVericationAddress(randomAddress);
 
-            //Should fail
-            await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Transaction reverted: function call to a non-contract account');
+            //Should fail: JB: Will not fail because now verification system is part of the contract
+            //await expect( nftContract.mintUsingAttestation(ticketAttestation)).to.be.revertedWith('Transaction reverted: function call to a non-contract account');
 
             //attempt to use these functions with a different key (non owner)
             await expect( nftContract.connect(addr1).updateAttestationKeys(randomAddress, randomUserAddress)).to.be.revertedWith('Ownable: caller is not the owner');
-            await expect( nftContract.connect(addr1).updateVericationAddress(randomAddress)).to.be.revertedWith('Ownable: caller is not the owner');
+            //await expect( nftContract.connect(addr1).updateVericationAddress(randomAddress)).to.be.revertedWith('Ownable: caller is not the owner'); // JB: No longer can change this
         }
     });
 

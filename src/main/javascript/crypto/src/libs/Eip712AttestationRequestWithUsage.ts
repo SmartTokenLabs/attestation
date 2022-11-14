@@ -221,6 +221,10 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
         )) {
             return false;
         }
+        if (!this.validateDomain(this.eip712DomainData)){
+            logger(DEBUGLEVEL.MEDIUM, "Domain invalid");
+            return false;
+        }
         if (this.data.description !== this.Eip712UserDataDescription ) {
             return false;
         }

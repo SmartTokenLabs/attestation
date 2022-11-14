@@ -2,10 +2,11 @@ import { AttestationCrypto } from "./libs/AttestationCrypto";
 import { KeyPair, keysArray } from "./libs/KeyPair";
 import { Asn1Der } from "./libs/DerUtility";
 import { AttestableObject } from "./libs/AttestableObject";
-import { base64ToUint8array, hexStringToArray, uint8tohex } from "./libs/utils";
+import {base64ToUint8array, hexStringToArray, hexStringToUint8, uint8tohex} from "./libs/utils";
 import { SignedDevconTicket } from "./asn1/shemas/SignedDevconTicket";
 import { AsnParser } from "@peculiar/asn1-schema";
 import { Attestable } from "./libs/Attestable";
+import {ethers} from "ethers";
 
 export class Ticket extends AttestableObject implements Attestable {
 
@@ -16,6 +17,11 @@ export class Ticket extends AttestableObject implements Attestable {
 
     private signature: string;
     private keys: keysArray;
+
+	// Holds multiple keys for validation - allows multiple keys per conference ID
+	private issuerKeys: KeyPair[];
+
+	// This is the primary issuer key used for signing
     private key: KeyPair;
 
     private isLegasy = false;
@@ -33,8 +39,21 @@ export class Ticket extends AttestableObject implements Attestable {
         this.devconId = devconId;
         this.keys = keys;
 
-        this.key = keys[devconId];
+		const keyArray = keys[devconId];
+
+		this.setKeys(keyArray);
     }
+
+	private setKeys(keyArray: KeyPair|KeyPair[]){
+
+		if (Array.isArray(keyArray)){
+			this.issuerKeys = keyArray;
+			this.key = keyArray[0];
+		} else {
+			this.issuerKeys = [keyArray];
+			this.key = keyArray;
+		}
+	}
 
     createWithCommitment(devconId: string, ticketId: string, ticketClass: number, commitment: Uint8Array, signature: string, keys: keysArray) {
         this.fromData(devconId, ticketId, ticketClass, keys);
@@ -110,7 +129,22 @@ export class Ticket extends AttestableObject implements Attestable {
     }
 
     public verify(): boolean {
-        return this.key.verifyBytesWithEthereum(hexStringToArray(this.makeTicket()), this.signature);
+
+		const bytes = hexStringToArray(this.makeTicket());
+		const encodingHash = hexStringToArray(ethers.utils.keccak256(bytes));
+
+		const signature = uint8tohex(KeyPair.anySignatureToRawUint8(this.signature));
+
+		for (const key of this.issuerKeys){
+			const pubKey = ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature)));
+
+			if (pubKey.substring(2) === key.getPublicKeyAsHexStr())
+				return true;
+		}
+
+		throw new Error("Ticket signature is invalid");
+
+        //return this.key.verifyBytesWithEthereum(hexStringToArray(this.makeTicket()), this.signature);
     }
 
     public checkValidity(): boolean {
@@ -126,6 +160,10 @@ export class Ticket extends AttestableObject implements Attestable {
     public getTicketClass(): number {
         return this.ticketClass;
     }
+
+	public getDevconId(){
+		return this.devconId;
+	}
 
     public getSignature(): string {
         return this.signature;
@@ -143,10 +181,12 @@ export class Ticket extends AttestableObject implements Attestable {
         let devconId:string = signedDevconTicket.ticket.devconId;
 
         if (!keys || !keys[devconId]) {
-            throw new Error("Issuer key not defined.");
+            throw new Error("Issuer key " + devconId + " not defined.");
         }
 
-        this.key = keys[devconId];
+		const keyArray = keys[devconId];
+
+		this.setKeys(keyArray);
 
         let idAsNumber = signedDevconTicket.ticket.ticketIdNumber;
         let ticketId:string = idAsNumber ? idAsNumber.toString() : signedDevconTicket.ticket.ticketIdString;

@@ -1,40 +1,33 @@
 package io.alchemynft.attestation;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import com.alphawallet.ethereum.AttestationReturn;
+import com.alphawallet.token.tools.Numeric;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.demo.SmartContract;
-import com.alphawallet.ethereum.AttestationReturn;
-import org.tokenscript.attestation.ERC721Token;
-import com.alphawallet.token.tools.Numeric;
+
 import java.security.SecureRandom;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NFTSmartContractTest {
     private static AsymmetricCipherKeyPair subjectKeys;
     private static AsymmetricCipherKeyPair issuerKeys;
     private static AsymmetricCipherKeyPair attestorKeys;
-    private static SecureRandom rand;
-    /*
-        IdentifierAttestation att = HelperTest.makeUnsignedStandardAtt(subjectKeys.getPublic(), BigInteger.ONE, "some@mail.com" );
-    SignedIdentifierAttestation signed = new SignedIdentifierAttestation(att, issuerKeys);
-     */
     static SignedIdentifierAttestation attestation;
     private LegacySignedNFTAttestation nftAttestation;
     private final SmartContract contract = new SmartContract();
     // the URL as King Mida's public ID, plus a label (in case of twitter, the permanent numeric ID)
-    static final String labeledURI = "https://twitter.com/zhangweiwu 205521676";
+    static final String LABELED_URI = "https://twitter.com/zhangweiwu 205521676";
 
     @BeforeAll
     public static void setupKeys() throws Exception {
-        rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
+        SecureRandom rand = SecureRandom.getInstance("SHA1PRNG", "SUN");
         rand.setSeed("seed".getBytes());
         subjectKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
         attestorKeys = SignatureUtility.constructECKeys(rand);
@@ -85,14 +78,14 @@ public class NFTSmartContractTest {
         // 'subjectKeys' then the verification step is skipped since we have 'subjectKeys' signature from the ethereum transaction
         AttestationReturn atr = contract.callVerifyNFTAttestation(nftAttestation.getDerEncoding(), SignatureUtility.addressFromKey(issuerKeys.getPublic()));
         //check our return
-        assertEquals(atr.identifier, labeledURI);
+        assertEquals(atr.identifier, LABELED_URI);
         assertEquals(atr.ownerAddress.toLowerCase(), SignatureUtility.addressFromKey(subjectKeys.getPublic()).toLowerCase());
         assertEquals(atr.attestorAddress.toLowerCase(), SignatureUtility.addressFromKey(attestorKeys.getPublic()).toLowerCase());
         assertTrue(atr.isValid);
         for (int index = 0; index < atr.ercToken.length; index++)
         {
             assertEquals(atr.ercToken[index].address.toString().toLowerCase(), myNFTs[index].getAddress().toLowerCase());
-            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].getTokenId());
+            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].getTokenIds().get(0));
         }
 
         //TODO: make a more comprehensive negative test, involving bad attestation subject address etc.

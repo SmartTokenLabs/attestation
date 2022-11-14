@@ -175,7 +175,10 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             logger(DEBUGLEVEL.LOW, 'useAttestation.checkValidity failed');
             return false;
         };
-
+        if (!this.validateDomain(this.eip712DomainData)){
+            logger(DEBUGLEVEL.MEDIUM, "Domain invalid");
+            return false;
+        }
         if (this.data.description != this.Eip712Description) {
             logger(DEBUGLEVEL.LOW, `wrong description: "${this.data.description}", must be "${this.Eip712Description}"`);
             return false;

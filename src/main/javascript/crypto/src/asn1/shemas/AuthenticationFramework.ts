@@ -1,5 +1,4 @@
 import {AsnProp, AsnPropTypes, AsnType, AsnTypeTypes} from "@peculiar/asn1-schema";
-// import {Null} from "asn1js";
 
 export class AlgorithmIdentifierASN {
     // @AsnProp({ type: AsnPropTypes.ObjectIdentifier }) public algorithm: AsnPropTypes.ObjectIdentifier;// OBJECT IDENTIFIER,
@@ -11,14 +10,6 @@ export class Version {
     @AsnProp({ type: AsnPropTypes.Integer }) public version: number = 0;// Version ::= INTEGER { v1(0), v2(1), v3(2) }
 }
 
-// export class CertificateSerialNumber {
-//     @AsnProp({ type: AsnPropTypes.Integer }) public version: number = 0;
-// }
-
-// export class Time {
-//     @AsnProp({ type: AsnPropTypes.GeneralizedTime }) public generalizedTime: AsnPropTypes.GeneralizedTime;
-// }
-
 @AsnType({ type: AsnTypeTypes.Choice })
 class Time {
     @AsnProp({ type: AsnPropTypes.UTCTime})
@@ -29,9 +20,9 @@ class Time {
 
 export class ValidityValue {
     @AsnProp({ type: Time }) public notBefore: Time;
-    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public notBeforeInt?: number;
+    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public notBeforeInt?: number|string;
     @AsnProp({ type: Time }) public notAfter: Time;
-    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public notAfterInt?: number;
+    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public notAfterInt?: number|string;
 }
 
 @AsnType({ type: AsnTypeTypes.Choice })

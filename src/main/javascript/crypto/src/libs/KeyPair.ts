@@ -25,7 +25,7 @@ import {DEBUGLEVEL} from "../config";
 
 let EC = require("elliptic");
 
-export interface keysArray {[index: string]:KeyPair}
+export interface keysArray {[index: string]: KeyPair[]|KeyPair}
 
 export let subtle:any;
 
@@ -419,6 +419,10 @@ export class KeyPair {
             s: m[1]
         };
 
+		console.log(ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature))));
+
+		//console.log(ecKey.getPublicKeyAsHexStr());
+
         return ecKey.verify(encodingHash, sign);
         // return ecKey.verify(encodingHash, signature);
     }
@@ -555,13 +559,31 @@ export class KeyPair {
         return output;
     }
 
-    static parseKeyArrayStrings(keys: {[key: string]: KeyPair|string}): keysArray {
+    static parseKeyArrayStrings(keys: {[key: string]: KeyPair[]|KeyPair|string}): keysArray {
+
+		const keyPairs: {[key: string]: KeyPair|KeyPair[]} = {};
+
         for (let i in keys){
-            if (typeof keys[i] === "string")
-                keys[i] = KeyPair.publicFromBase64orPEM(<string>keys[i]);
+            if (typeof keys[i] === "string") {
+				const keyStringArray = (<string>keys[i]).split("|")
+
+				const keyPairArr = [];
+
+				for (const keyStr of keyStringArray){
+					keyPairArr.push(KeyPair.publicFromBase64orPEM(keyStr));
+				}
+
+				keyPairs[i] = keyPairArr;
+			} else {
+				if (Array.isArray(keyPairs)){
+					keyPairs[i] = keys[i] as KeyPair[];
+				} else {
+					keyPairs[i] = keys[i] as KeyPair;
+				}
+			}
         }
 
-        return <keysArray>keys;
+        return <keysArray>keyPairs;
     }
 
 }

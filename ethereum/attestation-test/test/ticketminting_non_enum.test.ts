@@ -59,25 +59,16 @@ describe("NFTMinter.deploy", function () {
     it("deploy contracts", async function(){
         [owner, addr1, addr2] = await ethers.getSigners();
 
-        const VerifyAttestation = await ethers.getContractFactory("VerifyTicket");
-        verifyAttestation = await VerifyAttestation.deploy();
-        await verifyAttestation.deployed();
-
-        const LegacyAttestation = await ethers.getContractFactory("VerifyTicketLegacy");
-        lisconVerification = await LegacyAttestation.deploy();
-        await lisconVerification.deployed();
-
 
         const AttestationMintable = await ethers.getContractFactory("AttestationMintable");
-        nftContract = await AttestationMintable.deploy(verifyAttestation.address, attestorKeyAddress, issuerKeyAddress);
+        nftContract = await AttestationMintable.deploy(attestorKeyAddress, issuerKeyAddress);
         await nftContract.deployed();
 
-        lisconNFT = await AttestationMintable.deploy(lisconVerification.address, lisconAttestor, lisconIssuer);
+        lisconNFT = await AttestationMintable.deploy(lisconAttestor, lisconIssuer);
         await lisconNFT.deployed();
 
-        console.log("Verify Addr: " + verifyAttestation.address);
         console.log("NFT Addr: " + nftContract.address);
-        console.log("Liscon Verify Addr: " + lisconVerification.address);
+        //console.log("Liscon Verify Addr: " + lisconVerification.address);
         console.log("Owner: " + owner.address);
 
     })

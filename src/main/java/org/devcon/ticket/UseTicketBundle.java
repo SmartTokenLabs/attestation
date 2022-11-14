@@ -1,30 +1,30 @@
 package org.devcon.ticket;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.tokenscript.attestation.AttestedObject;
-import org.tokenscript.attestation.core.ExceptionUtil;
-import org.tokenscript.attestation.core.SignatureUtility;
-import org.tokenscript.attestation.core.Verifiable;
 import org.tokenscript.attestation.Timestamp;
+import org.tokenscript.attestation.core.*;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Date;
 
 public class UseTicketBundle implements Verifiable {
   private static final Logger logger = LogManager.getLogger(UseTicketBundle.class);
 
-  private final AttestedObject useTicket;
+  private final AttestedObject<Ticket> useTicket;
   private final UnpredictableNumberBundle un;
   private final byte[] signature;
   private final byte[] messageToSign;
 
   private final ObjectMapper jsonMapper;
 
-  public UseTicketBundle(AttestedObject useTicket, UnpredictableNumberBundle un, AsymmetricKeyParameter signingKey) {
+  public UseTicketBundle(AttestedObject<Ticket> useTicket, UnpredictableNumberBundle un, AsymmetricKeyParameter signingKey) {
     this.jsonMapper = new ObjectMapper();
 
     this.useTicket = useTicket;
@@ -34,7 +34,7 @@ public class UseTicketBundle implements Verifiable {
     constructorCheck();
   }
 
-  public UseTicketBundle(AttestedObject useTicket, UnpredictableNumberBundle un, byte[] signature) {
+  public UseTicketBundle(AttestedObject<Ticket> useTicket, UnpredictableNumberBundle un, byte[] signature) {
     this.jsonMapper = new ObjectMapper();
     this.useTicket = useTicket;
     this.un = un;
@@ -46,7 +46,7 @@ public class UseTicketBundle implements Verifiable {
   public UseTicketBundle(String jsonBundle, AsymmetricKeyParameter ticketIssuerPublicKey, AsymmetricKeyParameter attestorPublicKey) throws Exception {
     this.jsonMapper = new ObjectMapper();
     JsonUseTicketBundle decodedBundle = jsonMapper.readValue(jsonBundle, JsonUseTicketBundle.class);
-    this.useTicket = new AttestedObject(decodedBundle.getUseTicketDer(), new DevconTicketDecoder(ticketIssuerPublicKey), attestorPublicKey);
+    this.useTicket = new AttestedObject<>(decodedBundle.getUseTicketDer(), new DevconTicketDecoder(ticketIssuerPublicKey), attestorPublicKey);
     this.un = decodedBundle.getUn();
     this.messageToSign = computeMessage(un);
     this.signature = decodedBundle.getSignature();
@@ -68,7 +68,7 @@ public class UseTicketBundle implements Verifiable {
     return messageToSignString.getBytes(StandardCharsets.UTF_8);
   }
 
-  public AttestedObject getUseTicket() {
+  public AttestedObject<Ticket> getUseTicket() {
     return useTicket;
   }
 
@@ -84,9 +84,9 @@ public class UseTicketBundle implements Verifiable {
     return messageToSign;
   }
 
-  public String getJsonBundle() throws Exception {
+  public String getJsonBundle() throws JsonProcessingException {
     return jsonMapper.writeValueAsString(new JsonUseTicketBundle(useTicket.getDerEncoding(), un,
-        signature));
+            signature));
   }
 
   public boolean validateAndVerify(UnpredictableNumberTool unt) {
@@ -94,7 +94,7 @@ public class UseTicketBundle implements Verifiable {
       logger.error("Use ticket is not valid");
       return false;
     }
-    if (!unt.validateUnpredictableNumber(un.getNumber(), un.getRandomness(), un.getExpiration())) {
+    if (!unt.validateUnpredictableNumber(un.getNumber(), un.getRandomness(), un.getExpiration(), un.getContext())) {
       logger.error("Unpredictable number is not valid ");
       return false;
     }

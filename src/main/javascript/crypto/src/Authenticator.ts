@@ -67,7 +67,7 @@ export class Authenticator {
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKeys: {[key: string]: KeyPair|string}
+        base64senderPublicKeys: {[key: string]: KeyPair|KeyPair[]|string}
     )
     {
         let ticket: Ticket;
@@ -124,7 +124,6 @@ export class Authenticator {
         }
         logger(DEBUGLEVEL.HIGH,'attestation valid');
         
-
         try {
             let redeem: AttestedObject = new AttestedObject();
             redeem.create(ticket, att,
@@ -145,7 +144,7 @@ export class Authenticator {
     }
 
     // TODO: Pass in Ticket schema object
-    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey:string){
+    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey: string|null){
 
         let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
         let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
@@ -158,6 +157,8 @@ export class Authenticator {
             if (!decodedAttestedObject.checkValidity(userEthKey)){
                 throw new Error("Ticket validity check failed!");
             }
+
+			return decodedAttestedObject;
 
         } catch (e) {
             let message = "Ticket proof validation failed! " + e.message;
@@ -197,9 +198,14 @@ export class Authenticator {
 
         let pok = crypto.computeAttestationProof(secret, nonce);
         let attRequest = AttestationRequest.fromData(crypto.getType(type), pok);
-        let attest = new Eip712AttestationRequest(userKey);
-        await attest.addData(attestorDomain, 20*1000, receiverId, attRequest);
-        let attestJson = attest.getJsonEncoding();
+        let attestationRequest = new Eip712AttestationRequest(userKey);
+        // undefined means that we will use default value in attestationRequest.addData() second parameter
+        await attestationRequest.addData(attestorDomain, undefined, receiverId, attRequest);
+
+        Authenticator.checkAttestRequestVerifiability(attestationRequest);
+        Authenticator.checkAttestRequestValidity(attestationRequest);
+
+        let attestJson = attestationRequest.getJsonEncoding();
 
         return attestJson;
 
@@ -478,7 +484,7 @@ export class Authenticator {
         let keys: keysArray = {};
         
         try {
-            keys[confernceId] = KeyPair.publicFromBase64orPEM(publicKeyPEM);
+            keys[confernceId] = KeyPair.parseKeyArrayStrings({[confernceId]: publicKeyPEM})[confernceId];
         } catch(e){
             return {
                 valid: false,

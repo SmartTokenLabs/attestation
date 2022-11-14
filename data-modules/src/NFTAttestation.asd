@@ -36,8 +36,17 @@
     <namedType name="ERC721">
         <type>
             <sequence>
-                  <element name="tokenId" type="TokenId"/>
-                  <element name="address" type="Address"/>
+                <element name="address" type="Address"/>
+                <element name="chainID" type="asnx:INTEGER"/>
+                <optional>
+                    <element name="tokenIds">
+                        <type>
+                            <sequenceOf>
+                                <element name="multipleTokenIds" type="TokenId"/>
+                            </sequenceOf>
+                        </type>
+                    </element>
+                </optional>
             </sequence>
         </type>
     </namedType>

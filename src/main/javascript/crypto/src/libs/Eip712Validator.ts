@@ -10,6 +10,10 @@ import {DEBUGLEVEL} from "../config";
 export class Eip712Validator {
     private XMLConfig: any;
     protected domain: string;
+    protected verifyingContract: string;
+    protected chainId: number;
+    protected salt: string;
+    protected primaryName: string;
 
     constructor() {
         this.XMLConfig = XMLconfigData;
@@ -42,56 +46,65 @@ export class Eip712Validator {
         return this.domain;
     }
 
-    validateRequest(jsonInput: string) {
-        try {
-            let authenticationData = JSON.parse(jsonInput);
-
-            let authenticationRootNode = JSON.parse(authenticationData.jsonSigned);
-
-            let eip712Domain = authenticationRootNode.domain;
-            let eip712Message = authenticationRootNode.message;
-
-            let attestedObject = this.retrieveAttestedObject(eip712Message);
-
-            // TODO implement
-            return this.validateDomain(eip712Domain)
-            // && this.validateAuthentication(auth);
-            // accept &= verifySignature(authenticationData, attestedObject.getUserPublicKey());
-            // accept &= validateAttestedObject(attestedObject);
-            // return accept;
-        } catch (e) {
-            logger(DEBUGLEVEL.LOW, 'Validate error!', e);
-            return false;
-        }
+    setSalt(salt: string){
+        this.salt = salt;
     }
 
-    // TODO
-    // public boolean verifyTimeStamp(String timestamp) {
+    getSalt(): string{
+        return this.salt;
+    }
+
+    //getPrimaryName
+
+    setPrimaryName(primaryName: string){
+        this.primaryName = primaryName;
+    }
+
+    getPrimaryName(): string{
+        return this.primaryName;
+    }
+
+
+    setChainId(chainId: number){
+        if (chainId < 1) throw new Error('ChainId should be a positive number');
+        this.chainId = chainId;
+    }
+
+    getChainId(): number{
+        return this.chainId;
+    }
 
     validateDomain(domainToCheck: Eip712DomainInterface): boolean {
-        if (domainToCheck.name.toLowerCase() !== this.domain.toLowerCase()) {
+        if ( !domainToCheck ) {
+            logger(DEBUGLEVEL.LOW, "Input param domainToCheck required");
+            return false;
+        }
+
+        if (!domainToCheck.name || (domainToCheck.name.toLowerCase() !== this.domain.toLowerCase())) {
             logger(DEBUGLEVEL.LOW, "Domain name is not valid");
             return false;
         }
 
-        if (domainToCheck.version !== SignatureUtility.Eip712Data['PROTOCOL_VERSION']) {
+        if (!domainToCheck.version || (domainToCheck.version !== SignatureUtility.Eip712Data['PROTOCOL_VERSION'])) {
             logger(DEBUGLEVEL.LOW, "Protocol version is wrong");
             return false;
         }
 
-        // we dont use that fields at the moment. maybe have to uncomment and fix in the future
-        // if (domainToCheck.chainId !== encoder.getChainId())) {
-        //     logger(DEBUGLEVEL.LOW, "Chain ID is wrong");
-        //     return false;
-        // }
-        // if (domainToCheck.verifyingContract !== encoder.getVerifyingContract()) {
-        //     logger(DEBUGLEVEL.LOW, "Verifying contract is wrong");
-        //     return false;
-        // }
-        // if (domainToCheck.salt !== encoder.getSalt()) {
-        //     logger(DEBUGLEVEL.LOW, "Salt is wrong");
-        //     return false;
-        // }
+        if (this.chainId && (domainToCheck.chainId !== this.chainId)) {
+            logger(DEBUGLEVEL.LOW, "Chain ID is wrong");
+            return false;
+        }
+
+        if (this.verifyingContract && (domainToCheck.verifyingContract !== this.verifyingContract)) {
+            logger(DEBUGLEVEL.LOW, "Verifying contract is wrong");
+            return false;
+        }
+
+        if (this.salt && (domainToCheck.salt !== this.salt)) {
+            logger(DEBUGLEVEL.LOW, "Salt is wrong");
+            return false;
+        }
+
         return true;
 
     }

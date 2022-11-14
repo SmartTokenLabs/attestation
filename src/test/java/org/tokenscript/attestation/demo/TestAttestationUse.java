@@ -10,6 +10,7 @@ import java.util.List;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.tokenscript.attestation.HelperTest;
 import org.tokenscript.attestation.IdentifierAttestation;
@@ -46,6 +47,8 @@ public class TestAttestationUse {
         attestation = new SignedIdentifierAttestation(att, attestorKeys);
     }
 
+    // TODO disabled due to obsolescence of test chain, should be enabled as part of https://github.com/TokenScript/attestation/pull/302
+    @Disabled
     @Test
     public void testSendAttestation() {
         // *** PRINT DER ENCODING OF OBJECTS ***

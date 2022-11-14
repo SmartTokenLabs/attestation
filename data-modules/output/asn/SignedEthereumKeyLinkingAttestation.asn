@@ -1,0 +1,35 @@
+SignedEthereumKeyLinkingAttestation
+
+DEFINITIONS ::=
+BEGIN
+
+IMPORTS
+    Address
+        FROM NFTAttestation
+    AlgorithmIdentifier
+        FROM AuthenticationFramework
+    SignedEthereumAddressLinkingAttestation
+        FROM SignedEthereumAddressLinkingAttestation
+    SignedNFTOwnershipAttestation,
+    Validity
+        FROM SignedNFTOwnershipAttestation;
+
+SignedLinkedAttestation ::= CHOICE {
+    signedNFTOwnershipAttestation               [0] EXPLICIT    SignedNFTOwnershipAttestation,
+    signedEthereumAddressLinkingAttestation     [1] EXPLICIT    SignedEthereumAddressLinkingAttestation
+}
+
+EthereumKeyLinkingAttestation ::= SEQUENCE {
+    subjectEthereumAddress          Address,
+    signedLinkedAttestation         SignedLinkedAttestation,
+    validity                        Validity,
+    context                         OCTET STRING OPTIONAL
+}
+
+SignedEthereumKeyLinkingAttestation ::= SEQUENCE {
+    ethereumKeyLinkingAttestation       EthereumKeyLinkingAttestation,
+    signingAlgorithm                    AlgorithmIdentifier,
+    signatureValue                      BIT STRING
+}
+
+END

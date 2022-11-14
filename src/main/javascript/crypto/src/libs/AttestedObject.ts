@@ -227,6 +227,9 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             return false;
         }
 
+		if (ethAddress === null)
+			return true;
+
         try {
 
             // CHECK: the Ethereum address on the attestation matches receivers signing key
