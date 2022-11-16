@@ -9,8 +9,7 @@ import {UriIdAttestation} from "./UriIdAttestation";
 
 export class ERC721 {
     @AsnProp({ type: AsnPropTypes.OctetString }) public address: Uint8Array;
-    @AsnProp({ type: AsnPropTypes.OctetString, optional: true }) public tokenId: Uint8Array;
-    @AsnProp({ type: AsnPropTypes.Integer, optional: true }) public chainId: number;
+    @AsnProp({ type: AsnPropTypes.OctetString }) public tokenId: Uint8Array;
 }
 
 // Tokens ::= SEQUENCE SIZE (1..MAX) OF ERC721
