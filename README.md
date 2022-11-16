@@ -7,7 +7,7 @@ You can always use this project in your own code through Maven central, by addin
  <dependency>
    <groupId>org.tokenscript</groupId>
    <artifactId>attestation</artifactId>
-   <version>0.4</version>
+   <version>0.4.1</version>
  </dependency>
 ```
 

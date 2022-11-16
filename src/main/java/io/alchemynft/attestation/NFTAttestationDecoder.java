@@ -5,7 +5,6 @@ import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.ObjectDecoder;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 
