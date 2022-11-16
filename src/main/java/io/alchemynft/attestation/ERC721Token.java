@@ -19,7 +19,7 @@ import org.web3j.utils.Numeric;
  * org.tokenscript.attestation
  */
 @Deprecated
-class ERC721Token implements ASNEncodable {
+public class ERC721Token implements ASNEncodable {
 
   private static final Logger logger = LogManager.getLogger(ERC721Token.class);
 
