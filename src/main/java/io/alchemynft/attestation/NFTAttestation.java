@@ -12,7 +12,6 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.tokenscript.attestation.AttestedKeyObject;
-import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.ExceptionUtil;
 

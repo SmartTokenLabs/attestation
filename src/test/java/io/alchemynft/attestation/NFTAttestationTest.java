@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.HelperTest;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
