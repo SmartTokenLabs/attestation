@@ -18,34 +18,7 @@ on:
 
 jobs:
   java-p1:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: "11"
-          cache: "gradle"
-      - name: build
-        run: |
-          ./gradlew --no-daemon build
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: success() || failure()
-        with:
-          files: "build/test-results/**/*.xml"
-      - name: grype
-        uses: anchore/scan-action@v3
-        with:
-          path: build/libs/
-      - uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: java-build
-          path: |
-            build/libs/
-            build/test-results/
-            build/reports/
+    uses: ./.github/workflows/java-p1.yml
 
   js-p1:
     needs:
@@ -57,7 +30,7 @@ jobs:
       - java-p1
       - js-p1
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/stage'
+    if: github.event_name == 'push' && github.ref_name == 'stage'
     outputs:
       version: ${{ steps.publish.outputs.version }}
     steps:
@@ -80,11 +53,11 @@ jobs:
         run: |
           ./gradlew --no-daemon publishAllPublicationsToGitHubPackagesRepository
           version="$(./gradlew -q properties | sed -nr 's/^version: (.+)/\1/p')"
-          echo "::set-output name=version::${version}"
+          echo "version=${version}" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
-          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_POASSWORD }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
 
   downstream-ci:
     needs:
