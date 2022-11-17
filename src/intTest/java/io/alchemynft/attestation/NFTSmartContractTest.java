@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.token.tools.Numeric;
-import java.security.SecureRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -15,6 +14,10 @@ import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.demo.SmartContract;
+
+import java.security.SecureRandom;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NFTSmartContractTest {
     private static AsymmetricCipherKeyPair subjectKeys;
