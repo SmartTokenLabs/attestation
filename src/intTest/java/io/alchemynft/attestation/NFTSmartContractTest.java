@@ -1,11 +1,15 @@
 package io.alchemynft.attestation;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.alphawallet.ethereum.AttestationReturn;
 import com.alphawallet.token.tools.Numeric;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.tokenscript.attestation.ERC721Token;
 import org.tokenscript.attestation.IdentifierAttestation;
 import org.tokenscript.attestation.SignedIdentifierAttestation;
 import org.tokenscript.attestation.core.SignatureUtility;
@@ -84,8 +88,9 @@ public class NFTSmartContractTest {
         assertTrue(atr.isValid);
         for (int index = 0; index < atr.ercToken.length; index++)
         {
-            assertEquals(atr.ercToken[index].address.toString().toLowerCase(), myNFTs[index].getAddress().toLowerCase());
-            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].getTokenIds().get(0));
+            assertEquals(atr.ercToken[index].address.toString().toLowerCase(),
+                myNFTs[index].getAddress().toLowerCase());
+            assertEquals(atr.ercToken[index].tokenId.getValue(), myNFTs[index].getTokenId());
         }
 
         //TODO: make a more comprehensive negative test, involving bad attestation subject address etc.
