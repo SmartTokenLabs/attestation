@@ -1,0 +1,27 @@
+name: "Manual Release Maven Repository"
+
+on: [workflow_dispatch]
+
+jobs:
+  java-p1:
+    uses: ./.github/workflows/java-p1.yml
+
+  release:
+    needs:
+      - java-p1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "11"
+          cache: "gradle"
+      - name: maven release
+        run: |
+          ./gradlew publishAllPublicationsToMavenRepository
+        env:
+          OSSRHUSERNAME: ${{ secrets.OSSRHUSERNAME }}
+          OSSRHPASSWORD: ${{ secrets.OSSRHPASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
