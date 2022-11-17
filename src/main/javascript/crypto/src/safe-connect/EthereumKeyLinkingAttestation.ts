@@ -34,7 +34,7 @@ export class EthereumKeyLinkingAttestation {
 		this.linkAttest.ethereumKeyLinkingAttestation.validity.notBefore = validFrom;
 		this.linkAttest.ethereumKeyLinkingAttestation.validity.notAfter = expiry;
 
-		if (!context)
+		if (context)
 			this.linkAttest.ethereumKeyLinkingAttestation.context = context;
 
 	}
