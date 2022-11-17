@@ -4,6 +4,7 @@ import {KeyPair} from "../libs/KeyPair";
 import {base64ToUint8array, hexStringToUint8, uint8arrayToBase64} from "../libs/utils";
 import {ethers} from "ethers";
 import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
+import exp = require("constants");
 
 export abstract class AbstractLinkedAttestation {
 
@@ -71,4 +72,22 @@ export abstract class AbstractLinkedAttestation {
 		if (data.validity.notAfter < now)
 			throw new Error("Linked attestation has expired");
 	}
+}
+
+export function getValidFromAndExpiry(validity: number, validFrom?: number){
+
+	// block timestamps used in smart contracts to check validity can have large variances
+	// to mitigate this issue, validFrom by default is shifted into the past by 10 minutes
+
+	let expiry;
+
+	if (!validFrom) {
+		const now = Math.round((Date.now() / 1000));
+		validFrom = now - 600; // 10 minutes
+		expiry = now + validity;
+	} else {
+		expiry = validFrom + validity;
+	}
+
+	return {validFrom, expiry};
 }

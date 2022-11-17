@@ -12,7 +12,7 @@ contract STLTNMintNFTAttest is ERC20, ERC20Burnable, Ownable {
 
     using ECDSA for bytes32;
 
-    address public baycAddr = 0x3d8a0fB32b0F586FdC10447c22F477979dc526ec;
+    address public baycAddr = 0xc361201E5B1005cCDE47B32F223BC145DE393F62;
 
     address public constant attestorAddr = 0xe761Eb6e829DE49deaB008120733c1E35Acf77DB;
 

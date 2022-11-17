@@ -1,4 +1,4 @@
-import {AbstractLinkedAttestation} from "./AbstractLinkedAttestation";
+import {AbstractLinkedAttestation, getValidFromAndExpiry} from "./AbstractLinkedAttestation";
 import {LinkedAttestation, SignedLinkedAttestation} from "../asn1/shemas/SignedLinkedAttestation";
 import {ERC721, NFTOwnershipAttestation as NFTOwnershipSchema} from "../asn1/shemas/NFTOwnershipAttestation";
 import {KeyPair} from "../libs/KeyPair";
@@ -24,14 +24,11 @@ export class NFTOwnershipAttestation extends AbstractLinkedAttestation {
 
 		this.linkedAttestation.attestation.nftOwnership.subjectPublicKey = holdingPubKey;
 
-		if (!validFrom)
-			validFrom = Math.round((Date.now() / 1000));
-
-		const expiry = validFrom + validity;
+		const validityInfo = getValidFromAndExpiry(validity, validFrom);
 
 		this.linkedAttestation.attestation.nftOwnership.validity = new EpochTimeValidity();
-		this.linkedAttestation.attestation.nftOwnership.validity.notBefore = validFrom;
-		this.linkedAttestation.attestation.nftOwnership.validity.notAfter = expiry;
+		this.linkedAttestation.attestation.nftOwnership.validity.notBefore = validityInfo.validFrom;
+		this.linkedAttestation.attestation.nftOwnership.validity.notAfter = validityInfo.expiry;
 
 		for (let token of tokens){
 			let attToken = new ERC721()
