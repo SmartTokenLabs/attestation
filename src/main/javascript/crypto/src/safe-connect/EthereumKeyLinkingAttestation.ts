@@ -9,6 +9,7 @@ import {KeyPair} from "../libs/KeyPair";
 import {EthereumAddressAttestation} from "./EthereumAddressAttestation";
 import {NFTOwnershipAttestation} from "./NFTOwnershipAttestation";
 import subtle from "./SubtleCryptoShim";
+import {getValidFromAndExpiry} from "./AbstractLinkedAttestation";
 
 const HOLDING_KEY_ALGORITHM = "RSASSA-PKCS1-v1_5";
 
@@ -25,14 +26,11 @@ export class EthereumKeyLinkingAttestation {
 		this.linkAttest.ethereumKeyLinkingAttestation.subjectEthereumAddress = hexStringToUint8(linkedEthereumAddress);
 		this.linkAttest.ethereumKeyLinkingAttestation.linkedAttestation = addressAttestObj;
 
-		if (!validFrom)
-			validFrom = Math.round((Date.now() / 1000));
-
-		const expiry = validFrom + validity;
+		const validityInfo = getValidFromAndExpiry(validity, validFrom);
 
 		this.linkAttest.ethereumKeyLinkingAttestation.validity = new EpochTimeValidity();
-		this.linkAttest.ethereumKeyLinkingAttestation.validity.notBefore = validFrom;
-		this.linkAttest.ethereumKeyLinkingAttestation.validity.notAfter = expiry;
+		this.linkAttest.ethereumKeyLinkingAttestation.validity.notBefore = validityInfo.validFrom;
+		this.linkAttest.ethereumKeyLinkingAttestation.validity.notAfter = validityInfo.expiry;
 
 		if (context)
 			this.linkAttest.ethereumKeyLinkingAttestation.context = context;

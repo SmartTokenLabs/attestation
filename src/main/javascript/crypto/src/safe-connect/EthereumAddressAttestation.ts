@@ -1,4 +1,4 @@
-import {AbstractLinkedAttestation} from "./AbstractLinkedAttestation";
+import {AbstractLinkedAttestation, getValidFromAndExpiry} from "./AbstractLinkedAttestation";
 import {LinkedAttestation, SignedLinkedAttestation} from "../asn1/shemas/SignedLinkedAttestation";
 import {KeyPair} from "../libs/KeyPair";
 import {EthereumAddressAttestation as EthAddressSchema} from "../asn1/shemas/EthereumAddressAttestation";
@@ -17,14 +17,11 @@ export class EthereumAddressAttestation extends AbstractLinkedAttestation {
 
 		this.linkedAttestation.attestation.ethereumAddress.subjectPublicKey = holdingPubKey;
 
-		if (!validFrom)
-			validFrom = Math.round((Date.now() / 1000));
-
-		const expiry = validFrom + validity;
+		const validityInfo = getValidFromAndExpiry(validity, validFrom);
 
 		this.linkedAttestation.attestation.ethereumAddress.validity = new EpochTimeValidity();
-		this.linkedAttestation.attestation.ethereumAddress.validity.notBefore = validFrom;
-		this.linkedAttestation.attestation.ethereumAddress.validity.notAfter = expiry;
+		this.linkedAttestation.attestation.ethereumAddress.validity.notBefore = validityInfo.validFrom;
+		this.linkedAttestation.attestation.ethereumAddress.validity.notAfter = validityInfo.expiry;
 
 		this.linkedAttestation.attestation.ethereumAddress.ethereumAddress = hexStringToUint8(attestedAddress);
 
