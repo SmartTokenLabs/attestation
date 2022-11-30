@@ -1,0 +1,14 @@
+{
+  "name": "@tokenscript/attestation-contracts",
+  "version": "0.0.1",
+  "description": "Token Attestation contracts by Smart Token Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TokenScript/attestation.git"
+  },
+  "author": "STL",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TokenScript/attestation/issues"
+  }
+}
