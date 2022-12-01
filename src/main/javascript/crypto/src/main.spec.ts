@@ -724,8 +724,8 @@ describe("Safe Connect", () => {
 
         const linkAttest = new EthereumKeyLinkingAttestation();
 
-        // linkAttest.create(base64Attest, linkedWallet, validity, undefined, validFrom);
-        linkAttest.create(base64Attest, linkedWallet, validity, null, validFrom);
+        linkAttest.create(base64Attest, linkedWallet, validity, undefined, validFrom);
+        // linkAttest.create(base64Attest, linkedWallet, validity, null, validFrom);
         await linkAttest.sign(attestHoldingKey.privateKey);
 
         return linkAttest;
@@ -752,8 +752,8 @@ describe("Safe Connect", () => {
 
     test("Expired attestation should not validate", async () => {
 
-        // let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, undefined, Math.round(Date.now() / 1000) - 7200);
-        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, null, Math.round(Date.now() / 1000) - 7200);
+        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, undefined, Math.round(Date.now() / 1000) - 7200);
+        // let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, null, Math.round(Date.now() / 1000) - 7200);
 
         let err = "";
 

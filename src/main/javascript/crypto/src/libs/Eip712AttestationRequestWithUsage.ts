@@ -49,9 +49,11 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
     private userPublicKey: KeyPair;
     private userKey: KeyPair;
 
-    constructor(userKey: KeyPair = null, acceptableTimeLimit:number = Timestamp.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT) {
+    constructor(userKey: KeyPair|undefined = undefined, acceptableTimeLimit:number = Timestamp.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT) {
         super();
-        this.userKey = userKey;
+        if (userKey) {
+            this.userKey = userKey;
+        }
 
         this.acceptableTimeLimit = acceptableTimeLimit;
         this.maxTokenValidityInMs = maxTokenValidityInMs;
@@ -59,7 +61,7 @@ export class Eip712AttestationRequestWithUsage extends Eip712Token implements Js
 
 
     public async fromData(attestorDomain:string, acceptableTimeLimit:number = Timestamp.DEFAULT_TIME_LIMIT_MS, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT  ,identifier:string,
-    attestationRequestWithUsage: AttestationRequestWithUsage, signingKey: KeyPair = null) {
+    attestationRequestWithUsage: AttestationRequestWithUsage, signingKey: KeyPair|undefined = undefined) {
 
         this.setDomain(attestorDomain);
         if (signingKey) {

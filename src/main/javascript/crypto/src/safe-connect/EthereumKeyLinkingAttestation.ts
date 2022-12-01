@@ -107,7 +107,11 @@ export class EthereumKeyLinkingAttestation {
 
 		linkedAttestation.verify(attestorKeys);
 
-		let linkedAttestationPubKey = linkedAttestation.getSubjectPublicKey();
+		let linkedAttestationPubKey:Uint8Array|undefined = linkedAttestation.getSubjectPublicKey();
+
+		if (!linkedAttestationPubKey){
+			throw new Error("getSubjectPublicKey error");
+		}
 
 		const encodedLinkAttestation = AsnSerializer.serialize(this.linkAttest.ethereumKeyLinkingAttestation);
 

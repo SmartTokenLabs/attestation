@@ -76,7 +76,11 @@ export class ERC721Token implements ASNEncodable {
         try {
             return Asn1Der.encode('SEQUENCE_30',this.getTokenVector());
         } catch (e) {
-            throw new Error(e);
+            let err = "ERC721 Token DER Encoding failed";
+            if (e instanceof Error){
+                err = e.message;
+            }
+            throw new Error(err);
         }
     }
     public getTokenVector():string {

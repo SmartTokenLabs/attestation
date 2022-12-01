@@ -39,7 +39,7 @@ export class NFTAttestation implements ASNEncodable, Validateable {
 
         me.tokens = [];
 
-        NFTatt.tokens.forEach((token:ERC721)=>{
+        NFTatt.tokens?.forEach((token:ERC721)=>{
             me.tokens.push(ERC721Token.fromASNObj(token))
         })
         logger(DEBUGLEVEL.HIGH, me.tokens);

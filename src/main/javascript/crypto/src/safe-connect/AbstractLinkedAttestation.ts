@@ -29,7 +29,7 @@ export abstract class AbstractLinkedAttestation {
 	}
 
 	getSubjectPublicKey(){
-		return this.getAttestationData().subjectPublicKey;
+		return this.getAttestationData()?.subjectPublicKey;
 	}
 
 	getEncoded(){
@@ -65,6 +65,9 @@ export abstract class AbstractLinkedAttestation {
 
 		let now = Math.round(Date.now() / 1000);
 		let data = this.getAttestationData();
+
+		if (!data)
+			throw new Error("Linked attestation getAttestationData error");
 
 		if (data.validity.notBefore > now)
 			throw new Error("Linked attestation is not yet valid");

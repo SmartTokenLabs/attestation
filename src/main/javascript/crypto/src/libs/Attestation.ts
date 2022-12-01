@@ -279,7 +279,7 @@ export class Attestation {
             res += this.smartcontracts;
         }
 
-        let extensionEncoded:string;
+        let extensionEncoded:string = "";
 
         if (this.commitment && this.commitment.length){
             extensionEncoded = Asn1Der.encode('OBJECT_ID', Attestation.OID_OCTETSTRING)

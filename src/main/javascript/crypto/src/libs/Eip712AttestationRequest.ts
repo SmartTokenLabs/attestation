@@ -31,9 +31,11 @@ export class Eip712AttestationRequest extends Eip712Token implements JsonEncodab
     private Eip712UserDataPrimaryName: string = "AttestationRequest";
     private Eip712UserDataDescription: string = "Linking Ethereum address to phone or email";
 
-    constructor(userKey: KeyPair = null, acceptableTimeLimit: number = Timestamp.DEFAULT_TIME_LIMIT_MS) {
+    constructor(userKey: KeyPair|undefined = undefined, acceptableTimeLimit: number = Timestamp.DEFAULT_TIME_LIMIT_MS) {
         super();
-        this.userKey = userKey;
+        if (userKey) {
+            this.userKey = userKey;
+        }
         this.acceptableTimeLimit = acceptableTimeLimit;
         this.usageValue = this.Eip712UserDataDescription;
     }
