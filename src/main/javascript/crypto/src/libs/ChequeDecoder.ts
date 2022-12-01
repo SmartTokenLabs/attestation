@@ -13,8 +13,12 @@ export class ChequeDecoder {
         const signedCheque: SignedCheque = AsnParser.parse(uint8data, SignedCheque);
 
         let amount: number = signedCheque.cheque.amount;
-        let notValidBefore: number = signedCheque.cheque.validity.notBefore.generalizedTime.getTime();
-        let notValidAfter: number = signedCheque.cheque.validity.notAfter.generalizedTime.getTime();
+        let notValidBefore: number|undefined = signedCheque.cheque.validity.notBefore.generalizedTime?.getTime();
+        let notValidAfter: number|undefined = signedCheque.cheque.validity.notAfter.generalizedTime?.getTime();
+
+        if (!notValidAfter || !notValidBefore){
+            throw new Error("Validity undefined.")
+        }
         logger(DEBUGLEVEL.HIGH, 'signedCheque',signedCheque);
 
         let commitment = new Uint8Array(signedCheque.cheque.commitment);
