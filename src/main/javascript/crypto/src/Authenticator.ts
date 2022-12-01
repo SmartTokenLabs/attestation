@@ -136,15 +136,19 @@ export class Authenticator {
             // return unSigned;
 
         } catch (e) {
+            let message = "";
+            if (e instanceof Error) {
+                message = e.message;
+            }
             logger(DEBUGLEVEL.MEDIUM,'getUseTicket: redeem failed',e);
-            throw new Error("Attestation doesnt fit Ticket: " + e.message);
+            throw new Error("Attestation doesnt fit Ticket: " + message);
         }
 
 
     }
 
     // TODO: Pass in Ticket schema object
-    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey: string|null){
+    static validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey: string){
 
         let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
         let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
@@ -161,9 +165,11 @@ export class Authenticator {
 			return decodedAttestedObject;
 
         } catch (e) {
-            let message = "Ticket proof validation failed! " + e.message;
-            logger(DEBUGLEVEL.MEDIUM, message);
-            throw new Error(message);
+            if (e instanceof Error) {
+                let message = "Ticket proof validation failed! " + e.message;
+                logger(DEBUGLEVEL.MEDIUM, message);
+                throw new Error(message);
+            }
         }
 
     }
@@ -177,7 +183,7 @@ export class Authenticator {
     // getTokenAttestation(tokenObj) {
     // }
 
-    static async requestAttest( receiverId: string, type: string, attestorDomain: string, secret: bigint, userKey: KeyPair = null ){
+    static async requestAttest( receiverId: string, type: string, attestorDomain: string, secret: bigint, userKey: KeyPair ){
 
         let crypto = new AttestationCrypto();
         let userAddress;
@@ -285,8 +291,8 @@ export class Authenticator {
         receiverId: string,
         type: string,
         webDomain: string,
-        sessionKey: KeyPair = null,
-        userKey: KeyPair = null){
+        sessionKey: KeyPair,
+        userKey: KeyPair){
 
 
 

@@ -216,7 +216,7 @@ export class AttestationCrypto {
     static generateRandomHexString(len: number): string {
         var array = new Uint8Array(len);
 
-        if (window && window.crypto){
+        if (typeof window !== "undefined" && window.crypto){
             window.crypto.getRandomValues(array);
         } else {
             array = new Uint8Array(crypto.randomBytes(len));

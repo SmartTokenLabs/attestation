@@ -184,6 +184,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             return false;
         };
 
+        // console.log("____", this.data.timestamp, this.data.expirationTime);
         let time: Timestamp = new Timestamp(this.data.timestamp);
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {

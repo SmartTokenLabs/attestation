@@ -150,6 +150,9 @@ export class Asn1Der {
                 let valArr = value.split('.');
                 let v1 = valArr.shift();
                 let v2 = valArr.shift();
+                if (!v1 || !v2) {
+                    throw new Error("OBJECT_ID parse error.");
+                }
                 valArr.unshift((parseInt(v1) * 40 + parseInt(v2)).toString());
                 valArr.forEach(v => {
                     let num: number = parseInt(v);
@@ -237,17 +240,21 @@ export class Asn1Der {
         return this.read(arr);
     }
 
-    lenEncoded(derArr: number[]) {
-        let b1 = derArr.shift();
+    lenEncoded(derArr: number[]): number {
+        if (!derArr.length){
+            throw new Error("Empty DER length");
+        }
+        let b1 = derArr.shift() as number;
         if (b1 < 128) {
             return b1;
         } else if (b1 > 128){
             let extLength = 0;
             for (let i=0; i<(b1-128);i++){
-                extLength = (extLength << 8) + derArr.shift();
+                extLength = (extLength << 8) + (derArr.shift() as number);
             }
             return extLength;
-        } else if (b1 == 128) {
+        // if (b1 == 128)
+        } else  {
             throw new Error('have to code variable length')
         }
     }
@@ -274,14 +281,17 @@ export class Asn1Der {
     }
 
     read(derArr: number[]) {
-        let typeTag:number = derArr.shift();
+        if (!derArr || !derArr.length) {
+            throw new Error("");
+        }
+        let typeTag:number = derArr.shift() as number;
         let len:number = this.lenEncoded(derArr);
         let typeTagName:string = Asn1DerTagById[typeTag];
         logger(DEBUGLEVEL.VERBOSE, "Der utility typeTagName:" + typeTagName);
         let content: number[] = [];
 
         for (let i = 0; i < len; i++){
-            content.push(derArr.shift());
+            content.push(derArr.shift() as number);
         }
         logger(DEBUGLEVEL.VERBOSE, "Der Utility content");
         logger(DEBUGLEVEL.VERBOSE, content);
@@ -294,18 +304,18 @@ export class Asn1Der {
                 let output = 0n;
                 while (content.length) {
                     output = output << 8n;
-                    output += BigInt(content.shift());
+                    output += BigInt(content.shift() as number);
                 }
                 return output;
             case "OCTET_STRING":
                 while (content.length) {
-                    outputStr += content.shift().toString(16).padStart(2,'0');
+                    outputStr += (content.shift() as number).toString(16).padStart(2,'0');
                 }
                 return outputStr;
             case "GENERALIZED_TIME":
             case "VISIBLE_STRING":
-                while (content.length) {
-                    outputStr += String.fromCharCode(content.shift());
+                while (content && content.length) {
+                    outputStr += String.fromCharCode(content.shift() as number);
                 }
                 return outputStr;
         }

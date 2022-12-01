@@ -35,14 +35,15 @@ export class UNMac implements IUnpredictableNumberTool {
         return new UnpredictableNumberBundle(unpredictableNumber, randomness, this._domain, expiration);
     }
 
-    private getUnpredictableNumber(randomness: Uint8Array, expirationInMs: bigint, context: Uint8Array, unSize: number = BYTES_IN_UN): string {
+    private getUnpredictableNumber(randomness: Uint8Array, expirationInMs: bigint, context: Uint8Array|undefined, unSize: number = BYTES_IN_UN): string {
         const hmac: Hmac = require('crypto').createHmac('sha3-256', this.key);
         // We encode this as a long of 8 bytes
         let byteTime = new Uint8Array(8);
         byteTime.set(bnToUint8(expirationInMs), 8-bnToUint8(expirationInMs).length);
         hmac.update(byteTime);
         hmac.update(randomness);
-        if (context !== undefined) {
+        // if (context !== undefined) {
+        if (typeof context !== "undefined") {
             hmac.update(hashContext(context));
         }
         let encodedDomain = new TextEncoder().encode(this._domain);

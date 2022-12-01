@@ -16,7 +16,7 @@ export class Timestamp {
     private time: number;
     private validity: number = 0;
 
-    public constructor(timeSinceEpochInMs:number|string = null) {
+    public constructor(timeSinceEpochInMs:number|string|null = null) {
         if (!timeSinceEpochInMs) this.time = Date.now();
 
         if (typeof timeSinceEpochInMs === 'number' ){

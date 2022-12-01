@@ -143,6 +143,9 @@ export class KeyPair {
 
     static publicFromSubjectPublicKeyInfo(spki: SubjectPublicKeyInfo): KeyPair {
         let me = new this();
+        if(!spki.value) {
+            throw new Error("Key value not defined.");
+        }
         me.pubKey = new Uint8Array(spki.value.publicKey);
         return me;
     }
@@ -352,6 +355,9 @@ export class KeyPair {
         if (signature.length == 128 || signature.length == 130) {
             var m = signature.match(/([a-f\d]{64})/gi);
 
+            if (!m || m.length < 2) {
+                throw new Error("Wrong key syntax");
+            }
             sign = {
                 r: m[0],
                 s: m[1]
@@ -374,6 +380,10 @@ export class KeyPair {
         
         let ecKey = ec.keyFromPublic(this.getPublicKeyAsHexStr(), 'hex');
         var m = signature.match(/([a-f\d]{64})/gi);
+
+        if (!m || m.length < 2) {
+            throw new Error("Wrong key syntax");
+        }
 
         let sign = {
             r: m[0],
@@ -414,17 +424,16 @@ export class KeyPair {
 
         var m = signature.match(/([a-f\d]{64})/gi);
 
+        if (!m || m.length < 2) {
+            throw new Error("Wrong key syntax");
+        }
+
         let sign = {
             r: m[0],
             s: m[1]
         };
 
-		console.log(ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature))));
-
-		//console.log(ecKey.getPublicKeyAsHexStr());
-
         return ecKey.verify(encodingHash, sign);
-        // return ecKey.verify(encodingHash, signature);
     }
 
     getJWTParams(){
@@ -463,8 +472,11 @@ export class KeyPair {
 
     getSubtlePublicKey(){
         let curve = EC_CURVES_SUBTLE[this.algorithm];
-        let params = this.getJWTParams();
+        
+        let getParams = this.getJWTParams();
+        let params: { crv: string; d?: string; key_ops: string[]; kty: string; x: string; y: string; } = Object.assign({}, getParams);
         delete params.d;
+
         params.key_ops = ['verify'];
         return subtle.importKey(
             "jwk",
