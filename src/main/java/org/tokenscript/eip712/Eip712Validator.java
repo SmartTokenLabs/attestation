@@ -48,7 +48,7 @@ public class Eip712Validator extends Eip712Common {
   public boolean validateDomain(String signedJsonInput) {
     try {
       EIP712Domain domainToCheck = restoreDomain(signedJsonInput);
-      if (!domainToCheck.getName().equals(domain)) {
+      if (!domainToCheck.getName().equalsIgnoreCase(domain)) {
         logger.error("Domain name is not valid");
         return false;
       }

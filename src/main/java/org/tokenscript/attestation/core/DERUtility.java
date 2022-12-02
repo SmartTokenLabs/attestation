@@ -53,7 +53,7 @@ public class DERUtility {
     }
   }
 
-  public static AsymmetricKeyParameter restoreRFCRFC5915Key(byte[] asnEncodedKey) {
+  public static AsymmetricKeyParameter restorePublicKey(byte[] asnEncodedKey) {
     try {
       return PublicKeyFactory.createKey(asnEncodedKey);
     } catch (IOException e) {
@@ -68,7 +68,7 @@ public class DERUtility {
    * @param asnEncodedKey The ASN1, CER encoding of the key
    * @return
    */
-  public static AsymmetricCipherKeyPair restoreRFC5915Key(byte[] asnEncodedKey)
+  public static AsymmetricCipherKeyPair restorePrivateKey(byte[] asnEncodedKey)
   {
     ECPrivateKey pKey = decode5915Key(asnEncodedKey);
     BigInteger d = pKey.getKey();

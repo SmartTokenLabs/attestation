@@ -18,7 +18,6 @@ import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 import org.tokenscript.attestation.IdentifierAttestation.AttestationType;
 import org.tokenscript.attestation.core.AttestationCrypto;
+import org.tokenscript.attestation.core.DERUtility;
 import org.tokenscript.attestation.core.SignatureUtility;
 import org.tokenscript.attestation.core.URLUtility;
 
@@ -59,6 +59,37 @@ public class TicketTest {
     senderKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
     otherKeys = SignatureUtility.constructECKeysWithSmallestY(rand);
   }
+
+  /**
+   * Integration test generation
+   */
+  @Test
+  public void test() throws Exception {
+    String otherPriv = "MIIBUQIBAQQgiXccmtfQ4AS2JlaWoYMI61Kalm/mjqRqy6Nv/juQZayggeMwgeAC"
+        + "AQEwLAYHKoZIzj0BAQIhAP////////////////////////////////////7///wv"
+        + "MEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAA"
+        + "AAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm+Zn753LusVaBilc6HCwcCm/zbLc4o"
+        + "2VnygVsW+BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj/sQ1LgCIQD/////"
+        + "///////////////+uq7c5q9IoDu/0l6M0DZBQQIBAaFEA0IABOpPjYi/lziShCYF"
+        + "Wr6qEndD9VErWApZc0MmkmWS4V2gV6QqQNjGvmV2Itkn34SYivvUWXqpjFb+BffW"
+        + "r6ODGdA=";
+    String privatekey = "MIIBUQIBAQQgPBn/XUU8eJHtuS/nBmLV5FrvZY6fON+bBIP2ri2N5m6ggeMwgeACAQEwLAYHKoZIzj0BAQIhAP////////////////////////////////////7///wvMEQEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABwRBBHm+Zn753LusVaBilc6HCwcCm/zbLc4o2VnygVsW+BeYSDradyajxGVdpPv8DhEIqP0XtEimhVQZnEfQj/sQ1LgCIQD////////////////////+uq7c5q9IoDu/0l6M0DZBQQIBAaFEA0IABJUMfAvtI8PKxcwxu7mq2btVMjh4gmcKwrHN8HmasOvHZMJn9wTo/doHlquDl6TSEBAk0kxO//aVs6QX8u0OSM0=";
+
+    byte[] privKey = DERUtility.restoreBytes(Files.readAllLines(Paths.get("src/test/data"
+        + "/namedEcPrivKey.pem")));
+    AsymmetricCipherKeyPair keys =
+        DERUtility.restorePrivateKey(Base64.getDecoder().decode(privatekey));
+//    String pkString = "MIHsBgcqhkjOPQIBMIHgAgEBMCwGByqGSM49AQECIQD"
+//        + "////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQE=";
+    SubjectPublicKeyInfo spki =
+        SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(keys.getPublic());
+    String pk = Base64.getEncoder().encodeToString(spki.getEncoded());
+    System.out.println(pk);
+    Ticket ticket = new Ticket(MAIL, "namedEcPubKey", TICKET_ID, TICKET_CLASS, keys, SECRET);
+    String res = Base64.getUrlEncoder().encodeToString(ticket.getDerEncoding());
+    System.out.println(res);
+  }
+
 
   @Test
   public void sunshine() throws Exception {

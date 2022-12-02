@@ -42,7 +42,7 @@ public class Validator {
    */
   static void validateTicket(String ticketInUrl, String pokInUrl, String mail, Path keyFile) throws IOException {
     byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
-    AsymmetricKeyParameter issuerPubKey = DERUtility.restoreRFCRFC5915Key(dataCER);
+    AsymmetricKeyParameter issuerPubKey = DERUtility.restorePublicKey(dataCER);
     DevconTicketDecoder devconTicketDecoder = new DevconTicketDecoder(issuerPubKey);
     Ticket ticket = devconTicketDecoder.decode(URLUtility.decodeData(ticketInUrl));
     if (!ticket.checkValidity()) {

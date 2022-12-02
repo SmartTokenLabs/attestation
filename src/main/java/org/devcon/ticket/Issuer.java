@@ -43,7 +43,7 @@ public class Issuer {
 
     static String constructTicket(String mail, String devconID, BigInteger ticketID, int ticketClass, Path keyFile) throws IOException {
         byte[] dataCER = DERUtility.restoreBytes(Files.readAllLines(keyFile));
-        AsymmetricCipherKeyPair issuerKeyPair = DERUtility.restoreRFC5915Key(dataCER);
+        AsymmetricCipherKeyPair issuerKeyPair = DERUtility.restorePrivateKey(dataCER);
 
         BigInteger sharedSecret = crypto.makeSecret();
         Ticket ticket = new Ticket(mail, devconID, ticketID, ticketClass, issuerKeyPair,

@@ -9,7 +9,7 @@ import {FullProofOfExponent} from "./FullProofOfExponent";
 export class Issuer {
     static constructTicket(mail: string, devconID: string, ticketID: string, ticketClass: number, issuerKeyPair: KeyPair):string {
         let sharedSecret:bigint = new AttestationCrypto().makeSecret();
-        let ticket:Ticket = Ticket.createWithMail(mail, devconID, ticketID, ticketClass, {'6':issuerKeyPair}, sharedSecret);
+        let ticket:Ticket = Ticket.createWithMail(mail, devconID, ticketID, ticketClass, {'namedEcPubKey':issuerKeyPair}, sharedSecret);
         if (!ticket.checkValidity()) {
             throw new Error("Something went wrong and the constructed ticket could not be validated");
         }

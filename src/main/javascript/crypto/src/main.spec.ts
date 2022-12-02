@@ -323,8 +323,8 @@ describe("MagicLink reader", () => {
             
             senderKey = KeyPair.privateFromKeyDataPEM(magicLinkPrivatePEM);
 
-            magicLink = await Issuer.constructTicket("mail@mail.com", "6", "222", 9, senderKey);
-            testsLogger(DEBUGLEVEL.VERBOSE, `Signed ticket = ${magicLink}`);
+            magicLink = await Issuer.constructTicket("mail@mail.com", "namedEcPubKey", "222", 9, senderKey);
+            console.log(magicLink);
         } catch (e) {
             testsLogger(DEBUGLEVEL.LOW, e);
             throw new Error('construct Ticket failed');
