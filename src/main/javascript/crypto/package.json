@@ -12,6 +12,7 @@
     "clean": "rm -R dist",
     "watch": "webpack --watch --progress",
     "test": "jest",
+    "testjest": "jest",
     "prepublishOnly": "npm run clean && npm run build",
     "postinstall": "patch-package"
   },
