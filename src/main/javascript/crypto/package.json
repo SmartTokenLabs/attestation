@@ -6,12 +6,12 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "mocha src/**/*.test.ts",
+    "testmocha": "mocha src/**/*.test.ts",
     "build": "rm -fr dist/* && tsc -p tsconfig.json",
     "pack": "webpack",
     "clean": "rm -R dist",
     "watch": "webpack --watch --progress",
-    "testjest": "jest",
+    "test": "jest",
     "prepublishOnly": "npm run clean && npm run build",
     "postinstall": "patch-package"
   },
