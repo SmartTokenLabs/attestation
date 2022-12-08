@@ -335,6 +335,7 @@ describe("MagicLink reader", () => {
 
             let params = new URLSearchParams(magicLink);
 			let ticketOnly = params.get("ticket");
+            ticketOnly = ticketOnly ?? "";
             
             let res = Authenticator.validateTicket(ticketOnly, "6", magicLinkPublicPEM);
 
@@ -436,7 +437,7 @@ describe("Attestation request/construct", () => {
         let receiverId = "test@test.com";
         let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
         let attestJson = await Authenticator.requestAttest(receiverId, "mail", ATTESTOR_DOMAIN, secret, userKey);
-        attestationRequestJson = attestJson;
+        attestationRequestJson = attestJson ?? "";
         testsLogger(DEBUGLEVEL.HIGH, `attestJson = ${attestJson}`);
         // OK if no Errors
         expect(1).toBe(1);
@@ -488,7 +489,7 @@ describe("executeEipFlow", () => {
                 sessionSignature);
             testsLogger(DEBUGLEVEL.HIGH, `verifyUsage result = ${res}`);
         } catch (e) {
-            testsLogger(DEBUGLEVEL.LOW, e);
+            testsLogger(DEBUGLEVEL.LOW, "Authenticator.verifyUsage error: ", e);
             throw new Error('verifyUsage failed');
         }
         expect(res).toBe("SUCCESSFULLY validated usage request!");
@@ -509,7 +510,7 @@ describe("executeEipFlow", () => {
                 type,
                 WEB_DOMAIN,
                 sessionKey,
-                userKey);
+                userKey) || "";
             useAttestationJson = useAttestRes;
             testsLogger(DEBUGLEVEL.HIGH, `useAttestRes = ${useAttestRes}`);
         } catch (e) {
@@ -597,7 +598,7 @@ describe("executeCombinedEipFlow", () => {
                 ATTESTOR_DOMAIN,
                 attestationSecretPEM,
                 sessionKey
-            );
+            ) || "";
             testsLogger(DEBUGLEVEL.VERBOSE, `requestAttestAndUsage = ${requestAttestAndUsage}`);
         } catch (e) {
             testsLogger(DEBUGLEVEL.LOW, e);
@@ -679,7 +680,7 @@ describe("read attested object", () => {
             Ticket,
             issuerPublicKeys
             );
-        console.log(attest);
+        // console.log(attest);
         expect(attest.checkValidity(subj)).toBe(true);
 
     })
@@ -723,7 +724,8 @@ describe("Safe Connect", () => {
 
         const linkAttest = new EthereumKeyLinkingAttestation();
 
-        linkAttest.create(base64Attest, linkedWallet, validity, null, validFrom);
+        linkAttest.create(base64Attest, linkedWallet, validity, undefined, validFrom);
+        // linkAttest.create(base64Attest, linkedWallet, validity, null, validFrom);
         await linkAttest.sign(attestHoldingKey.privateKey);
 
         return linkAttest;
@@ -750,32 +752,34 @@ describe("Safe Connect", () => {
 
     test("Expired attestation should not validate", async () => {
 
-        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, null, Math.round(Date.now() / 1000) - 7200);
+        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, undefined, Math.round(Date.now() / 1000) - 7200);
+        // let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, null, Math.round(Date.now() / 1000) - 7200);
 
-        let err;
+        let err = "";
 
         try {
             await linkAttest.verify(attestorKeys);
         } catch (e){
-            err = e;
+            if (e instanceof Error) err = e.message
         }
 
-        expect(err.message).toBe("Linked attestation has expired");
+        expect(err).toBe("Linked attestation has expired");
     });
 
     test("Not yet valid attestation should not validate", async () => {
 
-        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, null, Math.round(Date.now() / 1000) + 3600);
+        let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, undefined, Math.round(Date.now() / 1000) + 3600);
+        // let linkAttest = await createAttestation(NFT_ADDRESS, LINKED_ADDRESS, 3600, null, Math.round(Date.now() / 1000) + 3600);
 
-        let err;
+        let err = "";
 
         try {
             await linkAttest.verify(attestorKeys);
         } catch (e){
-            err = e;
+            if (e instanceof Error) err = e.message
         }
 
-        expect(err.message).toBe("Linked attestation is not yet valid");
+        expect(err).toBe("Linked attestation is not yet valid");
     });
 
     test("NFT attestation should be valid", async () => {

@@ -63,7 +63,14 @@ export class IntegrationExample {
         // unless DevCon changed their tokenscript and moved all tickets to the contract
 
         this.signedTokenBlob = tokenObj.ticketBlob;
+        if (!tokenObj.magicLink){
+            throw new Error("MagicLink required");
+        }
         this.magicLink = tokenObj.magicLink;
+
+        if (!tokenObj.email){
+            throw new Error("Email required for Authentication");
+        }
         this.email = tokenObj.email;
         this.signedTokenSecret = tokenObj.ticketSecret;
         this.attestationOrigin = tokenObj.attestationOrigin;

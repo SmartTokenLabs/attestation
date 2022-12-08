@@ -62,8 +62,8 @@ export class Attestation {
         me.signingAlgorithm = decodedAttestationObj.signature.algorithm.toString();
 
         if (decodedAttestationObj.validity){
-            me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime.getTime();
-            me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime.getTime();
+            me.notValidBefore = decodedAttestationObj.validity.notBefore.generalizedTime?.getTime();
+            me.notValidAfter = decodedAttestationObj.validity.notAfter.generalizedTime?.getTime();
 
             // TODO validate time when it will be updated in Java code
             if (
@@ -92,7 +92,7 @@ export class Attestation {
 
         let issuerSet = decodedAttestationObj.issuer.rdnSequence;
         me.issuer = '';
-        if (issuerSet.length) {
+        if (issuerSet?.length) {
             me.issuer = this.parseNames(issuerSet[0]);
         }
 
@@ -246,7 +246,8 @@ export class Attestation {
 
     public getPrehash(): Uint8Array {
         if (!this.checkValidity()) {
-            return null;
+            // return null;
+            throw new Error("Attestation invalid");
         }
         // = 0x10+0x02 where 0x02 means x509 v3 (v1 has version 0) and 0x10 is Attestation v 0
         // new DERTaggedObject(true, 0, this.version);
@@ -278,18 +279,22 @@ export class Attestation {
             res += this.smartcontracts;
         }
 
-        // if (this.commitment && this.commitment.length){
-        //     let extensions: string = Asn1Der.encode('OBJECT_ID', Attestation.OID_OCTETSTRING)
-        //         + Asn1Der.encode('BOOLEAN', 1)
-        //         + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
-        //     // Double Sequence is needed to be compatible with X509V3
-        //     res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensions)),3);
-        // }
+        let extensionEncoded:string = "";
+
+        if (this.commitment && this.commitment.length){
+            extensionEncoded = Asn1Der.encode('OBJECT_ID', Attestation.OID_OCTETSTRING)
+                + Asn1Der.encode('BOOLEAN', 1)
+                + Asn1Der.encode('OCTET_STRING', uint8tohex(this.commitment));
+            // Double Sequence is needed to be compatible with X509V3
+            // res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensions)),3);
+        }
 
 
         // The validity check ensure that only one of "extensions" and "dataObject" is set
-        if (this.extensions != null) {
-            res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', this.extensions)),3);
+        // if (this.extensions != null) {
+        // TODO fix. hardcoded for Commitment in Email Attestation
+        if (extensionEncoded) {
+            res += Asn1Der.encode('TAG',Asn1Der.encode('SEQUENCE_30', Asn1Der.encode('SEQUENCE_30', extensionEncoded)),3);
         }
 
         if (this.dataObject != null) {

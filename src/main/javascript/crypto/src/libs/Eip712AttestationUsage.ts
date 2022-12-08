@@ -39,10 +39,12 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         expirationTime: string,
     }
 
-    constructor(userKey: KeyPair = null, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT) {
+    constructor(userKey: KeyPair|undefined = undefined, maxTokenValidityInMs:number = Timestamp.DEFAULT_TOKEN_TIME_LIMIT) {
         super();
         this.maxTokenValidityInMs = maxTokenValidityInMs;
-        this.userKey = userKey;
+        if (userKey){
+            this.userKey = userKey;
+        }
     }
 
     // TODO make signingKey universal
@@ -68,12 +70,12 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
         this.constructorCheck();
     }
 
-    fillJsonData(json: string, attestorKey: KeyPair = null){
+    fillJsonData(json: string, attestorKey: KeyPair|undefined = undefined){
         if (!json) {
             throw new Error('Empty json');
         }
 
-        if (attestorKey !== null) {
+        if (attestorKey) {
             this.attestorKey = attestorKey;
         }
 
@@ -184,6 +186,7 @@ export class Eip712AttestationUsage extends Eip712Token implements JsonEncodable
             return false;
         };
 
+        // console.log("____", this.data.timestamp, this.data.expirationTime);
         let time: Timestamp = new Timestamp(this.data.timestamp);
         time.setValidity(this.maxTokenValidityInMs);
         if (!time.validateAgainstExpiration(Timestamp.stringTimestampToLong(this.data.expirationTime))) {

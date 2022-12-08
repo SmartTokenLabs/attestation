@@ -46,8 +46,12 @@ export class KeyStore {
 
 			return {attestHoldingKey, holdingPubKey};
 		} catch (e){
-			console.log("Failed to create attestor keypair: " + e.message);
-			throw e;
+			let err = "Create key error.";
+			if (e instanceof Error){
+				err = e.message;
+			}
+			console.log("Failed to create attestor keypair: " + err);
+			throw err;
 		}
 	}
 
@@ -74,8 +78,12 @@ export class KeyStore {
 				});
 
 			} catch (e) {
+				let err = "IndexedDB interaction error.";
+				if (e instanceof Error){
+					err = e.message;
+				}
 				console.log(e);
-				reject(e.message);
+				reject(err);
 			}
 		});
 	}
@@ -103,7 +111,11 @@ export class KeyStore {
 			}
 
 		} catch (e){
-			console.log("Failed to store key" + e.message);
+			let err = "IndexedDB interaction error.";
+			if (e instanceof Error){
+				err = e.message;
+			}
+			console.log("Failed to store key: " + err);
 		}
 	}
 

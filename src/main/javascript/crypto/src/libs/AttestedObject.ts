@@ -199,7 +199,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         }
     }
 
-    public checkValidity(ethAddress:string = null): boolean {
+    public checkValidity(ethAddress:string = ""): boolean {
 
         // CHECK: that it is an identifier attestation otherwise not all the checks of validity needed gets carried out
         try {
@@ -227,7 +227,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
             return false;
         }
 
-		if (ethAddress === null)
+		if (!ethAddress)
 			return true;
 
         try {

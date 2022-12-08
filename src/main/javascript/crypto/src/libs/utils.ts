@@ -171,12 +171,12 @@ export function uint8toString(uint8: Uint8Array): string {
 }
 
 export function uint8arrayToBase64( bytes: Uint8Array ): string {
-    let binary = uint8toString(bytes);
-
+    
     if (typeof window === 'undefined' || !window.btoa) {
-        let buff = new Buffer(bytes);
+        let buff = Buffer.from(bytes);
         return buff.toString('base64');
     } else {
+        let binary = uint8toString(bytes);
         return window.btoa( binary );
     }
 

@@ -79,7 +79,11 @@ export class Ticket extends AttestableObject implements Attestable {
             // signature = KeyPair.publicFromSubjectPublicKeyInfo( keys[me.devconId] ).signRawBytesWithEthereum(hexStringToArray(asn1Tic));
             signature = me.key.signRawBytesWithEthereum(hexStringToArray(asn1Tic));
         } catch (e) {
-            throw new Error(e);
+            let message = "";
+            if (e instanceof Error) {
+                message = e.message;
+            }
+            throw new Error(message);
         }
 
         me.createWithCommitment(devconId, ticketId, ticketClass, me.commitment, signature, keys);
@@ -189,14 +193,19 @@ export class Ticket extends AttestableObject implements Attestable {
 		this.setKeys(keyArray);
 
         let idAsNumber = signedDevconTicket.ticket.ticketIdNumber;
-        let ticketId:string = idAsNumber ? idAsNumber.toString() : signedDevconTicket.ticket.ticketIdString;
+        // let ticketId:string = (idAsNumber ? idAsNumber.toString() : signedDevconTicket.ticket.ticketIdString) ?? "";
+        let ticketId:string = idAsNumber ? idAsNumber.toString() : (signedDevconTicket.ticket.ticketIdString ?? "");
         let ticketClassInt:number = signedDevconTicket.ticket.ticketClass;
 
         let commitment:Uint8Array;
         if (signedDevconTicket.ticket.commitment) {
             commitment = signedDevconTicket.ticket.commitment;
         } else {
+            if (!signedDevconTicket.commitment) {
+                throw new Error("Commitment not defined.")
+            }
             commitment = signedDevconTicket.commitment;
+            // commitment = signedDevconTicket.commitment ?? new Uint8Array();
             this.isLegasy = true;
         }
          

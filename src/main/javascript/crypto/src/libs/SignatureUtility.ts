@@ -108,7 +108,7 @@ export class SignatureUtility {
         return pubKey;
     }
 
-    static async signEIP712WithBrowserWallet(webDomain: string, userDataValues: {[index: string]:string|number}, userDataTypes: Array<{name: string,type: string}>, primaryName: string, userKey: KeyPair = null): Promise<string> {
+    static async signEIP712WithBrowserWallet(webDomain: string, userDataValues: {[index: string]:string|number}, userDataTypes: Array<{name: string,type: string}>, primaryName: string, userKey: KeyPair): Promise<string> {
         // How its encoded at metamask ...
         // All properties on a domain are optional
         // const domain = {
