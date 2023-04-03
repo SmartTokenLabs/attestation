@@ -13,14 +13,14 @@ let testsDisplayDebugLevel: number;
 
 // process.env.DISPLAY_DEBUG_LEVEL used to set LOG level for NODE.JS
 // window.DISPLAY_DEBUG_LEVEL used to set LOG level for browser
-if (process && process.env && process.env.DISPLAY_DEBUG_LEVEL) {
+if (typeof process !== "undefined" && process.env && process.env.DISPLAY_DEBUG_LEVEL) {
     displayDebugLevel = parseInt(process.env.DISPLAY_DEBUG_LEVEL);
 } else if (typeof window !== "undefined" && window.DISPLAY_DEBUG_LEVEL) {
     displayDebugLevel = parseInt(window.DISPLAY_DEBUG_LEVEL);
 } 
 
 // process.env.DISPLAY_DEBUG_LEVEL_TESTS used to set LOG level for NODE.JS jest tests
-if (process && process.env && process.env.DISPLAY_DEBUG_LEVEL_TESTS) {
+if (typeof process !== "undefined" && process.env && process.env.DISPLAY_DEBUG_LEVEL_TESTS) {
     testsDisplayDebugLevel = parseInt(process.env.DISPLAY_DEBUG_LEVEL_TESTS);
 } 
 
