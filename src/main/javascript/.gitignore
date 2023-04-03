@@ -2,4 +2,3 @@
 **/node_modules/*
 crypto/node_modules
 *.lock
-package-lock.json
