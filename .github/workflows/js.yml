@@ -34,6 +34,7 @@ jobs:
       - uses: actions/delete-package-versions@v3
         with:
           package-name: "attestation"
+          min-versions-to-keep: 3
       - uses: actions/download-artifact@v3
         with:
           name: js-build
@@ -43,10 +44,11 @@ jobs:
         run: |
           cd src/main/javascript/crypto/
           SHORT_SHA="${GITHUB_SHA:0:7}"
-          sed -ri "s/\"version\"\s*:\s*\"(.*)\"/\"version\": \"\1-${SHORT_SHA}\"/" package.json
+          SNAPSHOT_VERSION="SNAPSHOT-staging.${SHORT_SHA}"
+          sed -ri "s/\"version\"\s*:\s*\"(.*)\"/\"version\": \"\1-${SNAPSHOT_VERSION}\"/" package.json
           cat package.json
           npm i
-          npm publish
+          npm publish --tag SNAPSHOT-staging --access restricted
           version="$(node -e 'console.log(require("./package.json").version)')"
           echo "::set-output name=version::${version}"
         env:

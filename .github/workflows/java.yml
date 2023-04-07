@@ -48,6 +48,7 @@ jobs:
       - uses: actions/delete-package-versions@v3
         with:
           package-name: "org.tokenscript.attestation"
+          min-versions-to-keep: 3
       - id: publish
         name: Publish to Github Package
         run: |
