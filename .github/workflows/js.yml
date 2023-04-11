@@ -50,7 +50,7 @@ jobs:
           npm i
           npm publish --tag SNAPSHOT-staging --access restricted
           version="$(node -e 'console.log(require("./package.json").version)')"
-          echo "::set-output name=version::${version}"
+          echo "version=${version}" >>$GITHUB_OUTPUT
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
