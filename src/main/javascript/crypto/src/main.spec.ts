@@ -833,3 +833,8 @@ describe("Safe Connect", () => {
         await expect(await readAttestation.verify(attestorKeys)).not.toThrow;
     });
 });
+
+describe("EAS Ticket Attestation", () => {
+
+
+});

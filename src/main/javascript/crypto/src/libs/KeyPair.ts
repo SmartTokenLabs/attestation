@@ -579,7 +579,7 @@ export class KeyPair {
             if (typeof keys[i] === "string") {
 				const keyStringArray = (<string>keys[i]).split("|")
 
-				const keyPairArr = [];
+				const keyPairArr: KeyPair[] = [];
 
 				for (const keyStr of keyStringArray){
 					keyPairArr.push(KeyPair.publicFromBase64orPEM(keyStr));

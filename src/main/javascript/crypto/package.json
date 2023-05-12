@@ -31,6 +31,7 @@
     "@types/jest": "^27.5.2",
     "@types/mocha": "^8.2.3",
     "@types/node": "^18.11.9",
+    "@types/pako": "^2.0.0",
     "@types/pvutils": "^1.0.1",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
@@ -52,11 +53,14 @@
     "crypto": false
   },
   "dependencies": {
+    "@ethereum-attestation-service/eas-sdk": "^0.28.2",
     "@peculiar/asn1-schema": "^2.3.3",
     "elliptic": "^6.5.3",
     "ethers": "^5.7.2",
+    "js-base64": "^3.7.5",
     "js-sha3": "^0.8.0",
     "jsonwebtoken": "^9.0.0",
+    "pako": "^2.1.0",
     "patch-package": "^6.5.0",
     "secure-random": "^1.1.2",
     "string.prototype.matchall": "^4.0.8",
