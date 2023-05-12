@@ -305,7 +305,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		this.signerAddress = signerAddress;
 	}
 
-	loadFromEncoded(base64: string, schemaInfo: StaticSchemaInformation, commitmentSecret?: string){
+	loadFromEncoded(base64: string, schemaInfo?: StaticSchemaInformation, commitmentSecret?: string){
 		const decoded = decodeBase64ZippedBase64(base64, schemaInfo);
 
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, decoded.signer, commitmentSecret)

@@ -268,9 +268,11 @@ export function uncompactOffchainAttestationPackage(
 					},
 				],
 			},
-			r: compacted[3],
-			s: compacted[4],
-			v: compacted[5],
+			signature: {
+				r: compacted[3],
+				s: compacted[4],
+				v: compacted[5],
+			},
 			uid: compacted[7],
 			message: {
 				schema: compacted[8],
