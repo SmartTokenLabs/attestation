@@ -15,6 +15,7 @@ import {Attestable} from "../libs/Attestable";
 import {AttestableObject} from "../libs/AttestableObject";
 import {SignerOrProvider} from "@ethereum-attestation-service/eas-sdk/dist/transaction";
 import {decodeBase64ZippedBase64, StaticSchemaInformation, zipAndEncodeToBase64} from "./AttestationUrl";
+import {KeyPair, keysArray} from "../libs/KeyPair";
 
 export enum AbiFieldTypes {
 	bool = 'bool',
@@ -40,6 +41,13 @@ export interface TicketSchema {
 	fields: SchemaField[]
 }
 
+interface EasTicketCreationOptions {
+	recipient?: string,
+	schema?: string,
+	refUID?: string,
+	validity?: {from: number, to: number}
+}
+
 export class  EasAsnEmbeddedSchema {
 	@AsnProp({ type: AsnPropTypes.OctetString })
 	public easAttestation: Uint8Array
@@ -51,8 +59,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private signedAttestation: SignedOffchainAttestation;
 	private signerAddress: string;
+	private signerPublicKey: string;
 	private decodedData?: {[fieldName: string]: any};
 	private commitmentSecret?: bigint;
+	private conferenceKeys?: KeyPair[];
 	private crypto = new AttestationCrypto();
 
 	constructor(
@@ -62,7 +72,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			version: string
 			chainId: number
 		},
-		private signer: SignerOrProvider
+		private signer: SignerOrProvider,
+		private issuerKeys?: keysArray
 	) {
 		super();
 	}
@@ -81,11 +92,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	/**
 	 * Issue a new offchain attestation for the provided ID
 	 * @param data
-	 * @param validity
-	 * @param commitmentValue The email address or other value to be used for the perdersen commitment
+	 * @param options
 	 * @param commitmentType
 	 */
-	async createEasAttestation(data: {[key: string]: string|number}, validity?: {from: number, to: number}, commitmentType = 'mail'){
+	async createEasAttestation(data: {[key: string]: string|number}, options: EasTicketCreationOptions, commitmentType = 'mail'){
 
 		if (!("_isSigner" in this.signer))
 			throw new Error("Please provide a valid signer for this function.");
@@ -124,16 +134,16 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const encodedData = schemaEncoder.encodeData(fieldData);
 
 		const newAttestation = await offchain.signOffchainAttestation({
-			recipient: '0x0000000000000000000000000000000000000000',
+			recipient: options?.recipient ?? '0x0000000000000000000000000000000000000000',
 			// Unix timestamp of when attestation expires. (0 for no expiration)
-			expirationTime: validity?.to ?? 0,
+			expirationTime: options?.validity?.to ?? 0,
 			// Unix timestamp of current time
-			time: validity?.from ?? Math.round(Date.now() / 1000),
+			time: options?.validity?.from ?? Math.round(Date.now() / 1000),
 			nonce: 0,
 			/*schema: "0x4677bc98bd107f75d03d13cf41e158e38f1b826502dd31f87bf384c1a888cbdc",*/
-			schema:   "0x0000000000000000000000000000000000000000000000000000000000000000",
+			schema:  options?.schema ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
 			revocable: true,
-			refUID: "0x0000000000000000000000000000000000000000000000000000000000000000",
+			refUID: options?.refUID ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
 			data: encodedData,
 		}, this.signer as unknown as TypedDataSigner);
 
@@ -298,17 +308,18 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		await tx.wait();
 	}
 
-	loadEasAttestation(attestation: SignedOffchainAttestation, signerAddress: string, commitmentSecret?: string){
+	loadEasAttestation(attestation: SignedOffchainAttestation, keys?: keysArray, commitmentSecret?: string){
 		this.decodedData = undefined;
 		this.commitmentSecret = commitmentSecret ? BigInt(commitmentSecret) : undefined;
 		this.signedAttestation = attestation;
-		this.signerAddress = signerAddress;
+
+		this.processKeysParam(keys);
 	}
 
-	loadFromEncoded(base64: string, schemaInfo?: StaticSchemaInformation, commitmentSecret?: string){
+	loadFromEncoded(base64: string, schemaInfo?: StaticSchemaInformation, keys?: keysArray, commitmentSecret?: string){
 		const decoded = decodeBase64ZippedBase64(base64, schemaInfo);
 
-		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, decoded.signer, commitmentSecret)
+		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
 	}
 
 	getAsnEncoded(){
@@ -327,7 +338,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return AsnSerializer.serialize(asnEmbedded);
 	}
 
-	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array){
+	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: keysArray){
 
 		this.decodedData = undefined;
 		this.commitmentSecret = undefined;
@@ -354,17 +365,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		const splitSignature = ethers.utils.splitSignature(new Uint8Array(asnEmbedded.signatureValue));
 
-		// create hash from decoded data and recover signature to simulate embedding attestation in ASN.1
-		const hash = ethers.utils._TypedDataEncoder.hash(offchain.getDomainTypedData(), {Attest: ATTESTATION_TYPE}, mappedDecodedValues);
-
-		// console.log("Data hash: " + hash);
-
-		const recAddr = ethers.utils.recoverAddress(hash, splitSignature);
-
-		// console.log("Recovered address: " + recAddr);
-
-		this.signerAddress = recAddr;
-
 		this.signedAttestation = {
 			domain: offchain.getDomainTypedData(),
 			message: mappedDecodedValues as OffchainAttestationParams,
@@ -377,6 +377,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			},
 			uid: this.getEasUid(mappedDecodedValues as OffchainAttestationParams),
 		};
+
+		this.processKeysParam(keys);
 	}
 
 	checkValidity(): boolean {
@@ -392,19 +394,60 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return true;
 	}
 
-	verify(): boolean {
+	private processKeysParam(keys?: keysArray){
+
+		console.log(this.schema);
+
+		let conferenceId = this.getAttestationField("devconId")?.value;
+
+		if (!keys){
+			if (!this.issuerKeys){
+				throw new Error("No signing keys are defined");
+			}
+			keys = this.issuerKeys;
+		}
+
+		if (conferenceId && !keys[conferenceId]){
+			if (!keys[""]){
+				throw new Error("No key set for conference ID " + conferenceId);
+			}
+			conferenceId = "";
+		}
+
+		const keyArray = keys[conferenceId];
+
+		if (Array.isArray(keyArray)){
+			this.conferenceKeys = keyArray;
+		} else {
+			this.conferenceKeys = [keyArray];
+		}
+
+		this.recoverSignerInfo();
+	}
+
+	private recoverSignerInfo(){
 
 		const offchain = new Offchain(this.EASconfig);
 
-		const valid = offchain.verifyOffchainAttestationSignature(this.signerAddress, this.signedAttestation);
+		const hash = ethers.utils._TypedDataEncoder.hash(offchain.getDomainTypedData(), {Attest: ATTESTATION_TYPE}, this.signedAttestation.message);
 
-		if (!valid) {
-			const msg = "Attestation signature is invalid :-(";
-			//alert(msg);
-			throw new Error(msg);
+		this.signerPublicKey = ethers.utils.recoverPublicKey(hash, this.signedAttestation.signature);
+		this.signerAddress = ethers.utils.recoverAddress(hash, this.signedAttestation.signature)
+
+		console.log("Recovered public key: ",this.signerPublicKey);
+	}
+
+	verify(): boolean {
+
+		if (!this.conferenceKeys){
+			throw new Error("Issuer keys are not defined");
 		}
 
-		// TODO: validate against sender public keys
+		for (const key of this.conferenceKeys){
+
+			if (this.signerPublicKey.substring(2) === key.getPublicKeyAsHexStr())
+				return true;
+		}
 
 		return true;
 	}
@@ -420,8 +463,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	protected commitment: Uint8Array;
 	protected encoded: string;
 
-	fromBytes(bytes:  ArrayBuffer|Uint8Array){
-		this.loadAsnEncoded(bytes);
+	fromBytes(bytes:  ArrayBuffer|Uint8Array, keys: keysArray){
+		this.loadAsnEncoded(bytes, keys);
 
 		// TODO: Sender public keys
 	}

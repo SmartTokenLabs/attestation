@@ -1,6 +1,6 @@
 import {SignedIdentifierAttestation} from "../libs/SignedIdentifierAttestation";
 import {base64ToUint8array, hexStringToBase64} from "../libs/utils";
-import {KeyPair} from "../libs/KeyPair";
+import {KeyPair, keysArray} from "../libs/KeyPair";
 import {EasTicketAttestation, TicketSchema} from "./EasTicketAttestation";
 import {AttestedObject} from "../libs/AttestedObject";
 import {ethers} from "ethers";
@@ -24,12 +24,13 @@ export class EasZkProof {
 		ticketSecret: string,
 		base64IdentifierAttestation: string,
 		identifierSecret: string,
-		attestorPublicKey: string
+		attestorPublicKey: string,
+		base64senderPublicKeys: keysArray
 	){
 
 		const idAttest = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64IdentifierAttestation), KeyPair.publicFromBase64orPEM(attestorPublicKey));
 		const ticketAttest = new EasTicketAttestation(this.schema, this.EASconfig, this.provider);
-		ticketAttest.fromBytes(base64ToUint8array(base64TicketAttestation));
+		ticketAttest.fromBytes(base64ToUint8array(base64TicketAttestation), base64senderPublicKeys);
 
 		let redeem: AttestedObject = new AttestedObject();
 		redeem.create(ticketAttest, idAttest, BigInt("0x" + identifierSecret), BigInt(ticketSecret));

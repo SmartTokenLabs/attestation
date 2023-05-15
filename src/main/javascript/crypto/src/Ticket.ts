@@ -138,9 +138,9 @@ export class Ticket extends AttestableObject implements Attestable {
 		const encodingHash = hexStringToArray(ethers.utils.keccak256(bytes));
 
 		const signature = uint8tohex(KeyPair.anySignatureToRawUint8(this.signature));
+        const pubKey = ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature)));
 
 		for (const key of this.issuerKeys){
-			const pubKey = ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature)));
 
 			if (pubKey.substring(2) === key.getPublicKeyAsHexStr())
 				return true;
