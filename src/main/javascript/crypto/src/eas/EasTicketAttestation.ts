@@ -117,8 +117,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 					this.commitmentSecret = this.crypto.makeSecret();
 
 				value = this.createCommitment(value as string, commitmentType, this.commitmentSecret);
-
-				console.log("Commitment value: ", value);
 			}
 
 			return {
@@ -146,8 +144,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			refUID: options?.refUID ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
 			data: encodedData,
 		}, this.signer as unknown as TypedDataSigner);
-
-		console.log("attestation: ", newAttestation);
 
 		const valid = offchain.verifyOffchainAttestationSignature(this.signerAddress, newAttestation)
 
@@ -243,9 +239,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		const commit = this.getAttestationField("commitment").value;
 
-		console.log("calced", calced);
-		console.log("commit", commit);
-
 		if (calced !== commit)
 			throw new Error("Commitment verification failed.");
 	}
@@ -271,8 +264,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const eas = new EAS(this.EASconfig.address, {signerOrProvider: this.signer});
 
 		const revoked = await eas.getRevocationOffchain(this.signerAddress, uid);
-
-		console.log("getRevocationOffchain Revoked: ", revoked);
 
 		if (BigNumber.from(revoked).gt(0)) {
 			const msg = "Attestation has been revoked :-(";
@@ -328,8 +319,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			this.signedAttestation.types.Attest.map((field) => field.type),
 			this.signedAttestation.types.Attest.map((field) => this.signedAttestation.message[field.name])
 		);
-
-		console.log("ABI Encoded bytes: ", abiEncoded);
 
 		const asnEmbedded = new EasAsnEmbeddedSchema();
 		asnEmbedded.easAttestation = hexStringToUint8(abiEncoded);
@@ -396,8 +385,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private processKeysParam(keys?: keysArray){
 
-		console.log(this.schema);
-
 		let conferenceId = this.getAttestationField("devconId")?.value;
 
 		if (!keys){
@@ -433,8 +420,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		this.signerPublicKey = ethers.utils.recoverPublicKey(hash, this.signedAttestation.signature);
 		this.signerAddress = ethers.utils.recoverAddress(hash, this.signedAttestation.signature)
-
-		console.log("Recovered public key: ",this.signerPublicKey);
 	}
 
 	verify(): boolean {
