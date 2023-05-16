@@ -3,7 +3,7 @@ import {SignedIdentifierAttestation} from "./SignedIdentifierAttestation";
 import {hexStringToArray, logger, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
-import {KeyPair, keysArray} from "./KeyPair";
+import {KeyPair, KeysArray} from "./KeyPair";
 import {AsnParser} from "@peculiar/asn1-schema";
 import {UseToken} from "../asn1/shemas/UseToken";
 import {UsageProofOfExponent} from "./UsageProofOfExponent";
@@ -132,7 +132,7 @@ export class AttestedObject implements ASNEncodable, Verifiable {
         return true;
     }
 
-    static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKeys: keysArray): AttestedObject{
+    static fromBytes<D extends UseToken, T extends AttestableObject>(asn1: Uint8Array, decoder: new () => D, attestorKey: KeyPair, attestable: new () => T, issuerKeys: KeysArray): AttestedObject{
 
         let attested: D = AsnParser.parse(asn1, decoder);
 

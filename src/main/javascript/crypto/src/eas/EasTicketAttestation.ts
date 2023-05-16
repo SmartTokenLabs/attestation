@@ -15,7 +15,7 @@ import {Attestable} from "../libs/Attestable";
 import {AttestableObject} from "../libs/AttestableObject";
 import {SignerOrProvider} from "@ethereum-attestation-service/eas-sdk/dist/transaction";
 import {decodeBase64ZippedBase64, StaticSchemaInformation, zipAndEncodeToBase64} from "./AttestationUrl";
-import {KeyPair, keysArray} from "../libs/KeyPair";
+import {KeyPair, KeysArray} from "../libs/KeyPair";
 
 export enum AbiFieldTypes {
 	bool = 'bool',
@@ -41,12 +41,14 @@ export interface TicketSchema {
 	fields: SchemaField[]
 }
 
-interface EasTicketCreationOptions {
+export interface EasTicketCreationOptions {
 	recipient?: string,
 	schema?: string,
 	refUID?: string,
 	validity?: {from: number, to: number}
 }
+
+export type EASSignerOrProvider = SignerOrProvider;
 
 export class  EasAsnEmbeddedSchema {
 	@AsnProp({ type: AsnPropTypes.OctetString })
@@ -72,8 +74,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			version: string
 			chainId: number
 		},
-		private signer: SignerOrProvider,
-		private issuerKeys?: keysArray
+		private signer: EASSignerOrProvider,
+		private issuerKeys?: KeysArray
 	) {
 		super();
 	}
@@ -299,7 +301,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		await tx.wait();
 	}
 
-	loadEasAttestation(attestation: SignedOffchainAttestation, keys?: keysArray, commitmentSecret?: string){
+	loadEasAttestation(attestation: SignedOffchainAttestation, keys?: KeysArray, commitmentSecret?: string){
 		this.decodedData = undefined;
 		this.commitmentSecret = commitmentSecret ? BigInt(commitmentSecret) : undefined;
 		this.signedAttestation = attestation;
@@ -307,7 +309,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		this.processKeysParam(keys);
 	}
 
-	loadFromEncoded(base64: string, schemaInfo?: StaticSchemaInformation, keys?: keysArray, commitmentSecret?: string){
+	loadFromEncoded(base64: string, schemaInfo?: StaticSchemaInformation, keys?: KeysArray, commitmentSecret?: string){
 		const decoded = decodeBase64ZippedBase64(base64, schemaInfo);
 
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
@@ -327,7 +329,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return AsnSerializer.serialize(asnEmbedded);
 	}
 
-	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: keysArray){
+	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: KeysArray){
 
 		this.decodedData = undefined;
 		this.commitmentSecret = undefined;
@@ -383,7 +385,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return true;
 	}
 
-	private processKeysParam(keys?: keysArray){
+	private processKeysParam(keys?: KeysArray){
 
 		let conferenceId = this.getAttestationField("devconId")?.value;
 
@@ -448,7 +450,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	protected commitment: Uint8Array;
 	protected encoded: string;
 
-	fromBytes(bytes:  ArrayBuffer|Uint8Array, keys: keysArray){
+	fromBytes(bytes:  ArrayBuffer|Uint8Array, keys: KeysArray){
 		this.loadAsnEncoded(bytes, keys);
 
 		// TODO: Sender public keys

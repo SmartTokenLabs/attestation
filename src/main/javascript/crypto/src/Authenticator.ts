@@ -1,5 +1,5 @@
 import {Ticket} from "./Ticket";
-import {KeyPair, keysArray} from "./libs/KeyPair";
+import {KeyPair, KeysArray} from "./libs/KeyPair";
 import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString, logger, hexStringToBase64Url,
 hexStringToBase64} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
@@ -83,7 +83,7 @@ export class Authenticator {
             throw new Error("Ticket is empty");
         }
 
-        ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
+        ticket = Ticket.fromBase64(base64ticket, <KeysArray>base64senderPublicKeys);
 
         if (!ticket.checkValidity()) {
             logger(DEBUGLEVEL.LOW,"Could not validate ticket");
@@ -487,7 +487,7 @@ export class Authenticator {
 
     
     static validateTicket(ticketBase64: string, confernceId: string,  publicKeyPEM: string): TicketValidate{
-        let keys: keysArray = {};
+        let keys: KeysArray = {};
         
         try {
             keys[confernceId] = KeyPair.parseKeyArrayStrings({[confernceId]: publicKeyPEM})[confernceId];
