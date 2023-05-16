@@ -209,7 +209,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			let index = 0
 
 			for (const value of this.schema.fields){
-				this.decodedData[value.name] = dataArr[index].value;
+				this.decodedData[value.name] = dataArr[index].value.value;
 				index++;
 			}
 
@@ -239,7 +239,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		const calced = this.createCommitment(commitValue, commitmentType, this.commitmentSecret);
 
-		const commit = this.getAttestationField("commitment").value;
+		const commit = this.getAttestationField("commitment");
 
 		if (calced !== commit)
 			throw new Error("Commitment verification failed.");
@@ -387,7 +387,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private processKeysParam(keys?: KeysArray){
 
-		let conferenceId = this.getAttestationField("devconId")?.value;
+		let conferenceId = this.getAttestationField("devconId");
 
 		if (!keys){
 			if (!this.issuerKeys){
@@ -436,11 +436,11 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 				return true;
 		}
 
-		return true;
+		throw new Error("Ticket signature is invalid");
 	}
 
 	getCommitment(): Uint8Array {
-		return hexStringToUint8(this.getAttestationField("commitment").value);
+		return hexStringToUint8(this.getAttestationField("commitment"));
 	}
 
 	getDerEncoding(): string {
