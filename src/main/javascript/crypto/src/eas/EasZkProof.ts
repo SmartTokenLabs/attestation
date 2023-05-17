@@ -1,10 +1,10 @@
 import {SignedIdentifierAttestation} from "../libs/SignedIdentifierAttestation";
-import {base64ToUint8array, hexStringToBase64} from "../libs/utils";
-import {KeyPair, KeysArray} from "../libs/KeyPair";
-import {EasTicketAttestation, TicketSchema} from "./EasTicketAttestation";
+import {base64ToUint8array, hexStringToBase64, logger} from "../libs/utils";
+import {KeyPair, KeysArray, KeysConfig} from "../libs/KeyPair";
+import {EASSignerOrProvider, EasTicketAttestation, TicketSchema} from "./EasTicketAttestation";
 import {AttestedObject} from "../libs/AttestedObject";
-import {ethers} from "ethers";
 import {UseToken} from "../asn1/shemas/UseToken";
+import {DEBUGLEVEL} from "../config";
 
 export class EasZkProof {
 
@@ -14,26 +14,32 @@ export class EasZkProof {
 					version: string
 					chainId: number
 				},
-				private provider: ethers.providers.Web3Provider
+				private provider: EASSignerOrProvider
 	) {
 
 	}
 
-	public create(
+	public getUseTicket(
+		ticketSecret: bigint,
+		identifierSecret: bigint,
 		base64TicketAttestation: string,
-		ticketSecret: string,
 		base64IdentifierAttestation: string,
-		identifierSecret: string,
 		attestorPublicKey: string,
-		base64senderPublicKeys: KeysArray
+		base64senderPublicKeys: KeysConfig|KeysArray
 	){
+		try {
+			base64senderPublicKeys = KeyPair.parseKeyArrayStrings(base64senderPublicKeys);
+		} catch(e){
+			logger(DEBUGLEVEL.LOW, e);
+			throw new Error("Issuer key error");
+		}
 
 		const idAttest = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64IdentifierAttestation), KeyPair.publicFromBase64orPEM(attestorPublicKey));
 		const ticketAttest = new EasTicketAttestation(this.schema, this.EASconfig, this.provider);
-		ticketAttest.fromBytes(base64ToUint8array(base64TicketAttestation), base64senderPublicKeys);
+		ticketAttest.fromBytes(base64ToUint8array(base64TicketAttestation), <KeysArray>base64senderPublicKeys);
 
 		let redeem: AttestedObject = new AttestedObject();
-		redeem.create(ticketAttest, idAttest, BigInt("0x" + identifierSecret), BigInt(ticketSecret));
+		redeem.create(ticketAttest, idAttest, identifierSecret, ticketSecret);
 
 		let unSigned = redeem.getDerEncoding();
 

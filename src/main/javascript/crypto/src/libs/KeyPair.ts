@@ -27,6 +27,8 @@ let EC = require("elliptic");
 
 export interface KeysArray {[index: string]: KeyPair[]|KeyPair}
 
+export interface KeysConfig {[key: string]: KeyPair|KeyPair[]|string};
+
 export let subtle:any;
 
 if (typeof crypto === "object" && crypto.subtle){
