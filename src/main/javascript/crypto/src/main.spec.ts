@@ -29,14 +29,14 @@ import {PersonalSignature} from "./libs/PersonalSignature";
 const querystring = require('querystring');
 import {Issuer} from "./libs/Issuer";
 import { AttestedObject } from './libs/AttestedObject';
-import { AttestableObject } from './libs/AttestableObject';
 import { UseToken } from './asn1/shemas/UseToken';
 import subtle from "./safe-connect/SubtleCryptoShim";
 import {EthereumAddressAttestation} from "./safe-connect/EthereumAddressAttestation";
 import {EthereumKeyLinkingAttestation} from "./safe-connect/EthereumKeyLinkingAttestation";
 import {NFTOwnershipAttestation} from "./safe-connect/NFTOwnershipAttestation";
 
-import { Console } from 'console';
+// import {EasTicketAttestation} from "./eas/EasTicketAttestation";
+// import {ethers} from "ethers";
 
 const url = require('url');
 
@@ -834,7 +834,84 @@ describe("Safe Connect", () => {
     });
 });
 
-describe("EAS Ticket Attestation", () => {
+/* describe("EAS Ticket Attestation", () => {
 
+    const SEPOLIA_RPC = 'https://rpc.sepolia.org/'
 
-});
+    const EAS_CONFIG = {
+        address: '0xC2679fBD37d54388Ce493F1DB75320D236e1815e',
+        version: '0.26',
+        chainId: 11155111,
+    }
+
+    const EAS_TICKET_SCHEMA = {
+        fields: [
+            { name: 'devconId', type: 'string' },
+            { name: 'ticketIdString', type: 'string' },
+            { name: 'ticketClass', type: 'uint8' },
+            { name: 'commitment', type: 'bytes', isCommitment: true },
+        ],
+    }
+
+    const issuerPrivKey = KeyPair.privateFromPEM('MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBBIIBVTCCAVECAQEEIM/T+SzcXcdtcNIqo6ck0nJTYzKL5ywYBFNSpI7R8AuBoIHjMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAARjMR62qoIK9pHk17MyHHIU42Ix+Vl6Q2gTmIF72vNpinBpyoBkTkV0pnI1jdrLlAjJC0I91DZWQhVhddMCK65c');
+    const provider = new ethers.providers.JsonRpcProvider(SEPOLIA_RPC)
+    const wallet = new ethers.Wallet(issuerPrivKey.getPrivateAsHexString(), provider)
+    const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+    const pubKeyConfig = {"6": issuerPrivKey};
+
+    console.log(issuerPrivKey.getPublicKeyAsHexStr());
+
+    async function createAttestation(){
+        await attestationManager.createEasAttestation({
+            devconId: '6',
+            ticketId: '12345',
+            ticketClass: 2,
+            commitment: email,
+        });
+    }
+
+    test("Create EAS Devcon ticket", async () => {
+        await createAttestation();
+    });
+
+    test("Load from URL encoded and validate", async () => {
+        await createAttestation();
+
+        const encoded = attestationManager.getEncoded();
+
+        attestationManager.loadFromEncoded(encoded, undefined, pubKeyConfig);
+        await attestationManager.validateEasAttestation();
+    });
+
+    test("Load from ASN encoded and validate", async () => {
+        await createAttestation();
+
+        const encoded = attestationManager.getAsnEncoded(true, false);
+
+        attestationManager.loadAsnEncoded(encoded, pubKeyConfig, false);
+        await attestationManager.validateEasAttestation();
+    });
+
+    test("Test wrong conference ID", async () => {
+        await createAttestation();
+
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, {'2': pubKeyConfig['6']});
+    });
+
+    test("Test bad signature", async () => {
+        await createAttestation();
+
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, {'6': KeyPair.fromPublicHex('')});
+    });
+
+    test("Test expired", async () => {
+
+    });
+
+    // TODO: Revocation tests with local EVM network
+
+});*/

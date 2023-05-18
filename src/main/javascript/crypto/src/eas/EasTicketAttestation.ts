@@ -16,6 +16,8 @@ import {AttestableObject} from "../libs/AttestableObject";
 import {SignerOrProvider} from "@ethereum-attestation-service/eas-sdk/dist/transaction";
 import {decodeBase64ZippedBase64, StaticSchemaInformation, zipAndEncodeToBase64} from "./AttestationUrl";
 import {KeyPair, KeysArray} from "../libs/KeyPair";
+import {EIP712DomainTypedData} from "@ethereum-attestation-service/eas-sdk/dist/offchain/typed-data-handler";
+import * as pako from "pako";
 
 export enum AbiFieldTypes {
 	bool = 'bool',
@@ -51,6 +53,8 @@ export interface EasTicketCreationOptions {
 export type EASSignerOrProvider = SignerOrProvider;
 
 export class  EasAsnEmbeddedSchema {
+	@AsnProp({ type: AsnPropTypes.OctetString, optional: true })
+	public domainInfo?: Uint8Array
 	@AsnProp({ type: AsnPropTypes.OctetString })
 	public easAttestation: Uint8Array
 	@AsnProp({ type: AsnPropTypes.BitString })
@@ -97,7 +101,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	 * @param options
 	 * @param commitmentType
 	 */
-	async createEasAttestation(data: {[key: string]: string|number}, options: EasTicketCreationOptions, commitmentType = 'mail'){
+	async createEasAttestation(data: {[key: string]: string|number}, options?: EasTicketCreationOptions, commitmentType = 'mail'){
 
 		if (!("_isSigner" in this.signer))
 			throw new Error("Please provide a valid signer for this function.");
@@ -315,7 +319,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
 	}
 
-	getAsnEncoded(){
+	getAsnEncoded(includeDomainInfo = false, compressed = false){
 
 		const abiEncoded = defaultAbiCoder.encode(
 			this.signedAttestation.types.Attest.map((field) => field.type),
@@ -323,24 +327,60 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		);
 
 		const asnEmbedded = new EasAsnEmbeddedSchema();
+
+		if (includeDomainInfo){
+			const domainEncoded = defaultAbiCoder.encode(
+				['string', "address", "uint256"],
+				[
+					this.signedAttestation.domain.version,
+					this.signedAttestation.domain.verifyingContract,
+					this.signedAttestation.domain.chainId
+				]
+			)
+			asnEmbedded.domainInfo = hexStringToUint8(domainEncoded);
+		}
+
 		asnEmbedded.easAttestation = hexStringToUint8(abiEncoded);
 		asnEmbedded.signatureValue = hexStringToUint8(joinSignature(this.signedAttestation.signature));
 
-		return AsnSerializer.serialize(asnEmbedded);
+		const data =  AsnSerializer.serialize(asnEmbedded);
+
+		if (!compressed)
+			return data;
+
+		return pako.deflate(data, {level: 9});
 	}
 
-	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: KeysArray){
+	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: KeysArray, compressed = false){
 
 		this.decodedData = undefined;
 		this.commitmentSecret = undefined;
 
-		// console.log("Encoded ASN: ", ethers.utils.hexlify(new Uint8Array(bytes)));
+		if (compressed)
+			bytes = pako.inflate(bytes);
 
 		const asnEmbedded = AsnParser.parse(bytes, EasAsnEmbeddedSchema);
 
 		// console.log("Decoded ASN", asnEmbedded);
+		let domain: EIP712DomainTypedData;
 
-		const offchain = new Offchain(this.EASconfig);
+		if (asnEmbedded.domainInfo){
+
+			const domainDecoded = defaultAbiCoder.decode(
+				['string', "address", "uint256"],
+				asnEmbedded.domainInfo
+			);
+
+			domain = {
+				name: "EAS Attestation",
+				version: domainDecoded[0],
+				verifyingContract: domainDecoded[1],
+				chainId: domainDecoded[2]
+			}
+		} else {
+			const offchain = new Offchain(this.EASconfig);
+			domain = offchain.getDomainTypedData();
+		}
 
 		// console.log("ABI Encoded bytes: ", "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
 
@@ -357,7 +397,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const splitSignature = ethers.utils.splitSignature(new Uint8Array(asnEmbedded.signatureValue));
 
 		this.signedAttestation = {
-			domain: offchain.getDomainTypedData(),
+			domain: domain,
 			message: mappedDecodedValues as OffchainAttestationParams,
 			types: {Attest: ATTESTATION_TYPE},
 			primaryType: "Attestation",
@@ -452,8 +492,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	fromBytes(bytes:  ArrayBuffer|Uint8Array, keys: KeysArray){
 		this.loadAsnEncoded(bytes, keys);
-
-		// TODO: Sender public keys
 	}
 
 }
