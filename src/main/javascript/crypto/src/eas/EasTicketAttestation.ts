@@ -53,12 +53,12 @@ export interface EasTicketCreationOptions {
 export type EASSignerOrProvider = SignerOrProvider;
 
 export class  EasAsnEmbeddedSchema {
-	@AsnProp({ type: AsnPropTypes.OctetString, optional: true })
-	public domainInfo?: Uint8Array
 	@AsnProp({ type: AsnPropTypes.OctetString })
 	public easAttestation: Uint8Array
 	@AsnProp({ type: AsnPropTypes.BitString })
 	public signatureValue: Uint8Array;
+	@AsnProp({ type: AsnPropTypes.OctetString, optional: true })
+	public domainInfo?: Uint8Array
 }
 
 export class EasTicketAttestation extends AttestableObject implements Attestable {
@@ -328,6 +328,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		const asnEmbedded = new EasAsnEmbeddedSchema();
 
+		asnEmbedded.easAttestation = hexStringToUint8(abiEncoded);
+		asnEmbedded.signatureValue = hexStringToUint8(joinSignature(this.signedAttestation.signature));
+
 		if (includeDomainInfo){
 			const domainEncoded = defaultAbiCoder.encode(
 				['string', "address", "uint256"],
@@ -339,9 +342,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			)
 			asnEmbedded.domainInfo = hexStringToUint8(domainEncoded);
 		}
-
-		asnEmbedded.easAttestation = hexStringToUint8(abiEncoded);
-		asnEmbedded.signatureValue = hexStringToUint8(joinSignature(this.signedAttestation.signature));
 
 		const data =  AsnSerializer.serialize(asnEmbedded);
 
