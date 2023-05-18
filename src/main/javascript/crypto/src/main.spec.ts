@@ -35,12 +35,8 @@ import {EthereumAddressAttestation} from "./safe-connect/EthereumAddressAttestat
 import {EthereumKeyLinkingAttestation} from "./safe-connect/EthereumKeyLinkingAttestation";
 import {NFTOwnershipAttestation} from "./safe-connect/NFTOwnershipAttestation";
 
-// import {EasTicketAttestation} from "./eas/EasTicketAttestation";
-// import {ethers} from "ethers";
-
-const url = require('url');
-
-let EC = require("elliptic");
+import {EasTicketAttestation} from "./eas/EasTicketAttestation";
+import {ethers} from "ethers";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -834,7 +830,7 @@ describe("Safe Connect", () => {
     });
 });
 
-/* describe("EAS Ticket Attestation", () => {
+describe("EAS Ticket Attestation", () => {
 
     const SEPOLIA_RPC = 'https://rpc.sepolia.org/'
 
@@ -859,14 +855,15 @@ describe("Safe Connect", () => {
     const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
     const pubKeyConfig = {"6": issuerPrivKey};
 
-    console.log(issuerPrivKey.getPublicKeyAsHexStr());
+    async function createAttestation(validity?: {from: number, to: number}){
 
-    async function createAttestation(){
         await attestationManager.createEasAttestation({
             devconId: '6',
-            ticketId: '12345',
+            ticketIdString: '12345',
             ticketClass: 2,
             commitment: email,
+        }, {
+            validity
         });
     }
 
@@ -890,6 +887,12 @@ describe("Safe Connect", () => {
 
         attestationManager.loadAsnEncoded(encoded, pubKeyConfig, false);
         await attestationManager.validateEasAttestation();
+
+
+        const encodedCompressed = attestationManager.getAsnEncoded(true, true);
+
+        attestationManager.loadAsnEncoded(encodedCompressed, pubKeyConfig, true);
+        await attestationManager.validateEasAttestation();
     });
 
     test("Test wrong conference ID", async () => {
@@ -897,7 +900,7 @@ describe("Safe Connect", () => {
 
         const easData = attestationManager.getEasJson();
 
-        attestationManager.loadEasAttestation(easData.sig, {'2': pubKeyConfig['6']});
+        expect(() => attestationManager.loadEasAttestation(easData.sig, {'2': pubKeyConfig['6']})).toThrowError('No key set for conference ID 6');
     });
 
     test("Test bad signature", async () => {
@@ -905,13 +908,31 @@ describe("Safe Connect", () => {
 
         const easData = attestationManager.getEasJson();
 
-        attestationManager.loadEasAttestation(easData.sig, {'6': KeyPair.fromPublicHex('')});
+        attestationManager.loadEasAttestation(easData.sig, {'6': KeyPair.fromPublicHex('0463311eb6aa820af691e4d7b3321c7214e36231f9597a43681398817bdaf3698a7069ca80644e4574a672358ddacb9408c90b423dd4365642156175d3022bae5d')});
+
+        await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Ticket signature is invalid');
     });
 
     test("Test expired", async () => {
+        await createAttestation({from: 0, to: Math.round(Date.now()/ 1000) - 360})
 
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, pubKeyConfig);
+        await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation has expired.');
+    });
+
+    test("Test not yet valid", async () => {
+        await createAttestation({from: Math.round(Date.now()/ 1000) + 360, to: 0})
+
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, pubKeyConfig);
+        await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation not yet valid.');
     });
 
     // TODO: Revocation tests with local EVM network
 
-});*/
+    // TODO: ZKProof creation & validation
+
+});
