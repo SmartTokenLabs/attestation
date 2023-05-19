@@ -165,10 +165,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return "0x" + uint8tohex(this.crypto.makeCommitment(commitmentValue, this.crypto.getType(commitmentType), commitmentSecret))
 	}
 
-	getUrlEncoded(){
-		return
-	}
-
 	getEasJson(){
 		this.checkAttestationIsLoaded();
 

@@ -8,7 +8,7 @@ import {
     stringToArray,
     uint8arrayToBase64,
     uint8tohex,
-    testsLogger, base64ToUint8array
+    testsLogger, base64ToUint8array, hexStringToBase64
 } from './libs/utils';
 import {readFileSync} from "fs";
 import {KeyPair} from "./libs/KeyPair";
@@ -37,6 +37,9 @@ import {NFTOwnershipAttestation} from "./safe-connect/NFTOwnershipAttestation";
 
 import {EasTicketAttestation} from "./eas/EasTicketAttestation";
 import {ethers} from "ethers";
+import {EasZkProof} from "./eas/EasZkProof";
+import {ATTESTATION_TYPE} from "./libs/interfaces";
+import {AttestationCrypto} from "./libs/AttestationCrypto";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -867,6 +870,14 @@ describe("EAS Ticket Attestation", () => {
         });
     }
 
+    function getIdAttest(email: string, idSecret: bigint){
+        let att:IdentifierAttestation = IdentifierAttestation.fromData(email, ATTESTATION_TYPE.mail, userKey, idSecret);
+        att.setSerialNumber(1);
+        att.setIssuer("CN=attestation.id");
+        expect(att.checkValidity()).toBe(true);
+        return hexStringToBase64(SignedIdentifierAttestation.fromData(att, attestorKey).getDerEncoding());
+    }
+
     test("Create EAS Devcon ticket", async () => {
         await createAttestation();
     });
@@ -933,6 +944,43 @@ describe("EAS Ticket Attestation", () => {
 
     // TODO: Revocation tests with local EVM network
 
-    // TODO: ZKProof creation & validation
+    test("ZKProof create & validate", async () => {
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+
+        // Generate identifier attestation
+        const idSecret = (new AttestationCrypto()).makeSecret()
+        const idBase64 = getIdAttest(email, idSecret);
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig);
+
+        await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress());
+
+    });
+
+    test("ZKProof wrong commitment value", async () => {
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+
+        // Generate identifier attestation
+        const idSecret = (new AttestationCrypto()).makeSecret()
+        const idBase64 = getIdAttest("wrongemail@test.com", idSecret);
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        expect(() => easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig)).toThrowError("The redeem proof did not verify");
+    });
 
 });
