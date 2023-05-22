@@ -36,7 +36,7 @@ export function hexStringToArray(str: string = '') {
     if (str.substr(0,2).toLowerCase() === "0x") {
         str = str.substr(2);
     }
-    let arr = [];
+    let arr: number[] = [];
     let strArr = [...str];
     if (strArr.length % 2) strArr.unshift('0');
     let tempStr = '';
@@ -229,7 +229,7 @@ export function base64ToUint8array( base64str: string ): Uint8Array {
 }
 
 export function stringToArray(str: string) {
-    var arr = [];
+    var arr: number[] = [];
     for(var i=0;i<str.length;i++) {
         arr.push(str.charCodeAt(i));
     }

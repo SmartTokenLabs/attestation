@@ -322,7 +322,7 @@ export class Asn1Der {
     }
 
     BodySequence(derArr: number[]): any {
-        let entries = [];
+        let entries: any[] = [];
         while (derArr.length) {
             entries.push(this.read(derArr));
         }

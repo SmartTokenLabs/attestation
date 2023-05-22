@@ -4,7 +4,6 @@ import {KeyPair} from "../libs/KeyPair";
 import {base64ToUint8array, hexStringToUint8, uint8arrayToBase64} from "../libs/utils";
 import {ethers} from "ethers";
 import {AlgorithmIdentifierASN} from "../asn1/shemas/AuthenticationFramework";
-import exp = require("constants");
 
 export abstract class AbstractLinkedAttestation {
 

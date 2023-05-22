@@ -1,7 +1,6 @@
 import {Ticket} from "./Ticket";
-import {KeyPair, keysArray} from "./libs/KeyPair";
-import {base64ToUint8array, uint8ToBn, uint8tohex, uint8toString, logger, hexStringToBase64Url,
-hexStringToBase64} from "./libs/utils";
+import {KeyPair, KeysArray, KeysConfig} from "./libs/KeyPair";
+import {base64ToUint8array, uint8ToBn, uint8tohex, logger, hexStringToBase64} from "./libs/utils";
 import {SignedIdentifierAttestation} from "./libs/SignedIdentifierAttestation";
 import {AttestedObject} from "./libs/AttestedObject";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
@@ -60,14 +59,13 @@ export class Authenticator {
         return KeyPair.publicFromBase64orPEM(file);
     }
 
-    // TODO: Pass in Ticket schema object
     static async getUseTicket(
         ticketSecret: bigint,
         attestationSecret: bigint,
         base64ticket: string,
         base64attestation: string,
         base64attestationPublicKey: string,
-        base64senderPublicKeys: {[key: string]: KeyPair|KeyPair[]|string}
+        base64senderPublicKeys: KeysConfig|KeysArray
     )
     {
         let ticket: Ticket;
@@ -83,7 +81,7 @@ export class Authenticator {
             throw new Error("Ticket is empty");
         }
 
-        ticket = Ticket.fromBase64(base64ticket, <keysArray>base64senderPublicKeys);
+        ticket = Ticket.fromBase64(base64ticket, <KeysArray>base64senderPublicKeys);
 
         if (!ticket.checkValidity()) {
             logger(DEBUGLEVEL.LOW,"Could not validate ticket");
@@ -126,8 +124,7 @@ export class Authenticator {
         
         try {
             let redeem: AttestedObject = new AttestedObject();
-            redeem.create(ticket, att,
-                BigInt(attestationSecret), BigInt(ticketSecret));
+            redeem.create(ticket, att, attestationSecret, ticketSecret);
 
             let unSigned = redeem.getDerEncoding();
 
@@ -487,7 +484,7 @@ export class Authenticator {
 
     
     static validateTicket(ticketBase64: string, confernceId: string,  publicKeyPEM: string): TicketValidate{
-        let keys: keysArray = {};
+        let keys: KeysArray = {};
         
         try {
             keys[confernceId] = KeyPair.parseKeyArrayStrings({[confernceId]: publicKeyPEM})[confernceId];

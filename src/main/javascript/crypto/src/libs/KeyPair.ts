@@ -25,7 +25,9 @@ import {DEBUGLEVEL} from "../config";
 
 let EC = require("elliptic");
 
-export interface keysArray {[index: string]: KeyPair[]|KeyPair}
+export interface KeysArray {[index: string]: KeyPair[]|KeyPair}
+
+export interface KeysConfig {[key: string]: KeyPair|KeyPair[]|string};
 
 export let subtle:any;
 
@@ -571,7 +573,7 @@ export class KeyPair {
         return output;
     }
 
-    static parseKeyArrayStrings(keys: {[key: string]: KeyPair[]|KeyPair|string}): keysArray {
+    static parseKeyArrayStrings(keys: {[key: string]: KeyPair[]|KeyPair|string}): KeysArray {
 
 		const keyPairs: {[key: string]: KeyPair|KeyPair[]} = {};
 
@@ -579,7 +581,7 @@ export class KeyPair {
             if (typeof keys[i] === "string") {
 				const keyStringArray = (<string>keys[i]).split("|")
 
-				const keyPairArr = [];
+				const keyPairArr: KeyPair[] = [];
 
 				for (const keyStr of keyStringArray){
 					keyPairArr.push(KeyPair.publicFromBase64orPEM(keyStr));
@@ -595,7 +597,7 @@ export class KeyPair {
 			}
         }
 
-        return <keysArray>keyPairs;
+        return <KeysArray>keyPairs;
     }
 
 }

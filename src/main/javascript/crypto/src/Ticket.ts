@@ -1,5 +1,5 @@
 import { AttestationCrypto } from "./libs/AttestationCrypto";
-import { KeyPair, keysArray } from "./libs/KeyPair";
+import { KeyPair, KeysArray } from "./libs/KeyPair";
 import { Asn1Der } from "./libs/DerUtility";
 import { AttestableObject } from "./libs/AttestableObject";
 import {base64ToUint8array, hexStringToArray, hexStringToUint8, uint8tohex} from "./libs/utils";
@@ -16,7 +16,7 @@ export class Ticket extends AttestableObject implements Attestable {
     private magicLinkURLPrefix:string = "https://ticket.devcon.org/";
 
     private signature: string;
-    private keys: keysArray;
+    private keys: KeysArray;
 
 	// Holds multiple keys for validation - allows multiple keys per conference ID
 	private issuerKeys: KeyPair[];
@@ -33,7 +33,7 @@ export class Ticket extends AttestableObject implements Attestable {
         super();
     }
 
-    fromData(devconId: string, ticketId: string, ticketClass:number, keys: keysArray ) {
+    fromData(devconId: string, ticketId: string, ticketClass:number, keys: KeysArray ) {
         this.ticketId = ticketId;
         this.ticketClass = ticketClass;
         this.devconId = devconId;
@@ -55,7 +55,7 @@ export class Ticket extends AttestableObject implements Attestable {
 		}
 	}
 
-    createWithCommitment(devconId: string, ticketId: string, ticketClass: number, commitment: Uint8Array, signature: string, keys: keysArray) {
+    createWithCommitment(devconId: string, ticketId: string, ticketClass: number, commitment: Uint8Array, signature: string, keys: KeysArray) {
         this.fromData(devconId, ticketId, ticketClass, keys);
         this.commitment = commitment;
         this.signature = signature;
@@ -66,7 +66,7 @@ export class Ticket extends AttestableObject implements Attestable {
         }
     }
 
-    static createWithMail(mail: string, devconId:string , ticketId: string, ticketClass: number, keys: keysArray, secret: bigint): Ticket {
+    static createWithMail(mail: string, devconId:string , ticketId: string, ticketClass: number, keys: KeysArray, secret: bigint): Ticket {
         let me = new this();
         me.fromData(devconId, ticketId, ticketClass, keys);
 
@@ -138,9 +138,9 @@ export class Ticket extends AttestableObject implements Attestable {
 		const encodingHash = hexStringToArray(ethers.utils.keccak256(bytes));
 
 		const signature = uint8tohex(KeyPair.anySignatureToRawUint8(this.signature));
+        const pubKey = ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature)));
 
 		for (const key of this.issuerKeys){
-			const pubKey = ethers.utils.recoverPublicKey(encodingHash, ethers.utils.splitSignature(hexStringToUint8(signature)));
 
 			if (pubKey.substring(2) === key.getPublicKeyAsHexStr())
 				return true;
@@ -173,13 +173,13 @@ export class Ticket extends AttestableObject implements Attestable {
         return this.signature;
     }
 
-    static fromBase64(base64str: string, keys: keysArray): Ticket {
+    static fromBase64(base64str: string, keys: KeysArray): Ticket {
         let me = new this();
         me.fromBytes(base64ToUint8array(base64str), keys);
         return me;
     }
 
-    fromBytes(bytes: Uint8Array, keys: keysArray) {
+    fromBytes(bytes: Uint8Array, keys: KeysArray) {
         const signedDevconTicket: SignedDevconTicket = AsnParser.parse(bytes, SignedDevconTicket);
 
         let devconId:string = signedDevconTicket.ticket.devconId;

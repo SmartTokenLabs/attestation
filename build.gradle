@@ -49,7 +49,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
     intTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
     // TODO very obsolete and should be refactored out or updated
-    implementation 'org.web3j:core:[4,5.0.0)'
+    implementation 'org.web3j:core:[4,4.9)'
     implementation 'com.auth0:java-jwt:4.2.1'
     implementation 'org.json:json:20220924' // To ensure obsolete trulioo code can compile
     implementation group: 'com.github.cliftonlabs', name: 'json-simple', version: '[4.0.1, 5)'

@@ -8,7 +8,7 @@ import {
     stringToArray,
     uint8arrayToBase64,
     uint8tohex,
-    testsLogger, base64ToUint8array
+    testsLogger, base64ToUint8array, hexStringToBase64
 } from './libs/utils';
 import {readFileSync} from "fs";
 import {KeyPair} from "./libs/KeyPair";
@@ -29,18 +29,17 @@ import {PersonalSignature} from "./libs/PersonalSignature";
 const querystring = require('querystring');
 import {Issuer} from "./libs/Issuer";
 import { AttestedObject } from './libs/AttestedObject';
-import { AttestableObject } from './libs/AttestableObject';
 import { UseToken } from './asn1/shemas/UseToken';
 import subtle from "./safe-connect/SubtleCryptoShim";
 import {EthereumAddressAttestation} from "./safe-connect/EthereumAddressAttestation";
 import {EthereumKeyLinkingAttestation} from "./safe-connect/EthereumKeyLinkingAttestation";
 import {NFTOwnershipAttestation} from "./safe-connect/NFTOwnershipAttestation";
 
-import { Console } from 'console';
-
-const url = require('url');
-
-let EC = require("elliptic");
+import {EasTicketAttestation} from "./eas/EasTicketAttestation";
+import {ethers} from "ethers";
+import {EasZkProof} from "./eas/EasZkProof";
+import {ATTESTATION_TYPE} from "./libs/interfaces";
+import {AttestationCrypto} from "./libs/AttestationCrypto";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -832,4 +831,156 @@ describe("Safe Connect", () => {
         readAttestation.fromBytes(base64ToUint8array(readAttestationBase64));
         await expect(await readAttestation.verify(attestorKeys)).not.toThrow;
     });
+});
+
+describe("EAS Ticket Attestation", () => {
+
+    const SEPOLIA_RPC = 'https://rpc.sepolia.org/'
+
+    const EAS_CONFIG = {
+        address: '0xC2679fBD37d54388Ce493F1DB75320D236e1815e',
+        version: '0.26',
+        chainId: 11155111,
+    }
+
+    const EAS_TICKET_SCHEMA = {
+        fields: [
+            { name: 'devconId', type: 'string' },
+            { name: 'ticketIdString', type: 'string' },
+            { name: 'ticketClass', type: 'uint8' },
+            { name: 'commitment', type: 'bytes', isCommitment: true },
+        ],
+    }
+
+    const issuerPrivKey = KeyPair.privateFromPEM('MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBBIIBVTCCAVECAQEEIM/T+SzcXcdtcNIqo6ck0nJTYzKL5ywYBFNSpI7R8AuBoIHjMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAARjMR62qoIK9pHk17MyHHIU42Ix+Vl6Q2gTmIF72vNpinBpyoBkTkV0pnI1jdrLlAjJC0I91DZWQhVhddMCK65c');
+    const provider = new ethers.providers.JsonRpcProvider(SEPOLIA_RPC)
+    const wallet = new ethers.Wallet(issuerPrivKey.getPrivateAsHexString(), provider)
+    const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+    const pubKeyConfig = {"6": issuerPrivKey};
+
+    async function createAttestation(validity?: {from: number, to: number}){
+
+        await attestationManager.createEasAttestation({
+            devconId: '6',
+            ticketIdString: '12345',
+            ticketClass: 2,
+            commitment: email,
+        }, {
+            validity
+        });
+    }
+
+    function getIdAttest(email: string, idSecret: bigint){
+        let att:IdentifierAttestation = IdentifierAttestation.fromData(email, ATTESTATION_TYPE.mail, userKey, idSecret);
+        att.setSerialNumber(1);
+        att.setIssuer("CN=attestation.id");
+        expect(att.checkValidity()).toBe(true);
+        return hexStringToBase64(SignedIdentifierAttestation.fromData(att, attestorKey).getDerEncoding());
+    }
+
+    test("Create EAS Devcon ticket", async () => {
+        await createAttestation();
+    });
+
+    test("Load from URL encoded and validate", async () => {
+        await createAttestation();
+
+        const encoded = attestationManager.getEncoded();
+
+        attestationManager.loadFromEncoded(encoded, undefined, pubKeyConfig);
+        await attestationManager.validateEasAttestation();
+    });
+
+    test("Load from ASN encoded and validate", async () => {
+        await createAttestation();
+
+        const encoded = attestationManager.getAsnEncoded(true, false);
+
+        attestationManager.loadAsnEncoded(encoded, pubKeyConfig, false);
+        await attestationManager.validateEasAttestation();
+
+
+        const encodedCompressed = attestationManager.getAsnEncoded(true, true);
+
+        attestationManager.loadAsnEncoded(encodedCompressed, pubKeyConfig, true);
+        await attestationManager.validateEasAttestation();
+    });
+
+    test("Test wrong conference ID", async () => {
+        await createAttestation();
+
+        const easData = attestationManager.getEasJson();
+
+        expect(() => attestationManager.loadEasAttestation(easData.sig, {'2': pubKeyConfig['6']})).toThrowError('No key set for conference ID 6');
+    });
+
+    test("Test bad signature", async () => {
+        await createAttestation();
+
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, {'6': KeyPair.fromPublicHex('0463311eb6aa820af691e4d7b3321c7214e36231f9597a43681398817bdaf3698a7069ca80644e4574a672358ddacb9408c90b423dd4365642156175d3022bae5d')});
+
+        await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Ticket signature is invalid');
+    });
+
+    test("Test expired", async () => {
+        await createAttestation({from: 0, to: Math.round(Date.now()/ 1000) - 360})
+
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, pubKeyConfig);
+        await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation has expired.');
+    });
+
+    test("Test not yet valid", async () => {
+        await createAttestation({from: Math.round(Date.now()/ 1000) + 360, to: 0})
+
+        const easData = attestationManager.getEasJson();
+
+        attestationManager.loadEasAttestation(easData.sig, pubKeyConfig);
+        await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation not yet valid.');
+    });
+
+    // TODO: Revocation tests with local EVM network
+
+    test("ZKProof create & validate", async () => {
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+
+        // Generate identifier attestation
+        const idSecret = (new AttestationCrypto()).makeSecret()
+        const idBase64 = getIdAttest(email, idSecret);
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig);
+
+        await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress());
+
+    });
+
+    test("ZKProof wrong commitment value", async () => {
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+
+        // Generate identifier attestation
+        const idSecret = (new AttestationCrypto()).makeSecret()
+        const idBase64 = getIdAttest("wrongemail@test.com", idSecret);
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        expect(() => easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig)).toThrowError("The redeem proof did not verify");
+    });
+
 });
