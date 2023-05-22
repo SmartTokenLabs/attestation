@@ -269,7 +269,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		if (!uid)
 			uid = this.getEasUid();
 
-		const eas = new EAS(this.EASconfig.address, {signerOrProvider: this.signer});
+		const eas = new EAS(this.signedAttestation.domain.verifyingContract ?? this.EASconfig.address, {signerOrProvider: this.signer});
 
 		const revoked = await eas.getRevocationOffchain(this.signerAddress, uid);
 
@@ -328,7 +328,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
 	}
 
-	getAsnEncoded(includeDomainInfo = false, compressed = false){
+	getAsnEncoded(includeDomainInfo, compressed = false){
 
 		const abiEncoded = defaultAbiCoder.encode(
 			this.signedAttestation.types.Attest.map((field) => field.type),
@@ -465,7 +465,13 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private recoverSignerInfo(){
 
-		const offchain = new Offchain(this.EASconfig);
+		const config = this.signedAttestation?.domain ? {
+			version: this.signedAttestation.domain.version,
+			address: this.signedAttestation.domain.verifyingContract,
+			chainId: this.signedAttestation.domain.chainId
+		} : this.EASconfig;
+
+		const offchain = new Offchain(config);
 
 		const hash = ethers.utils._TypedDataEncoder.hash(offchain.getDomainTypedData(), {Attest: ATTESTATION_TYPE}, this.signedAttestation.message);
 
@@ -493,7 +499,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	}
 
 	getDerEncoding(): string {
-		return uint8tohex(new Uint8Array(this.getAsnEncoded()));
+		return uint8tohex(new Uint8Array(this.getAsnEncoded(true)));
 	}
 
 	protected commitment: Uint8Array;
