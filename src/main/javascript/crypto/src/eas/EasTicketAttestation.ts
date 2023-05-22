@@ -187,7 +187,13 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return Offchain.getOffchainUID(message ?? this.signedAttestation.message)
 	}
 
-	getEncoded(lightweight = false){
+
+	getEncoded(
+		/**
+		 * @deprecated Use ASN.1 encoding to reduce size instead
+		 */
+		lightweight = false
+	){
 		return zipAndEncodeToBase64(this.getEasJson(), lightweight);
 	}
 
@@ -309,7 +315,14 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		this.processKeysParam(keys);
 	}
 
-	loadFromEncoded(base64: string, schemaInfo?: StaticSchemaInformation, keys?: KeysArray, commitmentSecret?: string){
+	loadFromEncoded(
+		base64: string,
+		/**
+		 * @deprecated Use ASN.1 encoding to reduce size instead
+		 */
+		schemaInfo?: StaticSchemaInformation,
+		keys?: KeysArray,
+		commitmentSecret?: string){
 		const decoded = decodeBase64ZippedBase64(base64, schemaInfo);
 
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)

@@ -1,8 +1,8 @@
 
 import * as pako from "pako";
-import * as Base64 from "js-base64";
 import {SignedOffchainAttestation} from "@ethereum-attestation-service/eas-sdk";
 import {ethers} from "ethers";
+import {base64ToUint8array, uint8arrayToBase64} from "../libs/utils";
 
 export interface SignedOffchainAttestationV1
 	extends Omit<SignedOffchainAttestation, "signature"> {
@@ -61,13 +61,11 @@ export interface StaticSchemaInformation {
 	signer: string,
 }
 
-export function createURL(attPackage: AttestationShareablePackageObject) {
-	const base64 = zipAndEncodeToBase64(attPackage);
-	return `#attestation=${encodeURIComponent(base64)}`;
-}
-
 export function zipAndEncodeToBase64(
 	qrPackage: AttestationShareablePackageObject,
+	/**
+	 * @deprecated Use ASN.1 encoding to reduce size instead
+	 */
 	lightweight = false
 ) {
 	const compacted = lightweight ?
@@ -77,14 +75,18 @@ export function zipAndEncodeToBase64(
 	const jsoned = JSON.stringify(compacted);
 
 	const gzipped = pako.deflate(jsoned, { level: 9 });
-	return Base64.fromUint8Array(gzipped);
+
+	return uint8arrayToBase64(gzipped);
 }
 
 export function decodeBase64ZippedBase64(
 	base64: string,
+	/**
+	 * @deprecated Use ASN.1 encoding to reduce size instead
+	 */
 	schemaInfo?: StaticSchemaInformation
 ): AttestationShareablePackageObject {
-	const fromBase64 = Base64.toUint8Array(base64);
+	const fromBase64 = base64ToUint8array(base64);
 
 	const jsonStr = pako.inflate(fromBase64, { to: "string" });
 
@@ -96,10 +98,14 @@ export function decodeBase64ZippedBase64(
 		uncompactOffchainAttestationPackage(compacted as CompactAttestationShareablePackageObject);
 }
 
+/**
+ * @deprecated - Use ASN.1 instead
+ * @param pkg
+ */
 export function compactLightweightOffchainAttestationPackage(
 	pkg: AttestationShareablePackageObject
 ): CompactLightweightAttestationShareablePackageObject {
-	let { sig, signer } = pkg;
+	let { sig } = pkg;
 
 	if (isSignedOffchainAttestationV1(sig)) {
 		sig = convertV1AttestationToV2(sig);
@@ -122,7 +128,11 @@ export function compactLightweightOffchainAttestationPackage(
 	];
 }
 
-
+/**
+ * @deprecated Use ASN.1 instead
+ * @param compacted
+ * @param schemaInfo
+ */
 export function uncompactLightweightOffchainAttestationPackage(
 	compacted: CompactLightweightAttestationShareablePackageObject,
 	schemaInfo: StaticSchemaInformation
