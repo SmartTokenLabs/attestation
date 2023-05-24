@@ -860,7 +860,7 @@ describe("EAS Ticket Attestation", () => {
 
     async function createAttestation(validity?: {from: number, to: number}){
 
-        await attestationManager.createEasAttestation({
+        return await attestationManager.createEasAttestation({
             devconId: '6',
             ticketIdString: '12345',
             ticketClass: 2,
@@ -940,6 +940,13 @@ describe("EAS Ticket Attestation", () => {
 
         attestationManager.loadEasAttestation(easData.sig, pubKeyConfig);
         await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation not yet valid.');
+    });
+
+    test("Ensure secrets are difference for each generated attestation", async () => {
+        const attest1 = await createAttestation();
+        const attest2 = await createAttestation();
+
+        expect(attest1.secret).not.toEqual(attest2.secret);
     });
 
     // TODO: Revocation tests with local EVM network
