@@ -228,12 +228,15 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return this.decodedData;
 	}
 
-	getAttestationField(fieldName: string){
+	getAttestationField(fieldName: string, suppressException = false){
 
 		const data = this.getAttestationData();
 
-		if (!data[fieldName])
+		if (!data[fieldName]) {
+			if (suppressException)
+				return false;
 			throw new Error("The attestation does not contain data field '" + fieldName + "'");
+		}
 
 		return data[fieldName]
 	}
@@ -439,7 +442,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private processKeysParam(keys?: KeysArray){
 
-		let conferenceId = this.getAttestationField("devconId");
+		let conferenceId = this.getAttestationField("devconId", true);
 
 		if (!keys){
 			if (!this.issuerKeys){
@@ -448,11 +451,14 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			keys = this.issuerKeys;
 		}
 
-		if (conferenceId && !keys[conferenceId]){
-			if (!keys[""]){
-				throw new Error("No key set for conference ID " + conferenceId);
-			}
+		if (!conferenceId)
 			conferenceId = "";
+
+		if (!keys[conferenceId]){
+			if (!conferenceId || (conferenceId && !keys[""])){
+				throw new Error(conferenceId ? "No key set for conference ID " + conferenceId :  "No default key set");
+			}
+			conferenceId = ""; // Use default key as fallback when no keys for the provided conference ID are set
 		}
 
 		const keyArray = keys[conferenceId];
