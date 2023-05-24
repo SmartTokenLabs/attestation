@@ -111,6 +111,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		if (!this.signerAddress)
 			new Error("Failed to get signer address");
 
+		// New secret generated for each attestation
+		this.commitmentSecret = undefined;
+
 		const fieldData = this.schema.fields.map((field) => {
 
 			if (!data[field.name])
