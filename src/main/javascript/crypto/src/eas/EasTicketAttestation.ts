@@ -122,8 +122,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			let value = data[field.name]
 
 			if (field.isCommitment){
-				if (!this.commitmentSecret)
-					this.commitmentSecret = this.crypto.makeSecret();
+				this.commitmentSecret = this.crypto.makeSecret();
 
 				value = this.createCommitment(value as string, commitmentType, this.commitmentSecret);
 			}
