@@ -266,7 +266,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		// Expiry check
 		this.checkValidity();
 
-		await this.checkRevocation()
+		// EAS registry check to make sure attestation is not revoked
+		if(this.signedAttestation.message.revocable)
+			await this.checkRevocation()
 	}
 
 	private async checkRevocation(uid?: string){
