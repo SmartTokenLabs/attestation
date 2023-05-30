@@ -142,8 +142,10 @@ export class Ticket extends AttestableObject implements Attestable {
 
 		for (const key of this.issuerKeys){
 
-			if (pubKey.substring(2) === key.getPublicKeyAsHexStr())
-				return true;
+			if (pubKey.substring(2) === key.getPublicKeyAsHexStr()) {
+                this.key = key;
+                return true;
+            }
 		}
 
 		throw new Error("Ticket signature is invalid");

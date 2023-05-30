@@ -58,7 +58,7 @@ export class  EasAsnEmbeddedSchema {
 	@AsnProp({ type: AsnPropTypes.BitString })
 	public signatureValue: Uint8Array;
 	@AsnProp({ type: AsnPropTypes.OctetString, optional: true })
-	public domainInfo?: Uint8Array
+	public domainInfo: Uint8Array
 }
 
 export class EasTicketAttestation extends AttestableObject implements Attestable {
@@ -66,19 +66,30 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	private signedAttestation: SignedOffchainAttestation;
 	private signerAddress: string;
 	private signerPublicKey: string;
+	private signerKeyPair?: KeyPair;
 	private decodedData?: {[fieldName: string]: any};
 	private commitmentSecret?: bigint;
 	private conferenceKeys?: KeyPair[];
 	private crypto = new AttestationCrypto();
 
+	/**
+	 *
+	 * @param schema The schema for the attestation. This must always be provided.
+	 * @param signingConfig The EAS SDK config and signer - required only to create & revoke attestations.
+	 * @param rpcMap A map of RPC nodes required for revocation checks
+	 * @param issuerKeys A map of valid issuer keys for signature validation purposes
+	 */
 	constructor(
 		private schema: TicketSchema,
-		private EASconfig: {
-			address: string // EAS resolver contract address
-			version: string
-			chainId: number
+		private signingConfig?: {
+			EASconfig: {
+				address: string // EAS resolver contract address
+				version: string
+				chainId: number
+			},
+			signer: Signer
 		},
-		private signer: EASSignerOrProvider,
+		private rpcMap?: {[chainId: number]: string},
 		private issuerKeys?: KeysArray
 	) {
 		super();
@@ -103,10 +114,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	 */
 	async createEasAttestation(data: {[key: string]: string|number}, options?: EasTicketCreationOptions, commitmentType = 'mail'){
 
-		if (!("_isSigner" in this.signer))
-			throw new Error("Please provide a valid signer for this function.");
+		if (!this.signingConfig)
+			throw new Error("Please provide valid signing config for this function.");
 
-		this.signerAddress = await (this.signer as unknown as Signer).getAddress();
+		this.signerAddress = await this.signingConfig.signer.getAddress();
 
 		if (!this.signerAddress)
 			new Error("Failed to get signer address");
@@ -122,7 +133,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			let value = data[field.name]
 
 			if (field.isCommitment){
-				this.commitmentSecret = this.crypto.makeSecret();
+
+				// If there are multiple commitment fields, the same secret is used for all fields
+				if (!this.commitmentSecret)
+					this.commitmentSecret = this.crypto.makeSecret();
 
 				value = this.createCommitment(value as string, commitmentType, this.commitmentSecret);
 			}
@@ -134,7 +148,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			}
 		})
 
-		const offchain = new Offchain(this.EASconfig);
+		const offchain = new Offchain(this.signingConfig.EASconfig);
 
 		const schemaEncoder = new SchemaEncoder(this.getEasSchema());
 		const encodedData = schemaEncoder.encodeData(fieldData);
@@ -151,7 +165,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			revocable: true,
 			refUID: options?.refUID ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
 			data: encodedData,
-		}, this.signer as unknown as TypedDataSigner);
+		}, this.signingConfig.signer as unknown as TypedDataSigner);
 
 		const valid = offchain.verifyOffchainAttestationSignature(this.signerAddress, newAttestation)
 
@@ -190,13 +204,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	}
 
 
-	getEncoded(
-		/**
-		 * @deprecated Use ASN.1 encoding to reduce size instead
-		 */
-		lightweight = false
-	){
-		return zipAndEncodeToBase64(this.getEasJson(), lightweight);
+	getEncoded(){
+		return zipAndEncodeToBase64(this.getEasJson());
 	}
 
 	// TODO: Return ID based on decoded data
@@ -276,7 +285,12 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		if (!uid)
 			uid = this.getEasUid();
 
-		const eas = new EAS(this.signedAttestation.domain.verifyingContract ?? this.EASconfig.address, {signerOrProvider: this.signer});
+		const chainId = this.signedAttestation.domain.chainId;
+
+		if (!this.rpcMap?.[chainId])
+			throw new Error("RPC not provided for chain " + chainId);
+
+		const eas = new EAS(this.signedAttestation.domain.verifyingContract, {signerOrProvider: new ethers.providers.JsonRpcProvider(this.rpcMap[chainId])});
 
 		const revoked = await eas.getRevocationOffchain(this.signerAddress, uid);
 
@@ -292,10 +306,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		if (!uid)
 			uid = this.getEasUid();
 
-		if (!("_isSigner" in this.signer))
+		if (!this.signingConfig)
 			throw new Error("Please provide a valid signer");
 
-		const eas = new EAS(this.EASconfig.address, {signerOrProvider: this.signer});
+		const eas = new EAS(this.signingConfig.EASconfig.address, {signerOrProvider: this.signingConfig.signer});
 
 		const tx = await eas.revokeOffchain(uid);
 
@@ -304,10 +318,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	async bulkRevokeEasAttestations(uids: string[]){
 
-		if (!("_isSigner" in this.signer))
+		if (!this.signingConfig)
 			throw new Error("Please provide a valid signer");
 
-		const eas = new EAS(this.EASconfig.address, {signerOrProvider: this.signer});
+		const eas = new EAS(this.signingConfig.EASconfig.address, {signerOrProvider: this.signingConfig.signer});
 
 		const tx = await eas.multiRevokeOffchain(uids);
 
@@ -330,12 +344,12 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		schemaInfo?: StaticSchemaInformation,
 		keys?: KeysArray,
 		commitmentSecret?: string){
-		const decoded = decodeBase64ZippedBase64(base64, schemaInfo);
+		const decoded = decodeBase64ZippedBase64(base64);
 
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
 	}
 
-	getAsnEncoded(includeDomainInfo, compressed = false){
+	getAsnEncoded(compressed = false){
 
 		const abiEncoded = defaultAbiCoder.encode(
 			this.signedAttestation.types.Attest.map((field) => field.type),
@@ -347,17 +361,15 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		asnEmbedded.easAttestation = hexStringToUint8(abiEncoded);
 		asnEmbedded.signatureValue = hexStringToUint8(joinSignature(this.signedAttestation.signature));
 
-		if (includeDomainInfo){
-			const domainEncoded = defaultAbiCoder.encode(
-				['string', "address", "uint256"],
-				[
-					this.signedAttestation.domain.version,
-					this.signedAttestation.domain.verifyingContract,
-					this.signedAttestation.domain.chainId
-				]
-			)
-			asnEmbedded.domainInfo = hexStringToUint8(domainEncoded);
-		}
+		const domainEncoded = defaultAbiCoder.encode(
+			['string', "address", "uint256"],
+			[
+				this.signedAttestation.domain.version,
+				this.signedAttestation.domain.verifyingContract,
+				this.signedAttestation.domain.chainId
+			]
+		)
+		asnEmbedded.domainInfo = hexStringToUint8(domainEncoded);
 
 		const data =  AsnSerializer.serialize(asnEmbedded);
 
@@ -377,25 +389,16 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		const asnEmbedded = AsnParser.parse(bytes, EasAsnEmbeddedSchema);
 
-		// console.log("Decoded ASN", asnEmbedded);
-		let domain: EIP712DomainTypedData;
+		const domainDecoded = defaultAbiCoder.decode(
+			['string', "address", "uint256"],
+			asnEmbedded.domainInfo
+		);
 
-		if (asnEmbedded.domainInfo){
-
-			const domainDecoded = defaultAbiCoder.decode(
-				['string', "address", "uint256"],
-				asnEmbedded.domainInfo
-			);
-
-			domain = {
-				name: "EAS Attestation",
-				version: domainDecoded[0],
-				verifyingContract: domainDecoded[1],
-				chainId: domainDecoded[2]
-			}
-		} else {
-			const offchain = new Offchain(this.EASconfig);
-			domain = offchain.getDomainTypedData();
+		const domain: EIP712DomainTypedData = {
+			name: "EAS Attestation",
+			version: domainDecoded[0],
+			verifyingContract: domainDecoded[1],
+			chainId: domainDecoded[2]
 		}
 
 		// console.log("ABI Encoded bytes: ", "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
@@ -475,11 +478,11 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private recoverSignerInfo(){
 
-		const config = this.signedAttestation?.domain ? {
+		const config = {
 			version: this.signedAttestation.domain.version,
 			address: this.signedAttestation.domain.verifyingContract,
 			chainId: this.signedAttestation.domain.chainId
-		} : this.EASconfig;
+		};
 
 		const offchain = new Offchain(config);
 
@@ -497,11 +500,17 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		for (const key of this.conferenceKeys){
 
-			if (this.signerPublicKey.substring(2) === key.getPublicKeyAsHexStr())
+			if (this.signerPublicKey.substring(2) === key.getPublicKeyAsHexStr()) {
+				this.signerKeyPair = key;
 				return true;
+			}
 		}
 
 		throw new Error("Ticket signature is invalid");
+	}
+
+	getSignerKeyPair(){
+		return this.signerKeyPair;
 	}
 
 	getCommitment(): Uint8Array {
@@ -509,7 +518,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	}
 
 	getDerEncoding(): string {
-		return uint8tohex(new Uint8Array(this.getAsnEncoded(true)));
+		return uint8tohex(new Uint8Array(this.getAsnEncoded(false)));
 	}
 
 	protected commitment: Uint8Array;

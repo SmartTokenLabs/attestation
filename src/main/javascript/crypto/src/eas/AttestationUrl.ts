@@ -63,14 +63,8 @@ export interface StaticSchemaInformation {
 
 export function zipAndEncodeToBase64(
 	qrPackage: AttestationShareablePackageObject,
-	/**
-	 * @deprecated Use ASN.1 encoding to reduce size instead
-	 */
-	lightweight = false
 ) {
-	const compacted = lightweight ?
-		compactLightweightOffchainAttestationPackage(qrPackage) :
-		compactOffchainAttestationPackage(qrPackage);
+	const compacted = compactOffchainAttestationPackage(qrPackage);
 
 	const jsoned = JSON.stringify(compacted);
 
@@ -81,10 +75,6 @@ export function zipAndEncodeToBase64(
 
 export function decodeBase64ZippedBase64(
 	base64: string,
-	/**
-	 * @deprecated Use ASN.1 encoding to reduce size instead
-	 */
-	schemaInfo?: StaticSchemaInformation
 ): AttestationShareablePackageObject {
 	const fromBase64 = base64ToUint8array(base64);
 
@@ -93,113 +83,7 @@ export function decodeBase64ZippedBase64(
 	const compacted: CompactAttestationShareablePackageObject|CompactLightweightAttestationShareablePackageObject =
 		JSON.parse(jsonStr);
 
-	return schemaInfo ?
-		uncompactLightweightOffchainAttestationPackage(compacted as CompactLightweightAttestationShareablePackageObject, schemaInfo) :
-		uncompactOffchainAttestationPackage(compacted as CompactAttestationShareablePackageObject);
-}
-
-/**
- * @deprecated - Use ASN.1 instead
- * @param pkg
- */
-export function compactLightweightOffchainAttestationPackage(
-	pkg: AttestationShareablePackageObject
-): CompactLightweightAttestationShareablePackageObject {
-	let { sig } = pkg;
-
-	if (isSignedOffchainAttestationV1(sig)) {
-		sig = convertV1AttestationToV2(sig);
-	}
-
-	return [
-		sig.signature.r,
-		sig.signature.s,
-		sig.signature.v,
-		sig.uid,
-		sig.message.recipient === ethers.constants.AddressZero
-			? "0"
-			: sig.message.recipient,
-		Number(sig.message.time),
-		Number(sig.message.expirationTime),
-		sig.message.refUID === ethers.constants.HashZero ? "0" : sig.message.refUID,
-		sig.message.revocable,
-		sig.message.data,
-		Number(sig.message.nonce),
-	];
-}
-
-/**
- * @deprecated Use ASN.1 instead
- * @param compacted
- * @param schemaInfo
- */
-export function uncompactLightweightOffchainAttestationPackage(
-	compacted: CompactLightweightAttestationShareablePackageObject,
-	schemaInfo: StaticSchemaInformation
-): AttestationShareablePackageObject {
-
-	return {
-		sig: {
-			domain: {
-				name: "EAS Attestation",
-				version: schemaInfo.domain.version,
-				chainId: schemaInfo.domain.chainId,
-				verifyingContract: schemaInfo.domain.verifyingContract,
-			},
-			primaryType: "Attestation",
-			types: {
-				Attest: [
-					{
-						name: "schema",
-						type: "bytes32",
-					},
-					{
-						name: "recipient",
-						type: "address",
-					},
-					{
-						name: "time",
-						type: "uint64",
-					},
-					{
-						name: "expirationTime",
-						type: "uint64",
-					},
-					{
-						name: "revocable",
-						type: "bool",
-					},
-					{
-						name: "refUID",
-						type: "bytes32",
-					},
-					{
-						name: "data",
-						type: "bytes",
-					},
-				],
-			},
-			signature: {
-				r: compacted[0],
-				s: compacted[1],
-				v: compacted[2],
-			},
-			uid: compacted[3],
-			message: {
-				schema: schemaInfo.schema,
-				recipient:
-					compacted[4] === "0" ? ethers.constants.AddressZero : compacted[4],
-				time: compacted[5],
-				expirationTime: compacted[6],
-				refUID:
-					compacted[7] === "0" ? ethers.constants.HashZero : compacted[7],
-				revocable: compacted[8],
-				data: compacted[9],
-				nonce: compacted[10],
-			},
-		},
-		signer: schemaInfo.signer,
-	};
+	return uncompactOffchainAttestationPackage(compacted as CompactAttestationShareablePackageObject);
 }
 
 export function compactOffchainAttestationPackage(
