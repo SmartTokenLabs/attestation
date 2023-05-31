@@ -50,8 +50,6 @@ export interface EasTicketCreationOptions {
 	validity?: {from: number, to: number}
 }
 
-export type EASSignerOrProvider = SignerOrProvider;
-
 export class  EasAsnEmbeddedSchema {
 	@AsnProp({ type: AsnPropTypes.OctetString })
 	public easAttestation: Uint8Array
@@ -446,7 +444,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	private processKeysParam(keys?: KeysArray){
 
-		let conferenceId = this.getAttestationField("devconId", true);
+		const data = this.getAttestationData();
+
+		let conferenceId = data.eventId ?? data.devconId ?? "";
 
 		if (!keys){
 			if (!this.issuerKeys){
@@ -454,9 +454,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			}
 			keys = this.issuerKeys;
 		}
-
-		if (!conferenceId)
-			conferenceId = "";
 
 		if (!keys[conferenceId]){
 			if (!conferenceId || (conferenceId && !keys[""])){
