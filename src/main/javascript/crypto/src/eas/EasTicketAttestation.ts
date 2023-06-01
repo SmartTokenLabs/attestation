@@ -234,13 +234,11 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return this.decodedData;
 	}
 
-	getAttestationField(fieldName: string, suppressException = false){
+	getAttestationField(fieldName: string){
 
 		const data = this.getAttestationData();
 
 		if (!data[fieldName]) {
-			if (suppressException)
-				return false;
 			throw new Error("The attestation does not contain data field '" + fieldName + "'");
 		}
 
