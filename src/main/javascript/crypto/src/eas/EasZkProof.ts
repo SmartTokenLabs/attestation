@@ -33,7 +33,7 @@ export class EasZkProof {
 		const idAttest = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64IdentifierAttestation), KeyPair.publicFromBase64orPEM(attestorPublicKey));
 		const ticketAttest = new EasTicketAttestation(this.schema, undefined, this.rpcMap);
 
-		ticketAttest.loadFromEncoded(base64TicketAttestation, undefined,  <KeysArray>base64senderPublicKeys);
+		ticketAttest.loadFromEncoded(base64TicketAttestation, <KeysArray>base64senderPublicKeys);
 
 		let redeem: AttestedObject = new AttestedObject();
 		redeem.create(ticketAttest, idAttest, identifierSecret, ticketSecret);

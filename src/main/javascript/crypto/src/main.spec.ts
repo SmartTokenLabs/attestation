@@ -890,7 +890,7 @@ describe("EAS Ticket Attestation", () => {
 
         const encoded = attestationManager.getEncoded();
 
-        attestationManager.loadFromEncoded(encoded, undefined, pubKeyConfig);
+        attestationManager.loadFromEncoded(encoded, pubKeyConfig);
         await attestationManager.validateEasAttestation();
     });
 

@@ -51,16 +51,6 @@ export type CompactLightweightAttestationShareablePackageObject = [
 	nonce: number
 ];
 
-export interface StaticSchemaInformation {
-	domain: {
-		version: string,
-		chainId: number,
-		verifyingContract: string,
-	},
-	schema: string,
-	signer: string,
-}
-
 export function zipAndEncodeToBase64(
 	qrPackage: AttestationShareablePackageObject,
 ) {

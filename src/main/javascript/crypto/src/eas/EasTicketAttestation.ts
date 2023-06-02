@@ -13,8 +13,7 @@ import {hexStringToUint8, uint8tohex} from "../libs/utils";
 import {OffchainAttestationParams} from "@ethereum-attestation-service/eas-sdk/dist/offchain/offchain";
 import {Attestable} from "../libs/Attestable";
 import {AttestableObject} from "../libs/AttestableObject";
-import {SignerOrProvider} from "@ethereum-attestation-service/eas-sdk/dist/transaction";
-import {decodeBase64ZippedBase64, StaticSchemaInformation, zipAndEncodeToBase64} from "./AttestationUrl";
+import {decodeBase64ZippedBase64, zipAndEncodeToBase64} from "./AttestationUrl";
 import {KeyPair, KeysArray} from "../libs/KeyPair";
 import {EIP712DomainTypedData} from "@ethereum-attestation-service/eas-sdk/dist/offchain/typed-data-handler";
 import * as pako from "pako";
@@ -334,10 +333,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 	loadFromEncoded(
 		base64: string,
-		/**
-		 * @deprecated Use ASN.1 encoding to reduce size instead
-		 */
-		schemaInfo?: StaticSchemaInformation,
 		keys?: KeysArray,
 		commitmentSecret?: string){
 		const decoded = decodeBase64ZippedBase64(base64);
