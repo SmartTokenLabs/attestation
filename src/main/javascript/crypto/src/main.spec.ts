@@ -855,12 +855,15 @@ describe("EAS Ticket Attestation", () => {
     const issuerPrivKey = KeyPair.privateFromPEM('MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBBIIBVTCCAVECAQEEIM/T+SzcXcdtcNIqo6ck0nJTYzKL5ywYBFNSpI7R8AuBoIHjMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAARjMR62qoIK9pHk17MyHHIU42Ix+Vl6Q2gTmIF72vNpinBpyoBkTkV0pnI1jdrLlAjJC0I91DZWQhVhddMCK65c');
     const provider = new ethers.providers.JsonRpcProvider(SEPOLIA_RPC)
     const wallet = new ethers.Wallet(issuerPrivKey.getPrivateAsHexString(), provider)
-    const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+    const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, {
+        EASconfig: EAS_CONFIG,
+        signer: wallet
+    }, {11155111: SEPOLIA_RPC});
     const pubKeyConfig = {"6": issuerPrivKey};
 
     async function createAttestation(validity?: {from: number, to: number}){
 
-        await attestationManager.createEasAttestation({
+        return await attestationManager.createEasAttestation({
             devconId: '6',
             ticketIdString: '12345',
             ticketClass: 2,
@@ -887,20 +890,20 @@ describe("EAS Ticket Attestation", () => {
 
         const encoded = attestationManager.getEncoded();
 
-        attestationManager.loadFromEncoded(encoded, undefined, pubKeyConfig);
+        attestationManager.loadFromEncoded(encoded, pubKeyConfig);
         await attestationManager.validateEasAttestation();
     });
 
     test("Load from ASN encoded and validate", async () => {
         await createAttestation();
 
-        const encoded = attestationManager.getAsnEncoded(true, false);
+        const encoded = attestationManager.getAsnEncoded(false);
 
         attestationManager.loadAsnEncoded(encoded, pubKeyConfig, false);
         await attestationManager.validateEasAttestation();
 
 
-        const encodedCompressed = attestationManager.getAsnEncoded(true, true);
+        const encodedCompressed = attestationManager.getAsnEncoded(true);
 
         attestationManager.loadAsnEncoded(encodedCompressed, pubKeyConfig, true);
         await attestationManager.validateEasAttestation();
@@ -942,6 +945,13 @@ describe("EAS Ticket Attestation", () => {
         await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation not yet valid.');
     });
 
+    test("Ensure secrets are difference for each generated attestation", async () => {
+        const attest1 = await createAttestation();
+        const attest2 = await createAttestation();
+
+        expect(attest1.secret).not.toEqual(attest2.secret);
+    });
+
     // TODO: Revocation tests with local EVM network
 
     test("ZKProof create & validate", async () => {
@@ -951,7 +961,7 @@ describe("EAS Ticket Attestation", () => {
         const ticketBase64 = attestationManager.getEncoded();
         const ticketSecret = attestationManager.getEasJson().secret;
 
-        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
 
         // Generate identifier attestation
         const idSecret = (new AttestationCrypto()).makeSecret()
@@ -972,7 +982,7 @@ describe("EAS Ticket Attestation", () => {
         const ticketBase64 = attestationManager.getEncoded();
         const ticketSecret = attestationManager.getEasJson().secret;
 
-        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, EAS_CONFIG, wallet);
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
 
         // Generate identifier attestation
         const idSecret = (new AttestationCrypto()).makeSecret()
