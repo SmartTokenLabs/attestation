@@ -184,8 +184,14 @@ export function uint8arrayToBase64( bytes: Uint8Array ): string {
 
 export function base64toBase64Url(base64: string): string {
     return base64.split('/').join('_')
-        .split('+').join('-');
-        // .split('=').join('.');
+        .split('+').join('-')
+        .split('=').join('.');
+}
+
+export function base64UrltoBase64(base64Url: string): string {
+    return base64Url.split('_').join('/')
+        .split('-').join('+')
+        .split('.').join('=');
 }
 
 export function pemOrBase64Orbase64urlToString(base64str: string): string {
