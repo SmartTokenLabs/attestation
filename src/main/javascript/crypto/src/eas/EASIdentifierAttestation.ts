@@ -1,6 +1,6 @@
 import {EasTicketAttestation, EasTicketCreationOptions} from "./EasTicketAttestation";
 import {Signer} from "ethers";
-import {KeysArray} from "../libs/KeyPair";
+import {KeyPair, KeysArray} from "../libs/KeyPair";
 
 export interface EasIdentiferParameters {
 	version: number;
@@ -20,7 +20,7 @@ export class EASIdentifierAttestation extends EasTicketAttestation {
 			},
 			signer: Signer
 		},
-		issuerKeys?: KeysArray
+		issuerKey?: KeyPair|string
 	) {
 		const schema = {
 			fields: [
@@ -31,7 +31,7 @@ export class EASIdentifierAttestation extends EasTicketAttestation {
 			]
 		};
 
-		super(schema, signingConfig, undefined, issuerKeys);
+		super(schema, signingConfig, undefined, issuerKey ? <KeysArray>{"": issuerKey} : undefined);
 	}
 
 	async createEasAttestation(data: EasIdentiferParameters|any, options?: EasTicketCreationOptions, commitmentType = 'mail'){
