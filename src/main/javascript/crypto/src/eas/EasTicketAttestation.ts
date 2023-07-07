@@ -45,6 +45,7 @@ export interface TicketSchema {
 export interface EasTicketCreationOptions {
 	recipient?: string,
 	schema?: string,
+	revocable?: boolean,
 	refUID?: string,
 	validity?: {from: number, to: number}
 }
@@ -159,7 +160,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			nonce: 0,
 			/*schema: "0x4677bc98bd107f75d03d13cf41e158e38f1b826502dd31f87bf384c1a888cbdc",*/
 			schema:  options?.schema ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
-			revocable: true,
+			revocable: options?.revocable !== false,
 			refUID: options?.refUID ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
 			data: encodedData,
 		}, this.signingConfig.signer as unknown as TypedDataSigner);

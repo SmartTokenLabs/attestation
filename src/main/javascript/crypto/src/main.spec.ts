@@ -40,6 +40,7 @@ import {ethers} from "ethers";
 import {EasZkProof} from "./eas/EasZkProof";
 import {ATTESTATION_TYPE} from "./libs/interfaces";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
+import {EASIdentifierAttestation} from "./eas/EASIdentifierAttestation";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -873,6 +874,21 @@ describe("EAS Ticket Attestation", () => {
         });
     }
 
+    const idAttestManager = new EASIdentifierAttestation({
+        EASconfig: EAS_CONFIG,
+        signer: wallet
+    }, {"": attestorKey})
+
+    async function createEasIdAttest(email: string){
+
+        await idAttestManager.createEasAttestation({
+            version: 1,
+            identifierType: "email",
+            commitment: email,
+            ethereumAddress: userKey.getAddress()
+        });
+    }
+
     function getIdAttest(email: string, idSecret: bigint){
         let att:IdentifierAttestation = IdentifierAttestation.fromData(email, ATTESTATION_TYPE.mail, userKey, idSecret);
         att.setSerialNumber(1);
@@ -954,7 +970,7 @@ describe("EAS Ticket Attestation", () => {
 
     // TODO: Revocation tests with local EVM network
 
-    test("ZKProof create & validate", async () => {
+    test("ZKProof create & validate (ASN)", async () => {
 
         await createAttestation()
 
@@ -975,7 +991,7 @@ describe("EAS Ticket Attestation", () => {
 
     });
 
-    test("ZKProof wrong commitment value", async () => {
+    test("ZKProof wrong commitment value (ASN)", async () => {
 
         await createAttestation()
 
@@ -991,6 +1007,67 @@ describe("EAS Ticket Attestation", () => {
 
         // Create ZKProof attestation
         expect(() => easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig)).toThrowError("The redeem proof did not verify");
+    });
+
+    test("EAS Identifier attestation - validate from URL encoded", async() => {
+
+        await createEasIdAttest(email);
+
+        idAttestManager.loadFromEncoded(idAttestManager.getEncoded());
+
+        await idAttestManager.validateEasAttestation()
+    });
+
+    test("EAS Identifier attestation - validate from ASN encoded", async() => {
+
+        await createEasIdAttest(email);
+
+        idAttestManager.loadAsnEncoded(idAttestManager.getAsnEncoded());
+
+        await idAttestManager.validateEasAttestation()
+    });
+
+    test("ZKProof create & validate (EAS)", async () => {
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        // Generate identifier attestation
+        await createEasIdAttest(email);
+
+        const idBase64 = idAttestManager.getEncoded();
+        const idSecret = idAttestManager.getEasJson().secret;
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
+
+        const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas");
+
+        await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress(), "eas");
+    });
+
+    test("ZKProof wrong commitment value (EAS)", async () => {
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        // Generate identifier attestation
+        await createEasIdAttest("wrong@email.com");
+
+        const idBase64 = idAttestManager.getEncoded();
+        const idSecret = idAttestManager.getEasJson().secret;
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
+
+        expect(() => easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas")).toThrowError("The redeem proof did not verify");
+
     });
 
 });
