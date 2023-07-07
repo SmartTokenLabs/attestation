@@ -41,7 +41,7 @@ export class EasZkProof {
 
 		if (identifierFormat === "eas"){
 
-			const idAttest = (new EASIdentifierAttestation(undefined, {"": KeyPair.publicFromBase64orPEM(attestorPublicKey)}));
+			const idAttest = (new EASIdentifierAttestation(undefined, KeyPair.publicFromBase64orPEM(attestorPublicKey)));
 			idAttest.loadFromEncoded(base64IdentifierAttestation)
 
 			const redeem = new EasAttestedObject();
@@ -74,30 +74,28 @@ export class EasZkProof {
 			}
 		}
 
-		let decodedAttestedObject;
-
 		if (identifierFormat === "eas"){
 
 			const EasIdWrapper = class extends EASIdentifierAttestation {
 				constructor() {
-					super(undefined, {"": attestorKey});
+					super(undefined, attestorKey);
 				}
 			}
 
-			decodedAttestedObject = EasAttestedObject.fromBytes(base64ToUint8array(proof), EasTicketWrapper, EasIdWrapper);
-			decodedAttestedObject.checkValidity(userEthKey);
+			const decodedAttestedObject = EasAttestedObject.fromBytes(base64ToUint8array(proof), EasTicketWrapper, EasIdWrapper);
+			await decodedAttestedObject.checkValidity(userEthKey);
 
 		} else {
 
-			decodedAttestedObject = AttestedObject.fromBytes(base64ToUint8array(proof), UseToken, attestorKey, EasTicketWrapper, issuerKeys);
+			const decodedAttestedObject = AttestedObject.fromBytes(base64ToUint8array(proof), UseToken, attestorKey, EasTicketWrapper, issuerKeys);
 
 			if (!decodedAttestedObject.checkValidity(userEthKey)){
 				throw new Error("Ticket validity check failed!");
 			}
 
-			await (decodedAttestedObject.getAttestableObject() as EasTicketAttestation).validateEasAttestation()
-		}
+			await (decodedAttestedObject.getAttestableObject() as EasTicketAttestation).validateEasAttestation();
 
-		return decodedAttestedObject;
+			return decodedAttestedObject;
+		}
 	}
 }

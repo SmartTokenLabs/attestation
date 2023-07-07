@@ -72,6 +72,8 @@ let type = "mail";
 let WEB_DOMAIN = "http://wwww.hotelbogota.com";
 let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
 
+jest.setTimeout(10000);
+
 describe("Utils tests", () => {
     test('uint8tohex test', () => {
         expect(uint8tohex(new Uint8Array([1,2]))).toBe("0102")
@@ -874,10 +876,11 @@ describe("EAS Ticket Attestation", () => {
         });
     }
 
+    const idWallet = new ethers.Wallet(attestorKey.getPrivateAsHexString(), provider)
     const idAttestManager = new EASIdentifierAttestation({
         EASconfig: EAS_CONFIG,
-        signer: wallet
-    }, {"": attestorKey})
+        signer: idWallet
+    }, attestorKey);
 
     async function createEasIdAttest(email: string){
 
@@ -961,7 +964,7 @@ describe("EAS Ticket Attestation", () => {
         await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation not yet valid.');
     });
 
-    test("Ensure secrets are difference for each generated attestation", async () => {
+    test("Ensure secrets are different for each generated attestation", async () => {
         const attest1 = await createAttestation();
         const attest2 = await createAttestation();
 
@@ -972,7 +975,7 @@ describe("EAS Ticket Attestation", () => {
 
     test("ZKProof create & validate (ASN)", async () => {
 
-        await createAttestation()
+        await createAttestation();
 
         const ticketBase64 = attestationManager.getEncoded();
         const ticketSecret = attestationManager.getEasJson().secret;
@@ -993,7 +996,7 @@ describe("EAS Ticket Attestation", () => {
 
     test("ZKProof wrong commitment value (ASN)", async () => {
 
-        await createAttestation()
+        await createAttestation();
 
         const ticketBase64 = attestationManager.getEncoded();
         const ticketSecret = attestationManager.getEasJson().secret;
@@ -1027,7 +1030,7 @@ describe("EAS Ticket Attestation", () => {
         await idAttestManager.validateEasAttestation()
     });
 
-    test("ZKProof create & validate (EAS)", async () => {
+    async function createEasZkProofAttestation(email: string){
 
         await createAttestation()
 
@@ -1046,28 +1049,27 @@ describe("EAS Ticket Attestation", () => {
 
         const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas");
 
+        return {attestationIdPublic, easZkProof, base64UseTicketAttestation}
+    }
+
+    test("ZKProof create & validate (EAS)", async () => {
+
+        const {attestationIdPublic, easZkProof, base64UseTicketAttestation} = await createEasZkProofAttestation(email);
+
         await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress(), "eas");
     });
 
     test("ZKProof wrong commitment value (EAS)", async () => {
 
-        await createAttestation()
+        await expect(() => createEasZkProofAttestation("wrong@email.com")).rejects.toThrowError("The redeem proof did not verify");
+    });
 
-        const ticketBase64 = attestationManager.getEncoded();
-        const ticketSecret = attestationManager.getEasJson().secret;
+    test("ZKProof wrong ethereum address (EAS)", async () => {
 
-        // Generate identifier attestation
-        await createEasIdAttest("wrong@email.com");
+        const {attestationIdPublic, easZkProof, base64UseTicketAttestation} = await createEasZkProofAttestation(email);
 
-        const idBase64 = idAttestManager.getEncoded();
-        const idSecret = idAttestManager.getEasJson().secret;
-        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
-
-        // Create ZKProof attestation
-        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
-
-        expect(() => easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas")).toThrowError("The redeem proof did not verify");
-
+        await expect(() => easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, "0xcFF805b714b24b3dD30cB4a1bea3745e5C5E73ef", "eas"))
+            .rejects.toThrowError("The provided ethereum address does not match the address specified in the identifier attestation");
     });
 
 });
