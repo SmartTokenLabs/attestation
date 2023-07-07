@@ -5,6 +5,8 @@ import {EasTicketAttestation, TicketSchema} from "./EasTicketAttestation";
 import {AttestedObject} from "../libs/AttestedObject";
 import {UseToken} from "../asn1/shemas/UseToken";
 import {DEBUGLEVEL} from "../config";
+import {EASIdentifierAttestation} from "./EASIdentifierAttestation";
+import {EasAttestedObject} from "./EasAttestedObject";
 
 export class EasZkProof {
 
@@ -21,7 +23,8 @@ export class EasZkProof {
 		base64TicketAttestation: string,
 		base64IdentifierAttestation: string,
 		attestorPublicKey: string,
-		base64senderPublicKeys: KeysConfig|KeysArray
+		base64senderPublicKeys: KeysConfig|KeysArray,
+		identifierFormat?: "asn"|"eas"
 	){
 		try {
 			base64senderPublicKeys = KeyPair.parseKeyArrayStrings(base64senderPublicKeys);
@@ -30,39 +33,70 @@ export class EasZkProof {
 			throw new Error("Issuer key error");
 		}
 
-		const idAttest = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64IdentifierAttestation), KeyPair.publicFromBase64orPEM(attestorPublicKey));
 		const ticketAttest = new EasTicketAttestation(this.schema, undefined, this.rpcMap);
 
 		ticketAttest.loadFromEncoded(base64TicketAttestation, <KeysArray>base64senderPublicKeys);
 
-		let redeem: AttestedObject = new AttestedObject();
-		redeem.create(ticketAttest, idAttest, identifierSecret, ticketSecret);
+		let encodedUseTicket;
 
-		let unSigned = redeem.getDerEncoding();
+		if (identifierFormat === "eas"){
 
-		return hexStringToBase64(unSigned);
+			const idAttest = (new EASIdentifierAttestation(undefined, {"": KeyPair.publicFromBase64orPEM(attestorPublicKey)}));
+			idAttest.loadFromEncoded(base64IdentifierAttestation)
+
+			const redeem = new EasAttestedObject();
+			redeem.create(ticketAttest, ticketSecret, idAttest, identifierSecret);
+
+			encodedUseTicket = redeem.getEncoded();
+
+		} else {
+			const idAttest = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64IdentifierAttestation), KeyPair.publicFromBase64orPEM(attestorPublicKey));
+
+			let redeem: AttestedObject = new AttestedObject();
+			redeem.create(ticketAttest, idAttest, identifierSecret, ticketSecret);
+
+			encodedUseTicket = redeem.getDerEncoding();
+		}
+
+		return hexStringToBase64(encodedUseTicket);
 	}
 
-	public async validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey?: string){
+	public async validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey?: string, identifierFormat?: "asn"|"eas"){
 
 		let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
 		let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
 
 		const self = this;
 
-		const EasValidationWrapper = class extends EasTicketAttestation {
+		const EasTicketWrapper = class extends EasTicketAttestation {
 			constructor() {
 				super(self.schema, undefined, self.rpcMap, issuerKeys);
 			}
 		}
 
-		let decodedAttestedObject = AttestedObject.fromBytes(base64ToUint8array(proof), UseToken, attestorKey, EasValidationWrapper, issuerKeys);
+		let decodedAttestedObject;
 
-		if (!decodedAttestedObject.checkValidity(userEthKey)){
-			throw new Error("Ticket validity check failed!");
+		if (identifierFormat === "eas"){
+
+			const EasIdWrapper = class extends EASIdentifierAttestation {
+				constructor() {
+					super(undefined, {"": attestorKey});
+				}
+			}
+
+			decodedAttestedObject = EasAttestedObject.fromBytes(base64ToUint8array(proof), EasTicketWrapper, EasIdWrapper);
+			decodedAttestedObject.checkValidity(userEthKey);
+
+		} else {
+
+			decodedAttestedObject = AttestedObject.fromBytes(base64ToUint8array(proof), UseToken, attestorKey, EasTicketWrapper, issuerKeys);
+
+			if (!decodedAttestedObject.checkValidity(userEthKey)){
+				throw new Error("Ticket validity check failed!");
+			}
+
+			await (decodedAttestedObject.getAttestableObject() as EasTicketAttestation).validateEasAttestation()
 		}
-
-		await (decodedAttestedObject.getAttestableObject() as EasTicketAttestation).validateEasAttestation()
 
 		return decodedAttestedObject;
 	}
