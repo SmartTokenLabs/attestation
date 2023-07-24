@@ -64,7 +64,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	private signedAttestation: SignedOffchainAttestation;
 	private signerAddress: string;
 	private signerPublicKey: string;
-	private signerKeyPair?: KeyPair;
 	private decodedData?: {[fieldName: string]: any};
 	private commitmentSecret?: bigint;
 	private conferenceKeys?: KeyPair[];
@@ -172,6 +171,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		this.signedAttestation = newAttestation;
 
+		this.recoverSignerInfo();
+
 		return this.getEasJson();
 	}
 
@@ -206,11 +207,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return zipAndEncodeToBase64(this.getEasJson());
 	}
 
-	// TODO: Return ID based on decoded data
-	/*getTicketId(){
-		this.checkAttestationIsLoaded();
-	}*/
-
 	getAttestationData(){
 		this.checkAttestationIsLoaded();
 
@@ -227,8 +223,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 				this.decodedData[value.name] = dataArr[index].value.value;
 				index++;
 			}
-
-			//this.decodedData["commitment"] = dataArr[index].value;
 		}
 
 		return this.decodedData;
@@ -261,7 +255,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			throw new Error("Commitment verification failed.");
 	}
 
-	async validateEasAttestation(){
+	async validateEasAttestation(skipRevocationCheck = false){
 
 		this.checkAttestationIsLoaded();
 
@@ -271,9 +265,11 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		// Expiry check
 		this.checkValidity();
 
+		if(skipRevocationCheck || !this.signedAttestation.message.revocable)
+			return;
+
 		// EAS registry check to make sure attestation is not revoked
-		if(this.signedAttestation.message.revocable)
-			await this.checkRevocation()
+		await this.checkRevocation()
 	}
 
 	private async checkRevocation(uid?: string){
@@ -492,7 +488,6 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		for (const key of this.conferenceKeys){
 
 			if (this.signerPublicKey.substring(2) === key.getPublicKeyAsHexStr()) {
-				this.signerKeyPair = key;
 				return true;
 			}
 		}
@@ -501,7 +496,15 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	}
 
 	getSignerKeyPair(){
-		return this.signerKeyPair;
+		return KeyPair.fromPublicHex(this.signerPublicKey);
+	}
+
+	getSignerKey(){
+		return this.signerPublicKey;
+	}
+
+	getSignerAddress(){
+		return this.signerAddress;
 	}
 
 	getCommitment(): Uint8Array {
