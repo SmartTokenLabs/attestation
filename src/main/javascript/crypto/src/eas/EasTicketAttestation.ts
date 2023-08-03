@@ -282,7 +282,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		if (!this.rpcMap?.[chainId])
 			throw new Error("RPC not provided for chain " + chainId);
 
-		const eas = new EAS(this.signedAttestation.domain.verifyingContract, {signerOrProvider: new ethers.providers.JsonRpcProvider(this.rpcMap[chainId])});
+		const eas = new EAS(this.signedAttestation.domain.verifyingContract, {signerOrProvider: new ethers.providers.StaticJsonRpcProvider(this.rpcMap[chainId])});
 
 		const revoked = await eas.getRevocationOffchain(this.signerAddress, uid);
 
