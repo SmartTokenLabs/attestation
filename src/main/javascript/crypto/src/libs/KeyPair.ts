@@ -97,6 +97,9 @@ export class KeyPair {
 
     // hex string 129-130 symbols with leading 04 (it means uncompressed)
     static fromPublicHex(publicHex: string){
+
+        publicHex = publicHex.replace("0x", "");
+
         if (publicHex.toLowerCase().match(/^[a-f0-9]+$/i) === null) {
             throw new Error('Wrong Hex string input');
         }
