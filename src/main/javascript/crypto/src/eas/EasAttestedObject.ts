@@ -4,9 +4,8 @@ import {AttestationCrypto} from "../libs/AttestationCrypto";
 import {ProofOfExponentInterface} from "../libs/ProofOfExponentInterface";
 import {hexStringToUint8, logger, uint8tohex} from "../libs/utils";
 import {AsnParser, AsnProp, AsnPropTypes, AsnSerializer} from "@peculiar/asn1-schema";
-import {KeyPair, KeysArray} from "../libs/KeyPair";
 import {UsageProofOfExponent} from "../libs/UsageProofOfExponent";
-import {DEBUGLEVEL} from "../config";
+import {defaultAbiCoder} from "ethers/lib/utils";
 
 export class EasUseToken {
 
@@ -57,31 +56,66 @@ export class EasAttestedObject {
 		return pok;
 	}
 
-	getEncoded(){
+	getEncoded(format: "abi"|"asn" = "abi"){
 
-		const useToken = new EasUseToken();
-		useToken.ticketAttestation = new Uint8Array(this.ticketAttestation.getAsnEncoded());
-		useToken.idAttestation = new Uint8Array(this.identifierAttestation.getAsnEncoded());
-		useToken.proof = hexStringToUint8(this.pok.getDerEncoding());
+		if (format === "abi"){
 
-		return uint8tohex(new Uint8Array(AsnSerializer.serialize(useToken)));
+			return defaultAbiCoder.encode(
+				["bytes", "bytes", "bytes"],
+				[
+					this.ticketAttestation.getAbiEncoded(),
+					this.identifierAttestation.getAbiEncoded(),
+					this.pok.getAbiEncoding()
+				]
+			)
+
+		} else {
+
+			const useToken = new EasUseToken();
+			useToken.ticketAttestation = new Uint8Array(this.ticketAttestation.getAsnEncoded());
+			useToken.idAttestation = new Uint8Array(this.identifierAttestation.getAsnEncoded());
+			useToken.proof = hexStringToUint8(this.pok.getDerEncoding());
+
+			return uint8tohex(new Uint8Array(AsnSerializer.serialize(useToken)));
+		}
 	}
 
-	static fromBytes<T extends EasTicketAttestation, A extends EASIdentifierAttestation>(encoded: Uint8Array, ticketClass: new () => T, idClass: new () => A){
-
-		const decoded = AsnParser.parse(encoded, EasUseToken);
+	static fromBytes<T extends EasTicketAttestation, A extends EASIdentifierAttestation>(encoded: Uint8Array, ticketClass: new () => T, idClass: new () => A, format: "abi"|"asn" = "abi"){
 
 		const me = new this();
-
 		me.ticketAttestation = new ticketClass();
-		me.ticketAttestation.loadAsnEncoded(decoded.ticketAttestation);
-
 		me.identifierAttestation = new idClass();
-		me.identifierAttestation.loadAsnEncoded(decoded.idAttestation);
 
+		let parts: {
+			ticketAttestation: Uint8Array,
+			idAttestation: Uint8Array
+			proof: Uint8Array
+		}
 
 		let pok = new UsageProofOfExponent();
-		pok.fromBytes( new Uint8Array(decoded.proof) ) ;
+
+		if (format === "abi"){
+
+			const decoded = defaultAbiCoder.decode(
+				["bytes", "bytes", "bytes"],
+				encoded
+			);
+
+			parts = {
+				ticketAttestation: hexStringToUint8(decoded[0]),
+				idAttestation: hexStringToUint8(decoded[1]),
+				proof: hexStringToUint8(decoded[2])
+			}
+
+			pok.fromAbiBytes(parts.proof);
+
+		} else {
+			parts = AsnParser.parse(encoded, EasUseToken);
+			pok.fromBytes(new Uint8Array(parts.proof));
+		}
+
+		me.ticketAttestation.loadBinaryEncoded(format, parts.ticketAttestation);
+		me.identifierAttestation.loadBinaryEncoded(format, parts.idAttestation);
 		me.pok = pok;
 
 		return me;

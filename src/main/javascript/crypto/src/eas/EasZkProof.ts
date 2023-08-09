@@ -24,7 +24,8 @@ export class EasZkProof {
 		base64IdentifierAttestation: string,
 		attestorPublicKey: string,
 		base64senderPublicKeys: KeysConfig|KeysArray,
-		identifierFormat?: "asn"|"eas"
+		identifierFormat?: "asn"|"eas",
+		outputFormat: "abi"|"asn" = "abi"
 	){
 		try {
 			base64senderPublicKeys = KeyPair.parseKeyArrayStrings(base64senderPublicKeys);
@@ -47,7 +48,7 @@ export class EasZkProof {
 			const redeem = new EasAttestedObject();
 			redeem.create(ticketAttest, ticketSecret, idAttest, identifierSecret);
 
-			encodedUseTicket = redeem.getEncoded();
+			encodedUseTicket = redeem.getEncoded(outputFormat);
 
 		} else {
 			const idAttest = SignedIdentifierAttestation.fromBytes(base64ToUint8array(base64IdentifierAttestation), KeyPair.publicFromBase64orPEM(attestorPublicKey));
@@ -61,7 +62,14 @@ export class EasZkProof {
 		return hexStringToBase64(encodedUseTicket);
 	}
 
-	public async validateUseTicket(proof:string, base64attestorPublicKey:string, base64issuerPublicKeys: {[key: string]: KeyPair|string}, userEthKey?: string, identifierFormat?: "asn"|"eas"){
+	public async validateUseTicket(
+		proof:string,
+		base64attestorPublicKey:string,
+		base64issuerPublicKeys: {[key: string]: KeyPair|string},
+		userEthKey?: string,
+		identifierFormat?: "asn"|"eas",
+		outputFormat: "abi"|"asn" = "abi"
+	){
 
 		let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
 		let issuerKeys = KeyPair.parseKeyArrayStrings(base64issuerPublicKeys);
@@ -82,7 +90,7 @@ export class EasZkProof {
 				}
 			}
 
-			const decodedAttestedObject = EasAttestedObject.fromBytes(base64ToUint8array(proof), EasTicketWrapper, EasIdWrapper);
+			const decodedAttestedObject = EasAttestedObject.fromBytes(base64ToUint8array(proof), EasTicketWrapper, EasIdWrapper, outputFormat);
 			await decodedAttestedObject.checkValidity(userEthKey);
 
 		} else {

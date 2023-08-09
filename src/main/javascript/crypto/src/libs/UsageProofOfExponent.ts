@@ -2,15 +2,16 @@ import {ProofOfExponentInterface} from "./ProofOfExponentInterface";
 import {CURVE_BN256, Point} from "./Point";
 import {UsageProof} from "../asn1/shemas/ProofOfExponentASN";
 import {AsnParser} from "@peculiar/asn1-schema";
-import {base64ToUint8array, bnToUint8, uint8ToBn, uint8tohex} from "./utils";
+import {base64ToUint8array, bnToUint8, hexStringToUint8, uint8ToBn, uint8tohex} from "./utils";
 import {Asn1Der} from "./DerUtility";
 import { AttestationCrypto } from "./AttestationCrypto";
+import {defaultAbiCoder} from "ethers/lib/utils";
 
 export class UsageProofOfExponent implements ProofOfExponentInterface {
+
     private tPoint: Point;
     private challengeResponse: bigint;
     private encoding: string;
-    private encodingBytes: Uint8Array;
     private nonce: Uint8Array;
 
     constructor() {
@@ -31,7 +32,6 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
     }
 
     fromBytes(bytes: Uint8Array) {
-        this.encodingBytes = bytes;
         // UsageProof
 
         let usageProof: UsageProof = AsnParser.parse(bytes, UsageProof);
@@ -42,6 +42,16 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
         this.tPoint = Point.decodeFromHex(uint8tohex(tPointEnc), CURVE_BN256);
     }
 
+    fromAbiBytes(bytes: Uint8Array){
+
+        const parts = defaultAbiCoder.decode(["bytes", "bytes", "bytes"], bytes);
+
+        console.log(parts);
+
+        this.challengeResponse = uint8ToBn(hexStringToUint8(parts[0]));
+        this.tPoint = Point.decodeFromHex(parts[1].substring(2), CURVE_BN256);
+        this.nonce = hexStringToUint8(parts[2]);
+    }
 
     makeEncoding() {
         let res: string = Asn1Der.encode('OCTET_STRING', uint8tohex(bnToUint8(this.challengeResponse))) +
@@ -61,6 +71,17 @@ export class UsageProofOfExponent implements ProofOfExponentInterface {
 
     public getDerEncoding(): string {
         return this.encoding;
+    }
+
+    public getAbiEncoding(){
+        return defaultAbiCoder.encode(
+            ["bytes", "bytes", "bytes"],
+            [
+                bnToUint8(this.challengeResponse),
+                this.tPoint.getEncoded(false),
+                this.nonce
+            ]
+        )
     }
 
     public getNonce(): Uint8Array {
