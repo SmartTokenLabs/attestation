@@ -34,10 +34,7 @@ export class EASIdentifierAttestation extends EasTicketAttestation {
 		super(schema, signingConfig, undefined, issuerKey ? <KeysArray>{"": issuerKey} : undefined);
 	}
 
-	async createEasAttestation(data: EasIdentiferParameters|any, options?: EasTicketCreationOptions, commitmentType = 'mail'){
-
-		if (!options)
-			options = {};
+	async createEasAttestation(data: EasIdentiferParameters|any, options: EasTicketCreationOptions = {}, commitmentType = 'mail'){
 
 		// Identifier attestation is not revocable at this stage.
 		if (options.revocable === undefined)
