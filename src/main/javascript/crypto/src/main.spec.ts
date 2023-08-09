@@ -836,9 +836,9 @@ describe("Safe Connect", () => {
     });
 });
 
-describe("EAS Ticket Attestation", () => {
+describe("EAS Attestation", () => {
 
-    const SEPOLIA_RPC = 'https://rpc.sepolia.org/'
+    const SEPOLIA_RPC = 'https://sepolia.infura.io/v3/9f79b2f9274344af90b8d4e244b580ef'
 
     const EAS_CONFIG = {
         address: '0xC2679fBD37d54388Ce493F1DB75320D236e1815e',
@@ -1030,7 +1030,7 @@ describe("EAS Ticket Attestation", () => {
         await idAttestManager.validateEasAttestation()
     });
 
-    async function createEasZkProofAttestation(email: string){
+    async function createEasZkProofAttestation(email: string, outputFormat: "abi"|"asn" = "abi"){
 
         await createAttestation()
 
@@ -1047,10 +1047,17 @@ describe("EAS Ticket Attestation", () => {
         // Create ZKProof attestation
         const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
 
-        const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas");
+        const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas", outputFormat);
 
         return {attestationIdPublic, easZkProof, base64UseTicketAttestation}
     }
+
+    test("ZKProof create & validate (EAS with legacy ASN bundle)", async () => {
+
+        const {attestationIdPublic, easZkProof, base64UseTicketAttestation} = await createEasZkProofAttestation(email, "asn");
+
+        await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress(), "eas", "asn");
+    });
 
     test("ZKProof create & validate (EAS)", async () => {
 

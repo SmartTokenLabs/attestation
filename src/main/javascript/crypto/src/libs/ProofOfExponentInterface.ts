@@ -5,5 +5,6 @@ export interface ProofOfExponentInterface {
     getChallengeResponse(): bigint;
     getNonce(): Uint8Array;
     getDerEncoding(): string;
+    getAbiEncoding(): string;
     validateParameters(): boolean;
 }

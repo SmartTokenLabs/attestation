@@ -3,7 +3,7 @@ import {
 	ATTESTATION_TYPE,
 	Offchain,
 	SignedOffchainAttestation,
-	TypedDataSigner, SchemaEncoder
+	TypedDataSigner, SchemaEncoder, getSchemaUID
 } from "@ethereum-attestation-service/eas-sdk";
 import {BigNumber, ethers, Signer} from "ethers";
 import {AttestationCrypto} from "../libs/AttestationCrypto";
@@ -52,11 +52,11 @@ export interface EasTicketCreationOptions {
 
 export class  EasAsnEmbeddedSchema {
 	@AsnProp({ type: AsnPropTypes.OctetString })
-	public easAttestation: Uint8Array
+	public attestation: Uint8Array
 	@AsnProp({ type: AsnPropTypes.BitString })
-	public signatureValue: Uint8Array;
+	public signature: Uint8Array;
 	@AsnProp({ type: AsnPropTypes.OctetString, optional: true })
-	public domainInfo: Uint8Array
+	public domain: Uint8Array
 }
 
 export class EasTicketAttestation extends AttestableObject implements Attestable {
@@ -109,7 +109,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	 * @param options
 	 * @param commitmentType
 	 */
-	async createEasAttestation(data: {[key: string]: string|number}, options?: EasTicketCreationOptions, commitmentType = 'mail'){
+	async createEasAttestation(data: {[key: string]: string|number}, options: EasTicketCreationOptions = {}, commitmentType = 'mail'){
 
 		if (!this.signingConfig)
 			throw new Error("Please provide valid signing config for this function.");
@@ -150,17 +150,20 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const schemaEncoder = new SchemaEncoder(this.getEasSchema());
 		const encodedData = schemaEncoder.encodeData(fieldData);
 
+		// Automatically calculate schema address (may be used for AW)
+		if (!options.schema)
+			options.schema = getSchemaUID(this.getEasSchema(), this.signingConfig.EASconfig.address, options.revocable !== false)
+
 		const newAttestation = await offchain.signOffchainAttestation({
-			recipient: options?.recipient ?? '0x0000000000000000000000000000000000000000',
+			recipient: options.recipient ?? '0x0000000000000000000000000000000000000000',
 			// Unix timestamp of when attestation expires. (0 for no expiration)
-			expirationTime: options?.validity?.to ?? 0,
+			expirationTime: options.validity?.to ?? 0,
 			// Unix timestamp of current time
-			time: options?.validity?.from ?? Math.round(Date.now() / 1000),
+			time: options.validity?.from ?? Math.round(Date.now() / 1000),
 			nonce: 0,
-			/*schema: "0x4677bc98bd107f75d03d13cf41e158e38f1b826502dd31f87bf384c1a888cbdc",*/
-			schema:  options?.schema ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
-			revocable: options?.revocable !== false,
-			refUID: options?.refUID ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
+			schema:  options.schema,
+			revocable: options.revocable !== false,
+			refUID: options.refUID ?? "0x0000000000000000000000000000000000000000000000000000000000000000",
 			data: encodedData,
 		}, this.signingConfig.signer as unknown as TypedDataSigner);
 
@@ -337,19 +340,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
 	}
 
-	getAsnEncoded(compressed = false){
+	public getAbiEncodedParts(){
 
-		const abiEncoded = defaultAbiCoder.encode(
-			this.signedAttestation.types.Attest.map((field) => field.type),
-			this.signedAttestation.types.Attest.map((field) => this.signedAttestation.message[field.name])
-		);
-
-		const asnEmbedded = new EasAsnEmbeddedSchema();
-
-		asnEmbedded.easAttestation = hexStringToUint8(abiEncoded);
-		asnEmbedded.signatureValue = hexStringToUint8(joinSignature(this.signedAttestation.signature));
-
-		const domainEncoded = defaultAbiCoder.encode(
+		const domain = defaultAbiCoder.encode(
 			['string', "address", "uint256"],
 			[
 				this.signedAttestation.domain.version,
@@ -357,7 +350,30 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 				this.signedAttestation.domain.chainId
 			]
 		)
-		asnEmbedded.domainInfo = hexStringToUint8(domainEncoded);
+
+		const attestation = defaultAbiCoder.encode(
+			this.signedAttestation.types.Attest.map((field) => field.type),
+			this.signedAttestation.types.Attest.map((field) => this.signedAttestation.message[field.name])
+		);
+
+		const signature = joinSignature(this.signedAttestation.signature);
+
+		return {domain, attestation, signature};
+	}
+
+	getBinaryEncoded(format: "abi"|"asn", compressed = false){
+		return format === "abi" ? this.getAbiEncoded(compressed) : this.getAsnEncoded(compressed);
+	}
+
+	getAsnEncoded(compressed = false){
+
+		const encodedParts = this.getAbiEncodedParts();
+
+		const asnEmbedded = new EasAsnEmbeddedSchema();
+
+		asnEmbedded.domain = hexStringToUint8(encodedParts.domain);
+		asnEmbedded.attestation = hexStringToUint8(encodedParts.attestation);
+		asnEmbedded.signature = hexStringToUint8(encodedParts.signature);
 
 		const data =  AsnSerializer.serialize(asnEmbedded);
 
@@ -367,19 +383,69 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		return pako.deflate(data, {level: 9});
 	}
 
-	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: KeysArray, compressed = false){
+	getAbiEncoded(compressed = false){
 
-		this.decodedData = undefined;
-		this.commitmentSecret = undefined;
+		const encodedParts = this.getAbiEncodedParts();
+
+		const encoded = defaultAbiCoder.encode(
+			['bytes', "bytes", "bytes"],
+			[
+				encodedParts.domain,
+				encodedParts.attestation,
+				encodedParts.signature
+			]
+		)
+
+		const data = hexStringToUint8(encoded);
+
+		if (!compressed)
+			return data;
+
+		return pako.deflate(data, {level: 9});
+	}
+
+	loadBinaryEncoded(format: "abi"|"asn", bytes: ArrayBuffer|Uint8Array, keys?: KeysArray, compressed = false){
+		return format === "abi" ? this.loadAbiEncoded(bytes, keys, compressed) : this.loadAsnEncoded(bytes, keys, compressed)
+	}
+
+	loadAbiEncoded(bytes: ArrayBuffer|Uint8Array, keys?: KeysArray, compressed = false){
+
+		if (compressed)
+			bytes = pako.inflate(bytes);
+
+		const abiEmbedded = defaultAbiCoder.decode(
+			['bytes', "bytes", "bytes"],
+			new Uint8Array(bytes)
+		);
+
+		this.loadAbiEncodedParts({
+			domain: abiEmbedded[0],
+			attestation: abiEmbedded[1],
+			signature: abiEmbedded[2]
+		}, keys);
+	}
+
+	loadAsnEncoded(bytes: ArrayBuffer|Uint8Array, keys?: KeysArray, compressed = false){
 
 		if (compressed)
 			bytes = pako.inflate(bytes);
 
 		const asnEmbedded = AsnParser.parse(bytes, EasAsnEmbeddedSchema);
 
+		this.loadAbiEncodedParts(asnEmbedded, keys)
+	}
+
+	loadAbiEncodedParts(
+		parts: {domain: string|Uint8Array, attestation: string|Uint8Array, signature: string|Uint8Array},
+		keys?: KeysArray
+	){
+
+		this.decodedData = undefined;
+		this.commitmentSecret = undefined;
+
 		const domainDecoded = defaultAbiCoder.decode(
 			['string', "address", "uint256"],
-			asnEmbedded.domainInfo
+			parts.domain
 		);
 
 		const domain: EIP712DomainTypedData = {
@@ -391,7 +457,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		// console.log("ABI Encoded bytes: ", "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
 
-		const abiDecoded = defaultAbiCoder.decode(ATTESTATION_TYPE.map((field) => field.type), "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
+		const abiDecoded = defaultAbiCoder.decode(
+			ATTESTATION_TYPE.map((field) => field.type),
+			parts.attestation
+		);
 
 		// console.log("Abi decoded: ", abiDecoded);
 
@@ -401,7 +470,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			mappedDecodedValues[value.name] = abiDecoded[index];
 		}
 
-		const splitSignature = ethers.utils.splitSignature(new Uint8Array(asnEmbedded.signatureValue));
+		const splitSignature = ethers.utils.splitSignature(parts.signature);
 
 		this.signedAttestation = {
 			domain: domain,
