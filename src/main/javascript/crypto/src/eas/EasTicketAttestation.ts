@@ -95,7 +95,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	private getEasSchema(){
 		return this.schema.fields.map((field) => {
 			return field.type + " " + field.name
-		}).join(", ");
+		}).join(",");
 	}
 
 	private checkAttestationIsLoaded(){
@@ -151,8 +151,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const encodedData = schemaEncoder.encodeData(fieldData);
 
 		// Automatically calculate schema address (may be used for AW)
+		// TODO: Add option for resolver address
 		if (!options.schema)
-			options.schema = getSchemaUID(this.getEasSchema(), this.signingConfig.EASconfig.address, options.revocable !== false)
+			options.schema = getSchemaUID(this.getEasSchema(), "0x0000000000000000000000000000000000000000", options.revocable !== false)
 
 		const newAttestation = await offchain.signOffchainAttestation({
 			recipient: options.recipient ?? '0x0000000000000000000000000000000000000000',
