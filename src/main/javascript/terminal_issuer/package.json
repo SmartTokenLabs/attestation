@@ -7,14 +7,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "ncc build src/index.ts -o dist",
-    "build-prod": "ncc build src/index.ts -o dist -m",
+    "build-prod": "ncc build src/issue.ts -o dist -m",
     "watch": "ncc build src/index.ts -o dist -w"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tokenscript/attestation": "^0.5.1",
+    "@tokenscript/attestation": "0.6.0-rc.3",
     "ethers": "^5.7.2"
   }
 }
