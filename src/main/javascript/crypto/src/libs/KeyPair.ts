@@ -17,7 +17,7 @@ import {AsnParser} from "@peculiar/asn1-schema";
 import {
     PrivateKeyData,
     PrivateKeyInfo, PublicKeyInfoValue,
-    SubjectPublicKeyInfo
+    SubjectPublicKeyInfo, PrivateKeyDataOpenSSL
 } from "../asn1/shemas/AttestationFramework";
 import {ethers} from "ethers";
 import {Signature} from "../asn1/shemas/Signature";
@@ -206,11 +206,26 @@ export class KeyPair {
 
     static privateFromPEM(pem: string): KeyPair {
         const receiverPrivUint8 = base64ToUint8array(pem);
-        let privateKeyObj: PrivateKeyInfo = AsnParser.parse(receiverPrivUint8, PrivateKeyInfo);
-        return KeyPair.privateFromKeyInfo(privateKeyObj);
+        try {
+            let privateKeyObj: PrivateKeyInfo = AsnParser.parse(receiverPrivUint8, PrivateKeyInfo);
+            return KeyPair.privateFromKeyInfo(privateKeyObj);
+        } catch(e){
+            // try to decode OpenSSL format
+        }
+        let privateKeyObj: PrivateKeyDataOpenSSL = AsnParser.parse(receiverPrivUint8, PrivateKeyDataOpenSSL);
+
+        let me = new this();
+
+        if (privateKeyObj.algorithm === "1.3.132.0.10") {
+            me.algorithm = "secp256k1"
+        } else {
+            throw new Error(`Unknown algorithm "${privateKeyObj.algorithm}"`)
+        }
+
+        me.privKey = new Uint8Array(privateKeyObj.privateKey);
+        return me;
+
     }
-
-
 
     // Generate a private key
     static async generateKeyAsync(): Promise<KeyPair> {
@@ -298,7 +313,7 @@ export class KeyPair {
 
     getAddress(): string {
         var pubPoint = this.getPublicKeyAsHexStr();
-        pubPoint = pubPoint.substr(2);
+        pubPoint = pubPoint.substring(2);
         let hash = sha3.keccak256(hexStringToArray(pubPoint));
         return "0x" + hash.substr(-40).toUpperCase();
     }

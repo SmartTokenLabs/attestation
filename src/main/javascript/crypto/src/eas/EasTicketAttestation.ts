@@ -9,7 +9,7 @@ import {BigNumber, ethers, Signer} from "ethers";
 import {AttestationCrypto} from "../libs/AttestationCrypto";
 import {AsnParser, AsnProp, AsnPropTypes, AsnSerializer} from "@peculiar/asn1-schema";
 import {defaultAbiCoder, joinSignature} from "ethers/lib/utils";
-import {hexStringToUint8, uint8tohex} from "../libs/utils";
+import {base64UrltoBase64, base64toBase64Url, hexStringToUint8, uint8tohex} from "../libs/utils";
 import {OffchainAttestationParams} from "@ethereum-attestation-service/eas-sdk/dist/offchain/offchain";
 import {Attestable} from "../libs/Attestable";
 import {AttestableObject} from "../libs/AttestableObject";
@@ -202,7 +202,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 
 	getEncoded(){
-		return zipAndEncodeToBase64(this.getEasJson());
+		return base64toBase64Url(zipAndEncodeToBase64(this.getEasJson()));
 	}
 
 	// TODO: Return ID based on decoded data
@@ -332,10 +332,10 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	}
 
 	loadFromEncoded(
-		base64: string,
+		base64url: string,
 		keys?: KeysArray,
 		commitmentSecret?: string){
-		const decoded = decodeBase64ZippedBase64(base64);
+		const decoded = decodeBase64ZippedBase64(base64UrltoBase64(base64url));
 
 		this.loadEasAttestation(decoded.sig as SignedOffchainAttestation, keys, commitmentSecret)
 	}

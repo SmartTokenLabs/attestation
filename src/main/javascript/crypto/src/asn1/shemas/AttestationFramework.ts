@@ -14,6 +14,16 @@ export class SubjectPublicKeyInfo {
     @AsnProp({ type: AsnPropTypes.Any }) public null? = false;
 }
 
+export class PrivateKeyDataOpenSSL {
+    @AsnProp({ type: AsnPropTypes.Integer }) public one: number;
+    // @AsnProp({ type: AsnPropTypes.Any }) public algDescr2: Uint8Array;
+    @AsnProp({ type: AsnPropTypes.OctetString }) public privateKey: Uint8Array;
+    @AsnProp({ type: AsnPropTypes.ObjectIdentifier, context: 0 })
+    public algorithm: string;
+    @AsnProp({ type: AsnPropTypes.BitString, context: 1 })
+    public publicKey: Uint8Array;
+}
+
 export class PrivateKeyData {
     @AsnProp({ type: AsnPropTypes.Integer }) public one: number;
     // @AsnProp({ type: AsnPropTypes.Any }) public algDescr2: Uint8Array;
