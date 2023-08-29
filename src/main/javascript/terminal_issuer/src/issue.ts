@@ -72,8 +72,11 @@ async function issue(){
     let tokenId = "";
     let tokenClass = "";
     let ticketAttestationEmail = "";
+    let validityFrom = "";
+    let validityTo = "";
 
-    [,,,,,,,ticketAttestationEmail,tokenId,tokenClass] = process.argv;
+    // [,,,,,,,ticketAttestationEmail, tokenId, tokenClass, validityFrom, validityTo] = process.argv;
+    [,,,,,,,ticketAttestationEmail, tokenId, tokenClass, validityTo, validityFrom] = process.argv;
     
     let ticketBase64;
     let ticketSecret;
@@ -81,14 +84,19 @@ async function issue(){
     tokenClass = tokenClass ? tokenClass : "0"
 
     try {
+        let options = {};
+        if (validityFrom || validityTo){
+            let validity = {}
+            validityFrom && (validity["from"] = validityFrom)
+            validityTo && (validity["to"] = validityTo)
+            options = {validity};
+        }
         await easAttest.createEasAttestation({
             devconId: conferenceId,
             ticketIdString: tokenId,
             ticketClass: tokenClass,
             commitment: ticketAttestationEmail,
-        }, {
-            // validity
-        });
+        }, options);
 
         ticketBase64 = easAttest.getEncoded();
         ticketSecret = easAttest.getEasJson().secret;
