@@ -1,6 +1,6 @@
 {
   "name": "@tokenscript/attestation",
-  "version": "0.6.0-rc.6",
+  "version": "0.7.0-beta.1",
   "description": "A library for integrating cryptographic attestations into applications",
   "type": "commonjs",
   "main": "dist/index.js",
@@ -56,13 +56,12 @@
     "crypto": false
   },
   "dependencies": {
-    "@ethereum-attestation-service/eas-sdk": "^0.28.3",
+    "@ethereum-attestation-service/eas-sdk": "^0.29.1",
     "@peculiar/asn1-schema": "^2.3.3",
     "elliptic": "^6.5.3",
     "ethers": "^5.7.2",
     "js-sha3": "^0.8.0",
     "jsonwebtoken": "^9.0.0",
-    "pako": "^2.1.0",
     "patch-package": "^6.5.0",
     "secure-random": "^1.1.2",
     "string.prototype.matchall": "^4.0.8",

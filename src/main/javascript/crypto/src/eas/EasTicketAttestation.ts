@@ -1,9 +1,12 @@
 import {
 	EAS,
-	ATTESTATION_TYPE,
 	Offchain,
 	SignedOffchainAttestation,
-	TypedDataSigner, SchemaEncoder, getSchemaUID
+	TypedDataSigner,
+	SchemaEncoder,
+	getSchemaUID,
+	decodeBase64ZippedBase64,
+	zipAndEncodeToBase64, OFFCHAIN_ATTESTATION_TYPES
 } from "@ethereum-attestation-service/eas-sdk";
 import {BigNumber, ethers, Signer} from "ethers";
 import {AttestationCrypto} from "../libs/AttestationCrypto";
@@ -13,7 +16,6 @@ import {hexStringToUint8, uint8tohex} from "../libs/utils";
 import {OffchainAttestationParams} from "@ethereum-attestation-service/eas-sdk/dist/offchain/offchain";
 import {Attestable} from "../libs/Attestable";
 import {AttestableObject} from "../libs/AttestableObject";
-import {decodeBase64ZippedBase64, zipAndEncodeToBase64} from "./AttestationUrl";
 import {KeyPair, KeysArray} from "../libs/KeyPair";
 import {EIP712DomainTypedData} from "@ethereum-attestation-service/eas-sdk/dist/offchain/typed-data-handler";
 import * as pako from "pako";
@@ -50,6 +52,12 @@ export interface EasTicketCreationOptions {
 	validity?: {from: number, to: number}
 }
 
+export interface EasJson {
+	sig: SignedOffchainAttestation,
+	signer: string,
+	secret?: string
+}
+
 export class  EasAsnEmbeddedSchema {
 	@AsnProp({ type: AsnPropTypes.OctetString })
 	public attestation: Uint8Array
@@ -60,6 +68,8 @@ export class  EasAsnEmbeddedSchema {
 }
 
 export class EasTicketAttestation extends AttestableObject implements Attestable {
+
+	private static DEFAULT_OFFCHAIN_VERSION = 1;
 
 	private signedAttestation: SignedOffchainAttestation;
 	private signerAddress: string;
@@ -84,7 +94,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 				version: string
 				chainId: number
 			},
-			signer: Signer
+			signer: Signer,
+			offChainVersion?: number
 		},
 		private rpcMap?: {[chainId: number]: string},
 		private issuerKeys?: KeysArray
@@ -143,9 +154,11 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 				value,
 				type: field.type
 			}
-		})
+		});
 
-		const offchain = new Offchain(this.signingConfig.EASconfig);
+		const offChainVersion = this.signingConfig?.offChainVersion ?? EasTicketAttestation.DEFAULT_OFFCHAIN_VERSION;
+
+		const offchain = new Offchain(this.signingConfig.EASconfig, offChainVersion);
 
 		const schemaEncoder = new SchemaEncoder(this.getEasSchema());
 		const encodedData = schemaEncoder.encodeData(fieldData);
@@ -156,6 +169,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			options.schema = getSchemaUID(this.getEasSchema(), "0x0000000000000000000000000000000000000000", options.revocable !== false)
 
 		const newAttestation = await offchain.signOffchainAttestation({
+			version: offChainVersion,
 			recipient: options.recipient ?? '0x0000000000000000000000000000000000000000',
 			// Unix timestamp of when attestation expires. (0 for no expiration)
 			expirationTime: options.validity?.to ?? 0,
@@ -187,7 +201,7 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 	getEasJson(){
 		this.checkAttestationIsLoaded();
 
-		const data: {sig: SignedOffchainAttestation, signer: string, secret?: string} =  {
+		const data: EasJson =  {
 			sig: this.signedAttestation,
 			signer: this.signerAddress,
 		};
@@ -350,14 +364,14 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 				this.signedAttestation.domain.verifyingContract,
 				this.signedAttestation.domain.chainId
 			]
-		)
+		);
 
 		const attestation = defaultAbiCoder.encode(
 			this.signedAttestation.types.Attest.map((field) => field.type),
 			this.signedAttestation.types.Attest.map((field) => this.signedAttestation.message[field.name])
 		);
 
-		const signature = joinSignature(this.signedAttestation.signature);
+		const signature = joinSignature(this.signedAttestation.signature ?? this.signedAttestation);
 
 		return {domain, attestation, signature};
 	}
@@ -449,35 +463,45 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			parts.domain
 		);
 
+		// console.log("ABI Encoded bytes: ", "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
+
+		const firstElem = defaultAbiCoder.decode(['uint16'], parts.attestation);
+		const version = firstElem[0] > 50 ? 0 : 1;
+
+		console.log(version);
+
+		const abiDecoded = defaultAbiCoder.decode(
+			OFFCHAIN_ATTESTATION_TYPES[version].types.map((field) => field.type),
+			parts.attestation
+		);
+
+		//console.log("Abi decoded: ", abiDecoded);
+
+		const mappedDecodedValues: {[name: string]: any} = {};
+
+		for (const [index, value] of OFFCHAIN_ATTESTATION_TYPES[version].types.entries()){
+			mappedDecodedValues[value.name] = abiDecoded[index];
+		}
+
+		if (version === 0)
+			mappedDecodedValues.version = 0;
+
+		// console.log("EAS version: ", version);
+
+		const splitSignature = ethers.utils.splitSignature(parts.signature);
+
 		const domain: EIP712DomainTypedData = {
-			name: "EAS Attestation",
+			name: OFFCHAIN_ATTESTATION_TYPES[version].domainName,
 			version: domainDecoded[0],
 			verifyingContract: domainDecoded[1],
 			chainId: domainDecoded[2]
 		}
 
-		// console.log("ABI Encoded bytes: ", "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
-
-		const abiDecoded = defaultAbiCoder.decode(
-			ATTESTATION_TYPE.map((field) => field.type),
-			parts.attestation
-		);
-
-		// console.log("Abi decoded: ", abiDecoded);
-
-		const mappedDecodedValues = {};
-
-		for (const [index, value] of ATTESTATION_TYPE.entries()){
-			mappedDecodedValues[value.name] = abiDecoded[index];
-		}
-
-		const splitSignature = ethers.utils.splitSignature(parts.signature);
-
 		this.signedAttestation = {
 			domain: domain,
 			message: mappedDecodedValues as OffchainAttestationParams,
-			types: {Attest: ATTESTATION_TYPE},
-			primaryType: "Attestation",
+			types: {Attest: OFFCHAIN_ATTESTATION_TYPES[version].types},
+			primaryType: OFFCHAIN_ATTESTATION_TYPES[version].primaryType,
 			signature: {
 				r: splitSignature.r,
 				s: splitSignature.s,
@@ -541,9 +565,9 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 			chainId: this.signedAttestation.domain.chainId
 		};
 
-		const offchain = new Offchain(config);
+		const offchain = new Offchain(config, this.signedAttestation.message.version ?? 0);
 
-		const hash = ethers.utils._TypedDataEncoder.hash(offchain.getDomainTypedData(), {Attest: ATTESTATION_TYPE}, this.signedAttestation.message);
+		const hash = ethers.utils._TypedDataEncoder.hash(offchain.getDomainTypedData(), {Attest: OFFCHAIN_ATTESTATION_TYPES[this.signedAttestation.message.version].types}, this.signedAttestation.message);
 
 		this.signerPublicKey = ethers.utils.recoverPublicKey(hash, this.signedAttestation.signature);
 		this.signerAddress = ethers.utils.recoverAddress(hash, this.signedAttestation.signature)
