@@ -324,6 +324,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const tx = await eas.revokeOffchain(uid);
 
 		await tx.wait();
+
+		return tx.tx;
 	}
 
 	async bulkRevokeEasAttestations(uids: string[]){
@@ -336,6 +338,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 		const tx = await eas.multiRevokeOffchain(uids);
 
 		await tx.wait();
+
+		return tx.tx;
 	}
 
 	loadEasAttestation(attestation: SignedOffchainAttestation, keys?: KeysArray, commitmentSecret?: string){
