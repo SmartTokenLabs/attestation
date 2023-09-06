@@ -13,6 +13,13 @@ on:
       - stage
     paths:
       - "src/main/javascript/crypto/**"
+  workflow_dispatch:
+    inputs:
+      snapshot_version:
+        description: "A custom version to use for the snapshot package"
+        required: false
+        default: false
+        type: string
 
 jobs:
   js-p1:
@@ -43,8 +50,13 @@ jobs:
         id: publish
         run: |
           cd src/main/javascript/crypto/
-          SHORT_SHA="${GITHUB_SHA:0:7}"
-          SNAPSHOT_VERSION="SNAPSHOT-staging.${SHORT_SHA}"
+          
+          # Only use hash when version isn't explicitly specified
+          if [ -n "${ATTESTATION_VER}" ]; then
+            SHORT_SHA="${GITHUB_SHA:0:7}"
+            SNAPSHOT_VERSION="SNAPSHOT-staging.${SHORT_SHA}"  
+          fi;
+          
           sed -ri "s/\"version\"\s*:\s*\"(.*)\"/\"version\": \"\1-${SNAPSHOT_VERSION}\"/" package.json
           cat package.json
           npm i
@@ -53,6 +65,7 @@ jobs:
           echo "version=${version}" >>$GITHUB_OUTPUT
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SNAPSHOT_VERSION: ${{ inputs.snapshot_version }}
 
   downstream-attestation_id-ci:
     needs:

@@ -40,6 +40,7 @@ import {ethers} from "ethers";
 import {EasZkProof} from "./eas/EasZkProof";
 import {ATTESTATION_TYPE} from "./libs/interfaces";
 import {AttestationCrypto} from "./libs/AttestationCrypto";
+import {EASIdentifierAttestation} from "./eas/EASIdentifierAttestation";
 
 const PREFIX_PATH = '../../../../build/test-results/';
 
@@ -70,6 +71,8 @@ let email = "test@test.ts";
 let type = "mail";
 let WEB_DOMAIN = "http://wwww.hotelbogota.com";
 let ATTESTOR_DOMAIN = "http://wwww.attestation.id";
+
+jest.setTimeout(10000);
 
 describe("Utils tests", () => {
     test('uint8tohex test', () => {
@@ -833,9 +836,9 @@ describe("Safe Connect", () => {
     });
 });
 
-describe("EAS Ticket Attestation", () => {
+describe("EAS Attestation", () => {
 
-    const SEPOLIA_RPC = 'https://rpc.sepolia.org/'
+    const SEPOLIA_RPC = 'https://sepolia.infura.io/v3/9f79b2f9274344af90b8d4e244b580ef'
 
     const EAS_CONFIG = {
         address: '0xC2679fBD37d54388Ce493F1DB75320D236e1815e',
@@ -853,7 +856,7 @@ describe("EAS Ticket Attestation", () => {
     }
 
     const issuerPrivKey = KeyPair.privateFromPEM('MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBBIIBVTCCAVECAQEEIM/T+SzcXcdtcNIqo6ck0nJTYzKL5ywYBFNSpI7R8AuBoIHjMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAARjMR62qoIK9pHk17MyHHIU42Ix+Vl6Q2gTmIF72vNpinBpyoBkTkV0pnI1jdrLlAjJC0I91DZWQhVhddMCK65c');
-    const provider = new ethers.providers.JsonRpcProvider(SEPOLIA_RPC)
+    const provider = new ethers.providers.StaticJsonRpcProvider(SEPOLIA_RPC)
     const wallet = new ethers.Wallet(issuerPrivKey.getPrivateAsHexString(), provider)
     const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, {
         EASconfig: EAS_CONFIG,
@@ -870,6 +873,22 @@ describe("EAS Ticket Attestation", () => {
             commitment: email,
         }, {
             validity
+        });
+    }
+
+    const idWallet = new ethers.Wallet(attestorKey.getPrivateAsHexString(), provider)
+    const idAttestManager = new EASIdentifierAttestation({
+        EASconfig: EAS_CONFIG,
+        signer: idWallet
+    }, attestorKey);
+
+    async function createEasIdAttest(email: string){
+
+        await idAttestManager.createEasAttestation({
+            version: 1,
+            identifierType: "email",
+            commitment: email,
+            ethereumAddress: userKey.getAddress()
         });
     }
 
@@ -945,7 +964,7 @@ describe("EAS Ticket Attestation", () => {
         await expect(attestationManager.validateEasAttestation()).rejects.toThrowError('Attestation not yet valid.');
     });
 
-    test("Ensure secrets are difference for each generated attestation", async () => {
+    test("Ensure secrets are different for each generated attestation", async () => {
         const attest1 = await createAttestation();
         const attest2 = await createAttestation();
 
@@ -954,9 +973,9 @@ describe("EAS Ticket Attestation", () => {
 
     // TODO: Revocation tests with local EVM network
 
-    test("ZKProof create & validate", async () => {
+    test("ZKProof create & validate (ASN)", async () => {
 
-        await createAttestation()
+        await createAttestation();
 
         const ticketBase64 = attestationManager.getEncoded();
         const ticketSecret = attestationManager.getEasJson().secret;
@@ -975,9 +994,9 @@ describe("EAS Ticket Attestation", () => {
 
     });
 
-    test("ZKProof wrong commitment value", async () => {
+    test("ZKProof wrong commitment value (ASN)", async () => {
 
-        await createAttestation()
+        await createAttestation();
 
         const ticketBase64 = attestationManager.getEncoded();
         const ticketSecret = attestationManager.getEasJson().secret;
@@ -991,6 +1010,73 @@ describe("EAS Ticket Attestation", () => {
 
         // Create ZKProof attestation
         expect(() => easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig)).toThrowError("The redeem proof did not verify");
+    });
+
+    test("EAS Identifier attestation - validate from URL encoded", async() => {
+
+        await createEasIdAttest(email);
+
+        idAttestManager.loadFromEncoded(idAttestManager.getEncoded());
+
+        await idAttestManager.validateEasAttestation()
+    });
+
+    test("EAS Identifier attestation - validate from ASN encoded", async() => {
+
+        await createEasIdAttest(email);
+
+        idAttestManager.loadAsnEncoded(idAttestManager.getAsnEncoded());
+
+        await idAttestManager.validateEasAttestation()
+    });
+
+    async function createEasZkProofAttestation(email: string, outputFormat: "abi"|"asn" = "abi"){
+
+        await createAttestation()
+
+        const ticketBase64 = attestationManager.getEncoded();
+        const ticketSecret = attestationManager.getEasJson().secret;
+
+        // Generate identifier attestation
+        await createEasIdAttest(email);
+
+        const idBase64 = idAttestManager.getEncoded();
+        const idSecret = idAttestManager.getEasJson().secret;
+        const attestationIdPublic = hexStringToBase64(attestorKey.getAsnDerPublic());
+
+        // Create ZKProof attestation
+        const easZkProof = new EasZkProof(EAS_TICKET_SCHEMA, {11155111: SEPOLIA_RPC});
+
+        const base64UseTicketAttestation = easZkProof.getUseTicket(BigInt(<string>ticketSecret), BigInt(<string>idSecret), ticketBase64, idBase64, attestationIdPublic, pubKeyConfig, "eas", outputFormat);
+
+        return {attestationIdPublic, easZkProof, base64UseTicketAttestation}
+    }
+
+    test("ZKProof create & validate (EAS with legacy ASN bundle)", async () => {
+
+        const {attestationIdPublic, easZkProof, base64UseTicketAttestation} = await createEasZkProofAttestation(email, "asn");
+
+        await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress(), "eas", "asn");
+    });
+
+    test("ZKProof create & validate (EAS)", async () => {
+
+        const {attestationIdPublic, easZkProof, base64UseTicketAttestation} = await createEasZkProofAttestation(email);
+
+        await easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, userKey.getAddress(), "eas");
+    });
+
+    test("ZKProof wrong commitment value (EAS)", async () => {
+
+        await expect(() => createEasZkProofAttestation("wrong@email.com")).rejects.toThrowError("The redeem proof did not verify");
+    });
+
+    test("ZKProof wrong ethereum address (EAS)", async () => {
+
+        const {attestationIdPublic, easZkProof, base64UseTicketAttestation} = await createEasZkProofAttestation(email);
+
+        await expect(() => easZkProof.validateUseTicket(base64UseTicketAttestation, attestationIdPublic, pubKeyConfig, "0xcFF805b714b24b3dD30cB4a1bea3745e5C5E73ef", "eas"))
+            .rejects.toThrowError("The provided ethereum address does not match the address specified in the identifier attestation");
     });
 
 });
