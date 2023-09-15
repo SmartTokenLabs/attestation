@@ -68,7 +68,8 @@ export class EasZkProof {
 		base64issuerPublicKeys: {[key: string]: KeyPair|string},
 		userEthKey?: string,
 		identifierFormat?: "asn"|"eas",
-		outputFormat: "abi"|"asn" = "abi"
+		outputFormat: "abi"|"asn" = "abi",
+		skipRevocationCheck = false
 	){
 
 		let attestorKey = KeyPair.publicFromBase64orPEM(base64attestorPublicKey);
@@ -91,7 +92,7 @@ export class EasZkProof {
 			}
 
 			const decodedAttestedObject = EasAttestedObject.fromBytes(base64ToUint8array(proof), EasTicketWrapper, EasIdWrapper, outputFormat);
-			await decodedAttestedObject.checkValidity(userEthKey);
+			await decodedAttestedObject.checkValidity(userEthKey, skipRevocationCheck);
 
 		} else {
 
@@ -101,7 +102,7 @@ export class EasZkProof {
 				throw new Error("Ticket validity check failed!");
 			}
 
-			await (decodedAttestedObject.getAttestableObject() as EasTicketAttestation).validateEasAttestation();
+			await (decodedAttestedObject.getAttestableObject() as EasTicketAttestation).validateEasAttestation(skipRevocationCheck);
 
 			return decodedAttestedObject;
 		}
