@@ -469,10 +469,8 @@ export class EasTicketAttestation extends AttestableObject implements Attestable
 
 		// console.log("ABI Encoded bytes: ", "0x" + uint8tohex(new Uint8Array(asnEmbedded.easAttestation)));
 
-		const firstElem = defaultAbiCoder.decode(['uint16'], parts.attestation);
-		const version = firstElem[0] > 50 ? 0 : 1;
-
-		console.log(version);
+		const firstElem = defaultAbiCoder.decode(['uint256'], parts.attestation);
+		const version = firstElem[0] > 50n ? 0 : 1;
 
 		const abiDecoded = defaultAbiCoder.decode(
 			OFFCHAIN_ATTESTATION_TYPES[version].types.map((field) => field.type),
