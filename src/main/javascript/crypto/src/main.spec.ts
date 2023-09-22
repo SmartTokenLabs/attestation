@@ -5,7 +5,6 @@
 import {
     bnToUint8,
     hexStringToUint8,
-    stringToArray,
     uint8arrayToBase64,
     uint8tohex,
     testsLogger, base64ToUint8array, hexStringToBase64
@@ -855,6 +854,13 @@ describe("EAS Attestation", () => {
         ],
     }
 
+    const EAS_TICKET_DATA = {
+        devconId: '6',
+        ticketIdString: '12345',
+        ticketClass: 2,
+        commitment: email,
+    };
+
     const issuerPrivKey = KeyPair.privateFromPEM('MIICSwIBADCB7AYHKoZIzj0CATCB4AIBATAsBgcqhkjOPQEBAiEA/////////////////////////////////////v///C8wRAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBEEEeb5mfvncu6xVoGKVzocLBwKb/NstzijZWfKBWxb4F5hIOtp3JqPEZV2k+/wOEQio/Re0SKaFVBmcR9CP+xDUuAIhAP////////////////////66rtzmr0igO7/SXozQNkFBAgEBBIIBVTCCAVECAQEEIM/T+SzcXcdtcNIqo6ck0nJTYzKL5ywYBFNSpI7R8AuBoIHjMIHgAgEBMCwGByqGSM49AQECIQD////////////////////////////////////+///8LzBEBCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcEQQR5vmZ++dy7rFWgYpXOhwsHApv82y3OKNlZ8oFbFvgXmEg62ncmo8RlXaT7/A4RCKj9F7RIpoVUGZxH0I/7ENS4AiEA/////////////////////rqu3OavSKA7v9JejNA2QUECAQGhRANCAARjMR62qoIK9pHk17MyHHIU42Ix+Vl6Q2gTmIF72vNpinBpyoBkTkV0pnI1jdrLlAjJC0I91DZWQhVhddMCK65c');
     const provider = new ethers.providers.StaticJsonRpcProvider(SEPOLIA_RPC)
     const wallet = new ethers.Wallet(issuerPrivKey.getPrivateAsHexString(), provider)
@@ -866,12 +872,7 @@ describe("EAS Attestation", () => {
 
     async function createAttestation(validity?: {from: number, to: number}){
 
-        return await attestationManager.createEasAttestation({
-            devconId: '6',
-            ticketIdString: '12345',
-            ticketClass: 2,
-            commitment: email,
-        }, {
+        return await attestationManager.createEasAttestation(EAS_TICKET_DATA, {
             validity
         });
     }
@@ -926,6 +927,22 @@ describe("EAS Attestation", () => {
 
         attestationManager.loadAsnEncoded(encodedCompressed, pubKeyConfig, true);
         await attestationManager.validateEasAttestation();
+    });
+
+    test("Test v0 offchain schema validation", async () => {
+
+        const attestationManager = new EasTicketAttestation(EAS_TICKET_SCHEMA, {
+            EASconfig: EAS_CONFIG,
+            signer: wallet,
+            offChainVersion: 0
+        }, {11155111: SEPOLIA_RPC});
+
+        await attestationManager.createEasAttestation(EAS_TICKET_DATA);
+
+        const encoded = attestationManager.getAsnEncoded(false);
+
+        attestationManager.loadAsnEncoded(encoded, pubKeyConfig, false);
+        await attestationManager.validateEasAttestation(true);
     });
 
     test("Test wrong conference ID", async () => {

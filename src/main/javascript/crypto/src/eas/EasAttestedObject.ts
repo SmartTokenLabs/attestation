@@ -121,10 +121,10 @@ export class EasAttestedObject {
 		return me;
 	}
 
-	async checkValidity(ethAddress:string = ""){
+	async checkValidity(ethAddress:string = "", skipRevocationCheck = false){
 
-		await this.ticketAttestation.validateEasAttestation();
-		await this.identifierAttestation.validateEasAttestation();
+		await this.ticketAttestation.validateEasAttestation(skipRevocationCheck);
+		await this.identifierAttestation.validateEasAttestation(skipRevocationCheck);
 
 		if (!this.crypto.verifyEqualityProof(
 			this.identifierAttestation.getCommitment(),
