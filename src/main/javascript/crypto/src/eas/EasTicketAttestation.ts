@@ -20,6 +20,8 @@ import {KeyPair, KeysArray} from "../libs/KeyPair";
 import {EIP712DomainTypedData} from "@ethereum-attestation-service/eas-sdk/dist/offchain/typed-data-handler";
 import * as pako from "pako";
 
+export {SignedOffchainAttestation, decodeBase64ZippedBase64, zipAndEncodeToBase64};
+
 export enum AbiFieldTypes {
 	bool = 'bool',
 	uint8 = 'uint8',
