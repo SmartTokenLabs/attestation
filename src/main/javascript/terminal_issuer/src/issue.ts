@@ -67,7 +67,7 @@ let rpcData = {}
 const pubKeyConfig = {};
 let easAttest;
 
-async function issue(){
+export async function issue(args = process.argv){
 
     let tokenId = "";
     let tokenClass = "";
@@ -75,8 +75,8 @@ async function issue(){
     let validityFrom = "";
     let validityTo = "";
 
-    // [,,,,,,,ticketAttestationEmail, tokenId, tokenClass, validityFrom, validityTo] = process.argv;
-    [,,,,,,,ticketAttestationEmail, tokenId, tokenClass, validityTo, validityFrom] = process.argv;
+    // [,,,,,,,ticketAttestationEmail, tokenId, tokenClass, validityFrom, validityTo] = args;
+    [,,,,,,,ticketAttestationEmail, tokenId, tokenClass, validityTo, validityFrom] = args;
     
     let ticketBase64;
     let ticketSecret;
@@ -114,11 +114,10 @@ async function issue(){
     return `?type=eas&ticket=${base64toBase64Url(ticketBase64)}&secret=${ticketSecret?.toString()}&id=${encodeURIComponent(ticketAttestationEmail)}`;
 }
 
-async function verify(){
+export async function verify(args = process.argv){
     let encoded;
     
-    [,,,,,,,encoded] = process.argv;
-
+    [,,,,,,,encoded] = args;
     try {
         easAttest.loadFromEncoded( encoded, pubKeyConfig);
     } catch(e){
@@ -136,9 +135,9 @@ async function verify(){
     return decoded
 }
 
-async function revoke(){
+export async function revoke(args = process.argv){
 
-    let decoded = await verify();
+    let decoded = await verify(args);
 
     if (!decoded["valid"]){
         return decoded;
@@ -149,7 +148,7 @@ async function revoke(){
         throw new Error("Revoke Error")
     }
 
-    decoded = await verify();
+    decoded = await verify(args);
 
     if (decoded["valid"]){
         throw new Error("Attestation not revoked")
@@ -157,7 +156,7 @@ async function revoke(){
     return decoded;
 }
 
-async function decodeAttestation(){
+export async function decodeAttestation(){
     let json = easAttest.getEasJson();
 
     let defaultAbiCoder = new ethers.utils.AbiCoder();
@@ -177,16 +176,19 @@ async function decodeAttestation(){
     };
 }
 
-(async () => {
+export async function main(args:string[] = process.argv) {
 
     let action = "";
     let privateKey = "";
 
-    [,,action,networkName,version,conferenceId,privateKey] = process.argv;
+    [,,action,networkName,version,conferenceId,privateKey] = args;
 
+    if (!action){
+        console.log(JSON.stringify( {success: false, data: "No action in script params"}));
+        return;
+    }
     let output ;
     try {
-
         // issuerPrivKey = KeyPair.privateFromPEM(privateKey);
         issuerPrivKey = KeyPair.fromPrivateUint8(hexStringToUint8(privateKey), "secp256k1");
 
@@ -217,17 +219,16 @@ async function decodeAttestation(){
         rpcData[selectedNetwork.chainId] = rpc;
         
         easAttest = new EasTicketAttestation(EAS_TICKET_SCHEMA, {EASconfig:selectedNetwork,signer: wallet}, rpcData);
-
         switch (action){
             case "issue":
                 // let params = await issue();
-                output = {success: true, data: await issue()}
+                output = {success: true, data: await issue(args)}
                 break;
             case "verify":
-                output = {success: true, data: await verify()}
+                output = {success: true, data: await verify(args)}
                 break;
             case "revoke":
-                output = {success: true, data: await revoke()}
+                output = {success: true, data: await revoke(args)}
                 break;
             default:
                 throw new Error(`Unknown action: "${action}"`)
@@ -237,6 +238,5 @@ async function decodeAttestation(){
         console.log("error...", action)
         output = {success: false, data: e.message}
     }
-    console.log(JSON.stringify(output))
-        
-})()
+    return JSON.stringify(output);
+}

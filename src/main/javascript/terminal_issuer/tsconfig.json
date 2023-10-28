@@ -4,5 +4,7 @@
     "module": "commonjs",
     "outDir": "dist",
     "target": "es2020",
-  }
+  },
+  "include": [ "src/**/*.ts" ],
+  "exclude": [ "node_modules", "__tests__/**/*.ts" ]
 }
