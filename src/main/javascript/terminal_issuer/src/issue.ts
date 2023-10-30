@@ -38,11 +38,18 @@ const EAS_CONFIGS = {
             rpc:["https://goerli.optimism.io/"]
         },
         baseGoerli: {
-            address: "0xAcfE09Fd03f7812F022FBf636700AdEA18Fd2A7A",// Sepolia v0.26
+            address: "0xAcfE09Fd03f7812F022FBf636700AdEA18Fd2A7A",
             // shemaContract: "0x720c2bA66D19A725143FBf5fDC5b4ADA2742682E",
             version: "0.27",
             chainId: 84531,
             rpc:["https://goerli.base.org"]
+        },
+        aurora: {
+            address: "0x6f8Ec0955bc5C22779Ffb7621Ca0eE2970c835c3",
+            // shemaContract: "0x3F4E752324714769d6A9C7338ae91B5302375FDE",
+            version: "0.27",
+            chainId: 1313161554,
+            rpc:["https://mainnet.aurora.dev"]
         }
     }
 };

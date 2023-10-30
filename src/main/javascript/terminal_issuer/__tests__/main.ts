@@ -4,8 +4,8 @@ describe("Terminal Issuer", () => {
 	let node = "";
 	let script = "";
 	let command = "issue";
-	let network = "ethereum";
-	let networkVersion = "0.26";
+	let network = "aurora";
+	let networkVersion = "0.27";
 	let conferenceId = "event1";
 	let privateKey =
 		"6eadaac34974215df02079dbd71231fc0fd533566da263a67c9af7d86c7f0f7d";
@@ -55,7 +55,32 @@ describe("Terminal Issuer", () => {
 			ticket
 		];
 		readyObject = JSON.parse((await main(args)) || "{}");
+        // console.log(readyObject)
+		expect(readyObject).toHaveProperty("success", true);
+	});
+    /* Revoke will fail because no funds in signed account
+    it("revoke", async () => {
+        
+        let localCommand = "revoke"
+        
+        let readyObject = await getInitObject()
+        let params = (new URLSearchParams(readyObject['data'].substring(1)));
+
+        let ticket = params.get("ticket") || "";
+    
+		let args = [
+			node,
+			script,
+			localCommand,
+			network,
+			networkVersion,
+			conferenceId,
+			privateKey,
+			ticket
+		];
+		readyObject = JSON.parse((await main(args)) || "{}");
         console.log(readyObject)
 		expect(readyObject).toHaveProperty("success", true);
 	});
+    */
 });
